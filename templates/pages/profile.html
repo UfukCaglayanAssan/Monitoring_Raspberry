@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="profile-page">
+    <div class="page-header">
+        <h2>Kullanıcı Profili</h2>
+        <p>Profil bilgilerinizi görüntüleyin ve düzenleyin</p>
+    </div>
+    
+    <div class="profile-content">
+        <div class="profile-card">
+            <div class="profile-avatar">
+                <div class="avatar-large">
+                    <span>A</span>
+                </div>
+                <button class="btn btn-outline" id="changeAvatar">
+                    <i class="fas fa-camera"></i>
+                    Fotoğraf Değiştir
+                </button>
+            </div>
+            
+            <div class="profile-details">
+                <div class="form-group">
+                    <label for="fullName">Ad Soyad</label>
+                    <input type="text" id="fullName" value="Assan Guest" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">E-posta</label>
+                    <input type="email" id="email" value="guest@assanelektronik.com.tr" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone">Telefon</label>
+                    <input type="tel" id="phone" value="+90 555 123 45 67" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label for="role">Rol</label>
+                    <input type="text" id="role" value="Sistem Yöneticisi" class="form-input" readonly>
+                </div>
+            </div>
+        </div>
+        
+        <div class="profile-actions">
+            <button class="btn btn-primary" id="saveProfile">
+                <i class="fas fa-save"></i>
+                Değişiklikleri Kaydet
+            </button>
+            <button class="btn btn-secondary" id="changePassword">
+                <i class="fas fa-key"></i>
+                Şifre Değiştir
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+{% endblock %}

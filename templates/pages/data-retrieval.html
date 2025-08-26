@@ -1,0 +1,62 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="data-retrieval-page">
+    <div class="page-header">
+        <h2>Veri Alma ve Dışa Aktarma</h2>
+        <p>Sistem verilerini farklı formatlarda dışa aktarın</p>
+    </div>
+    
+    <div class="export-options">
+        <div class="export-card">
+            <h3>CSV Formatında Dışa Aktar</h3>
+            <p>Verileri Excel uyumlu CSV formatında indirin</p>
+            <div class="export-filters">
+                <div class="form-group">
+                    <label for="csvStartDate">Başlangıç Tarihi</label>
+                    <input type="date" id="csvStartDate" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="csvEndDate">Bitiş Tarihi</label>
+                    <input type="date" id="csvEndDate" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="csvDataType">Veri Türü</label>
+                    <select id="csvDataType" class="form-select">
+                        <option value="all">Tümü</option>
+                        <option value="arm">Kol Verileri</option>
+                        <option value="battery">Batarya Verileri</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn btn-primary" id="exportCSV">
+                <i class="fas fa-download"></i>
+                CSV İndir
+            </button>
+        </div>
+        
+        <div class="export-card">
+            <h3>JSON Formatında Dışa Aktar</h3>
+            <p>Verileri programatik kullanım için JSON formatında indirin</p>
+            <div class="export-filters">
+                <div class="form-group">
+                    <label for="jsonStartDate">Başlangıç Tarihi</label>
+                    <input type="date" id="jsonStartDate" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="jsonEndDate">Bitiş Tarihi</label>
+                    <input type="date" id="jsonEndDate" class="form-input">
+                </div>
+            </div>
+            <button class="btn btn-primary" id="exportJSON">
+                <i class="fas fa-download"></i>
+                JSON İndir
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/data-retrieval.js') }}"></script>
+{% endblock %}

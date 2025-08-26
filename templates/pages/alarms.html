@@ -1,0 +1,49 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="alarms-page">
+    <div class="page-header">
+        <h2>Sistem Alarmları</h2>
+        <p>Aktif ve geçmiş alarmları takip edin</p>
+    </div>
+    
+    <div class="alarms-container">
+        <div class="active-alarms">
+            <h3>Aktif Alarmlar</h3>
+            <div class="alarm-list">
+                <div class="alarm-item critical">
+                    <div class="alarm-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="alarm-details">
+                        <h4>Yüksek Sıcaklık</h4>
+                        <p>Kol 3 sıcaklığı kritik seviyede</p>
+                        <span class="alarm-time">2 saat önce</span>
+                    </div>
+                    <div class="alarm-status">
+                        <span class="status-badge status-error">Kritik</span>
+                    </div>
+                </div>
+                
+                <div class="alarm-item warning">
+                    <div class="alarm-icon">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div class="alarm-details">
+                        <h4>Düşük Gerilim</h4>
+                        <p>Batarya 7 gerilimi düşük</p>
+                        <span class="alarm-time">15 dakika önce</span>
+                    </div>
+                    <div class="alarm-status">
+                        <span class="status-badge status-warning">Uyarı</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/alarms.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="line-measurements-page">
+    <div class="page-header">
+        <h2>Hat Ölçümleri</h2>
+        <p>Kolon akım, nem ve sıcaklık verilerini takip edin</p>
+    </div>
+    
+    <div class="measurements-grid">
+        <div class="measurement-card">
+            <div class="card-header">
+                <i class="fas fa-bolt"></i>
+                <h3>Kol 1</h3>
+            </div>
+            <div class="measurement-values">
+                <div class="value-item">
+                    <span class="label">Akım:</span>
+                    <span class="value">15.2 A</span>
+                </div>
+                <div class="value-item">
+                    <span class="label">Nem:</span>
+                    <span class="value">45%</span>
+                </div>
+                <div class="value-item">
+                    <span class="label">Sıcaklık:</span>
+                    <span class="value">28°C</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="measurement-card">
+            <div class="card-header">
+                <i class="fas fa-bolt"></i>
+                <h3>Kol 2</h3>
+            </div>
+            <div class="measurement-values">
+                <div class="value-item">
+                    <span class="label">Akım:</span>
+                    <span class="value">18.7 A</span>
+                </div>
+                <div class="value-item">
+                    <span class="label">Nem:</span>
+                    <span class="value">42%</span>
+                </div>
+                <div class="value-item">
+                    <span class="label">Sıcaklık:</span>
+                    <span class="31°C">31°C</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/line-measurements.js') }}"></script>
+{% endblock %}

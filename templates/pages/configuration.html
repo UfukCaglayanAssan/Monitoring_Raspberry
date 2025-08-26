@@ -1,0 +1,63 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="configuration-page">
+    <div class="page-header">
+        <h2>Sistem Konfigürasyonu</h2>
+        <p>Sistem ayarlarını yapılandırın ve yönetin</p>
+    </div>
+    
+    <div class="config-sections">
+        <div class="config-card">
+            <h3>Genel Ayarlar</h3>
+            <div class="config-form">
+                <div class="form-group">
+                    <label for="systemName">Sistem Adı</label>
+                    <input type="text" id="systemName" value="Akü İzleme Sistemi" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="updateInterval">Güncelleme Aralığı (saniye)</label>
+                    <input type="number" id="updateInterval" value="5" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="timezone">Zaman Dilimi</label>
+                    <select id="timezone" class="form-select">
+                        <option value="Europe/Istanbul" selected>İstanbul (UTC+3)</option>
+                        <option value="UTC">UTC</option>
+                        <option value="Europe/London">Londra (UTC+0)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="config-card">
+            <h3>Veri Saklama</h3>
+            <div class="config-form">
+                <div class="form-group">
+                    <label for="retentionDays">Veri Saklama Süresi (gün)</label>
+                    <input type="number" id="retentionDays" value="30" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="backupEnabled">Otomatik Yedekleme</label>
+                    <input type="checkbox" id="backupEnabled" checked>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="config-actions">
+        <button class="btn btn-primary" id="saveConfig">
+            <i class="fas fa-save"></i>
+            Ayarları Kaydet
+        </button>
+        <button class="btn btn-secondary" id="resetConfig">
+            <i class="fas fa-undo"></i>
+            Varsayılana Döndür
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/configuration.js') }}"></script>
+{% endblock %}

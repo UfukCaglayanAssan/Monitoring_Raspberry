@@ -21,7 +21,7 @@ body {
 /* Sidebar */
 .sidebar {
     width: 280px;
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
     color: white;
     box-shadow: 2px 0 10px rgba(0,0,0,0.1);
     position: fixed;
@@ -142,7 +142,7 @@ body {
 }
 
 .lang-btn.active {
-    background-color: #007bff;
+    background-color: #1e3c72;
     color: white;
 }
 
@@ -160,7 +160,7 @@ body {
 .user-avatar {
     width: 40px;
     height: 40px;
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
     border-radius: 50%;
     display: flex;
     align-items: center;

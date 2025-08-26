@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="batteries-page">
+    <div class="page-header">
+        <h2>Batarya Durumu</h2>
+        <p>Tüm bataryaların gerçek zamanlı durumunu izleyin</p>
+    </div>
+    
+    <div class="batteries-grid">
+        <div class="battery-card">
+            <div class="battery-header">
+                <h3>Batarya 1</h3>
+                <span class="battery-status online">Çevrimiçi</span>
+            </div>
+            <div class="battery-metrics">
+                <div class="metric">
+                    <span class="label">Gerilim:</span>
+                    <span class="value">48.2V</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Şarj:</span>
+                    <span class="value">85%</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Sıcaklık:</span>
+                    <span class="value">32°C</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Sağlık:</span>
+                    <span class="value">92%</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="battery-card">
+            <div class="battery-header">
+                <h3>Batarya 2</h3>
+                <span class="battery-status online">Çevrimiçi</span>
+            </div>
+            <div class="battery-metrics">
+                <div class="metric">
+                    <span class="label">Gerilim:</span>
+                    <span class="value">47.8V</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Şarj:</span>
+                    <span class="value">78%</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Sıcaklık:</span>
+                    <span class="value">29°C</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Sağlık:</span>
+                    <span class="value">88%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/batteries.js') }}"></script>
+{% endblock %}

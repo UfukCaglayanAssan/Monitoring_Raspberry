@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="error-page">
+    <div class="error-content">
+        <div class="error-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h1>404</h1>
+        <h2>Sayfa Bulunamadı</h2>
+        <p>Aradığınız sayfa mevcut değil veya taşınmış olabilir.</p>
+        <div class="error-actions">
+            <button class="btn btn-primary" onclick="window.history.back()">
+                <i class="fas fa-arrow-left"></i>
+                Geri Dön
+            </button>
+            <button class="btn btn-outline" onclick="window.app.navigateToPage('summary')">
+                <i class="fas fa-home"></i>
+                Ana Sayfaya Git
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 404 sayfası için özel script
+console.log('404 sayfası yüklendi');
+</script>
+{% endblock %}
