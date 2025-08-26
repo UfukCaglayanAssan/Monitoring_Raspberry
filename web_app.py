@@ -29,11 +29,13 @@ def index():
 def get_recent_data():
     """Son 5 dakikanın verilerini getir (tarih seçimi yapılmadığında)"""
     arm = request.args.get('arm', type=int)
+    battery = request.args.get('battery', type=int)
     dtype = request.args.get('dtype', type=int)
+    data_type = request.args.get('data_type', type=str)
     minutes = request.args.get('minutes', 5, type=int)
     limit = request.args.get('limit', 50, type=int)
     
-    data = db.get_recent_data(minutes, arm, dtype, limit)
+    data = db.get_recent_data(minutes, arm, battery, dtype, data_type, limit)
     return jsonify(data)
 
 @app.route('/api/data_by_date')

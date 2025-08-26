@@ -53,60 +53,108 @@
             <button id="dateView" onclick="switchToDateView()">Tarih Seçimi</button>
         </div>
         
+        <!-- Veri Tipi Seçimi -->
+        <div class="controls" style="margin-bottom: 20px;">
+            <label style="margin-right: 15px; font-weight: bold;">Veri Tipi:</label>
+            <label style="margin-right: 10px;">
+                <input type="radio" name="dataType" value="all" checked> Tümü
+            </label>
+            <label style="margin-right: 10px;">
+                <input type="radio" name="dataType" value="arm"> Kol Verileri
+            </label>
+            <label style="margin-right: 10px;">
+                <input type="radio" name="dataType" value="battery"> Batarya Verileri
+            </label>
+        </div>
+        
         <!-- Son 5 Dakika Kontrolleri -->
         <div id="recentControls" class="controls">
-            <select id="armSelect">
-                <option value="">Tüm Kollar</option>
-                <option value="1">Kol 1</option>
-                <option value="2">Kol 2</option>
-                <option value="3">Kol 3</option>
-                <option value="4">Kol 4</option>
-            </select>
+            <div style="margin-bottom: 15px;">
+                <label style="margin-right: 10px; font-weight: bold;">Kol Numarası:</label>
+                <select id="armSelect">
+                    <option value="">Tüm Kollar</option>
+                    <option value="1">Kol 1</option>
+                    <option value="2">Kol 2</option>
+                    <option value="3">Kol 3</option>
+                    <option value="4">Kol 4</option>
+                </select>
+                
+                <label style="margin-left: 20px; margin-right: 10px; font-weight: bold;">Batarya Adresi:</label>
+                <select id="batterySelect">
+                    <option value="">Tüm Bataryalar</option>
+                    <option value="1">Batarya 1</option>
+                    <option value="3">Batarya 3</option>
+                    <option value="4">Batarya 4</option>
+                    <option value="5">Batarya 5</option>
+                </select>
+            </div>
             
-            <select id="dtypeSelect">
-                <option value="">Tüm Veri Tipleri</option>
-                <option value="10">SOC</option>
-                <option value="11">SOH</option>
-                <option value="13">Sıcaklık</option>
-                <option value="14">Sıcaklık</option>
-            </select>
+            <div style="margin-bottom: 15px;">
+                <label style="margin-right: 10px; font-weight: bold;">Veri Türü:</label>
+                <select id="dtypeSelect">
+                    <option value="">Tümü</option>
+                    <option value="10">Gerilim/Akım</option>
+                    <option value="11">Şarj Durumu/Nem</option>
+                    <option value="12">Modül Sıcaklığı/Sıcaklık</option>
+                    <option value="13">Pozitif Kutup Sıcaklığı</option>
+                    <option value="14">Negatif Kutup Sıcaklığı</option>
+                    <option value="126">Sağlık Durumu</option>
+                </select>
+                
+                <label style="margin-left: 20px; margin-right: 10px; font-weight: bold;">Zaman Aralığı:</label>
+                <select id="timeRange">
+                    <option value="1">1 Dakika</option>
+                    <option value="5" selected>5 Dakika</option>
+                    <option value="15">15 Dakika</option>
+                    <option value="30">30 Dakika</option>
+                </select>
+            </div>
             
-            <select id="timeRange">
-                <option value="1">1 Dakika</option>
-                <option value="5" selected>5 Dakika</option>
-                <option value="15">15 Dakika</option>
-                <option value="30">30 Dakika</option>
-            </select>
-            
-            <button onclick="loadRecentData()">Verileri Güncelle</button>
+            <button onclick="loadRecentData()" style="background: #28a745;">Verileri Güncelle</button>
         </div>
         
         <!-- Tarih Seçimi Kontrolleri -->
         <div id="dateControls" class="controls" style="display: none;">
             <div class="date-controls">
-                <label>Başlangıç Tarihi:</label>
-                <input type="date" id="startDate">
-                <label>Bitiş Tarihi:</label>
-                <input type="date" id="endDate">
+                <label style="margin-right: 10px; font-weight: bold;">Tarih Aralığı:</label>
+                <input type="date" id="startDate" placeholder="Başlangıç">
+                <input type="date" id="endDate" placeholder="Bitiş">
             </div>
             
-            <select id="dateArmSelect">
-                <option value="">Tüm Kollar</option>
-                <option value="1">Kol 1</option>
-                <option value="2">Kol 2</option>
-                <option value="3">Kol 3</option>
-                <option value="4">Kol 4</option>
-            </select>
+            <div style="margin: 15px 0;">
+                <label style="margin-right: 10px; font-weight: bold;">Kol Numarası:</label>
+                <select id="dateArmSelect">
+                    <option value="">Tüm Kollar</option>
+                    <option value="1">Kol 1</option>
+                    <option value="2">Kol 2</option>
+                    <option value="3">Kol 3</option>
+                    <option value="4">Kol 4</option>
+                </select>
+                
+                <label style="margin-left: 20px; margin-right: 10px; font-weight: bold;">Batarya Adresi:</label>
+                <select id="dateBatterySelect">
+                    <option value="">Tüm Bataryalar</option>
+                    <option value="1">Batarya 1</option>
+                    <option value="3">Batarya 3</option>
+                    <option value="4">Batarya 4</option>
+                    <option value="5">Batarya 5</option>
+                </select>
+            </div>
             
-            <select id="dateDtypeSelect">
-                <option value="">Tüm Veri Tipleri</option>
-                <option value="10">SOC</option>
-                <option value="11">SOH</option>
-                <option value="13">Sıcaklık</option>
-                <option value="14">Sıcaklık</option>
-            </select>
+            <div style="margin-bottom: 15px;">
+                <label style="margin-right: 10px; font-weight: bold;">Veri Türü:</label>
+                <select id="dateDtypeSelect">
+                    <option value="">Tümü</option>
+                    <option value="10">Gerilim/Akım</option>
+                    <option value="11">Şarj Durumu/Nem</option>
+                    <option value="12">Modül Sıcaklığı/Sıcaklık</option>
+                    <option value="13">Pozitif Kutup Sıcaklığı</option>
+                    <option value="14">Negatif Kutup Sıcaklığı</option>
+                    <option value="126">Sağlık Durumu</option>
+                </select>
+            </div>
             
-            <button onclick="loadDateData()">Verileri Getir</button>
+            <button onclick="loadDateData()" style="background: #28a745;">Verileri Getir</button>
         </div>
         
         <!-- Grafik -->
@@ -218,13 +266,17 @@
         
         async function loadRecentData() {
             const arm = document.getElementById('armSelect').value;
+            const battery = document.getElementById('batterySelect').value;
             const dtype = document.getElementById('dtypeSelect').value;
             const minutes = document.getElementById('timeRange').value;
+            const dataType = document.querySelector('input[name="dataType"]:checked').value;
             
             try {
                 let url = `/api/recent_data?minutes=${minutes}&limit=50`;
                 if (arm) url += `&arm=${arm}`;
+                if (battery) url += `&battery=${battery}`;
                 if (dtype) url += `&dtype=${dtype}`;
+                if (dataType !== 'all') url += `&data_type=${dataType}`;
                 
                 const response = await fetch(url);
                 const data = await response.json();
@@ -241,7 +293,9 @@
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
             const arm = document.getElementById('dateArmSelect').value;
+            const battery = document.getElementById('dateBatterySelect').value;
             const dtype = document.getElementById('dateDtypeSelect').value;
+            const dataType = document.querySelector('input[name="dataType"]:checked').value;
             
             if (!startDate || !endDate) {
                 alert('Lütfen başlangıç ve bitiş tarihlerini seçin');
@@ -251,7 +305,9 @@
             try {
                 let url = `/api/data_by_date?start_date=${startDate}&end_date=${endDate}&page=${currentPage}&page_size=50`;
                 if (arm) url += `&arm=${arm}`;
+                if (battery) url += `&battery=${battery}`;
                 if (dtype) url += `&dtype=${dtype}`;
+                if (dataType !== 'all') url += `&data_type=${dataType}`;
                 
                 const response = await fetch(url);
                 const result = await response.json();
