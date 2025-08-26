@@ -227,62 +227,90 @@ def db_worker():
                 print("✓ Missing data SQLite'ye kaydedildi")
                 continue
 
-            # 11 byte'lık veri kontrolü
-            if len(data) == 11:
-                arm_value = int(data[3], 16)
-                dtype = int(data[2], 16)
-                k_value = int(data[1], 16)
-                
-                # k_value 2 geldiğinde yeni periyot başlat
-                if k_value == 2:
-                    reset_period()
-                    get_period_timestamp()
-                
-                # Arm değeri kontrolü
-                if arm_value not in [1, 2, 3, 4]:
-                    print(f"\nHATALI ARM DEĞERİ: {arm_value}")
-                    continue
-                
-                # Salt data hesapla
-                if dtype == 11 and k_value == 2:  # Nem hesapla
-                    onlar = int(data[5], 16)
-                    birler = int(data[6], 16)
-                    kusurat1 = int(data[7], 16)
-                    kusurat2 = int(data[8], 16)
+                            # 11 byte'lık veri kontrolü
+                if len(data) == 11:
+                    arm_value = int(data[3], 16)
+                    dtype = int(data[2], 16)
+                    k_value = int(data[1], 16)
                     
-                    tam_kisim = (onlar * 10 + birler)
-                    kusurat_kisim = (kusurat1 * 0.1 + kusurat2 * 0.01)
-                    salt_data = tam_kisim + kusurat_kisim
-                    salt_data = round(salt_data, 4)
-                else:
-                    # Normal hesaplama
-                    saltData = int(data[4], 16) * 100 + int(data[5], 16) * 10 + int(data[6], 16) + int(data[7], 16) * 0.1 + int(data[8], 16) * 0.01 + int(data[9], 16) * 0.001
-                    salt_data = round(saltData, 4)
-                
-                # Veri işleme ve kayıt
-                if dtype == 10:  # SOC
-                    if k_value != 2:  # k_value 2 değilse SOC hesapla
-                        soc_value = Calc_SOC(salt_data)
+                    # k_value 2 geldiğinde yeni periyot başlat
+                    if k_value == 2:
+                        reset_period()
+                        get_period_timestamp()
+                    
+                    # Arm değeri kontrolü
+                    if arm_value not in [1, 2, 3, 4]:
+                        print(f"\nHATALI ARM DEĞERİ: {arm_value}")
+                        continue
+                    
+                    # Salt data hesapla
+                    if dtype == 11 and k_value == 2:  # Nem hesapla
+                        onlar = int(data[5], 16)
+                        birler = int(data[6], 16)
+                        kusurat1 = int(data[7], 16)
+                        kusurat2 = int(data[8], 16)
                         
+                        tam_kisim = (onlar * 10 + birler)
+                        kusurat_kisim = (kusurat1 * 0.1 + kusurat2 * 0.01)
+                        salt_data = tam_kisim + kusurat_kisim
+                        salt_data = round(salt_data, 4)
+                    else:
+                        # Normal hesaplama
+                        saltData = int(data[4], 16) * 100 + int(data[5], 16) * 10 + int(data[6], 16) + int(data[7], 16) * 0.1 + int(data[8], 16) * 0.01 + int(data[9], 16) * 0.001
+                        salt_data = round(saltData, 4)
+                    
+                    # Veri tipine göre log mesajı
+                    if k_value == 2:
+                        # Kol verisi (k=2)
+                        if dtype == 10:
+                            print(f"\n*** KOL VERİSİ ALGILANDI - Arm: {arm_value}, Veri Tipi: Akım, Değer: {salt_data} A ***")
+                        elif dtype == 11:
+                            print(f"\n*** KOL VERİSİ ALGILANDI - Arm: {arm_value}, Veri Tipi: Nem, Değer: {salt_data}% ***")
+                        elif dtype == 12:
+                            print(f"\n*** KOL VERİSİ ALGILANDI - Arm: {arm_value}, Veri Tipi: Sıcaklık, Değer: {salt_data}°C ***")
+                        else:
+                            print(f"\n*** KOL VERİSİ ALGILANDI - Arm: {arm_value}, Veri Tipi: {dtype}, Değer: {salt_data} ***")
+                    else:
+                        # Batarya verisi (k!=2)
+                        if dtype == 10:
+                            print(f"\n*** BATARYA VERİSİ ALGILANDI - Arm: {arm_value}, Batarya: {k_value}, Veri Tipi: Gerilim, Değer: {salt_data} V ***")
+                        elif dtype == 11:
+                            print(f"\n*** BATARYA VERİSİ ALGILANDI - Arm: {arm_value}, Batarya: {k_value}, Veri Tipi: Şarj Durumu, Değer: {salt_data}% ***")
+                        elif dtype == 12:
+                            print(f"\n*** BATARYA VERİSİ ALGILANDI - Arm: {arm_value}, Batarya: {k_value}, Veri Tipi: Modül Sıcaklığı, Değer: {salt_data}°C ***")
+                        elif dtype == 13:
+                            print(f"\n*** BATARYA VERİSİ ALGILANDI - Arm: {arm_value}, Batarya: {k_value}, Veri Tipi: Pozitif Kutup Sıcaklığı, Değer: {salt_data}°C ***")
+                        elif dtype == 14:
+                            print(f"\n*** BATARYA VERİSİ ALGILANDI - Arm: {arm_value}, Batarya: {k_value}, Veri Tipi: Negatif Kutup Sıcaklığı, Değer: {salt_data}°C ***")
+                        elif dtype == 126:
+                            print(f"\n*** BATARYA VERİSİ ALGILANDI - Arm: {arm_value}, Batarya: {k_value}, Veri Tipi: Sağlık Durumu, Değer: {salt_data}% ***")
+                        else:
+                            print(f"\n*** BATARYA VERİSİ ALGILANDI - Arm: {arm_value}, Batarya: {k_value}, Veri Tipi: {dtype}, Değer: {salt_data} ***")
+                    
+                    # Veri işleme ve kayıt
+                    if dtype == 10:  # SOC
+                        if k_value != 2:  # k_value 2 değilse SOC hesapla
+                            soc_value = Calc_SOC(salt_data)
+                            
+                            record = {
+                                "Arm": arm_value,
+                                "k": k_value,
+                                "Dtype": 126,
+                                "data": soc_value,
+                                "timestamp": get_period_timestamp()
+                            }
+                            batch.append(record)
+                        
+                        # Her durumda ham veriyi kaydet
                         record = {
                             "Arm": arm_value,
                             "k": k_value,
-                            "Dtype": 126,
-                            "data": soc_value,
+                            "Dtype": 10,
+                            "data": salt_data,
                             "timestamp": get_period_timestamp()
                         }
                         batch.append(record)
-                    
-                    # Her durumda ham veriyi kaydet
-                    record = {
-                        "Arm": arm_value,
-                        "k": k_value,
-                        "Dtype": 10,
-                        "data": salt_data,
-                        "timestamp": get_period_timestamp()
-                    }
-                    batch.append(record)
-            
+                
                 elif dtype == 11:  # SOH veya Nem
                     if k_value == 2:  # Nem verisi
                         record = {
