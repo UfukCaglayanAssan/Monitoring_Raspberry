@@ -192,6 +192,9 @@ class BatteryDatabase:
                 # Performans için index'ler
                 cursor.execute('CREATE INDEX IF NOT EXISTS idx_k_timestamp ON battery_data(k, timestamp)')
                 cursor.execute('CREATE INDEX IF NOT EXISTS idx_arm_k_dtype ON battery_data(arm, k, dtype)')
+                cursor.execute('CREATE INDEX IF NOT EXISTS idx_timestamp ON battery_data(timestamp)')
+                cursor.execute('CREATE INDEX IF NOT EXISTS idx_arm ON battery_data(arm)')
+                cursor.execute('CREATE INDEX IF NOT EXISTS idx_dtype ON battery_data(dtype)')
                 cursor.execute('CREATE INDEX IF NOT EXISTS idx_alarm_timestamp ON alarms(timestamp)')
                 print("✓ Index'ler oluşturuldu")
                 
@@ -466,12 +469,16 @@ class BatteryDatabase:
                 params.append(int(filters['dataType']))
             
             if filters.get('startDate'):
-                query += " AND DATE(bd.timestamp/1000, 'unixepoch') >= ?"
-                params.append(filters['startDate'])
+                # Tarihi timestamp'e çevir
+                start_timestamp = int(datetime.strptime(filters['startDate'], '%Y-%m-%d').timestamp() * 1000)
+                query += " AND bd.timestamp >= ?"
+                params.append(start_timestamp)
             
             if filters.get('endDate'):
-                query += " AND DATE(bd.timestamp/1000, 'unixepoch') <= ?"
-                params.append(filters['endDate'])
+                # Tarihi timestamp'e çevir (günün sonu)
+                end_timestamp = int(datetime.strptime(filters['endDate'], '%Y-%m-%d').timestamp() * 1000) + (24 * 60 * 60 * 1000) - 1
+                query += " AND bd.timestamp <= ?"
+                params.append(end_timestamp)
             
             # Toplam kayıt sayısını al
             count_query = f"SELECT COUNT(*) FROM ({query}) as subquery"
@@ -543,12 +550,16 @@ class BatteryDatabase:
                 params.append(int(filters['dataType']))
             
             if filters.get('startDate'):
-                query += " AND DATE(bd.timestamp/1000, 'unixepoch') >= ?"
-                params.append(filters['startDate'])
+                # Tarihi timestamp'e çevir
+                start_timestamp = int(datetime.strptime(filters['startDate'], '%Y-%m-%d').timestamp() * 1000)
+                query += " AND bd.timestamp >= ?"
+                params.append(start_timestamp)
             
             if filters.get('endDate'):
-                query += " AND DATE(bd.timestamp/1000, 'unixepoch') <= ?"
-                params.append(filters['endDate'])
+                # Tarihi timestamp'e çevir (günün sonu)
+                end_timestamp = int(datetime.strptime(filters['endDate'], '%Y-%m-%d').timestamp() * 1000) + (24 * 60 * 60 * 1000) - 1
+                query += " AND bd.timestamp <= ?"
+                params.append(end_timestamp)
             
             query += " ORDER BY bd.timestamp DESC"
             
