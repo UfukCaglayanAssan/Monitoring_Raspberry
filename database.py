@@ -1,3 +1,4 @@
+# interface/database.py
 import sqlite3
 import threading
 from datetime import datetime, timedelta
@@ -21,22 +22,10 @@ class BatteryDatabase:
                 cursor.execute('DROP TABLE IF EXISTS battery_data_types')
                 cursor.execute('DROP TABLE IF EXISTS alarms')
                 cursor.execute('DROP TABLE IF EXISTS missing_data')
-                cursor.execute('DROP TABLE IF EXISTS passive_balances')
+                cursor.execute('DROP TABLE IF EXISTS passive_balance')
                 cursor.execute('DROP TABLE IF EXISTS arm_slave_counts')
                 
-                # Kol verileri tablosu (k=2)
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS arm_data (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        arm INTEGER,
-                        dtype INTEGER,
-                        data REAL,
-                        timestamp INTEGER,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                    )
-                ''')
-                
-                # Batarya verileri tablosu (k!=2)
+                # Tek veri tablosu (tüm veriler için)
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS battery_data (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,23 +38,38 @@ class BatteryDatabase:
                     )
                 ''')
                 
-                # Kol veri tipi tanımlama tablosu
+                # Dil tablosu
                 cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS arm_data_types (
-                        dtype INTEGER PRIMARY KEY,
-                        name TEXT,
-                        unit TEXT,
-                        description TEXT
+                    CREATE TABLE IF NOT EXISTS languages (
+                        language_code TEXT PRIMARY KEY,
+                        language_name TEXT,
+                        is_active BOOLEAN DEFAULT TRUE,
+                        is_default BOOLEAN DEFAULT FALSE
                     )
                 ''')
                 
-                # Batarya veri tipi tanımlama tablosu
+                # Veri tipi tablosu (dtype + k_value ile)
                 cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS battery_data_types (
-                        dtype INTEGER PRIMARY KEY,
+                    CREATE TABLE IF NOT EXISTS data_types (
+                        dtype INTEGER,
+                        k_value INTEGER,
                         name TEXT,
                         unit TEXT,
-                        description TEXT
+                        description TEXT,
+                        PRIMARY KEY (dtype, k_value)
+                    )
+                ''')
+                
+                # Veri tipi çevirileri
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS data_type_translations (
+                        dtype INTEGER,
+                        k_value INTEGER,
+                        language_code TEXT,
+                        name TEXT,
+                        description TEXT,
+                        PRIMARY KEY (dtype, k_value, language_code),
+                        FOREIGN KEY (language_code) REFERENCES languages(language_code)
                     )
                 ''')
                 
@@ -120,313 +124,129 @@ class BatteryDatabase:
                     )
                 ''')
                 
-                # Kol veri tipi tanımlarını ekle (k=2)
+                # Dilleri ekle
                 cursor.execute('''
-                    INSERT OR IGNORE INTO arm_data_types VALUES 
-                    (10, 'Akım', 'A', 'Kol akım değeri'),
-                    (11, 'Nem', '%', 'Kol nem değeri'),
-                    (12, 'Sıcaklık', '°C', 'Kol sıcaklık değeri')
+                    INSERT OR IGNORE INTO languages VALUES 
+                    ('tr', 'Türkçe', TRUE, TRUE),
+                    ('en', 'English', TRUE, FALSE),
+                    ('de', 'Deutsch', TRUE, FALSE)
                 ''')
                 
-                # Batarya veri tipi tanımlarını ekle (k!=2)
+                # Veri tiplerini ekle
                 cursor.execute('''
-                    INSERT OR IGNORE INTO battery_data_types VALUES 
-                    (10, 'Gerilim', 'V', 'Batarya gerilim değeri'),
-                    (11, 'Şarj Durumu', '%', 'Batarya şarj durumu'),
-                    (12, 'Modül Sıcaklığı', '°C', 'Batarya modül sıcaklığı'),
-                    (13, 'Pozitif Kutup Başı Sıcaklığı', '°C', 'Pozitif kutup başı sıcaklığı'),
-                    (14, 'Negatif Kutup Başı Sıcaklığı', '°C', 'Negatif kutup başı sıcaklığı'),
-                    (126, 'Sağlık Durumu', '%', 'Batarya sağlık durumu (SOH)')
+                    INSERT OR IGNORE INTO data_types VALUES 
+                    -- Kol veri tipleri (k=2)
+                    (10, 2, 'Akım', 'A', 'Kol akım değeri'),
+                    (11, 2, 'Nem', '%', 'Kol nem değeri'),
+                    (12, 2, 'Sıcaklık', '°C', 'Kol sıcaklık değeri'),
+                    
+                    -- Batarya veri tipleri (k!=2)
+                    (10, 3, 'Gerilim', 'V', 'Batarya gerilim değeri'),
+                    (11, 3, 'Şarj Durumu', '%', 'State of Charge (SOC)'),
+                    (12, 3, 'Modül Sıcaklığı', '°C', 'Batarya modül sıcaklığı'),
+                    (13, 3, 'Pozitif Kutup Sıcaklığı', '°C', 'Pozitif kutup başı sıcaklığı'),
+                    (14, 3, 'Negatif Kutup Sıcaklığı', '°C', 'Negatif kutup başı sıcaklığı'),
+                    (126, 3, 'Sağlık Durumu', '%', 'State of Health (SOH)')
+                ''')
+                
+                # Türkçe çevirileri ekle
+                cursor.execute('''
+                    INSERT OR IGNORE INTO data_type_translations VALUES
+                    (10, 2, 'tr', 'Akım', 'Kol akım değeri'),
+                    (11, 2, 'tr', 'Nem', 'Kol nem değeri'),
+                    (12, 2, 'tr', 'Sıcaklık', 'Kol sıcaklık değeri'),
+                    (10, 3, 'tr', 'Gerilim', 'Batarya gerilim değeri'),
+                    (11, 3, 'tr', 'Şarj Durumu', 'Batarya şarj durumu'),
+                    (12, 3, 'tr', 'Modül Sıcaklığı', 'Batarya modül sıcaklığı'),
+                    (13, 3, 'tr', 'Pozitif Kutup Sıcaklığı', 'Pozitif kutup başı sıcaklığı'),
+                    (14, 3, 'tr', 'Negatif Kutup Sıcaklığı', 'Negatif kutup başı sıcaklığı'),
+                    (126, 3, 'tr', 'Sağlık Durumu', 'Batarya sağlık durumu')
+                ''')
+                
+                # İngilizce çevirileri ekle
+                cursor.execute('''
+                    INSERT OR IGNORE INTO data_type_translations VALUES
+                    (10, 2, 'en', 'Current', 'Arm current value'),
+                    (11, 2, 'en', 'Humidity', 'Arm humidity value'),
+                    (12, 2, 'en', 'Temperature', 'Arm temperature value'),
+                    (10, 3, 'en', 'Voltage', 'Battery voltage value'),
+                    (11, 3, 'en', 'State of Charge', 'Battery charge state'),
+                    (12, 3, 'en', 'Module Temperature', 'Battery module temperature'),
+                    (13, 3, 'en', 'Positive Terminal Temperature', 'Positive terminal temperature'),
+                    (14, 3, 'en', 'Negative Terminal Temperature', 'Negative terminal temperature'),
+                    (126, 3, 'en', 'State of Health', 'Battery health state')
                 ''')
                 
                 # Performans için index'ler
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_arm_dtype ON arm_data(arm, dtype)')
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_arm_timestamp ON arm_data(timestamp)')
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_battery_arm_k_dtype ON battery_data(arm, k, dtype)')
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_battery_timestamp ON battery_data(timestamp)')
+                cursor.execute('CREATE INDEX IF NOT EXISTS idx_k_timestamp ON battery_data(k, timestamp)')
+                cursor.execute('CREATE INDEX IF NOT EXISTS idx_arm_k_dtype ON battery_data(arm, k, dtype)')
                 cursor.execute('CREATE INDEX IF NOT EXISTS idx_alarm_timestamp ON alarms(timestamp)')
                 
                 conn.commit()
     
     def insert_battery_data(self, data_list):
-        """Battery data ekle - k değerine göre farklı tablolara ekle"""
+        """Battery data ekle - tek tabloya ekle"""
         with self.lock:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 
                 for item in data_list:
-                    k_value = item.get('k', 0)
-                    dtype = item.get('Dtype', 0)
-                    
-                    # k=2 ise kol verisi (arm_data tablosuna)
-                    if k_value == 2:
-                        cursor.execute('''
-                            INSERT INTO arm_data 
-                            (arm, dtype, data, timestamp)
-                            VALUES (?, ?, ?, ?)
-                        ''', (
-                            item.get('Arm', 0),
-                            dtype,
-                            item.get('data', 0.0),
-                            item.get('timestamp', 0)
-                        ))
-                    # k!=2 ise batarya verisi (battery_data tablosuna)
-                    else:
-                        cursor.execute('''
-                            INSERT INTO battery_data 
-                            (arm, k, dtype, data, timestamp)
-                            VALUES (?, ?, ?, ?, ?)
-                        ''', (
-                            item.get('Arm', 0),
-                            k_value,
-                            dtype,
-                            item.get('data', 0.0),
-                            item.get('timestamp', 0)
-                        ))
+                    cursor.execute('''
+                        INSERT INTO battery_data 
+                        (arm, k, dtype, data, timestamp)
+                        VALUES (?, ?, ?, ?, ?)
+                    ''', (
+                        item.get('Arm', 0),
+                        item.get('k', 0),
+                        item.get('Dtype', 0),
+                        item.get('data', 0.0),
+                        item.get('timestamp', 0)
+                    ))
                 
                 conn.commit()
     
-    def get_recent_data(self, minutes=5, arm=None, battery=None, dtype=None, data_type=None, limit=50):
-        """Son X dakikanın verilerini getir (tarih seçimi yapılmadığında)"""
+    def get_recent_data_with_translations(self, minutes=5, arm=None, battery=None, 
+                                         dtype=None, data_type=None, limit=50, language='tr'):
+        """Son X dakikanın verilerini seçilen dilde getir"""
         with self.lock:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
-                
-                # Son X dakikanın timestamp'i
                 cutoff_time = int((time.time() - minutes * 60) * 1000)
                 
-                all_data = []
-                
-                # Veri tipi filtresine göre kol verilerini getir
-                if data_type in [None, 'all', 'arm']:
-                    arm_query = '''
-                        SELECT 
-                            ad.arm as Kol,
-                            'Kol' as Tip,
-                            adt.name as VeriTipi,
-                            adt.unit as Birim,
-                            ad.data as Deger,
-                            datetime(ad.timestamp/1000, 'unixepoch') as Zaman,
-                            ad.timestamp as RawTimestamp
-                        FROM arm_data ad
-                        JOIN arm_data_types adt ON ad.dtype = adt.dtype
-                        WHERE ad.timestamp >= ?
-                    '''
-                    
-                    arm_params = [cutoff_time]
-                    
-                    if arm is not None:
-                        arm_query += " AND ad.arm = ?"
-                        arm_params.append(arm)
-                    if dtype is not None:
-                        arm_query += " AND ad.dtype = ?"
-                        arm_params.append(dtype)
-                    
-                    arm_query += " ORDER BY ad.timestamp DESC"
-                    
-                    cursor.execute(arm_query, arm_params)
-                    arm_data = cursor.fetchall()
-                    all_data.extend(arm_data)
-                
-                # Veri tipi filtresine göre batarya verilerini getir
-                if data_type in [None, 'all', 'battery']:
-                    battery_query = '''
-                        SELECT 
-                            bd.arm as Kol,
-                            'Batarya ' || bd.k as Tip,
-                            bdt.name as VeriTipi,
-                            bdt.unit as Birim,
-                            bd.data as Deger,
-                            datetime(bd.timestamp/1000, 'unixepoch') as Zaman,
-                            bd.timestamp as RawTimestamp
-                        FROM battery_data bd
-                        JOIN battery_data_types bdt ON bd.dtype = bdt.dtype
-                        WHERE bd.timestamp >= ?
-                    '''
-                    
-                    battery_params = [cutoff_time]
-                    
-                    if arm is not None:
-                        battery_query += " AND bd.arm = ?"
-                        battery_params.append(arm)
-                    if battery is not None:
-                        battery_query += " AND bd.k = ?"
-                        battery_params.append(battery)
-                    if dtype is not None:
-                        battery_query += " AND bd.dtype = ?"
-                        battery_params.append(dtype)
-                    
-                    battery_query += " ORDER BY bd.timestamp DESC"
-                    
-                    cursor.execute(battery_query, battery_params)
-                    battery_data = cursor.fetchall()
-                    all_data.extend(battery_data)
-                
-                # Verileri timestamp'e göre sırala
-                all_data.sort(key=lambda x: x[6], reverse=True)
-                
-                return all_data[:limit]
-    
-    def get_data_by_date_range(self, start_date, end_date, arm=None, dtype=None, page=1, page_size=50):
-        """Tarih aralığına göre veri getir (sayfalama ile)"""
-        with self.lock:
-            with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.cursor()
-                
-                # Tarihleri timestamp'e çevir
-                start_timestamp = int(datetime.strptime(start_date, '%Y-%m-%d').timestamp() * 1000)
-                end_timestamp = int(datetime.strptime(end_date, '%Y-%m-%d').timestamp() * 1000) + (24 * 60 * 60 * 1000) - 1
-                
-                # Toplam kayıt sayısını al
-                count_query = '''
-                    SELECT COUNT(*) FROM battery_data bd
-                    WHERE bd.timestamp BETWEEN ? AND ?
-                '''
-                
-                count_params = [start_timestamp, end_timestamp]
-                
-                if arm is not None:
-                    count_query += " AND bd.arm = ?"
-                    count_params.append(arm)
-                if dtype is not None:
-                    count_query += " AND bd.dtype = ?"
-                    count_params.append(dtype)
-                
-                cursor.execute(count_query, count_params)
-                total_count = cursor.fetchone()[0]
-                
-                # Sayfalama hesapla
-                offset = (page - 1) * page_size
-                total_pages = (total_count + page_size - 1) // page_size
-                
-                # Veriyi getir
-                data_query = '''
+                query = '''
                     SELECT 
                         bd.arm as Kol,
-                        bd.k as Batarya,
-                        dt.name as VeriTipi,
+                        CASE 
+                            WHEN bd.k = 2 THEN 'Kol'
+                            ELSE 'Batarya ' || bd.k
+                        END as Tip,
+                        COALESCE(dtt.name, dt.name) as VeriTipi,
                         dt.unit as Birim,
                         bd.data as Deger,
                         datetime(bd.timestamp/1000, 'unixepoch') as Zaman,
                         bd.timestamp as RawTimestamp
                     FROM battery_data bd
-                    JOIN data_types dt ON bd.dtype = dt.dtype
-                    WHERE bd.timestamp BETWEEN ? AND ?
+                    JOIN data_types dt ON bd.dtype = dt.dtype AND bd.k = dt.k_value
+                    LEFT JOIN data_type_translations dtt ON bd.dtype = dtt.dtype 
+                        AND bd.k = dtt.k_value AND dtt.language_code = ?
+                    WHERE bd.timestamp >= ?
                 '''
                 
-                data_params = [start_timestamp, end_timestamp]
+                params = [language, cutoff_time]
                 
                 if arm is not None:
-                    data_query += " AND bd.arm = ?"
-                    data_params.append(arm)
+                    query += " AND bd.arm = ?"
+                    params.append(arm)
+                if battery is not None:
+                    query += " AND bd.k = ?"
+                    params.append(battery)
                 if dtype is not None:
-                    data_query += " AND bd.dtype = ?"
-                    data_params.append(dtype)
-                
-                data_query += " ORDER BY bd.timestamp DESC LIMIT ? OFFSET ?"
-                data_params.extend([page_size, offset])
-                
-                cursor.execute(data_query, data_params)
-                data = cursor.fetchall()
-                
-                return {
-                    'data': data,
-                    'pagination': {
-                        'current_page': page,
-                        'total_pages': total_pages,
-                        'total_count': total_count,
-                        'page_size': page_size,
-                        'has_next': page < total_pages,
-                        'has_prev': page > 1
-                    }
-                }
-    
-    def get_latest_data(self, arm=None, dtype=None, limit=100):
-        """Son verileri getir"""
-        with self.lock:
-            with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.cursor()
-                
-                query = "SELECT * FROM battery_data"
-                params = []
-                
-                if arm is not None:
-                    query += " WHERE arm = ?"
-                    params.append(arm)
-                    if dtype is not None:
-                        query += " AND dtype = ?"
-                        params.append(dtype)
-                elif dtype is not None:
-                    query += " WHERE dtype = ?"
+                    query += " AND bd.dtype = ?"
                     params.append(dtype)
-                
-                query += " ORDER BY timestamp DESC LIMIT ?"
-                params.append(limit)
-                
-                cursor.execute(query, params)
-                return cursor.fetchall()
-    
-    def get_formatted_data(self, arm=None, k=None, limit=100):
-        """Formatlanmış veri getir"""
-        with self.lock:
-            with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.cursor()
-                
-                query = '''
-                    SELECT 
-                        bd.arm as Kol,
-                        bd.k as Batarya,
-                        CASE 
-                            WHEN bd.k = 2 THEN
-                                CASE bd.dtype
-                                    WHEN 10 THEN 'Akım'
-                                    WHEN 11 THEN 'Nem'
-                                    WHEN 12 THEN 'Sıcaklık'
-                                    ELSE dt.name
-                                END
-                            ELSE
-                                CASE bd.dtype
-                                    WHEN 10 THEN 'Gerilim'
-                                    WHEN 11 THEN 'Şarj Durumu'
-                                    WHEN 12 THEN 'Modül Sıcaklığı'
-                                    WHEN 13 THEN 'Pozitif Kutup Başı Sıcaklığı'
-                                    WHEN 14 THEN 'Negatif Kutup Başı Sıcaklığı'
-                                    WHEN 126 THEN 'Sağlık Durumu'
-                                    ELSE dt.name
-                                END
-                        END as VeriTipi,
-                        CASE 
-                            WHEN bd.k = 2 THEN
-                                CASE bd.dtype
-                                    WHEN 10 THEN 'A'
-                                    WHEN 11 THEN '%'
-                                    WHEN 12 THEN '°C'
-                                    ELSE dt.unit
-                                END
-                            ELSE
-                                CASE bd.dtype
-                                    WHEN 10 THEN 'V'
-                                    WHEN 11 THEN '%'
-                                    WHEN 12 THEN '°C'
-                                    WHEN 13 THEN '°C'
-                                    WHEN 14 THEN '°C'
-                                    WHEN 126 THEN '%'
-                                    ELSE dt.unit
-                                END
-                        END as Birim,
-                        bd.data as Deger,
-                        datetime(bd.timestamp/1000, 'unixepoch') as Zaman
-                    FROM battery_data bd
-                    JOIN data_types dt ON bd.dtype = dt.dtype
-                '''
-                
-                params = []
-                if arm:
-                    query += " WHERE bd.arm = ?"
-                    params.append(arm)
-                    if k:
-                        query += " AND bd.k = ?"
-                        params.append(k)
+                if data_type == 'arm':
+                    query += " AND bd.k = 2"
+                elif data_type == 'battery':
+                    query += " AND bd.k != 2"
                 
                 query += " ORDER BY bd.timestamp DESC LIMIT ?"
                 params.append(limit)
@@ -434,48 +254,28 @@ class BatteryDatabase:
                 cursor.execute(query, params)
                 return cursor.fetchall()
     
-    def get_stats(self):
-        """İstatistikleri getir"""
+    def get_data_types_by_language(self, language='tr'):
+        """Seçilen dilde veri tiplerini getir"""
         with self.lock:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 
-                # Toplam kayıt sayısı
-                cursor.execute('SELECT COUNT(*) FROM battery_data')
-                total_records = cursor.fetchone()[0]
+                query = '''
+                    SELECT 
+                        dt.dtype,
+                        dt.k_value,
+                        COALESCE(dtt.name, dt.name) as name,
+                        dt.unit,
+                        COALESCE(dtt.description, dt.description) as description
+                    FROM data_types dt
+                    LEFT JOIN data_type_translations dtt ON dt.dtype = dtt.dtype 
+                        AND dt.k_value = dtt.k_value AND dtt.language_code = ?
+                    ORDER BY dt.k_value, dt.dtype
+                '''
                 
-                # Son 24 saatteki kayıt sayısı
-                end_time = int(time.time() * 1000)
-                start_time = end_time - (24 * 3600 * 1000)
-                cursor.execute('SELECT COUNT(*) FROM battery_data WHERE timestamp BETWEEN ? AND ?', (start_time, end_time))
-                last_24h = cursor.fetchone()[0]
-                
-                # Veritabanı boyutu
-                db_size = self.get_database_size()
-                
-                return {
-                    'total_records': total_records,
-                    'last_24h_records': last_24h,
-                    'database_size_mb': round(db_size, 2)
-                }
+                cursor.execute(query, [language])
+                return cursor.fetchall()
     
-    def cleanup_old_data(self, days=30):
-        """Eski verileri temizle - disk alanı için"""
-        with self.lock:
-            with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.cursor()
-                cutoff_time = int((time.time() - days * 24 * 3600) * 1000)
-                cursor.execute('DELETE FROM battery_data WHERE timestamp < ?', (cutoff_time,))
-                conn.commit()
-    
-    def get_database_size(self):
-        """Veritabanı boyutunu kontrol et"""
-        import os
-        if os.path.exists(self.db_path):
-            size_mb = os.path.getsize(self.db_path) / (1024 * 1024)
-            return size_mb
-        return 0
-
     def insert_alarm(self, alarm_data):
         """Alarm verisi ekle"""
         with self.lock:
@@ -533,3 +333,11 @@ class BatteryDatabase:
                       balance_data['timestamp']))
                 conn.commit()
                 print(f"✓ Pasif balans eklendi: Arm={balance_data['arm']}, Slave={balance_data['slave']}, Status={balance_data['status']}")
+
+    def get_database_size(self):
+        """Veritabanı boyutunu kontrol et"""
+        import os
+        if os.path.exists(self.db_path):
+            size_mb = os.path.getsize(self.db_path) / (1024 * 1024)
+            return size_mb
+        return 0

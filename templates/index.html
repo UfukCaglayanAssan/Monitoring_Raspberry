@@ -1,76 +1,249 @@
+<!-- interface/templates/index.html -->
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Battery Management System</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .controls { text-align: center; margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 5px; }
-        select, button, input { margin: 5px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
-        button { background: #007bff; color: white; cursor: pointer; }
-        button:hover { background: #0056b3; }
-        .stats { display: flex; justify-content: space-around; margin: 20px 0; }
-        .stat-box { text-align: center; padding: 15px; background: #e9ecef; border-radius: 5px; }
-        .chart-container { margin: 20px 0; }
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #f8f9fa; }
-        .pagination { text-align: center; margin: 20px 0; }
-        .pagination button { margin: 0 5px; }
-        .pagination .current-page { background: #28a745; }
-        .date-controls { margin: 20px 0; text-align: center; }
-        .view-toggle { margin: 20px 0; text-align: center; }
-        .view-toggle button { margin: 0 10px; }
-        .view-toggle .active { background: #28a745; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .language-selector {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+        
+        .language-selector select {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .language-selector select option {
+            background: #2c3e50;
+            color: white;
+        }
+        
+        .controls {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .control-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .control-group label {
+            font-weight: 600;
+            color: #495057;
+            min-width: 100px;
+        }
+        
+        .control-group select, .control-group input {
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            font-size: 14px;
+            min-width: 120px;
+        }
+        
+        .control-group button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .control-group button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,123,255,0.4);
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .radio-group input[type="radio"] {
+            margin: 0;
+        }
+        
+        .data-section {
+            padding: 20px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .data-table th {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .data-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .status {
+            padding: 15px;
+            margin: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        .chart-container {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .chart-container canvas {
+            max-height: 400px;
+        }
+        
+        @media (max-width: 768px) {
+            .control-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .control-group label {
+                min-width: auto;
+            }
+            
+            .language-selector {
+                position: static;
+                margin-bottom: 20px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>�� Battery Management System</h1>
-        
-        <!-- İstatistikler -->
-        <div class="stats" id="stats">
-            <div class="stat-box">
-                <h3>Toplam Kayıt</h3>
-                <p id="totalRecords">-</p>
+        <div class="header">
+            <div class="language-selector">
+                <select id="languageSelect" onchange="changeLanguage(this.value)">
+                    <option value="tr">��🇷 Türkçe</option>
+                    <option value="en">🇬🇧 English</option>
+                    <option value="de">🇩🇪 Deutsch</option>
+                </select>
             </div>
-            <div class="stat-box">
-                <h3>Son 24 Saat</h3>
-                <p id="last24h">-</p>
-            </div>
-            <div class="stat-box">
-                <h3>DB Boyutu</h3>
-                <p id="dbSize">-</p>
-            </div>
+            <h1 id="mainTitle">Battery Management System</h1>
         </div>
         
-        <!-- Görünüm Seçimi -->
-        <div class="view-toggle">
-            <button id="recentView" class="active" onclick="switchToRecentView()">Son 5 Dakika</button>
-            <button id="dateView" onclick="switchToDateView()">Tarih Seçimi</button>
-        </div>
-        
-        <!-- Veri Tipi Seçimi -->
-        <div class="controls" style="margin-bottom: 20px;">
-            <label style="margin-right: 15px; font-weight: bold;">Veri Tipi:</label>
-            <label style="margin-right: 10px;">
-                <input type="radio" name="dataType" value="all" checked> Tümü
-            </label>
-            <label style="margin-right: 10px;">
-                <input type="radio" name="dataType" value="arm"> Kol Verileri
-            </label>
-            <label style="margin-right: 10px;">
-                <input type="radio" name="dataType" value="battery"> Batarya Verileri
-            </label>
-        </div>
-        
-        <!-- Son 5 Dakika Kontrolleri -->
-        <div id="recentControls" class="controls">
-            <div style="margin-bottom: 15px;">
-                <label style="margin-right: 10px; font-weight: bold;">Kol Numarası:</label>
+        <div class="controls">
+            <div class="control-group">
+                <label id="dataTypeLabel">Veri Tipi:</label>
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="dataType" value="all" checked>
+                        <span id="allDataLabel">Tümü</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="dataType" value="arm">
+                        <span id="armDataLabel">Kol Verileri</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="dataType" value="battery">
+                        <span id="batteryDataLabel">Batarya Verileri</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label id="recentDataLabel">Son 5 Dakika:</label>
                 <select id="armSelect">
                     <option value="">Tüm Kollar</option>
                     <option value="1">Kol 1</option>
@@ -78,251 +251,303 @@
                     <option value="3">Kol 3</option>
                     <option value="4">Kol 4</option>
                 </select>
-                
-                <label style="margin-left: 20px; margin-right: 10px; font-weight: bold;">Batarya Adresi:</label>
                 <select id="batterySelect">
                     <option value="">Tüm Bataryalar</option>
-                    <option value="1">Batarya 1</option>
                     <option value="3">Batarya 3</option>
                     <option value="4">Batarya 4</option>
                     <option value="5">Batarya 5</option>
+                    <option value="6">Batarya 6</option>
                 </select>
-            </div>
-            
-            <div style="margin-bottom: 15px;">
-                <label style="margin-right: 10px; font-weight: bold;">Veri Türü:</label>
                 <select id="dtypeSelect">
-                    <option value="">Tümü</option>
-                    <option value="10">Gerilim/Akım</option>
-                    <option value="11">Şarj Durumu/Nem</option>
-                    <option value="12">Modül Sıcaklığı/Sıcaklık</option>
-                    <option value="13">Pozitif Kutup Sıcaklığı</option>
-                    <option value="14">Negatif Kutup Sıcaklığı</option>
-                    <option value="126">Sağlık Durumu</option>
+                    <option value="">Tüm Veri Tipleri</option>
                 </select>
-                
-                <label style="margin-left: 20px; margin-right: 10px; font-weight: bold;">Zaman Aralığı:</label>
-                <select id="timeRange">
-                    <option value="1">1 Dakika</option>
-                    <option value="5" selected>5 Dakika</option>
-                    <option value="15">15 Dakika</option>
-                    <option value="30">30 Dakika</option>
-                </select>
+                <button onclick="loadRecentData()" id="loadRecentBtn">Yükle</button>
             </div>
             
-            <button onclick="loadRecentData()" style="background: #28a745;">Verileri Güncelle</button>
-        </div>
-        
-        <!-- Tarih Seçimi Kontrolleri -->
-        <div id="dateControls" class="controls" style="display: none;">
-            <div class="date-controls">
-                <label style="margin-right: 10px; font-weight: bold;">Tarih Aralığı:</label>
-                <input type="date" id="startDate" placeholder="Başlangıç">
-                <input type="date" id="endDate" placeholder="Bitiş">
-            </div>
-            
-            <div style="margin: 15px 0;">
-                <label style="margin-right: 10px; font-weight: bold;">Kol Numarası:</label>
-                <select id="dateArmSelect">
+            <div class="control-group">
+                <label id="dateSelectionLabel">Tarih Seçimi:</label>
+                <input type="date" id="startDate">
+                <input type="date" id="endDate">
+                <select id="armSelectDate">
                     <option value="">Tüm Kollar</option>
                     <option value="1">Kol 1</option>
                     <option value="2">Kol 2</option>
                     <option value="3">Kol 3</option>
                     <option value="4">Kol 4</option>
                 </select>
-                
-                <label style="margin-left: 20px; margin-right: 10px; font-weight: bold;">Batarya Adresi:</label>
-                <select id="dateBatterySelect">
+                <select id="batterySelectDate">
                     <option value="">Tüm Bataryalar</option>
-                    <option value="1">Batarya 1</option>
                     <option value="3">Batarya 3</option>
                     <option value="4">Batarya 4</option>
                     <option value="5">Batarya 5</option>
+                    <option value="6">Batarya 6</option>
                 </select>
-            </div>
-            
-            <div style="margin-bottom: 15px;">
-                <label style="margin-right: 10px; font-weight: bold;">Veri Türü:</label>
-                <select id="dateDtypeSelect">
-                    <option value="">Tümü</option>
-                    <option value="10">Gerilim/Akım</option>
-                    <option value="11">Şarj Durumu/Nem</option>
-                    <option value="12">Modül Sıcaklığı/Sıcaklık</option>
-                    <option value="13">Pozitif Kutup Sıcaklığı</option>
-                    <option value="14">Negatif Kutup Sıcaklığı</option>
-                    <option value="126">Sağlık Durumu</option>
+                <select id="dtypeSelectDate">
+                    <option value="">Tüm Veri Tipleri</option>
                 </select>
+                <button onclick="loadDateData()" id="loadDateBtn">Yükle</button>
             </div>
-            
-            <button onclick="loadDateData()" style="background: #28a745;">Verileri Getir</button>
         </div>
         
-        <!-- Grafik -->
+        <div class="data-section">
+            <div id="status" class="status" style="display: none;"></div>
+            <div id="loading" class="loading" style="display: none;">Veriler yükleniyor...</div>
+            
+            <table class="data-table" id="dataTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th id="kolHeader">Kol</th>
+                        <th id="tipHeader">Tip</th>
+                        <th id="veriTipiHeader">Veri Tipi</th>
+                        <th id="birimHeader">Birim</th>
+                        <th id="degerHeader">Değer</th>
+                        <th id="zamanHeader">Zaman</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTableBody">
+                </tbody>
+            </table>
+        </div>
+        
         <div class="chart-container">
-            <canvas id="batteryChart"></canvas>
-        </div>
-        
-        <!-- Veri Tablosu -->
-        <h3 id="tableTitle">Son Veriler</h3>
-        <table id="dataTable">
-            <thead>
-                <tr>
-                    <th>Kol</th>
-                    <th>Batarya</th>
-                    <th>Veri Tipi</th>
-                    <th>Birim</th>
-                    <th>Değer</th>
-                    <th>Zaman</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody">
-                <!-- Veriler buraya gelecek -->
-            </tbody>
-        </table>
-        
-        <!-- Sayfalama -->
-        <div id="pagination" class="pagination" style="display: none;">
-            <button id="prevPage" onclick="changePage(-1)">Önceki</button>
-            <span id="pageInfo">Sayfa 1 / 1</span>
-            <button id="nextPage" onclick="changePage(1)">Sonraki</button>
+            <canvas id="dataChart"></canvas>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        let chart;
-        let currentView = 'recent';
-        let currentPage = 1;
-        let totalPages = 1;
+        let currentLanguage = 'tr';
+        let dataChart = null;
         
-        function initChart() {
-            const ctx = document.getElementById('batteryChart').getContext('2d');
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: 'Battery Data',
-                        data: [],
-                        borderColor: 'rgb(75, 192, 192)',
-                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                        tension: 0.1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Battery Data Chart'
-                        }
-                    },
-                    scales: {
-                        x: {
-                            type: 'time',
-                            time: {
-                                unit: 'hour'
-                            },
-                            title: {
-                                display: true,
-                                text: 'Zaman'
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Değer'
-                            }
-                        }
-                    }
-                }
-            });
-        }
-        
-        function switchToRecentView() {
-            currentView = 'recent';
-            document.getElementById('recentView').classList.add('active');
-            document.getElementById('dateView').classList.remove('active');
-            document.getElementById('recentControls').style.display = 'block';
-            document.getElementById('dateControls').style.display = 'none';
-            document.getElementById('pagination').style.display = 'none';
-            document.getElementById('tableTitle').textContent = 'Son Veriler';
+        // Dil değiştirme fonksiyonu
+        function changeLanguage(langCode) {
+            currentLanguage = langCode;
+            localStorage.setItem('selectedLanguage', langCode);
+            
+            // UI metinlerini güncelle
+            updateUITexts();
+            
+            // Verileri yeniden yükle
             loadRecentData();
         }
         
-        function switchToDateView() {
-            currentView = 'date';
-            document.getElementById('dateView').classList.add('active');
-            document.getElementById('recentView').classList.remove('active');
-            document.getElementById('recentControls').style.display = 'none';
-            document.getElementById('dateControls').style.display = 'block';
-            document.getElementById('tableTitle').textContent = 'Tarih Aralığı Verileri';
+        // UI metinlerini güncelle
+        function updateUITexts() {
+            const texts = getLanguageTexts(currentLanguage);
             
-            // Bugünün tarihini varsayılan olarak ayarla
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('startDate').value = today;
-            document.getElementById('endDate').value = today;
+            document.getElementById('mainTitle').textContent = texts.mainTitle;
+            document.getElementById('dataTypeLabel').textContent = texts.dataTypeLabel;
+            document.getElementById('allDataLabel').textContent = texts.allDataLabel;
+            document.getElementById('armDataLabel').textContent = texts.armDataLabel;
+            document.getElementById('batteryDataLabel').textContent = texts.batteryDataLabel;
+            document.getElementById('recentDataLabel').textContent = texts.recentDataLabel;
+            document.getElementById('loadRecentBtn').textContent = texts.loadBtn;
+            document.getElementById('dateSelectionLabel').textContent = texts.dateSelectionLabel;
+            document.getElementById('loadDateBtn').textContent = texts.loadBtn;
+            document.getElementById('kolHeader').textContent = texts.kolHeader;
+            document.getElementById('tipHeader').textContent = texts.tipHeader;
+            document.getElementById('veriTipiHeader').textContent = texts.veriTipiHeader;
+            document.getElementById('birimHeader').textContent = texts.birimHeader;
+            document.getElementById('degerHeader').textContent = texts.degerHeader;
+            document.getElementById('zamanHeader').textContent = texts.zamanHeader;
         }
         
-        async function loadRecentData() {
+        // Dil metinlerini getir
+        function getLanguageTexts(lang) {
+            const texts = {
+                tr: {
+                    mainTitle: 'Battery Management System',
+                    dataTypeLabel: 'Veri Tipi:',
+                    allDataLabel: 'Tümü',
+                    armDataLabel: 'Kol Verileri',
+                    batteryDataLabel: 'Batarya Verileri',
+                    recentDataLabel: 'Son 5 Dakika:',
+                    loadBtn: 'Yükle',
+                    dateSelectionLabel: 'Tarih Seçimi:',
+                    kolHeader: 'Kol',
+                    tipHeader: 'Tip',
+                    veriTipiHeader: 'Veri Tipi',
+                    birimHeader: 'Birim',
+                    degerHeader: 'Değer',
+                    zamanHeader: 'Zaman'
+                },
+                en: {
+                    mainTitle: 'Battery Management System',
+                    dataTypeLabel: 'Data Type:',
+                    allDataLabel: 'All',
+                    armDataLabel: 'Arm Data',
+                    batteryDataLabel: 'Battery Data',
+                    recentDataLabel: 'Last 5 Minutes:',
+                    loadBtn: 'Load',
+                    dateSelectionLabel: 'Date Selection:',
+                    kolHeader: 'Arm',
+                    tipHeader: 'Type',
+                    veriTipiHeader: 'Data Type',
+                    birimHeader: 'Unit',
+                    degerHeader: 'Value',
+                    zamanHeader: 'Time'
+                },
+                de: {
+                    mainTitle: 'Battery Management System',
+                    dataTypeLabel: 'Datentyp:',
+                    allDataLabel: 'Alle',
+                    armDataLabel: 'Arm-Daten',
+                    batteryDataLabel: 'Batterie-Daten',
+                    recentDataLabel: 'Letzte 5 Minuten:',
+                    loadBtn: 'Laden',
+                    dateSelectionLabel: 'Datumsauswahl:',
+                    kolHeader: 'Arm',
+                    tipHeader: 'Typ',
+                    veriTipiHeader: 'Datentyp',
+                    birimHeader: 'Einheit',
+                    degerHeader: 'Wert',
+                    zamanHeader: 'Zeit'
+                }
+            };
+            return texts[lang] || texts.tr;
+        }
+        
+        // Sayfa yüklendiğinde
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedLang = localStorage.getItem('selectedLanguage');
+            if (savedLang) {
+                currentLanguage = savedLang;
+                document.getElementById('languageSelect').value = savedLang;
+            }
+            
+            updateUITexts();
+            loadDataTypes();
+            setDefaultDates();
+            loadRecentData();
+        });
+        
+        // Veri tiplerini yükle
+        function loadDataTypes() {
+            fetch(`/api/data_types?lang=${currentLanguage}`)
+                .then(response => response.json())
+                .then(data => {
+                    updateDataTypeSelects(data);
+                })
+                .catch(error => {
+                    console.error('Veri tipleri yüklenirken hata:', error);
+                });
+        }
+        
+        // Veri tipi select'lerini güncelle
+        function updateDataTypeSelects(dataTypes) {
+            const dtypeSelect = document.getElementById('dtypeSelect');
+            const dtypeSelectDate = document.getElementById('dtypeSelectDate');
+            
+            // Mevcut seçenekleri temizle
+            dtypeSelect.innerHTML = '<option value="">Tüm Veri Tipleri</option>';
+            dtypeSelectDate.innerHTML = '<option value="">Tüm Veri Tipleri</option>';
+            
+            // Yeni seçenekleri ekle
+            dataTypes.forEach(type => {
+                const option = document.createElement('option');
+                option.value = type.dtype;
+                option.textContent = `${type.name} (${type.unit})`;
+                
+                const optionDate = option.cloneNode(true);
+                dtypeSelect.appendChild(option);
+                dtypeSelectDate.appendChild(optionDate);
+            });
+        }
+        
+        // Varsayılan tarihleri ayarla
+        function setDefaultDates() {
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            
+            document.getElementById('startDate').value = yesterday.toISOString().split('T')[0];
+            document.getElementById('endDate').value = today.toISOString().split('T')[0];
+        }
+        
+        // Son verileri yükle
+        function loadRecentData() {
+            showLoading();
+            
             const arm = document.getElementById('armSelect').value;
             const battery = document.getElementById('batterySelect').value;
             const dtype = document.getElementById('dtypeSelect').value;
-            const minutes = document.getElementById('timeRange').value;
             const dataType = document.querySelector('input[name="dataType"]:checked').value;
             
-            try {
-                let url = `/api/recent_data?minutes=${minutes}&limit=50`;
-                if (arm) url += `&arm=${arm}`;
-                if (battery) url += `&battery=${battery}`;
-                if (dtype) url += `&dtype=${dtype}`;
-                if (dataType !== 'all') url += `&data_type=${dataType}`;
-                
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                updateTable(data);
-                updateChart(data);
-                
-            } catch (error) {
-                console.error('Veri alınamadı:', error);
-            }
+            const params = new URLSearchParams({
+                minutes: 5,
+                arm: arm,
+                battery: battery,
+                dtype: dtype,
+                data_type: dataType,
+                limit: 100,
+                lang: currentLanguage
+            });
+            
+            fetch(`/api/recent_data?${params}`)
+                .then(response => response.json())
+                .then(data => {
+                    displayData(data);
+                    updateChart(data);
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Veri yüklenirken hata:', error);
+                    showError('Veriler yüklenirken hata oluştu');
+                    hideLoading();
+                });
         }
         
-        async function loadDateData() {
+        // Tarih verilerini yükle
+        function loadDateData() {
+            showLoading();
+            
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
-            const arm = document.getElementById('dateArmSelect').value;
-            const battery = document.getElementById('dateBatterySelect').value;
-            const dtype = document.getElementById('dateDtypeSelect').value;
-            const dataType = document.querySelector('input[name="dataType"]:checked').value;
+            const arm = document.getElementById('armSelectDate').value;
+            const battery = document.getElementById('batterySelectDate').value;
+            const dtype = document.getElementById('dtypeSelectDate').value;
             
             if (!startDate || !endDate) {
-                alert('Lütfen başlangıç ve bitiş tarihlerini seçin');
+                showError('Lütfen başlangıç ve bitiş tarihlerini seçin');
+                hideLoading();
                 return;
             }
             
-            try {
-                let url = `/api/data_by_date?start_date=${startDate}&end_date=${endDate}&page=${currentPage}&page_size=50`;
-                if (arm) url += `&arm=${arm}`;
-                if (battery) url += `&battery=${battery}`;
-                if (dtype) url += `&dtype=${dtype}`;
-                if (dataType !== 'all') url += `&data_type=${dataType}`;
-                
-                const response = await fetch(url);
-                const result = await response.json();
-                
-                updateTable(result.data);
-                updatePagination(result.pagination);
-                
-            } catch (error) {
-                console.error('Veri alınamadı:', error);
-            }
+            const params = new URLSearchParams({
+                start_date: startDate,
+                end_date: endDate,
+                arm: arm,
+                battery: battery,
+                dtype: dtype,
+                lang: currentLanguage
+            });
+            
+            fetch(`/api/data_by_date?${params}`)
+                .then(response => response.json())
+                .then(data => {
+                    displayData(data);
+                    updateChart(data);
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Tarih verisi yüklenirken hata:', error);
+                    showError('Tarih verisi yüklenirken hata oluştu');
+                    hideLoading();
+                });
         }
         
-        function updateTable(data) {
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '';
+        // Verileri tabloda göster
+        function displayData(data) {
+            const tableBody = document.getElementById('dataTableBody');
+            const dataTable = document.getElementById('dataTable');
+            
+            if (!data || data.length === 0) {
+                showStatus('Veri bulunamadı', 'error');
+                dataTable.style.display = 'none';
+                return;
+            }
+            
+            tableBody.innerHTML = '';
             
             data.forEach(row => {
                 const tr = document.createElement('tr');
@@ -334,69 +559,79 @@
                     <td>${row[4]}</td>
                     <td>${row[5]}</td>
                 `;
-                tbody.appendChild(tr);
+                tableBody.appendChild(tr);
+            });
+            
+            dataTable.style.display = 'table';
+            showStatus(`${data.length} adet veri yüklendi`, 'success');
+        }
+        
+        // Grafik güncelle
+        function updateChart(data) {
+            if (dataChart) {
+                dataChart.destroy();
+            }
+            
+            if (!data || data.length === 0) return;
+            
+            const ctx = document.getElementById('dataChart').getContext('2d');
+            
+            // Son 20 veriyi al
+            const recentData = data.slice(0, 20).reverse();
+            
+            const chartData = {
+                labels: recentData.map(row => row[5].split(' ')[1]), // Sadece saat:dakika
+                datasets: [{
+                    label: 'Veri Değerleri',
+                    data: recentData.map(row => row[4]),
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.1
+                }]
+            };
+            
+            dataChart = new Chart(ctx, {
+                type: 'line',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
             });
         }
         
-        function updatePagination(pagination) {
-            currentPage = pagination.current_page;
-            totalPages = pagination.total_pages;
-            
-            document.getElementById('pageInfo').textContent = `Sayfa ${currentPage} / ${totalPages}`;
-            document.getElementById('prevPage').disabled = !pagination.has_prev;
-            document.getElementById('nextPage').disabled = !pagination.has_next;
-            
-            document.getElementById('pagination').style.display = 'block';
+        // Loading göster/gizle
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('dataTable').style.display = 'none';
+            document.getElementById('status').style.display = 'none';
         }
         
-        function changePage(delta) {
-            const newPage = currentPage + delta;
-            if (newPage >= 1 && newPage <= totalPages) {
-                currentPage = newPage;
-                loadDateData();
-            }
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
         }
         
-        function updateChart(data) {
-            if (data.length === 0) return;
+        // Status göster
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
             
-            const labels = data.map(row => new Date(row[6])).reverse(); // RawTimestamp kullan
-            const values = data.map(row => row[4]).reverse();
-            
-            chart.data.labels = labels;
-            chart.data.datasets[0].data = values;
-            chart.data.datasets[0].label = 'Battery Data';
-            chart.update();
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 5000);
         }
         
-        async function loadStats() {
-            try {
-                const response = await fetch('/api/stats');
-                const stats = await response.json();
-                
-                document.getElementById('totalRecords').textContent = stats.total_records.toLocaleString();
-                document.getElementById('last24h').textContent = stats.last_24h_records.toLocaleString();
-                document.getElementById('dbSize').textContent = stats.database_size_mb + ' MB';
-                
-            } catch (error) {
-                console.error('İstatistikler alınamadı:', error);
-            }
+        // Error göster
+        function showError(message) {
+            showStatus(message, 'error');
         }
-        
-        // Sayfa yüklendiğinde
-        window.onload = function() {
-            initChart();
-            loadRecentData();
-            loadStats();
-            
-            // Her 30 saniyede bir güncelle
-            setInterval(() => {
-                if (currentView === 'recent') {
-                    loadRecentData();
-                }
-                loadStats();
-            }, 30000);
-        };
     </script>
 </body>
 </html>
