@@ -102,4 +102,4 @@ def get_stats():
 if __name__ == '__main__':
     print("Flask web uygulaması başlatılıyor...")
     print("Veritabanı boyutu:", round(db.get_database_size(), 2), "MB")
-    app.run(host='127.0.0.1', port=5000, debug=False, threaded=True)
+    app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
