@@ -172,8 +172,8 @@ class LogsPage {
                     <td>${dataTypeName} ${unit ? `(${unit})` : ''}</td>
                     <td>${this.formatNumber(log.data)} ${unit || ''}</td>
                     <td>
-                        <span class="status-badge status-${log.status.toLowerCase()}">
-                            ${this.getStatusText(log.status)}
+                        <span class="status-badge status-success">
+                            BAŞARILI
                         </span>
                     </td>
                 </tr>

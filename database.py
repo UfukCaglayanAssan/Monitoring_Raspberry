@@ -472,13 +472,6 @@ class BatteryDatabase:
             
             logs = []
             for row in rows:
-                # Status belirle
-                status = 'success'
-                if row[3] <= 0:
-                    status = 'error'
-                elif row[3] < 50:
-                    status = 'warning'
-                
                 logs.append({
                     'arm': row[0],
                     'batteryAddress': row[1],
@@ -487,7 +480,7 @@ class BatteryDatabase:
                     'timestamp': row[4],
                     'name': row[5],
                     'unit': row[6],
-                    'status': status
+                    'status': 'success'  # Tüm veriler başarılı
                 })
             
             return {
@@ -557,14 +550,13 @@ class BatteryDatabase:
             cursor.execute(query, params)
             rows = cursor.fetchall()
             
-            # CSV formatı
+            # CSV formatı - Türkçe karakterler için
             csv_content = "ZAMAN,KOL,BATARYA ADRESİ,VERİ TÜRÜ,VERİ,DURUM\n"
             
             for row in rows:
                 timestamp = datetime.fromtimestamp(row[4] / 1000).strftime('%Y-%m-%d %H:%M:%S')
-                status = 'Başarılı' if row[3] > 0 else 'Hata' if row[3] <= 0 else 'Uyarı'
                 
-                csv_content += f"{timestamp},{row[0]},{row[1]},{row[5]},{row[3]},{status}\n"
+                csv_content += f"{timestamp},{row[0]},{row[1]},{row[5]},{row[3]},Başarılı\n"
             
             return csv_content
     
