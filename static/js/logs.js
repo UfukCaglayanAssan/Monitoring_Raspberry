@@ -148,20 +148,41 @@ class LogsPage {
             return;
         }
 
-        tableBody.innerHTML = this.logs.map(log => `
-            <tr>
-                <td>${this.formatDate(log.timestamp)}</td>
-                <td>${log.arm}</td>
-                <td>${log.batteryAddress}</td>
-                <td>${log.dataType}</td>
-                <td>${this.formatNumber(log.data)} ${log.unit}</td>
-                <td>
-                    <span class="status-badge status-${log.status.toLowerCase()}">
-                        ${this.getStatusText(log.status)}
-                    </span>
-                </td>
-            </tr>
-        `).join('');
+        tableBody.innerHTML = this.logs.map(log => {
+            // k değerine göre veri tipi ismini belirle
+            let dataTypeName = log.name || 'Bilinmeyen';
+            const unit = log.unit || '';
+            
+            if (log.batteryAddress === 2) {
+                // Arm verisi (k=2)
+                if (log.dtype === 10) dataTypeName = 'Akım';
+                else if (log.dtype === 11) dataTypeName = 'Nem';
+                else if (log.dtype === 12) dataTypeName = 'Sıcaklık';
+            } else {
+                // Battery verisi (k!=2)
+                if (log.dtype === 10) dataTypeName = 'Gerilim';
+                else if (log.dtype === 11) dataTypeName = 'Şarj Durumu';
+                else if (log.dtype === 12) dataTypeName = 'Modül Sıcaklığı';
+                else if (log.dtype === 13) dataTypeName = 'Pozitif Kutup Başı Sıcaklığı';
+                else if (log.dtype === 14) dataTypeName = 'Negatif Kutup Başı Sıcaklığı';
+                else if (log.dtype === 126) dataTypeName = 'Sağlık Durumu';
+            }
+            
+            return `
+                <tr>
+                    <td>${this.formatDate(log.timestamp)}</td>
+                    <td>${log.arm}</td>
+                    <td>${log.batteryAddress}</td>
+                    <td>${dataTypeName} ${unit ? `(${unit})` : ''}</td>
+                    <td>${this.formatNumber(log.data)} ${unit || ''}</td>
+                    <td>
+                        <span class="status-badge status-${log.status.toLowerCase()}">
+                            ${this.getStatusText(log.status)}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
 
     formatDate(timestamp) {

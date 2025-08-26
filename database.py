@@ -50,15 +50,13 @@ class BatteryDatabase:
                 ''')
                 print("✓ languages tablosu oluşturuldu")
                 
-                # Veri tipi tablosu (dtype + k_value ile)
+                # Veri tipi tablosu (sadece dtype ile)
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS data_types (
-                        dtype INTEGER,
-                        k_value INTEGER,
+                        dtype INTEGER PRIMARY KEY,
                         name TEXT,
                         unit TEXT,
-                        description TEXT,
-                        PRIMARY KEY (dtype, k_value)
+                        description TEXT
                     )
                 ''')
                 print("✓ data_types tablosu oluşturuldu")
@@ -67,11 +65,10 @@ class BatteryDatabase:
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS data_type_translations (
                         dtype INTEGER,
-                        k_value INTEGER,
                         language_code TEXT,
                         name TEXT,
                         description TEXT,
-                        PRIMARY KEY (dtype, k_value, language_code),
+                        PRIMARY KEY (dtype, language_code),
                         FOREIGN KEY (language_code) REFERENCES languages(language_code)
                     )
                 ''')
@@ -138,164 +135,55 @@ class BatteryDatabase:
                 ''')
                 print("✓ Diller eklendi")
                 
-                # Veri tiplerini ekle (k=2: Arm, k!=2: Battery)
+                # Veri tiplerini ekle (sadece dtype ile)
                 cursor.execute('''
-                    INSERT OR IGNORE INTO data_types (dtype, k_value, name, unit, description)
+                    INSERT OR IGNORE INTO data_types (dtype, name, unit, description)
                     VALUES 
-                        -- Arm veri tipleri (k=2)
-                        (10, 2, 'Akım', 'A', 'Arm akım değeri'),
-                        (11, 2, 'Nem', '%', 'Arm nem değeri'),
-                        (12, 2, 'Sıcaklık', '°C', 'Arm sıcaklık değeri'),
-                        
-                        -- Battery veri tipleri (k!=2)
-                        (10, 1, 'Gerilim', 'V', 'Batarya gerilim değeri'),
-                        (11, 1, 'Şarj Durumu', '%', 'Batarya şarj durumu'),
-                        (12, 1, 'Modül Sıcaklığı', '°C', 'Batarya modül sıcaklığı'),
-                        (13, 1, 'Pozitif Kutup Başı Sıcaklığı', '°C', 'Pozitif kutup başı sıcaklığı'),
-                        (14, 1, 'Negatif Kutup Başı Sıcaklığı', '°C', 'Negatif kutup başı sıcaklığı'),
-                        (126, 1, 'Sağlık Durumu', '%', 'Batarya sağlık durumu (SOH)'),
-                        
-                        -- Battery veri tipleri (k=3,4,5...)
-                        (10, 3, 'Gerilim', 'V', 'Batarya gerilim değeri'),
-                        (11, 3, 'Şarj Durumu', '%', 'Batarya şarj durumu'),
-                        (12, 3, 'Modül Sıcaklığı', '°C', 'Batarya modül sıcaklığı'),
-                        (13, 3, 'Pozitif Kutup Başı Sıcaklığı', '°C', 'Pozitif kutup başı sıcaklığı'),
-                        (14, 3, 'Negatif Kutup Başı Sıcaklığı', '°C', 'Negatif kutup başı sıcaklığı'),
-                        (126, 3, 'Sağlık Durumu', '%', 'Batarya sağlık durumu (SOH)'),
-                        
-                        (10, 4, 'Gerilim', 'V', 'Batarya gerilim değeri'),
-                        (11, 4, 'Şarj Durumu', '%', 'Batarya şarj durumu'),
-                        (12, 4, 'Modül Sıcaklığı', '°C', 'Batarya modül sıcaklığı'),
-                        (13, 4, 'Pozitif Kutup Başı Sıcaklığı', '°C', 'Pozitif kutup başı sıcaklığı'),
-                        (14, 4, 'Negatif Kutup Başı Sıcaklığı', '°C', 'Negatif kutup başı sıcaklığı'),
-                        (126, 4, 'Sağlık Durumu', '%', 'Batarya sağlık durumu (SOH)'),
-                        
-                        (10, 5, 'Gerilim', 'V', 'Batarya gerilim değeri'),
-                        (11, 5, 'Şarj Durumu', '%', 'Batarya şarj durumu'),
-                        (12, 5, 'Modül Sıcaklığı', '°C', 'Batarya modül sıcaklığı'),
-                        (13, 5, 'Pozitif Kutup Başı Sıcaklığı', '°C', 'Pozitif kutup başı sıcaklığı'),
-                        (14, 5, 'Negatif Kutup Başı Sıcaklığı', '°C', 'Negatif kutup başı sıcaklığı'),
-                        (126, 5, 'Sağlık Durumu', '%', 'Batarya sağlık durumu (SOH)')
+                        (10, 'Veri Tipi 10', '', 'Genel veri tipi 10'),
+                        (11, 'Veri Tipi 11', '', 'Genel veri tipi 11'),
+                        (12, 'Veri Tipi 12', '', 'Genel veri tipi 12'),
+                        (13, 'Veri Tipi 13', '', 'Genel veri tipi 13'),
+                        (14, 'Veri Tipi 14', '', 'Genel veri tipi 14'),
+                        (126, 'Veri Tipi 126', '', 'Genel veri tipi 126')
                 ''')
                 print("✓ Veri tipleri eklendi")
                 
                 # Türkçe çevirileri ekle
                 cursor.execute('''
-                    INSERT OR IGNORE INTO data_type_translations (dtype, k_value, language_code, name, description)
+                    INSERT OR IGNORE INTO data_type_translations (dtype, language_code, name, description)
                     VALUES 
-                        -- Arm veri tipleri (k=2)
-                        (10, 2, 'tr', 'Akım', 'Arm akım değeri'),
-                        (11, 2, 'tr', 'Nem', 'Arm nem değeri'),
-                        (12, 2, 'tr', 'Sıcaklık', 'Arm sıcaklık değeri'),
-                        
-                        -- Battery veri tipleri (k!=2)
-                        (10, 1, 'tr', 'Gerilim', 'Batarya gerilim değeri'),
-                        (11, 1, 'tr', 'Şarj Durumu', 'Batarya şarj durumu'),
-                        (12, 1, 'tr', 'Modül Sıcaklığı', 'Batarya modül sıcaklığı'),
-                        (13, 1, 'tr', 'Pozitif Kutup Başı Sıcaklığı', 'Pozitif kutup başı sıcaklığı'),
-                        (14, 1, 'tr', 'Negatif Kutup Başı Sıcaklığı', 'Negatif kutup başı sıcaklığı'),
-                        (126, 1, 'tr', 'Sağlık Durumu', 'Batarya sağlık durumu (SOH)'),
-                        
-                        (10, 3, 'tr', 'Gerilim', 'Batarya gerilim değeri'),
-                        (11, 3, 'tr', 'Şarj Durumu', 'Batarya şarj durumu'),
-                        (12, 3, 'tr', 'Modül Sıcaklığı', 'Batarya modül sıcaklığı'),
-                        (13, 3, 'tr', 'Pozitif Kutup Başı Sıcaklığı', 'Pozitif kutup başı sıcaklığı'),
-                        (14, 3, 'tr', 'Negatif Kutup Başı Sıcaklığı', 'Negatif kutup başı sıcaklığı'),
-                        (126, 3, 'tr', 'Sağlık Durumu', 'Batarya sağlık durumu (SOH)'),
-                        
-                        (10, 4, 'tr', 'Gerilim', 'Batarya gerilim değeri'),
-                        (11, 4, 'tr', 'Şarj Durumu', 'Batarya şarj durumu'),
-                        (12, 4, 'tr', 'Modül Sıcaklığı', 'Batarya modül sıcaklığı'),
-                        (13, 4, 'tr', 'Pozitif Kutup Başı Sıcaklığı', 'Pozitif kutup başı sıcaklığı'),
-                        (14, 4, 'tr', 'Negatif Kutup Başı Sıcaklığı', 'Negatif kutup başı sıcaklığı'),
-                        (126, 4, 'tr', 'Sağlık Durumu', 'Batarya sağlık durumu (SOH)'),
-                        
-                        (10, 5, 'tr', 'Gerilim', 'Batarya gerilim değeri'),
-                        (11, 5, 'tr', 'Şarj Durumu', 'Batarya şarj durumu'),
-                        (12, 5, 'tr', 'Modül Sıcaklığı', 'Batarya modül sıcaklığı'),
-                        (13, 5, 'tr', 'Pozitif Kutup Başı Sıcaklığı', 'Pozitif kutup başı sıcaklığı'),
-                        (14, 5, 'tr', 'Negatif Kutup Başı Sıcaklığı', 'Negatif kutup başı sıcaklığı'),
-                        (126, 5, 'tr', 'Sağlık Durumu', 'Batarya sağlık durumu (SOH)')
+                        (10, 'tr', 'Veri Tipi 10', 'Genel veri tipi 10'),
+                        (11, 'tr', 'Veri Tipi 11', 'Genel veri tipi 11'),
+                        (12, 'tr', 'Veri Tipi 12', 'Genel veri tipi 12'),
+                        (13, 'tr', 'Veri Tipi 13', 'Genel veri tipi 13'),
+                        (14, 'tr', 'Veri Tipi 14', 'Genel veri tipi 14'),
+                        (126, 'tr', 'Veri Tipi 126', 'Genel veri tipi 126')
                 ''')
                 print("✓ Türkçe çeviriler eklendi")
                 
                 # İngilizce çevirileri ekle
                 cursor.execute('''
-                    INSERT OR IGNORE INTO data_type_translations (dtype, k_value, language_code, name, description)
+                    INSERT OR IGNORE INTO data_type_translations (dtype, language_code, name, description)
                     VALUES 
-                        -- Arm veri tipleri (k=2)
-                        (10, 2, 'en', 'Current', 'Arm current value'),
-                        (11, 2, 'en', 'Humidity', 'Arm humidity value'),
-                        (12, 2, 'en', 'Temperature', 'Arm temperature value'),
-                        
-                        -- Battery veri tipleri (k!=2)
-                        (10, 1, 'en', 'Voltage', 'Battery voltage value'),
-                        (11, 1, 'en', 'State of Charge', 'Battery state of charge'),
-                        (12, 1, 'en', 'Module Temperature', 'Battery module temperature'),
-                        (13, 1, 'en', 'Positive Terminal Temperature', 'Positive terminal temperature'),
-                        (14, 1, 'en', 'Negative Terminal Temperature', 'Negative terminal temperature'),
-                        (126, 1, 'en', 'State of Health', 'Battery state of health (SOH)'),
-                        
-                        (10, 3, 'en', 'Voltage', 'Battery voltage value'),
-                        (11, 3, 'en', 'State of Charge', 'Battery state of charge'),
-                        (12, 3, 'en', 'Module Temperature', 'Battery module temperature'),
-                        (13, 3, 'en', 'Positive Terminal Temperature', 'Positive terminal temperature'),
-                        (14, 3, 'en', 'Negative Terminal Temperature', 'Negative terminal temperature'),
-                        (126, 3, 'en', 'State of Health', 'Battery state of health (SOH)'),
-                        
-                        (10, 4, 'en', 'Voltage', 'Battery voltage value'),
-                        (11, 4, 'en', 'State of Charge', 'Battery state of charge'),
-                        (12, 4, 'en', 'Module Temperature', 'Battery module temperature'),
-                        (13, 4, 'en', 'Positive Terminal Temperature', 'Positive terminal temperature'),
-                        (14, 4, 'en', 'Negative Terminal Temperature', 'Negative terminal temperature'),
-                        (126, 4, 'en', 'State of Health', 'Battery state of health (SOH)'),
-                        
-                        (10, 5, 'en', 'Voltage', 'Battery voltage value'),
-                        (11, 5, 'en', 'State of Charge', 'Battery state of charge'),
-                        (12, 5, 'en', 'Module Temperature', 'Battery module temperature'),
-                        (13, 5, 'en', 'Positive Terminal Temperature', 'Positive terminal temperature'),
-                        (14, 5, 'en', 'Negative Terminal Temperature', 'Negative terminal temperature'),
-                        (126, 5, 'en', 'State of Health', 'Battery state of health (SOH)')
+                        (10, 'en', 'Data Type 10', 'General data type 10'),
+                        (11, 'en', 'Data Type 11', 'General data type 11'),
+                        (12, 'en', 'Data Type 12', 'General data type 12'),
+                        (13, 'en', 'Data Type 13', 'General data type 13'),
+                        (14, 'en', 'Data Type 14', 'General data type 14'),
+                        (126, 'en', 'Data Type 126', 'General data type 126')
                 ''')
                 print("✓ İngilizce çeviriler eklendi")
                 
                 # Almanca çevirileri ekle
                 cursor.execute('''
-                    INSERT OR IGNORE INTO data_type_translations (dtype, k_value, language_code, name, description)
+                    INSERT OR IGNORE INTO data_type_translations (dtype, language_code, name, description)
                     VALUES 
-                        -- Arm veri tipleri (k=2)
-                        (10, 2, 'de', 'Strom', 'Arm Stromwert'),
-                        (11, 2, 'de', 'Luftfeuchtigkeit', 'Arm Luftfeuchtigkeitswert'),
-                        (12, 2, 'de', 'Temperatur', 'Arm Temperaturwert'),
-                        
-                        -- Battery veri tipleri (k!=2)
-                        (10, 1, 'de', 'Spannung', 'Batterie Spannungswert'),
-                        (11, 1, 'de', 'Ladezustand', 'Batterie Ladezustand'),
-                        (12, 1, 'de', 'Modultemperatur', 'Batterie Modultemperatur'),
-                        (13, 1, 'de', 'Positive Klemmentemperatur', 'Positive Klemmentemperatur'),
-                        (14, 1, 'de', 'Negative Klemmentemperatur', 'Negative Klemmentemperatur'),
-                        (126, 1, 'de', 'Gesundheitszustand', 'Batterie Gesundheitszustand (SOH)'),
-                        
-                        (10, 3, 'de', 'Spannung', 'Batterie Spannungswert'),
-                        (11, 3, 'de', 'Ladezustand', 'Batterie Ladezustand'),
-                        (12, 3, 'de', 'Modultemperatur', 'Batterie Modultemperatur'),
-                        (13, 3, 'de', 'Positive Klemmentemperatur', 'Positive Klemmentemperatur'),
-                        (14, 3, 'de', 'Negative Klemmentemperatur', 'Negative Klemmentemperatur'),
-                        (126, 3, 'de', 'Gesundheitszustand', 'Batterie Gesundheitszustand (SOH)'),
-                        
-                        (10, 4, 'de', 'Spannung', 'Batterie Spannungswert'),
-                        (11, 4, 'de', 'Ladezustand', 'Batterie Ladezustand'),
-                        (12, 4, 'de', 'Modultemperatur', 'Batterie Modultemperatur'),
-                        (13, 4, 'de', 'Positive Klemmentemperatur', 'Positive Klemmentemperatur'),
-                        (14, 4, 'de', 'Negative Klemmentemperatur', 'Negative Klemmentemperatur'),
-                        (126, 4, 'de', 'Gesundheitszustand', 'Batterie Gesundheitszustand (SOH)'),
-                        
-                        (10, 5, 'de', 'Spannung', 'Batterie Spannungswert'),
-                        (11, 5, 'de', 'Ladezustand', 'Batterie Ladezustand'),
-                        (12, 5, 'de', 'Modultemperatur', 'Batterie Modultemperatur'),
-                        (13, 5, 'de', 'Positive Klemmentemperatur', 'Positive Klemmentemperatur'),
-                        (14, 5, 'de', 'Negative Klemmentemperatur', 'Negative Klemmentemperatur'),
-                        (126, 5, 'de', 'Gesundheitszustand', 'Battery Gesundheitszustand (SOH)')
+                        (10, 'de', 'Datentyp 10', 'Allgemeiner Datentyp 10'),
+                        (11, 'de', 'Datentyp 11', 'Allgemeiner Datentyp 11'),
+                        (12, 'de', 'Datentyp 12', 'Allgemeiner Datentyp 12'),
+                        (13, 'de', 'Datentyp 13', 'Allgemeiner Datentyp 13'),
+                        (14, 'de', 'Datentyp 14', 'Allgemeiner Datentyp 14'),
+                        (126, 'de', 'Datentyp 126', 'Allgemeiner Datentyp 126')
                 ''')
                 print("✓ Almanca çeviriler eklendi")
                 
@@ -387,9 +275,8 @@ class BatteryDatabase:
                     COALESCE(dtt.name, dt.name) as translated_name,
                     COALESCE(dtt.description, dt.description) as translated_description
                 FROM battery_data bd
-                JOIN data_types dt ON bd.dtype = dt.dtype AND bd.k = dt.k_value
+                LEFT JOIN data_types dt ON bd.dtype = dt.dtype
                 LEFT JOIN data_type_translations dtt ON dt.dtype = dtt.dtype 
-                    AND dt.k_value = dtt.k_value 
                     AND dtt.language_code = ?
                 WHERE bd.timestamp >= ?
             '''
@@ -440,24 +327,21 @@ class BatteryDatabase:
             cursor.execute('''
                 SELECT 
                     dt.dtype,
-                    dt.k_value,
                     COALESCE(dtt.name, dt.name) as name,
                     dt.unit,
                     COALESCE(dtt.description, dt.description) as description
                 FROM data_types dt
                 LEFT JOIN data_type_translations dtt ON dt.dtype = dtt.dtype 
-                    AND dt.k_value = dtt.k_value 
                     AND dtt.language_code = ?
-                ORDER BY dt.k_value, dt.dtype
+                ORDER BY dt.dtype
             ''', (language,))
             
             rows = cursor.fetchall()
             return [{
                 'dtype': row[0],
-                'k_value': row[1],
-                'name': row[2],
-                'unit': row[3],
-                'description': row[4]
+                'name': row[1],
+                'unit': row[2],
+                'description': row[3]
             } for row in rows]
     
     def get_data_by_date_range_with_translations(self, start_date, end_date, arm=None, battery=None, dtype=None, language='tr'):
@@ -481,9 +365,8 @@ class BatteryDatabase:
                     COALESCE(dtt.name, dt.name) as translated_name,
                     COALESCE(dtt.description, dt.description) as translated_description
                 FROM battery_data bd
-                JOIN data_types dt ON bd.dtype = dt.dtype AND bd.k = dt.k_value
+                LEFT JOIN data_types dt ON bd.dtype = dt.dtype
                 LEFT JOIN data_type_translations dtt ON dt.dtype = dtt.dtype 
-                    AND dt.k_value = dtt.k_value 
                     AND dtt.language_code = ?
                 WHERE bd.timestamp >= ? AND bd.timestamp <= ?
             '''
@@ -527,7 +410,7 @@ class BatteryDatabase:
         with self.get_connection() as conn:
             cursor = conn.cursor()
             
-            # Temel sorgu
+            # Temel sorgu - JOIN'de k koşulunu kaldırdık
             query = '''
                 SELECT 
                     bd.arm,
@@ -538,7 +421,7 @@ class BatteryDatabase:
                     dt.name,
                     dt.unit
                 FROM battery_data bd
-                JOIN data_types dt ON bd.dtype = dt.dtype AND bd.k = dt.k_value
+                LEFT JOIN data_types dt ON bd.dtype = dt.dtype
                 WHERE 1=1
             '''
             
@@ -632,7 +515,7 @@ class BatteryDatabase:
                     dt.name,
                     dt.unit
                 FROM battery_data bd
-                JOIN data_types dt ON bd.dtype = dt.dtype AND bd.k = dt.k_value
+                LEFT JOIN data_types dt ON bd.dtype = dt.dtype
                 WHERE 1=1
             '''
             
