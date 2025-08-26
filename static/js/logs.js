@@ -17,8 +17,8 @@ class LogsPage {
 
     init() {
         this.bindEvents();
-        this.loadLogs();
-        this.setDefaultDates();
+        this.setDefaultDates();  // Önce tarihleri ayarla
+        this.loadLogs();         // Sonra verileri yükle
     }
 
     bindEvents() {

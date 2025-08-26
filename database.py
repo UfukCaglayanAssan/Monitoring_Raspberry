@@ -9,18 +9,16 @@ class BatteryDatabase:
     def __init__(self, db_path="battery_data.db"):
         self.db_path = db_path
         self.lock = threading.Lock()
-        self.conn = None  # Connection'ı tanımla
-        self.init_database()
+        self.conn = None
+        # Veritabanı yoksa oluştur, varsa sadece bağlan
+        if not os.path.exists(self.db_path):
+            self.init_database()
+        else:
+            print(f"Veritabanı zaten mevcut: {self.db_path}")
     
     def init_database(self):
         with self.lock:
-            # Veritabanı dosyasını tamamen sil
-            if os.path.exists(self.db_path):
-                try:
-                    os.remove(self.db_path)
-                    print(f"Eski veritabanı silindi: {self.db_path}")
-                except Exception as e:
-                    print(f"Veritabanı silinirken hata: {e}")
+            print(f"Yeni veritabanı oluşturuluyor: {self.db_path}")
             
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
