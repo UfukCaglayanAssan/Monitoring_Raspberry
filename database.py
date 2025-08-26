@@ -9,6 +9,7 @@ class BatteryDatabase:
     def __init__(self, db_path="battery_data.db"):
         self.db_path = db_path
         self.lock = threading.Lock()
+        self.conn = None  # Connection'ı tanımla
         self.init_database()
     
     def init_database(self):
@@ -476,7 +477,8 @@ class BatteryDatabase:
             
             # Toplam kayıt sayısını al
             count_query = f"SELECT COUNT(*) FROM ({query}) as subquery"
-            cursor = self.conn.cursor()
+            conn = self.get_connection()
+            cursor = conn.cursor()
             cursor.execute(count_query, params)
             total_count = cursor.fetchone()[0]
             
@@ -550,7 +552,8 @@ class BatteryDatabase:
             
             query += " ORDER BY bd.timestamp DESC"
             
-            cursor = self.conn.cursor()
+            conn = self.get_connection()
+            cursor = conn.cursor()
             cursor.execute(query, params)
             rows = cursor.fetchall()
             
@@ -573,3 +576,19 @@ class BatteryDatabase:
         except Exception as e:
             print(f"CSV export hatası: {e}")
             return "Hata,Veri dışa aktarılamadı\n"
+
+    def get_connection(self):
+        """Veritabanı bağlantısını al"""
+        if self.conn is None:
+            self.conn = sqlite3.connect(self.db_path)
+        return self.conn
+    
+    def close_connection(self):
+        """Veritabanı bağlantısını kapat"""
+        if self.conn:
+            self.conn.close()
+            self.conn = None
+    
+    def __del__(self):
+        """Destructor - bağlantıyı kapat"""
+        self.close_connection()
