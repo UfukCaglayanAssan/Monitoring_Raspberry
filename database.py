@@ -95,12 +95,12 @@ class BatteryDatabase:
                 
                 # Balans tablosu
                 cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS passive_balances (
+                    CREATE TABLE IF NOT EXISTS passive_balance (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         slave INTEGER,
                         arm INTEGER,
                         status INTEGER,
-                        updated_at INTEGER,
+                        updatedAt INTEGER,
                         timestamp INTEGER,
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
@@ -114,7 +114,7 @@ class BatteryDatabase:
                         arm2 INTEGER,
                         arm3 INTEGER,
                         arm4 INTEGER,
-                        updated_at INTEGER,
+                        updatedAt INTEGER,
                         timestamp INTEGER,
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
@@ -476,4 +476,60 @@ class BatteryDatabase:
             return size_mb
         return 0
 
-    # ... (diğer metodlar aynı kalacak)
+    def insert_alarm(self, alarm_data):
+        """Alarm verisi ekle"""
+        with self.lock:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT INTO alarms
+                    (arm, error_code_msb, error_code_lsb, timestamp)
+                    VALUES (?, ?, ?, ?)
+                ''', (alarm_data['Arm'], alarm_data['error_code_msb'], 
+                      alarm_data['error_code_lsb'], alarm_data['timestamp']))
+                conn.commit()
+                print(f"✓ Alarm verisi eklendi: Arm={alarm_data['Arm']}")
+
+    def insert_arm_slave_counts(self, counts_data):
+        """Arm slave sayıları verisi ekle"""
+        with self.lock:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT INTO arm_slave_counts
+                    (arm1, arm2, arm3, arm4, updatedAt, timestamp)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (counts_data['arm1'], counts_data['arm2'], 
+                      counts_data['arm3'], counts_data['arm4'], 
+                      counts_data['updatedAt'], counts_data['timestamp']))
+                conn.commit()
+                print(f"✓ Arm slave sayıları eklendi: arm1={counts_data['arm1']}, arm2={counts_data['arm2']}, arm3={counts_data['arm3']}, arm4={counts_data['arm4']}")
+
+    def insert_missing_data(self, missing_data):
+        """Missing data verisi ekle"""
+        with self.lock:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT INTO missing_data
+                    (arm, slave, status, timestamp)
+                    VALUES (?, ?, ?, ?)
+                ''', (missing_data['arm'], missing_data['slave'], 
+                      missing_data['status'], missing_data['timestamp']))
+                conn.commit()
+                print(f"✓ Missing data eklendi: Arm={missing_data['arm']}, Slave={missing_data['slave']}, Status={missing_data['status']}")
+
+    def insert_passive_balance(self, balance_data):
+        """Pasif balans verisi ekle"""
+        with self.lock:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT INTO passive_balance
+                    (slave, arm, status, updatedAt, timestamp)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (balance_data['slave'], balance_data['arm'], 
+                      balance_data['status'], balance_data['updatedAt'], 
+                      balance_data['timestamp']))
+                conn.commit()
+                print(f"✓ Pasif balans eklendi: Arm={balance_data['arm']}, Slave={balance_data['slave']}, Status={balance_data['status']}")
