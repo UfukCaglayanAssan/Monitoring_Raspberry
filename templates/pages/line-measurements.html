@@ -1,6 +1,4 @@
-{% extends "layout.html" %}
-
-{% block content %}
+<!-- Line Measurements Sayfası İçeriği -->
 <div class="line-measurements-page">
     <div class="page-header">
         <h2>Hat Ölçümleri</h2>
@@ -51,8 +49,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/line-measurements.js') }}"></script>
-{% endblock %}
+<!-- Line measurements sayfası script'i main.js tarafından yüklenecek -->

@@ -1,6 +1,4 @@
-{% extends "layout.html" %}
-
-{% block content %}
+<!-- Data Retrieval Sayfası İçeriği -->
 <div class="data-retrieval-page">
     <div class="page-header">
         <h2>Veri Alma ve Dışa Aktarma</h2>
@@ -55,8 +53,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/data-retrieval.js') }}"></script>
-{% endblock %}
+<!-- Data retrieval sayfası script'i main.js tarafından yüklenecek -->

@@ -1,6 +1,4 @@
-{% extends "layout.html" %}
-
-{% block content %}
+<!-- Alarms Sayfası İçeriği -->
 <div class="alarms-page">
     <div class="page-header">
         <h2>Sistem Alarmları</h2>
@@ -42,8 +40,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/alarms.js') }}"></script>
-{% endblock %}
+<!-- Alarms sayfası script'i main.js tarafından yüklenecek -->

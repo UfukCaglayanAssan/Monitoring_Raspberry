@@ -221,7 +221,7 @@
                 </select>
             </div>
             <h1 id="mainTitle">Battery Management System</h1>
-        </div>
+            </div>
         
         <div class="controls">
             <div class="control-group">
@@ -239,18 +239,18 @@
                         <input type="radio" name="dataType" value="battery">
                         <span id="batteryDataLabel">Batarya Verileri</span>
                     </label>
-                </div>
             </div>
-            
+        </div>
+        
             <div class="control-group">
                 <label id="recentDataLabel">Son 5 Dakika:</label>
-                <select id="armSelect">
-                    <option value="">Tüm Kollar</option>
-                    <option value="1">Kol 1</option>
-                    <option value="2">Kol 2</option>
-                    <option value="3">Kol 3</option>
-                    <option value="4">Kol 4</option>
-                </select>
+            <select id="armSelect">
+                <option value="">Tüm Kollar</option>
+                <option value="1">Kol 1</option>
+                <option value="2">Kol 2</option>
+                <option value="3">Kol 3</option>
+                <option value="4">Kol 4</option>
+            </select>
                 <select id="batterySelect">
                     <option value="">Tüm Bataryalar</option>
                     <option value="3">Batarya 3</option>
@@ -258,23 +258,23 @@
                     <option value="5">Batarya 5</option>
                     <option value="6">Batarya 6</option>
                 </select>
-                <select id="dtypeSelect">
-                    <option value="">Tüm Veri Tipleri</option>
-                </select>
+            <select id="dtypeSelect">
+                <option value="">Tüm Veri Tipleri</option>
+            </select>
                 <button onclick="loadRecentData()" id="loadRecentBtn">Yükle</button>
-            </div>
-            
+        </div>
+        
             <div class="control-group">
                 <label id="dateSelectionLabel">Tarih Seçimi:</label>
                 <input type="date" id="startDate">
                 <input type="date" id="endDate">
                 <select id="armSelectDate">
-                    <option value="">Tüm Kollar</option>
-                    <option value="1">Kol 1</option>
-                    <option value="2">Kol 2</option>
-                    <option value="3">Kol 3</option>
-                    <option value="4">Kol 4</option>
-                </select>
+                <option value="">Tüm Kollar</option>
+                <option value="1">Kol 1</option>
+                <option value="2">Kol 2</option>
+                <option value="3">Kol 3</option>
+                <option value="4">Kol 4</option>
+            </select>
                 <select id="batterySelectDate">
                     <option value="">Tüm Bataryalar</option>
                     <option value="3">Batarya 3</option>
@@ -283,8 +283,8 @@
                     <option value="6">Batarya 6</option>
                 </select>
                 <select id="dtypeSelectDate">
-                    <option value="">Tüm Veri Tipleri</option>
-                </select>
+                <option value="">Tüm Veri Tipleri</option>
+            </select>
                 <button onclick="loadDateData()" id="loadDateBtn">Yükle</button>
             </div>
         </div>
@@ -294,19 +294,19 @@
             <div id="loading" class="loading" style="display: none;">Veriler yükleniyor...</div>
             
             <table class="data-table" id="dataTable" style="display: none;">
-                <thead>
-                    <tr>
+            <thead>
+                <tr>
                         <th id="kolHeader">Kol</th>
                         <th id="tipHeader">Tip</th>
                         <th id="veriTipiHeader">Veri Tipi</th>
                         <th id="birimHeader">Birim</th>
                         <th id="degerHeader">Değer</th>
                         <th id="zamanHeader">Zaman</th>
-                    </tr>
-                </thead>
+                </tr>
+            </thead>
                 <tbody id="dataTableBody">
-                </tbody>
-            </table>
+            </tbody>
+        </table>
         </div>
         
         <div class="chart-container">
@@ -487,7 +487,7 @@
                 .then(response => response.json())
                 .then(data => {
                     displayData(data);
-                    updateChart(data);
+                updateChart(data);
                     hideLoading();
                 })
                 .catch(error => {

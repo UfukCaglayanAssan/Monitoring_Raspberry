@@ -1,8 +1,4 @@
-{% extends "layout.html" %}
-
-{% block title %}Loglar - Akü İzleme Sistemi{% endblock %}
-
-{% block content %}
+<!-- Logs Sayfası İçeriği -->
 <div class="logs-page">
     <!-- Filtreleme Bölümü -->
     <div class="filters-section">
@@ -113,8 +109,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/logs.js') }}"></script>
-{% endblock %}
+<!-- Logs sayfası script'i main.js tarafından yüklenecek -->

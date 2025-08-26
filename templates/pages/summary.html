@@ -1,6 +1,4 @@
-{% extends "layout.html" %}
-
-{% block content %}
+<!-- Summary Sayfası İçeriği -->
 <div class="summary-page">
     <div class="welcome-section">
         <h2>Hoş Geldiniz!</h2>
@@ -25,8 +23,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/summary.js') }}"></script>
-{% endblock %}
+<!-- Summary sayfası script'i main.js tarafından yüklenecek -->

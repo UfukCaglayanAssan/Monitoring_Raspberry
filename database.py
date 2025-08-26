@@ -423,7 +423,7 @@ class BatteryDatabase:
                     }
                     for row in rows
                 ]
-
+    
     def get_database_size(self):
         """Veritabanı boyutunu kontrol et"""
         import os

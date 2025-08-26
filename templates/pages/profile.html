@@ -1,6 +1,4 @@
-{% extends "layout.html" %}
-
-{% block content %}
+<!-- Profile Sayfası İçeriği -->
 <div class="profile-page">
     <div class="page-header">
         <h2>Kullanıcı Profili</h2>
@@ -54,8 +52,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/profile.js') }}"></script>
-{% endblock %}
+<!-- Profile sayfası script'i main.js tarafından yüklenecek -->

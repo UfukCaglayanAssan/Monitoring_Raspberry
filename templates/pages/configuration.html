@@ -1,6 +1,4 @@
-{% extends "layout.html" %}
-
-{% block content %}
+<!-- Configuration Sayfası İçeriği -->
 <div class="configuration-page">
     <div class="page-header">
         <h2>Sistem Konfigürasyonu</h2>
@@ -56,8 +54,4 @@
         </button>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/configuration.js') }}"></script>
-{% endblock %}
+<!-- Configuration sayfası script'i main.js tarafından yüklenecek -->
