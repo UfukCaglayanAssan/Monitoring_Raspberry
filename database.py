@@ -431,3 +431,145 @@ class BatteryDatabase:
             size_mb = os.path.getsize(self.db_path) / (1024 * 1024)
             return size_mb
         return 0
+
+    def get_logs_with_filters(self, page=1, page_size=50, filters=None):
+        """Filtrelenmiş log verilerini getir"""
+        try:
+            if filters is None:
+                filters = {}
+            
+            # Temel sorgu
+            query = """
+                SELECT bd.timestamp, bd.arm, bd.k, bd.dtype, bd.data,
+                       dt.name as data_type_name, dt.unit,
+                       CASE 
+                           WHEN bd.data > 0 THEN 'success'
+                           WHEN bd.data = 0 THEN 'warning'
+                           ELSE 'error'
+                       END as status
+                FROM battery_data bd
+                JOIN data_types dt ON bd.dtype = dt.dtype AND bd.k = dt.k_value
+                WHERE 1=1
+            """
+            params = []
+            
+            # Filtreleri uygula
+            if filters.get('arm'):
+                query += " AND bd.arm = ?"
+                params.append(int(filters['arm']))
+            
+            if filters.get('battery'):
+                query += " AND bd.k = ?"
+                params.append(int(filters['battery']))
+            
+            if filters.get('dataType'):
+                query += " AND bd.dtype = ?"
+                params.append(int(filters['dataType']))
+            
+            if filters.get('startDate'):
+                query += " AND DATE(bd.timestamp/1000, 'unixepoch') >= ?"
+                params.append(filters['startDate'])
+            
+            if filters.get('endDate'):
+                query += " AND DATE(bd.timestamp/1000, 'unixepoch') <= ?"
+                params.append(filters['endDate'])
+            
+            # Toplam kayıt sayısını al
+            count_query = f"SELECT COUNT(*) FROM ({query}) as subquery"
+            cursor = self.conn.cursor()
+            cursor.execute(count_query, params)
+            total_count = cursor.fetchone()[0]
+            
+            # Sayfalama
+            query += " ORDER BY bd.timestamp DESC LIMIT ? OFFSET ?"
+            offset = (page - 1) * page_size
+            params.extend([page_size, offset])
+            
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+            
+            logs = [{
+                'timestamp': row[0],
+                'arm': row[1],
+                'batteryAddress': row[2],
+                'dtype': row[3],
+                'data': row[4],
+                'dataType': row[5],
+                'unit': row[6],
+                'status': row[7]
+            } for row in rows]
+            
+            total_pages = (total_count + page_size - 1) // page_size
+            
+            return {
+                'logs': logs,
+                'totalCount': total_count,
+                'totalPages': total_pages,
+                'currentPage': page
+            }
+            
+        except Exception as e:
+            print(f"Log getirme hatası: {e}")
+            return {'logs': [], 'totalCount': 0, 'totalPages': 1, 'currentPage': page}
+
+    def export_logs_to_csv(self, filters=None):
+        """Log verilerini CSV formatında dışa aktar"""
+        try:
+            if filters is None:
+                filters = {}
+            
+            query = """
+                SELECT bd.timestamp, bd.arm, bd.k, bd.dtype, bd.data,
+                       dt.name as data_type_name, dt.unit
+                FROM battery_data bd
+                JOIN data_types dt ON bd.dtype = dt.dtype AND bd.k = dt.k_value
+                WHERE 1=1
+            """
+            params = []
+            
+            # Filtreleri uygula
+            if filters.get('arm'):
+                query += " AND bd.arm = ?"
+                params.append(int(filters['arm']))
+            
+            if filters.get('battery'):
+                query += " AND bd.k = ?"
+                params.append(int(filters['battery']))
+            
+            if filters.get('dataType'):
+                query += " AND bd.dtype = ?"
+                params.append(int(filters['dataType']))
+            
+            if filters.get('startDate'):
+                query += " AND DATE(bd.timestamp/1000, 'unixepoch') >= ?"
+                params.append(filters['startDate'])
+            
+            if filters.get('endDate'):
+                query += " AND DATE(bd.timestamp/1000, 'unixepoch') <= ?"
+                params.append(filters['endDate'])
+            
+            query += " ORDER BY bd.timestamp DESC"
+            
+            cursor = self.conn.cursor()
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+            
+            # CSV formatında veri hazırla
+            csv_content = "Zaman,Kol,Batarya Adresi,Veri Türü,Veri,Birim\n"
+            
+            for row in rows:
+                timestamp = datetime.fromtimestamp(row[0]/1000).strftime('%Y-%m-%d %H:%M:%S')
+                arm = row[1]
+                battery_address = row[2]
+                dtype = row[3]
+                data = row[4]
+                data_type_name = row[5]
+                unit = row[6]
+                
+                csv_content += f'"{timestamp}","{arm}","{battery_address}","{data_type_name}","{data}","{unit}"\n'
+            
+            return csv_content
+            
+        except Exception as e:
+            print(f"CSV export hatası: {e}")
+            return "Hata,Veri dışa aktarılamadı\n"

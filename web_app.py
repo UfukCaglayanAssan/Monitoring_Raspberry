@@ -8,6 +8,7 @@ db = BatteryDatabase()
 
 @app.route('/')
 def index():
+    # Ana sayfa olarak logs sayfasını göster
     return render_template('layout.html')
 
 @app.route('/page/<page_name>')

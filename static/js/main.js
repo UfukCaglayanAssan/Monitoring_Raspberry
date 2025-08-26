@@ -1,14 +1,14 @@
 // Ana JavaScript dosyası
 class App {
     constructor() {
-        this.currentPage = 'logs';
+        this.currentPage = 'summary';
         this.currentLanguage = 'tr';
         this.init();
     }
 
     init() {
         this.bindEvents();
-        this.loadPage(this.currentPage);
+        this.showSummaryPage(); // Ana sayfa olarak özet'i göster
         this.setLanguage(this.currentLanguage);
     }
 
@@ -89,6 +89,157 @@ class App {
         }
     }
 
+    // Sayfa yüklendiğinde otomatik olarak özet sayfasını göster
+    showSummaryPage() {
+        const pageContent = document.getElementById('pageContent');
+        pageContent.innerHTML = `
+            <div class="summary-page">
+                <div class="welcome-section">
+                    <h2>Hoş Geldiniz!</h2>
+                    <p>Akü İzleme Sistemine hoş geldiniz. Sol menüden istediğiniz bölümü seçebilirsiniz.</p>
+                </div>
+                
+                <div class="quick-stats">
+                    <div class="stat-card">
+                        <i class="fas fa-battery-three-quarters"></i>
+                        <h3>Toplam Batarya</h3>
+                        <p class="stat-value">24</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Aktif Alarmlar</h3>
+                        <p class="stat-value">2</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-chart-line"></i>
+                        <h3>Günlük Veri</h3>
+                        <p class="stat-value">1,247</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Logs sayfasını göster
+    showLogsPage() {
+        const pageContent = document.getElementById('pageContent');
+        pageContent.innerHTML = `
+            <div class="logs-page">
+                <!-- Filtreleme Bölümü -->
+                <div class="filters-section">
+                    <div class="filters-grid">
+                        <div class="filter-group">
+                            <label for="armFilter">Kol Numarası</label>
+                            <input type="text" id="armFilter" placeholder="Kol numarası giriniz" class="filter-input">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="batteryFilter">Batarya Adresi</label>
+                            <input type="text" id="batteryFilter" placeholder="Batarya adresi giriniz" class="filter-input">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="dataTypeFilter">Veri Türü</label>
+                            <select id="dataTypeFilter" class="filter-select">
+                                <option value="">Tümü</option>
+                                <option value="10">Akım/Gerilim</option>
+                                <option value="11">Nem/Şarj Durumu</option>
+                                <option value="12">Sıcaklık</option>
+                                <option value="13">Pozitif Kutup Sıcaklığı</option>
+                                <option value="14">Negatif Kutup Sıcaklığı</option>
+                                <option value="126">Sağlık Durumu</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="statusFilter">Durum</label>
+                            <select id="statusFilter" class="filter-select">
+                                <option value="">Tümü</option>
+                                <option value="success">Başarılı</option>
+                                <option value="error">Hata</option>
+                                <option value="warning">Uyarı</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="startDate">Başlangıç</label>
+                            <input type="date" id="startDate" class="filter-input">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="endDate">Bitiş</label>
+                            <input type="date" id="endDate" class="filter-input">
+                        </div>
+                    </div>
+                    
+                    <div class="filter-actions">
+                        <button class="btn btn-secondary" id="clearFilters">
+                            <i class="fas fa-times"></i>
+                            Filtreleri Temizle
+                        </button>
+                        <button class="btn btn-primary" id="applyFilters">
+                            <i class="fas fa-filter"></i>
+                            Filtrele
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Log Tablosu -->
+                <div class="logs-table-container">
+                    <div class="table-header">
+                        <h3>Sistem Logları</h3>
+                        <div class="table-actions">
+                            <button class="btn btn-outline" id="refreshLogs">
+                                <i class="fas fa-sync-alt"></i>
+                                Yenile
+                            </button>
+                            <button class="btn btn-outline" id="exportLogs">
+                                <i class="fas fa-download"></i>
+                                Dışa Aktar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-wrapper">
+                        <table class="logs-table">
+                            <thead>
+                                <tr>
+                                    <th>ZAMAN</th>
+                                    <th>KOL</th>
+                                    <th>BATARYA ADRESİ</th>
+                                    <th>VERİ TÜRÜ</th>
+                                    <th>VERİ</th>
+                                    <th>DURUM</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logsTableBody">
+                                <!-- Log verileri JavaScript ile doldurulacak -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Sayfalama -->
+                    <div class="pagination">
+                        <button class="pagination-btn" id="prevPage" disabled>
+                            <i class="fas fa-chevron-left"></i>
+                            Önceki
+                        </button>
+                        <span class="page-info">
+                            Sayfa <span id="currentPage">1</span> / <span id="totalPages">1</span>
+                        </span>
+                        <button class="pagination-btn" id="nextPage">
+                            Sonraki
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Logs sayfası script'lerini yükle
+        this.loadPageScripts('logs');
+    }
+
     loadPageScripts(page) {
         // Sayfa özel script'lerini yükle
         const scriptMap = {
@@ -99,6 +250,15 @@ class App {
         };
 
         if (scriptMap[page]) {
+            // Script zaten yüklenmiş mi kontrol et
+            if (document.querySelector(`script[src="${scriptMap[page]}"]`)) {
+                // Script zaten var, sadece başlat
+                if (window[`${page}Page`]) {
+                    window[`${page}Page`].init();
+                }
+                return;
+            }
+
             const script = document.createElement('script');
             script.src = scriptMap[page];
             script.onload = () => {
