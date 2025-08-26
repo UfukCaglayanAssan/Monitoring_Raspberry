@@ -8,7 +8,7 @@ class App {
 
     init() {
         this.bindEvents();
-        this.showSummaryPage(); // Ana sayfa olarak özet'i göster
+        this.loadPage('summary'); // Flask endpoint kullan
         this.setLanguage(this.currentLanguage);
     }
 
@@ -89,36 +89,7 @@ class App {
         }
     }
 
-    // Sayfa yüklendiğinde otomatik olarak özet sayfasını göster
-    showSummaryPage() {
-        const pageContent = document.getElementById('pageContent');
-        pageContent.innerHTML = `
-            <div class="summary-page">
-                <div class="welcome-section">
-                    <h2>Hoş Geldiniz!</h2>
-                    <p>Akü İzleme Sistemine hoş geldiniz. Sol menüden istediğiniz bölümü seçebilirsiniz.</p>
-                </div>
-                
-                <div class="quick-stats">
-                    <div class="stat-card">
-                        <i class="fas fa-battery-three-quarters"></i>
-                        <h3>Toplam Batarya</h3>
-                        <p class="stat-value">24</p>
-                    </div>
-                    <div class="stat-card">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <h3>Aktif Alarmlar</h3>
-                        <p class="stat-value">2</p>
-                    </div>
-                    <div class="stat-card">
-                        <i class="fas fa-chart-line"></i>
-                        <h3>Günlük Veri</h3>
-                        <p class="stat-value">1,247</p>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
+    // showSummaryPage() fonksiyonu kaldırıldı - Flask endpoint kullanılıyor
 
     loadPageScripts(page) {
         // Sayfa özel script'lerini yükle
