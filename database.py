@@ -289,7 +289,18 @@ class BatteryDatabase:
                 '''
                 
                 cursor.execute(query, [language])
-                return cursor.fetchall()
+                rows = cursor.fetchall()
+                
+                return [
+                    {
+                        'dtype': row[0],
+                        'k_value': row[1],
+                        'name': row[2],
+                        'unit': row[3],
+                        'description': row[4]
+                    }
+                    for row in rows
+                ]
     
     def insert_alarm(self, alarm_data):
         """Alarm verisi ekle"""
@@ -348,6 +359,70 @@ class BatteryDatabase:
                       balance_data['timestamp']))
                 conn.commit()
                 print(f"✓ Pasif balans eklendi: Arm={balance_data['arm']}, Slave={balance_data['slave']}, Status={balance_data['status']}")
+
+    def get_data_by_date_range_with_translations(self, start_date, end_date, arm=None, 
+                                               battery=None, dtype=None, limit=1000, language='tr'):
+        """Belirli tarih aralığındaki verileri seçilen dilde getir"""
+        with self.lock:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                # Tarih formatını timestamp'e çevir
+                start_timestamp = int(datetime.strptime(start_date, '%Y-%m-%d').timestamp() * 1000)
+                end_timestamp = int(datetime.strptime(end_date, '%Y-%m-%d').timestamp() * 1000)
+                
+                query = '''
+                    SELECT 
+                        bd.arm as Kol,
+                        CASE 
+                            WHEN bd.k = 2 THEN 'Kol'
+                            ELSE 'Batarya ' || bd.k
+                        END as Tip,
+                        COALESCE(dtt.name, dt.name) as VeriTipi,
+                        dt.unit as Birim,
+                        bd.data as Deger,
+                        datetime(bd.timestamp/1000, 'unixepoch') as Zaman,
+                        bd.timestamp as RawTimestamp
+                    FROM battery_data bd
+                    JOIN data_types dt ON bd.dtype = dt.dtype AND bd.k = dt.k_value
+                    LEFT JOIN data_type_translations dtt ON bd.dtype = dtt.dtype 
+                        AND bd.k = dtt.k_value AND dtt.language_code = ?
+                    WHERE bd.timestamp >= ? AND bd.timestamp <= ?
+                '''
+                
+                params = [language, start_timestamp, end_timestamp]
+                
+                # Filtreleme ekle
+                if arm:
+                    query += ' AND bd.arm = ?'
+                    params.append(arm)
+                
+                if battery:
+                    query += ' AND bd.k = ?'
+                    params.append(battery)
+                
+                if dtype:
+                    query += ' AND bd.dtype = ?'
+                    params.append(dtype)
+                
+                query += ' ORDER BY bd.timestamp DESC LIMIT ?'
+                params.append(limit)
+                
+                cursor.execute(query, params)
+                rows = cursor.fetchall()
+                
+                return [
+                    {
+                        'Kol': row[0],
+                        'Tip': row[1],
+                        'VeriTipi': row[2],
+                        'Birim': row[3],
+                        'Deger': row[4],
+                        'Zaman': row[5],
+                        'RawTimestamp': row[6]
+                    }
+                    for row in rows
+                ]
 
     def get_database_size(self):
         """Veritabanı boyutunu kontrol et"""

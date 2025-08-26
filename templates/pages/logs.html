@@ -1,0 +1,120 @@
+{% extends "layout.html" %}
+
+{% block title %}Loglar - Akü İzleme Sistemi{% endblock %}
+
+{% block content %}
+<div class="logs-page">
+    <!-- Filtreleme Bölümü -->
+    <div class="filters-section">
+        <div class="filters-grid">
+            <div class="filter-group">
+                <label for="armFilter">Kol Numarası</label>
+                <input type="text" id="armFilter" placeholder="Kol numarası giriniz" class="filter-input">
+            </div>
+            
+            <div class="filter-group">
+                <label for="batteryFilter">Batarya Adresi</label>
+                <input type="text" id="batteryFilter" placeholder="Batarya adresi giriniz" class="filter-input">
+            </div>
+            
+            <div class="filter-group">
+                <label for="dataTypeFilter">Veri Türü</label>
+                <select id="dataTypeFilter" class="filter-select">
+                    <option value="">Tümü</option>
+                    <option value="10">Akım/Gerilim</option>
+                    <option value="11">Nem/Şarj Durumu</option>
+                    <option value="12">Sıcaklık</option>
+                    <option value="13">Pozitif Kutup Sıcaklığı</option>
+                    <option value="14">Negatif Kutup Sıcaklığı</option>
+                    <option value="126">Sağlık Durumu</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="statusFilter">Durum</label>
+                <select id="statusFilter" class="filter-select">
+                    <option value="">Tümü</option>
+                    <option value="success">Başarılı</option>
+                    <option value="error">Hata</option>
+                    <option value="warning">Uyarı</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="startDate">Başlangıç</label>
+                <input type="date" id="startDate" class="filter-input">
+            </div>
+            
+            <div class="filter-group">
+                <label for="endDate">Bitiş</label>
+                <input type="date" id="endDate" class="filter-input">
+            </div>
+        </div>
+        
+        <div class="filter-actions">
+            <button class="btn btn-secondary" id="clearFilters">
+                <i class="fas fa-times"></i>
+                Filtreleri Temizle
+            </button>
+            <button class="btn btn-primary" id="applyFilters">
+                <i class="fas fa-filter"></i>
+                Filtrele
+            </button>
+        </div>
+    </div>
+
+    <!-- Log Tablosu -->
+    <div class="logs-table-container">
+        <div class="table-header">
+            <h3>Sistem Logları</h3>
+            <div class="table-actions">
+                <button class="btn btn-outline" id="refreshLogs">
+                    <i class="fas fa-sync-alt"></i>
+                    Yenile
+                </button>
+                <button class="btn btn-outline" id="exportLogs">
+                    <i class="fas fa-download"></i>
+                    Dışa Aktar
+                </button>
+            </div>
+        </div>
+        
+        <div class="table-wrapper">
+            <table class="logs-table">
+                <thead>
+                    <tr>
+                        <th>ZAMAN</th>
+                        <th>KOL</th>
+                        <th>BATARYA ADRESİ</th>
+                        <th>VERİ TÜRÜ</th>
+                        <th>VERİ</th>
+                        <th>DURUM</th>
+                    </tr>
+                </thead>
+                <tbody id="logsTableBody">
+                    <!-- Log verileri JavaScript ile doldurulacak -->
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Sayfalama -->
+        <div class="pagination">
+            <button class="pagination-btn" id="prevPage" disabled>
+                <i class="fas fa-chevron-left"></i>
+                Önceki
+            </button>
+            <span class="page-info">
+                Sayfa <span id="currentPage">1</span> / <span id="totalPages">1</span>
+            </span>
+            <button class="pagination-btn" id="nextPage">
+                Sonraki
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/logs.js') }}"></script>
+{% endblock %}

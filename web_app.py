@@ -8,7 +8,27 @@ db = BatteryDatabase()
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('layout.html')
+
+@app.route('/page/<page_name>')
+def get_page(page_name):
+    """Sayfa içeriğini döndür"""
+    if page_name == 'logs':
+        return render_template('pages/logs.html')
+    elif page_name == 'summary':
+        return render_template('pages/summary.html')
+    elif page_name == 'alarms':
+        return render_template('pages/alarms.html')
+    elif page_name == 'batteries':
+        return render_template('pages/batteries.html')
+    elif page_name == 'configuration':
+        return render_template('pages/configuration.html')
+    elif page_name == 'data-retrieval':
+        return render_template('pages/data-retrieval.html')
+    elif page_name == 'profile':
+        return render_template('pages/profile.html')
+    else:
+        return render_template('pages/404.html')
 
 @app.route('/api/data_types')
 def get_data_types():
@@ -57,11 +77,47 @@ def get_data_by_date():
     if dtype:
         dtype = int(dtype)
     
-    # Bu fonksiyonu da database.py'ye ekleyelim
     data = db.get_data_by_date_range_with_translations(
         start_date, end_date, arm, dtype, language
     )
     return jsonify(data)
+
+@app.route('/api/logs', methods=['POST'])
+def get_logs():
+    """Log verilerini getir"""
+    data = request.get_json()
+    page = data.get('page', 1)
+    page_size = data.get('pageSize', 50)
+    filters = data.get('filters', {})
+    
+    try:
+        # Veritabanından log verilerini al
+        logs_data = db.get_logs_with_filters(
+            page=page,
+            page_size=page_size,
+            filters=filters
+        )
+        
+        return jsonify(logs_data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/logs/export', methods=['POST'])
+def export_logs():
+    """Log verilerini CSV olarak dışa aktar"""
+    data = request.get_json()
+    filters = data.get('filters', {})
+    
+    try:
+        # CSV formatında veri hazırla
+        csv_data = db.export_logs_to_csv(filters)
+        
+        from flask import Response
+        response = Response(csv_data, mimetype='text/csv')
+        response.headers['Content-Disposition'] = f'attachment; filename=logs_{time.strftime("%Y%m%d")}.csv'
+        return response
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/stats')
 def get_stats():

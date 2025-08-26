@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Akü İzleme Sistemi{% endblock %}</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sol Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h3>MENÜ</h3>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-page="summary">
+                            <i class="fas fa-home"></i>
+                            <span>Özet</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-page="line-measurements">
+                            <i class="fas fa-bolt"></i>
+                            <span>Hat ölçümleri</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-page="alarms">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>Alarmlar</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-page="batteries">
+                            <i class="fas fa-battery-three-quarters"></i>
+                            <span>Bataryalar</span>
+                        </a>
+                    </li>
+                    <li class="nav-item active">
+                        <a href="#" class="nav-link" data-page="logs">
+                            <i class="fas fa-file-alt"></i>
+                            <span>Loglar</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-page="configuration">
+                            <i class="fas fa-cog"></i>
+                            <span>Konfigürasyon</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-page="data-retrieval">
+                            <i class="fas fa-download"></i>
+                            <span>Veri Alma</span>
+                        </a>
+                    </li>
+                </ul>
+                
+                <div class="nav-divider"></div>
+                
+                <ul class="nav-list">
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-page="profile">
+                            <i class="fas fa-user"></i>
+                            <span>Profil</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-page="logout">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Çıkış</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Ana İçerik -->
+        <main class="main-content">
+            <!-- Üst Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <h1 class="main-title">Akü İzleme Sistemi</h1>
+                </div>
+                
+                <div class="header-right">
+                    <!-- Dil Seçimi -->
+                    <div class="language-selector">
+                        <button class="lang-btn active" data-lang="tr">TR</button>
+                        <button class="lang-btn" data-lang="en">EN</button>
+                    </div>
+                    
+                    <!-- Kullanıcı Bilgisi -->
+                    <div class="user-info">
+                        <div class="user-avatar">
+                            <span>A</span>
+                        </div>
+                        <div class="user-details">
+                            <div class="user-name">Assan Guest</div>
+                            <div class="user-email">guest@assanelektronik.com.tr</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Bildirimler -->
+                    <div class="notifications">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    
+                    <!-- Çıkış -->
+                    <div class="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Sayfa İçeriği -->
+            <div class="page-content" id="pageContent">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
