@@ -120,6 +120,7 @@ def read_serial(pi):
         try:
             (count, data) = pi.bb_serial_read(RX_PIN)
             if count > 0:
+                print(f"Veri alındı: {data}")
                 buffer.extend(data)
                 while len(buffer) > 0:
                     try:
