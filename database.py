@@ -684,3 +684,10 @@ class BatteryDatabase:
                 csv_content += f"{timestamp},{row[0]},{row[1]},{row[5]},{row[3]},{status}\n"
             
             return csv_content
+    
+    def get_database_size(self):
+        """Veritabanı boyutunu MB cinsinden döndür"""
+        if os.path.exists(self.db_path):
+            size_mb = os.path.getsize(self.db_path) / (1024 * 1024)
+            return size_mb
+        return 0
