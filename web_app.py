@@ -114,8 +114,9 @@ def export_logs():
         csv_data = db.export_logs_to_csv(filters)
         
         from flask import Response
-        response = Response(csv_data, mimetype='text/csv')
+        response = Response(csv_data, mimetype='text/csv; charset=utf-8')
         response.headers['Content-Disposition'] = f'attachment; filename=logs_{time.strftime("%Y%m%d")}.csv'
+        response.headers['Content-Type'] = 'text/csv; charset=utf-8'
         return response
     except Exception as e:
         return jsonify({'error': str(e)}), 500

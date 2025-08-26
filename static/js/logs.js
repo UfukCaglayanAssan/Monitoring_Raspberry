@@ -32,6 +32,10 @@ class LogsPage {
         });
 
         // Tablo butonları
+        document.getElementById('debugLogs').addEventListener('click', () => {
+            this.debugLogs();
+        });
+
         document.getElementById('refreshLogs').addEventListener('click', () => {
             this.loadLogs();
         });
@@ -294,6 +298,61 @@ class LogsPage {
                 </td>
             </tr>
         `;
+    }
+
+    async debugLogs() {
+        console.log('=== DEBUG BAŞLADI ===');
+        console.log('Mevcut filtreler:', this.filters);
+        console.log('Mevcut sayfa:', this.currentPage);
+        console.log('Sayfa boyutu:', this.pageSize);
+        
+        try {
+            // API'yi test et
+            const response = await fetch('/api/logs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    page: 1,
+                    pageSize: 100,
+                    filters: {}
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                
+                console.log('=== API RESPONSE ===');
+                console.log('Toplam veri:', data.totalCount);
+                console.log('Toplam sayfa:', data.totalPages);
+                console.log('İlk 10 veri:', data.logs.slice(0, 10));
+                
+                // Farklı kombinasyonları bul
+                const unique = [...new Set(data.logs.map(log => `${log.arm}-${log.batteryAddress}`))];
+                console.log('Benzersiz Arm-Batarya kombinasyonları:', unique);
+                
+                // Arm 2, Batarya 4 ve 5 verilerini kontrol et
+                const battery4 = data.logs.filter(log => log.arm === 2 && log.batteryAddress === 4);
+                const battery5 = data.logs.filter(log => log.arm === 2 && log.batteryAddress === 5);
+                console.log('Batarya 4 verileri:', battery4.length);
+                console.log('Batarya 5 verileri:', battery5.length);
+                
+                // Sonuçları alert ile göster
+                alert(`DEBUG SONUCU:
+Toplam Veri: ${data.totalCount}
+Toplam Sayfa: ${data.totalPages}
+Kombinasyonlar: ${unique.join(', ')}
+Batarya 4: ${battery4.length} veri
+Batarya 5: ${battery5.length} veri
+
+Detaylar için Console'u kontrol et!`);
+                
+            } else {
+                throw new Error('API hatası');
+            }
+        } catch (error) {
+            console.error('Debug hatası:', error);
+            alert('Debug sırasında hata oluştu! Console\'u kontrol et.');
+        }
     }
 }
 

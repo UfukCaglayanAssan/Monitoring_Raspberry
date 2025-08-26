@@ -12,7 +12,7 @@ class BatteryDatabase:
         self.conn = None
         # Veritabanı yoksa oluştur, varsa sadece bağlan
         if not os.path.exists(self.db_path):
-            self.init_database()
+        self.init_database()
         else:
             print(f"Veritabanı zaten mevcut: {self.db_path}")
     
