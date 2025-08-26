@@ -8,7 +8,7 @@ class App {
 
     init() {
         this.bindEvents();
-        this.loadPage('summary'); // Flask endpoint kullan
+        this.loadPage('summary'); // İlk sayfa olarak özet'i yükle
         this.setLanguage(this.currentLanguage);
     }
 
@@ -42,12 +42,17 @@ class App {
     }
 
     navigateToPage(page) {
+        console.log('Navigating to page:', page);
+        
         // Aktif menü öğesini güncelle
         document.querySelectorAll('.nav-link').forEach(link => {
             link.classList.remove('active');
         });
         
-        document.querySelector(`[data-page="${page}"]`).classList.add('active');
+        const activeLink = document.querySelector(`[data-page="${page}"]`);
+        if (activeLink) {
+            activeLink.classList.add('active');
+        }
         
         // Sayfa içeriğini yükle
         this.loadPage(page);
@@ -55,6 +60,7 @@ class App {
     }
 
     async loadPage(page) {
+        console.log('Loading page:', page);
         const pageContent = document.getElementById('pageContent');
         
         try {
@@ -68,14 +74,17 @@ class App {
 
             // Sayfa içeriğini yükle
             const response = await fetch(`/page/${page}`);
+            console.log('Response status:', response.status);
+            
             if (response.ok) {
                 const html = await response.text();
+                console.log('HTML loaded, length:', html.length);
                 pageContent.innerHTML = html;
                 
                 // Sayfa özel script'lerini yükle
                 this.loadPageScripts(page);
             } else {
-                throw new Error('Sayfa yüklenemedi');
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
         } catch (error) {
             console.error('Sayfa yükleme hatası:', error);
@@ -83,26 +92,31 @@ class App {
                 <div class="empty-state">
                     <i class="fas fa-exclamation-triangle"></i>
                     <h4>Hata Oluştu</h4>
-                    <p>Sayfa yüklenirken bir hata oluştu. Lütfen tekrar deneyin.</p>
+                    <p>Sayfa yüklenirken bir hata oluştu: ${error.message}</p>
+                    <p>Lütfen tekrar deneyin.</p>
                 </div>
             `;
         }
     }
 
-    // showSummaryPage() fonksiyonu kaldırıldı - Flask endpoint kullanılıyor
-
     loadPageScripts(page) {
+        console.log('Loading scripts for page:', page);
+        
         // Sayfa özel script'lerini yükle
         const scriptMap = {
             'logs': '/static/js/logs.js',
             'summary': '/static/js/summary.js',
             'alarms': '/static/js/alarms.js',
-            'batteries': '/static/js/batteries.js'
+            'batteries': '/static/js/batteries.js',
+            'configuration': '/static/js/configuration.js',
+            'data-retrieval': '/static/js/data-retrieval.js',
+            'profile': '/static/js/profile.js'
         };
 
         if (scriptMap[page]) {
             // Script zaten yüklenmiş mi kontrol et
             if (document.querySelector(`script[src="${scriptMap[page]}"]`)) {
+                console.log('Script already loaded:', page);
                 // Script zaten var, sadece başlat
                 if (window[`${page}Page`]) {
                     window[`${page}Page`].init();
@@ -110,13 +124,18 @@ class App {
                 return;
             }
 
+            console.log('Loading script:', scriptMap[page]);
             const script = document.createElement('script');
             script.src = scriptMap[page];
             script.onload = () => {
+                console.log('Script loaded:', page);
                 // Script yüklendi, sayfa başlat
                 if (window[`${page}Page`]) {
                     window[`${page}Page`].init();
                 }
+            };
+            script.onerror = () => {
+                console.error('Script load error:', scriptMap[page]);
             };
             document.head.appendChild(script);
         }
@@ -136,9 +155,6 @@ class App {
         
         // Sayfa metinlerini güncelle
         this.updatePageTexts(lang);
-        
-        // Mevcut sayfayı yeniden yükle
-        this.loadPage(this.currentPage);
     }
 
     updatePageTexts(lang) {
@@ -175,71 +191,30 @@ class App {
         const texts = translations[lang] || translations.tr;
         
         // Ana başlık
-        document.querySelector('.main-title').textContent = texts.mainTitle;
-        
-        // Menü öğeleri
-        document.querySelectorAll('.nav-link span').forEach((span, index) => {
-            const keys = Object.keys(texts).filter(key => key !== 'mainTitle');
-            if (keys[index]) {
-                span.textContent = texts[keys[index]];
-            }
-        });
+        const mainTitle = document.querySelector('.main-title');
+        if (mainTitle) {
+            mainTitle.textContent = texts.mainTitle;
+        }
     }
 
     showNotifications() {
         // Bildirimler modal'ını göster
         console.log('Bildirimler gösteriliyor...');
-        // TODO: Bildirim modal'ı implement et
+        alert('Bildirimler özelliği henüz eklenmedi.');
     }
 
     logout() {
         // Çıkış işlemi
         if (confirm('Çıkış yapmak istediğinizden emin misiniz?')) {
             console.log('Çıkış yapılıyor...');
-            // TODO: Çıkış API'si çağır
-            window.location.href = '/logout';
+            alert('Çıkış özelliği henüz eklenmedi.');
         }
-    }
-
-    // Utility fonksiyonlar
-    showLoading(element) {
-        element.innerHTML = `
-            <div class="loading">
-                <div class="spinner"></div>
-                Yükleniyor...
-            </div>
-        `;
-    }
-
-    showError(element, message) {
-        element.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-exclamation-triangle"></i>
-                <h4>Hata Oluştu</h4>
-                <p>${message}</p>
-            </div>
-        `;
-    }
-
-    formatDate(dateString) {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('tr-TR', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
-    }
-
-    formatNumber(number, decimals = 3) {
-        return parseFloat(number).toFixed(decimals);
     }
 }
 
 // Uygulama başlat
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('App starting...');
     window.app = new App();
 });
 
@@ -266,6 +241,16 @@ window.utils = {
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
         toast.textContent = message;
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #333;
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            z-index: 10000;
+        `;
         
         document.body.appendChild(toast);
         
