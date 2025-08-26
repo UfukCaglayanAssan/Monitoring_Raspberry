@@ -1,6 +1,7 @@
 # interface/database.py
 import sqlite3
 import threading
+import os
 from datetime import datetime, timedelta
 import time
 
@@ -12,18 +13,18 @@ class BatteryDatabase:
     
     def init_database(self):
         with self.lock:
+            # Veritabanı dosyasını tamamen sil
+            if os.path.exists(self.db_path):
+                try:
+                    os.remove(self.db_path)
+                    print(f"Eski veritabanı silindi: {self.db_path}")
+                except Exception as e:
+                    print(f"Veritabanı silinirken hata: {e}")
+            
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 
-                # Mevcut tabloları temizle
-                cursor.execute('DROP TABLE IF EXISTS arm_data')
-                cursor.execute('DROP TABLE IF EXISTS battery_data')
-                cursor.execute('DROP TABLE IF EXISTS arm_data_types')
-                cursor.execute('DROP TABLE IF EXISTS battery_data_types')
-                cursor.execute('DROP TABLE IF EXISTS alarms')
-                cursor.execute('DROP TABLE IF EXISTS missing_data')
-                cursor.execute('DROP TABLE IF EXISTS passive_balance')
-                cursor.execute('DROP TABLE IF EXISTS arm_slave_counts')
+                print("Yeni veritabanı oluşturuluyor...")
                 
                 # Tek veri tablosu (tüm veriler için)
                 cursor.execute('''
@@ -37,6 +38,7 @@ class BatteryDatabase:
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
+                print("✓ battery_data tablosu oluşturuldu")
                 
                 # Dil tablosu
                 cursor.execute('''
@@ -47,6 +49,7 @@ class BatteryDatabase:
                         is_default BOOLEAN DEFAULT FALSE
                     )
                 ''')
+                print("✓ languages tablosu oluşturuldu")
                 
                 # Veri tipi tablosu (dtype + k_value ile)
                 cursor.execute('''
@@ -59,6 +62,7 @@ class BatteryDatabase:
                         PRIMARY KEY (dtype, k_value)
                     )
                 ''')
+                print("✓ data_types tablosu oluşturuldu")
                 
                 # Veri tipi çevirileri
                 cursor.execute('''
@@ -72,6 +76,7 @@ class BatteryDatabase:
                         FOREIGN KEY (language_code) REFERENCES languages(language_code)
                     )
                 ''')
+                print("✓ data_type_translations tablosu oluşturuldu")
                 
                 # Alarm tablosu
                 cursor.execute('''
@@ -84,6 +89,7 @@ class BatteryDatabase:
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
+                print("✓ alarms tablosu oluşturuldu")
                 
                 # Missing data tablosu
                 cursor.execute('''
@@ -96,6 +102,7 @@ class BatteryDatabase:
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
+                print("✓ missing_data tablosu oluşturuldu")
                 
                 # Balans tablosu
                 cursor.execute('''
@@ -109,6 +116,7 @@ class BatteryDatabase:
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
+                print("✓ passive_balance tablosu oluşturuldu")
                 
                 # Armslave counts tablosu
                 cursor.execute('''
@@ -123,6 +131,7 @@ class BatteryDatabase:
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
+                print("✓ arm_slave_counts tablosu oluşturuldu")
                 
                 # Dilleri ekle
                 cursor.execute('''
@@ -131,6 +140,7 @@ class BatteryDatabase:
                     ('en', 'English', TRUE, FALSE),
                     ('de', 'Deutsch', TRUE, FALSE)
                 ''')
+                print("✓ Diller eklendi")
                 
                 # Veri tiplerini ekle
                 cursor.execute('''
@@ -148,6 +158,7 @@ class BatteryDatabase:
                     (14, 3, 'Negatif Kutup Sıcaklığı', '°C', 'Negatif kutup başı sıcaklığı'),
                     (126, 3, 'Sağlık Durumu', '%', 'State of Health (SOH)')
                 ''')
+                print("✓ Veri tipleri eklendi")
                 
                 # Türkçe çevirileri ekle
                 cursor.execute('''
@@ -162,6 +173,7 @@ class BatteryDatabase:
                     (14, 3, 'tr', 'Negatif Kutup Sıcaklığı', 'Negatif kutup başı sıcaklığı'),
                     (126, 3, 'tr', 'Sağlık Durumu', 'Batarya sağlık durumu')
                 ''')
+                print("✓ Türkçe çeviriler eklendi")
                 
                 # İngilizce çevirileri ekle
                 cursor.execute('''
@@ -176,13 +188,16 @@ class BatteryDatabase:
                     (14, 3, 'en', 'Negative Terminal Temperature', 'Negative terminal temperature'),
                     (126, 3, 'en', 'State of Health', 'Battery health state')
                 ''')
+                print("✓ İngilizce çeviriler eklendi")
                 
                 # Performans için index'ler
                 cursor.execute('CREATE INDEX IF NOT EXISTS idx_k_timestamp ON battery_data(k, timestamp)')
                 cursor.execute('CREATE INDEX IF NOT EXISTS idx_arm_k_dtype ON battery_data(arm, k, dtype)')
                 cursor.execute('CREATE INDEX IF NOT EXISTS idx_alarm_timestamp ON alarms(timestamp)')
+                print("✓ Index'ler oluşturuldu")
                 
                 conn.commit()
+                print("✓ Veritabanı başarıyla oluşturuldu!")
     
     def insert_battery_data(self, data_list):
         """Battery data ekle - tek tabloya ekle"""
