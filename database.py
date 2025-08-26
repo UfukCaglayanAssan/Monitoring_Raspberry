@@ -477,18 +477,20 @@ class BatteryDatabase:
             
             # Toplam kayıt sayısını al
             count_query = f"SELECT COUNT(*) FROM ({query}) as subquery"
-            conn = self.get_connection()
-            cursor = conn.cursor()
-            cursor.execute(count_query, params)
-            total_count = cursor.fetchone()[0]
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute(count_query, params)
+                total_count = cursor.fetchone()[0]
             
             # Sayfalama
             query += " ORDER BY bd.timestamp DESC LIMIT ? OFFSET ?"
             offset = (page - 1) * page_size
             params.extend([page_size, offset])
             
-            cursor.execute(query, params)
-            rows = cursor.fetchall()
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute(query, params)
+                rows = cursor.fetchall()
             
             logs = [{
                 'timestamp': row[0],
@@ -552,10 +554,10 @@ class BatteryDatabase:
             
             query += " ORDER BY bd.timestamp DESC"
             
-            conn = self.get_connection()
-            cursor = conn.cursor()
-            cursor.execute(query, params)
-            rows = cursor.fetchall()
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute(query, params)
+                rows = cursor.fetchall()
             
             # CSV formatında veri hazırla
             csv_content = "Zaman,Kol,Batarya Adresi,Veri Türü,Veri,Birim\n"
@@ -578,10 +580,9 @@ class BatteryDatabase:
             return "Hata,Veri dışa aktarılamadı\n"
 
     def get_connection(self):
-        """Veritabanı bağlantısını al"""
-        if self.conn is None:
-            self.conn = sqlite3.connect(self.db_path)
-        return self.conn
+        """Veritabanı bağlantısını al - thread-safe"""
+        # Her thread için yeni connection oluştur
+        return sqlite3.connect(self.db_path)
     
     def close_connection(self):
         """Veritabanı bağlantısını kapat"""
