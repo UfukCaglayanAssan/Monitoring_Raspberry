@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battery Management System</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .controls { text-align: center; margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 5px; }
+        select, button, input { margin: 5px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #007bff; color: white; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .stats { display: flex; justify-content: space-around; margin: 20px 0; }
+        .stat-box { text-align: center; padding: 15px; background: #e9ecef; border-radius: 5px; }
+        .chart-container { margin: 20px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; }
+        .pagination { text-align: center; margin: 20px 0; }
+        .pagination button { margin: 0 5px; }
+        .pagination .current-page { background: #28a745; }
+        .date-controls { margin: 20px 0; text-align: center; }
+        .view-toggle { margin: 20px 0; text-align: center; }
+        .view-toggle button { margin: 0 10px; }
+        .view-toggle .active { background: #28a745; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>�� Battery Management System</h1>
+        
+        <!-- İstatistikler -->
+        <div class="stats" id="stats">
+            <div class="stat-box">
+                <h3>Toplam Kayıt</h3>
+                <p id="totalRecords">-</p>
+            </div>
+            <div class="stat-box">
+                <h3>Son 24 Saat</h3>
+                <p id="last24h">-</p>
+            </div>
+            <div class="stat-box">
+                <h3>DB Boyutu</h3>
+                <p id="dbSize">-</p>
+            </div>
+        </div>
+        
+        <!-- Görünüm Seçimi -->
+        <div class="view-toggle">
+            <button id="recentView" class="active" onclick="switchToRecentView()">Son 5 Dakika</button>
+            <button id="dateView" onclick="switchToDateView()">Tarih Seçimi</button>
+        </div>
+        
+        <!-- Son 5 Dakika Kontrolleri -->
+        <div id="recentControls" class="controls">
+            <select id="armSelect">
+                <option value="">Tüm Kollar</option>
+                <option value="1">Kol 1</option>
+                <option value="2">Kol 2</option>
+                <option value="3">Kol 3</option>
+                <option value="4">Kol 4</option>
+            </select>
+            
+            <select id="dtypeSelect">
+                <option value="">Tüm Veri Tipleri</option>
+                <option value="10">SOC</option>
+                <option value="11">SOH</option>
+                <option value="13">Sıcaklık</option>
+                <option value="14">Sıcaklık</option>
+            </select>
+            
+            <select id="timeRange">
+                <option value="1">1 Dakika</option>
+                <option value="5" selected>5 Dakika</option>
+                <option value="15">15 Dakika</option>
+                <option value="30">30 Dakika</option>
+            </select>
+            
+            <button onclick="loadRecentData()">Verileri Güncelle</button>
+        </div>
+        
+        <!-- Tarih Seçimi Kontrolleri -->
+        <div id="dateControls" class="controls" style="display: none;">
+            <div class="date-controls">
+                <label>Başlangıç Tarihi:</label>
+                <input type="date" id="startDate">
+                <label>Bitiş Tarihi:</label>
+                <input type="date" id="endDate">
+            </div>
+            
+            <select id="dateArmSelect">
+                <option value="">Tüm Kollar</option>
+                <option value="1">Kol 1</option>
+                <option value="2">Kol 2</option>
+                <option value="3">Kol 3</option>
+                <option value="4">Kol 4</option>
+            </select>
+            
+            <select id="dateDtypeSelect">
+                <option value="">Tüm Veri Tipleri</option>
+                <option value="10">SOC</option>
+                <option value="11">SOH</option>
+                <option value="13">Sıcaklık</option>
+                <option value="14">Sıcaklık</option>
+            </select>
+            
+            <button onclick="loadDateData()">Verileri Getir</button>
+        </div>
+        
+        <!-- Grafik -->
+        <div class="chart-container">
+            <canvas id="batteryChart"></canvas>
+        </div>
+        
+        <!-- Veri Tablosu -->
+        <h3 id="tableTitle">Son Veriler</h3>
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th>Kol</th>
+                    <th>Batarya</th>
+                    <th>Veri Tipi</th>
+                    <th>Birim</th>
+                    <th>Değer</th>
+                    <th>Zaman</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Veriler buraya gelecek -->
+            </tbody>
+        </table>
+        
+        <!-- Sayfalama -->
+        <div id="pagination" class="pagination" style="display: none;">
+            <button id="prevPage" onclick="changePage(-1)">Önceki</button>
+            <span id="pageInfo">Sayfa 1 / 1</span>
+            <button id="nextPage" onclick="changePage(1)">Sonraki</button>
+        </div>
+    </div>
+
+    <script>
+        let chart;
+        let currentView = 'recent';
+        let currentPage = 1;
+        let totalPages = 1;
+        
+        function initChart() {
+            const ctx = document.getElementById('batteryChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Battery Data',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Battery Data Chart'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'hour'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Zaman'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Değer'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function switchToRecentView() {
+            currentView = 'recent';
+            document.getElementById('recentView').classList.add('active');
+            document.getElementById('dateView').classList.remove('active');
+            document.getElementById('recentControls').style.display = 'block';
+            document.getElementById('dateControls').style.display = 'none';
+            document.getElementById('pagination').style.display = 'none';
+            document.getElementById('tableTitle').textContent = 'Son Veriler';
+            loadRecentData();
+        }
+        
+        function switchToDateView() {
+            currentView = 'date';
+            document.getElementById('dateView').classList.add('active');
+            document.getElementById('recentView').classList.remove('active');
+            document.getElementById('recentControls').style.display = 'none';
+            document.getElementById('dateControls').style.display = 'block';
+            document.getElementById('tableTitle').textContent = 'Tarih Aralığı Verileri';
+            
+            // Bugünün tarihini varsayılan olarak ayarla
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('startDate').value = today;
+            document.getElementById('endDate').value = today;
+        }
+        
+        async function loadRecentData() {
+            const arm = document.getElementById('armSelect').value;
+            const dtype = document.getElementById('dtypeSelect').value;
+            const minutes = document.getElementById('timeRange').value;
+            
+            try {
+                let url = `/api/recent_data?minutes=${minutes}&limit=50`;
+                if (arm) url += `&arm=${arm}`;
+                if (dtype) url += `&dtype=${dtype}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                updateTable(data);
+                updateChart(data);
+                
+            } catch (error) {
+                console.error('Veri alınamadı:', error);
+            }
+        }
+        
+        async function loadDateData() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const arm = document.getElementById('dateArmSelect').value;
+            const dtype = document.getElementById('dateDtypeSelect').value;
+            
+            if (!startDate || !endDate) {
+                alert('Lütfen başlangıç ve bitiş tarihlerini seçin');
+                return;
+            }
+            
+            try {
+                let url = `/api/data_by_date?start_date=${startDate}&end_date=${endDate}&page=${currentPage}&page_size=50`;
+                if (arm) url += `&arm=${arm}`;
+                if (dtype) url += `&dtype=${dtype}`;
+                
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                updateTable(result.data);
+                updatePagination(result.pagination);
+                
+            } catch (error) {
+                console.error('Veri alınamadı:', error);
+            }
+        }
+        
+        function updateTable(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row[0]}</td>
+                    <td>${row[1]}</td>
+                    <td>${row[2]}</td>
+                    <td>${row[3]}</td>
+                    <td>${row[4]}</td>
+                    <td>${row[5]}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        function updatePagination(pagination) {
+            currentPage = pagination.current_page;
+            totalPages = pagination.total_pages;
+            
+            document.getElementById('pageInfo').textContent = `Sayfa ${currentPage} / ${totalPages}`;
+            document.getElementById('prevPage').disabled = !pagination.has_prev;
+            document.getElementById('nextPage').disabled = !pagination.has_next;
+            
+            document.getElementById('pagination').style.display = 'block';
+        }
+        
+        function changePage(delta) {
+            const newPage = currentPage + delta;
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                loadDateData();
+            }
+        }
+        
+        function updateChart(data) {
+            if (data.length === 0) return;
+            
+            const labels = data.map(row => new Date(row[6])).reverse(); // RawTimestamp kullan
+            const values = data.map(row => row[4]).reverse();
+            
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = values;
+            chart.data.datasets[0].label = 'Battery Data';
+            chart.update();
+        }
+        
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+                
+                document.getElementById('totalRecords').textContent = stats.total_records.toLocaleString();
+                document.getElementById('last24h').textContent = stats.last_24h_records.toLocaleString();
+                document.getElementById('dbSize').textContent = stats.database_size_mb + ' MB';
+                
+            } catch (error) {
+                console.error('İstatistikler alınamadı:', error);
+            }
+        }
+        
+        // Sayfa yüklendiğinde
+        window.onload = function() {
+            initChart();
+            loadRecentData();
+            loadStats();
+            
+            // Her 30 saniyede bir güncelle
+            setInterval(() => {
+                if (currentView === 'recent') {
+                    loadRecentData();
+                }
+                loadStats();
+            }, 30000);
+        };
+    </script>
+</body>
+</html>
