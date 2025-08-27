@@ -39,8 +39,8 @@ def get_period_timestamp():
         current_period_timestamp = int(current_time * 1000)
         period_active = True
         last_data_received = current_time
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"[{timestamp}] Yeni periyot başlatıldı: {current_period_timestamp}")
+        # timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # print(f"[{timestamp}] Yeni periyot başlatıldı: {current_period_timestamp}")
     
     return current_period_timestamp
 
@@ -49,8 +49,8 @@ def reset_period():
     global period_active, current_period_timestamp
     period_active = False
     current_period_timestamp = None
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[{timestamp}] Periyot sıfırlandı")
+    # timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # print(f"[{timestamp}] Periyot sıfırlandı")
 
 def Calc_SOH(x):
     if x is None:
@@ -264,33 +264,7 @@ def db_worker():
                     saltData = int(data[4], 16) * 100 + int(data[5], 16) * 10 + int(data[6], 16) + int(data[7], 16) * 0.1 + int(data[8], 16) * 0.01 + int(data[9], 16) * 0.001
                     salt_data = round(saltData, 4)
                 
-                # Veri tipine göre log mesajı
-                if k_value == 2:
-                    # Kol verisi (k=2)
-                    if dtype == 10:
-                        print(f"\n*** KOL VERİSİ ALGILANDI - Arm: {arm_value}, Veri Tipi: Akım, Değer: {salt_data} A ***")
-                    elif dtype == 11:
-                        print(f"\n*** KOL VERİSİ ALGILANDI - Arm: {arm_value}, Veri Tipi: Nem, Değer: {salt_data}% ***")
-                    elif dtype == 12:
-                        print(f"\n*** KOL VERİSİ ALGILANDI - Arm: {arm_value}, Veri Tipi: Sıcaklık, Değer: {salt_data}°C ***")
-                    else:
-                        print(f"\n*** KOL VERİSİ ALGILANDI - Arm: {arm_value}, Veri Tipi: {dtype}, Değer: {salt_data} ***")
-                else:
-                    # Batarya verisi (k!=2)
-                    if dtype == 10:
-                        print(f"\n*** BATARYA VERİSİ ALGILANDI - Arm: {arm_value}, Batarya: {k_value}, Veri Tipi: Gerilim, Değer: {salt_data} V ***")
-                    elif dtype == 11:
-                        print(f"\n*** BATARYA VERİSİ ALGILANDI - Arm: {arm_value}, Batarya: {k_value}, Veri Tipi: Şarj Durumu, Değer: {salt_data}% ***")
-                    elif dtype == 12:
-                        print(f"\n*** BATARYA VERİSİ ALGILANDI - Arm: {arm_value}, Batarya: {k_value}, Veri Tipi: Modül Sıcaklığı, Değer: {salt_data}°C ***")
-                    elif dtype == 13:
-                        print(f"\n*** BATARYA VERİSİ ALGILANDI - Arm: {arm_value}, Batarya: {k_value}, Veri Tipi: Pozitif Kutup Sıcaklığı, Değer: {salt_data}°C ***")
-                    elif dtype == 14:
-                        print(f"\n*** BATARYA VERİSİ ALGILANDI - Arm: {arm_value}, Batarya: {k_value}, Veri Tipi: Negatif Kutup Sıcaklığı, Değer: {salt_data}°C ***")
-                    elif dtype == 126:
-                        print(f"\n*** BATARYA VERİSİ ALGILANDI - Arm: {arm_value}, Batarya: {k_value}, Veri Tipi: Sağlık Durumu, Değer: {salt_data}% ***")
-                    else:
-                        print(f"\n*** BATARYA VERİSİ ALGILANDI - Arm: {arm_value}, Batarya: {k_value}, Veri Tipi: {dtype}, Değer: {salt_data} ***")
+                # Veri tipine göre log mesajı - KALDIRILDI
                 
                 # Veri işleme ve kayıt (tek tabloya)
                 if dtype == 10:  # SOC
