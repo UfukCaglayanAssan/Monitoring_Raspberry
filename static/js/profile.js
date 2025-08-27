@@ -23,3 +23,6 @@ class ProfilePage {
 
 // Global instance oluştur
 window.profilePage = new ProfilePage();
+
+
+

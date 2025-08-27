@@ -41,3 +41,6 @@ class SummaryPage {
 
 // Global instance oluştur
 window.summaryPage = new SummaryPage();
+
+
+

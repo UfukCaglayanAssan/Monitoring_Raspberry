@@ -435,7 +435,7 @@ def db_worker():
 
             # Batch kontrolü ve kayıt
             if len(batch) >= 100 or (time.time() - last_insert) > 5:
-                db.insert_battery_data(batch)
+                db.insert_battery_data_batch(batch)
                 batch = []
                 last_insert = time.time()
 
@@ -443,7 +443,7 @@ def db_worker():
             
         except queue.Empty:
             if batch:
-                db.insert_battery_data(batch)
+                db.insert_battery_data_batch(batch)
                 batch = []
                 last_insert = time.time()
         except Exception as e:

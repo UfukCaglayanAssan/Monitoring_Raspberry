@@ -17,3 +17,4 @@ class DataRetrievalPage {
 
 // Global instance oluştur
 window.dataRetrievalPage = new DataRetrievalPage();
+

@@ -23,3 +23,6 @@ class LineMeasurementsPage {
 
 // Global instance oluştur
 window.lineMeasurementsPage = new LineMeasurementsPage();
+
+
+

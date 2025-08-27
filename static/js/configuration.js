@@ -23,3 +23,6 @@ class ConfigurationPage {
 
 // Global instance oluştur
 window.configurationPage = new ConfigurationPage();
+
+
+

@@ -23,3 +23,6 @@ class AlarmsPage {
 
 // Global instance oluştur
 window.alarmsPage = new AlarmsPage();
+
+
+

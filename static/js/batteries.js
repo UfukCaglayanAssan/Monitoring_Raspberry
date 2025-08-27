@@ -23,3 +23,6 @@ class BatteriesPage {
 
 // Global instance oluştur
 window.batteriesPage = new BatteriesPage();
+
+
+

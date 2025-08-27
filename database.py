@@ -216,6 +216,16 @@ class BatteryDatabase:
                 VALUES (?, ?, ?, ?, ?)
             ''', (arm, k, dtype, data, timestamp))
             conn.commit()
+
+    def insert_battery_data_batch(self, batch):
+        """Batch olarak veri ekle"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.executemany('''
+                INSERT INTO battery_data (arm, k, dtype, data, timestamp)
+                VALUES (?, ?, ?, ?, ?)
+            ''', [(record['Arm'], record['k'], record['Dtype'], record['data'], record['timestamp']) for record in batch])
+            conn.commit()
     
     def insert_alarm(self, arm, error_code_msb, error_code_lsb, timestamp):
         """Alarm verisi ekle"""
