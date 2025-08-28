@@ -5,11 +5,6 @@ class BatteriesPage {
         this.pageSize = 30;
         this.totalPages = 1;
         this.batteriesData = [];
-        this.filters = {
-            arm: '',
-            battery: '',
-            dataType: ''
-        };
         
         this.init();
     }
@@ -31,15 +26,6 @@ class BatteriesPage {
             this.exportBatteries();
         });
         
-        // Filter buttons
-        document.getElementById('applyFilters').addEventListener('click', () => {
-            this.applyFilters();
-        });
-        
-        document.getElementById('clearFilters').addEventListener('click', () => {
-            this.clearFilters();
-        });
-        
         // Pagination
         document.getElementById('prevPage').addEventListener('click', () => {
             this.previousPage();
@@ -47,19 +33,6 @@ class BatteriesPage {
         
         document.getElementById('nextPage').addEventListener('click', () => {
             this.nextPage();
-        });
-        
-        // Filter inputs
-        document.getElementById('armFilter').addEventListener('change', (e) => {
-            this.filters.arm = e.target.value;
-        });
-        
-        document.getElementById('batteryFilter').addEventListener('input', (e) => {
-            this.filters.battery = e.target.value;
-        });
-        
-        document.getElementById('dataTypeFilter').addEventListener('change', (e) => {
-            this.filters.dataType = e.target.value;
         });
     }
     
@@ -75,8 +48,7 @@ class BatteriesPage {
                 },
                 body: JSON.stringify({
                     page: this.currentPage,
-                    pageSize: this.pageSize,
-                    filters: this.filters
+                    pageSize: this.pageSize
                 })
             });
             
@@ -173,25 +145,7 @@ class BatteriesPage {
         return value + unit;
     }
     
-    applyFilters() {
-        this.currentPage = 1;
-        this.loadBatteries();
-    }
-    
-    clearFilters() {
-        document.getElementById('armFilter').value = '';
-        document.getElementById('batteryFilter').value = '';
-        document.getElementById('dataTypeFilter').value = '';
-        
-        this.filters = {
-            arm: '',
-            battery: '',
-            dataType: ''
-        };
-        
-        this.currentPage = 1;
-        this.loadBatteries();
-    }
+
     
     previousPage() {
         if (this.currentPage > 1) {
@@ -273,9 +227,7 @@ class BatteriesPage {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    filters: this.filters
-                })
+                body: JSON.stringify({})
             });
             
             if (!response.ok) {

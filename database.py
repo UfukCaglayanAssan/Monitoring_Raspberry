@@ -569,6 +569,146 @@ class BatteryDatabase:
                 csv_content += f"{timestamp},{row[0]},{row[1]},{row[5]},{row[3]},Başarılı\n"
             
             return csv_content
+
+    def get_batteries_for_display(self, page=1, page_size=30):
+        """Batteries sayfası için batarya verilerini getir"""
+        
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Son batarya verilerini getir (k!=2 olanlar, yani batarya verileri)
+            base_query = '''
+                SELECT DISTINCT
+                    bd.arm,
+                    bd.k as batteryAddress,
+                    MAX(bd.timestamp) as latest_timestamp
+                FROM battery_data bd
+                WHERE bd.k != 2
+            '''
+            
+            params = []
+            
+            base_query += ' GROUP BY bd.arm, bd.k'
+            
+            # Toplam sayı
+            count_query = f"SELECT COUNT(*) FROM ({base_query})"
+            cursor.execute(count_query, params)
+            total_count = cursor.fetchone()[0]
+            
+            # Sayfalama
+            base_query += ' ORDER BY bd.arm, bd.k LIMIT ? OFFSET ?'
+            params.extend([page_size, (page - 1) * page_size])
+            
+            cursor.execute(base_query, params)
+            battery_groups = cursor.fetchall()
+            
+            batteries = []
+            
+            for group in battery_groups:
+                arm, battery_address, latest_timestamp = group
+                
+                # Her batarya için son verileri getir
+                battery_data = self.get_latest_battery_data(arm, battery_address)
+                
+                if battery_data:
+                    batteries.append(battery_data)
+            
+            return {
+                'batteries': batteries,
+                'totalPages': (total_count + page_size - 1) // page_size,
+                'currentPage': page
+            }
+    
+    def get_latest_battery_data(self, arm, battery_address):
+        """Belirli bir batarya için son verileri getir"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Son veri zamanını bul
+            cursor.execute('''
+                SELECT MAX(timestamp) FROM battery_data 
+                WHERE arm = ? AND k = ? AND k != 2
+            ''', (arm, battery_address))
+            
+            latest_timestamp = cursor.fetchone()[0]
+            
+            if not latest_timestamp:
+                return None
+            
+            # Son verileri getir
+            cursor.execute('''
+                SELECT dtype, data FROM battery_data 
+                WHERE arm = ? AND k = ? AND timestamp = ? AND k != 2
+            ''', (arm, battery_address, latest_timestamp))
+            
+            data_rows = cursor.fetchall()
+            
+            # Veri tiplerine göre organize et
+            battery_data = {
+                'arm': arm,
+                'batteryAddress': battery_address,
+                'timestamp': latest_timestamp,
+                'voltage': None,
+                'temperature': None,
+                'health': None,
+                'charge': None,
+                'isActive': True
+            }
+            
+            for dtype, data in data_rows:
+                if dtype == 10:  # Gerilim
+                    battery_data['voltage'] = data
+                elif dtype == 11:  # Şarj durumu
+                    battery_data['charge'] = data
+                elif dtype == 12:  # Sıcaklık
+                    battery_data['temperature'] = data
+                elif dtype == 126:  # Sağlık durumu
+                    battery_data['health'] = data
+            
+            return battery_data
+    
+    def export_batteries_to_csv(self):
+        """Batarya verilerini CSV formatında export et"""
+        
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Son batarya verilerini getir
+            base_query = '''
+                SELECT DISTINCT
+                    bd.arm,
+                    bd.k as batteryAddress,
+                MAX(bd.timestamp) as latest_timestamp
+                FROM battery_data bd
+                WHERE bd.k != 2
+            '''
+            
+            params = []
+            
+            base_query += ' GROUP BY bd.arm, bd.k ORDER BY bd.arm, bd.k'
+            
+            cursor.execute(base_query, params)
+            battery_groups = cursor.fetchall()
+            
+            # CSV formatı
+            csv_content = "KOL,BATARYA ADRESİ,SON GÜNCELLEME,GERİLİM (V),SICAKLIK (°C),SAĞLIK DURUMU (%),ŞARJ DURUMU (%)\n"
+            
+            for group in battery_groups:
+                arm, battery_address, latest_timestamp = group
+                
+                # Her batarya için son verileri getir
+                battery_data = self.get_latest_battery_data(arm, battery_address)
+                
+                if battery_data:
+                    timestamp = datetime.fromtimestamp(latest_timestamp / 1000).strftime('%Y-%m-%d %H:%M:%S')
+                    
+                    csv_content += f"{arm},{battery_address},{timestamp},"
+                    csv_content += f"{battery_data['voltage'] or '--'},"
+                    csv_content += f"{battery_data['temperature'] or '--'},"
+                    csv_content += f"{battery_data['health'] or '--'},"
+                    csv_content += f"{battery_data['charge'] or '--'}\n"
+            
+            return csv_content
     
     def get_database_size(self):
         """Veritabanı boyutunu MB cinsinden döndür"""

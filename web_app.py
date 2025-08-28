@@ -123,6 +123,49 @@ def export_logs():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/batteries', methods=['POST'])
+def api_batteries():
+    """Batarya verilerini getir"""
+    try:
+        data = request.get_json()
+        page = data.get('page', 1)
+        page_size = data.get('pageSize', 30)
+        
+        # Database'den batarya verilerini çek
+        batteries_data = db.get_batteries_for_display(page, page_size)
+        
+        return jsonify({
+            'success': True,
+            'batteries': batteries_data['batteries'],
+            'currentPage': page,
+            'totalPages': batteries_data['totalPages']
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/batteries/export', methods=['POST'])
+def export_batteries():
+    """Batarya verilerini CSV olarak dışa aktar"""
+    data = request.get_json()
+    
+    try:
+        # CSV formatında veri hazırla
+        csv_data = db.export_batteries_to_csv()
+        
+        from flask import Response
+        # UTF-8 BOM ekle (Excel için)
+        csv_data_with_bom = '\ufeff' + csv_data
+        response = Response(csv_data_with_bom, mimetype='text/csv; charset=utf-8')
+        response.headers['Content-Disposition'] = f'attachment; filename=batteries_{time.strftime("%Y%m%d")}.csv'
+        response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+        return response
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/stats')
 def get_stats():
     stats = db.get_stats()
