@@ -289,7 +289,7 @@ body {
 .batteries-grid {
     display: grid;
     grid-template-columns: repeat(10, 1fr);
-    gap: 4px;
+    gap: 2px;
     margin-bottom: 30px;
     width: 100%;
 }
@@ -297,7 +297,7 @@ body {
 /* Battery Card - Modern Flip Design */
 .battery-card {
     position: relative;
-    height: 80px;
+    height: 60px;
     width: 100%;
     transition: all 0.5s;
     transform-style: preserve-3d;
@@ -316,8 +316,8 @@ body {
     inset: 0;
     background: #ecfdf5;
     border: 1px solid #d1fae5;
-    border-radius: 4px;
-    padding: 4px;
+    border-radius: 3px;
+    padding: 2px;
     backface-visibility: hidden;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     display: flex;
@@ -345,20 +345,20 @@ body {
 }
 
 .card-title {
-    font-size: 10px;
+    font-size: 8px;
     font-weight: 600;
     color: #1f2937;
-    margin: 2px 0;
+    margin: 1px 0;
 }
 
 .battery-address {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 2px;
+    gap: 1px;
     color: #374151;
-    font-size: 8px;
-    margin: 2px 0;
+    font-size: 6px;
+    margin: 1px 0;
 }
 
 .battery-address i {
@@ -366,9 +366,9 @@ body {
 }
 
 .last-update {
-    font-size: 7px;
+    font-size: 5px;
     color: #6b7280;
-    line-height: 1.1;
+    line-height: 1.0;
 }
 
 .timestamp-value {
@@ -393,10 +393,10 @@ body {
 }
 
 .back-title {
-    font-size: 14px;
+    font-size: 10px;
     font-weight: 600;
     text-align: center;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
     color: #d1fae5;
 }
 
@@ -419,8 +419,8 @@ body {
 .data-header {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 14px;
+    gap: 4px;
+    font-size: 10px;
     color: white;
 }
 
@@ -446,7 +446,7 @@ body {
 }
 
 .data-value {
-    font-size: 12px;
+    font-size: 8px;
     font-weight: 500;
     color: white;
 }
@@ -507,12 +507,7 @@ body {
 
 
 
-/* Responsive Design - Sadece çok küçük ekranlarda 2 sütun */
-@media (max-width: 600px) {
-    .batteries-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
+
 
 /* ===== ERROR MESSAGE STYLES ===== */
 
