@@ -6,6 +6,8 @@ import threading
 import queue
 import math
 import pigpio
+import json
+import os
 from database import BatteryDatabase
 
 # Global variables
@@ -424,8 +426,210 @@ def db_worker():
             print(f"\ndb_worker'da beklenmeyen hata: {e}")
             continue
 
+def initialize_config_tables():
+    """Konfigürasyon tablolarını oluştur ve varsayılan verileri yükle"""
+    try:
+        db.execute_query('''
+            CREATE TABLE IF NOT EXISTS batconfigs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                armValue INTEGER NOT NULL,
+                Vmin REAL NOT NULL,
+                Vmax REAL NOT NULL,
+                Vnom REAL NOT NULL,
+                Rintnom INTEGER NOT NULL,
+                Tempmin_D INTEGER NOT NULL,
+                Tempmax_D INTEGER NOT NULL,
+                Tempmin_PN INTEGER NOT NULL,
+                Tempmaks_PN INTEGER NOT NULL,
+                Socmin INTEGER NOT NULL,
+                Sohmin INTEGER NOT NULL,
+                time INTEGER NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        db.execute_query('''
+            CREATE TABLE IF NOT EXISTS armconfigs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                armValue INTEGER NOT NULL,
+                akimKats INTEGER NOT NULL,
+                akimMax INTEGER NOT NULL,
+                nemMax INTEGER NOT NULL,
+                nemMin INTEGER NOT NULL,
+                tempMax INTEGER NOT NULL,
+                tempMin INTEGER NOT NULL,
+                time INTEGER NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        print("✓ Konfigürasyon tabloları oluşturuldu")
+        load_default_configs()
+    except Exception as e:
+        print(f"Konfigürasyon tabloları oluşturulurken hata: {e}")
+
+def load_default_configs():
+    """Varsayılan konfigürasyon değerlerini yükle"""
+    try:
+        # 4 kol için varsayılan batarya konfigürasyonları
+        for arm in range(1, 5):
+            db.execute_query('''
+                INSERT OR IGNORE INTO batconfigs 
+                (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmaks_PN, Socmin, Sohmin, time)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (arm, 10.12, 13.95, 11.00, 150, 15, 55, 15, 30, 30, 30, int(time.time() * 1000)))
+        
+        # 4 kol için varsayılan kol konfigürasyonları
+        for arm in range(1, 5):
+            db.execute_query('''
+                INSERT OR IGNORE INTO armconfigs 
+                (armValue, akimKats, akimMax, nemMax, nemMin, tempMax, tempMin, time)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (arm, 150, 1000, 100, 0, 65, 15, int(time.time() * 1000)))
+        
+        print("✓ Varsayılan konfigürasyon değerleri yüklendi")
+    except Exception as e:
+        print(f"Varsayılan konfigürasyon yüklenirken hata: {e}")
+
+def save_batconfig_to_db(config_data):
+    """Batarya konfigürasyonunu veritabanına kaydet ve cihaza gönder"""
+    try:
+        db.execute_query('''
+            INSERT OR REPLACE INTO batconfigs 
+            (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmaks_PN, Socmin, Sohmin, time)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (config_data['armValue'], config_data['Vmin'], config_data['Vmax'], config_data['Vnom'], 
+              config_data['Rintnom'], config_data['Tempmin_D'], config_data['Tempmax_D'], 
+              config_data['Tempmin_PN'], config_data['Tempmaks_PN'], config_data['Socmin'], 
+              config_data['Sohmin'], config_data['time']))
+        
+        print(f"✓ Kol {config_data['armValue']} batarya konfigürasyonu veritabanına kaydedildi")
+        send_batconfig_to_device(config_data)
+    except Exception as e:
+        print(f"Batarya konfigürasyonu kaydedilirken hata: {e}")
+
+def save_armconfig_to_db(config_data):
+    """Kol konfigürasyonunu veritabanına kaydet ve cihaza gönder"""
+    try:
+        db.execute_query('''
+            INSERT OR REPLACE INTO armconfigs 
+            (armValue, akimKats, akimMax, nemMax, nemMin, tempMax, tempMin, time)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (config_data['armValue'], config_data['akimKats'], config_data['akimMax'], 
+              config_data['nemMax'], config_data['nemMin'], config_data['tempMax'], 
+              config_data['tempMin'], config_data['time']))
+        
+        print(f"✓ Kol {config_data['armValue']} konfigürasyonu veritabanına kaydedildi")
+        send_armconfig_to_device(config_data)
+    except Exception as e:
+        print(f"Kol konfigürasyonu kaydedilirken hata: {e}")
+
+def send_batconfig_to_device(config_data):
+    """Batarya konfigürasyonunu cihaza gönder"""
+    try:
+        # UART paketi hazırla: Header(0x81) + Arm + Dtype(0x7C) + Vnom + Vmax + Vmin
+        packet = [
+            0x81,  # Header
+            config_data['armValue'],  # Arm
+            0x7C,  # Dtype (Batarya konfigürasyonu)
+            int(config_data['Vnom'] * 100),  # Vnom (2 byte)
+            int(config_data['Vmax'] * 100),  # Vmax (2 byte)
+            int(config_data['Vmin'] * 100)   # Vmin (2 byte)
+        ]
+        
+        # Paketi gönder
+        wave_uart_send(pi, TX_PIN, packet, int(1e6 / BAUD_RATE))
+        print(f"✓ Kol {config_data['armValue']} batarya konfigürasyonu cihaza gönderildi")
+    except Exception as e:
+        print(f"Batarya konfigürasyonu cihaza gönderilirken hata: {e}")
+
+def send_armconfig_to_device(config_data):
+    """Kol konfigürasyonunu cihaza gönder"""
+    try:
+        # UART paketi hazırla: Header(0x81) + Arm + Dtype(0x7B) + akimKats + akimMax + nem + temp
+        akim_max_bytes = [
+            (config_data['akimMax'] >> 16) & 0xFF,  # MSB
+            (config_data['akimMax'] >> 8) & 0xFF,   # Middle
+            config_data['akimMax'] & 0xFF            # LSB
+        ]
+        
+        packet = [
+            0x81,  # Header
+            config_data['armValue'],  # Arm
+            0x7B,  # Dtype (Kol konfigürasyonu)
+            config_data['akimKats'],  # Akım katsayısı
+            *akim_max_bytes,         # Maksimum akım (3 byte)
+            config_data['nemMax'],    # Nem max
+            config_data['nemMin'],    # Nem min
+            config_data['tempMax'],   # Sıcaklık max
+            config_data['tempMin']    # Sıcaklık min
+        ]
+        
+        # Paketi gönder
+        wave_uart_send(pi, TX_PIN, packet, int(1e6 / BAUD_RATE))
+        print(f"✓ Kol {config_data['armValue']} konfigürasyonu cihaza gönderildi")
+    except Exception as e:
+        print(f"Kol konfigürasyonu cihaza gönderilirken hata: {e}")
+
+def wave_uart_send(pi, gpio_pin, data_bytes, bit_time):
+    """Bit-banging UART ile veri gönder"""
+    try:
+        # Start bit (0) + data bits + stop bit (1)
+        wave_data = []
+        
+        for byte in data_bytes:
+            # Start bit
+            wave_data.append(pigpio.pulse(0, 1 << gpio_pin, bit_time))
+            # Data bits (LSB first)
+            for i in range(8):
+                bit = (byte >> i) & 1
+                if bit:
+                    wave_data.append(pigpio.pulse(1 << gpio_pin, 0, bit_time))
+                else:
+                    wave_data.append(pigpio.pulse(0, 1 << gpio_pin, bit_time))
+            # Stop bit
+            wave_data.append(pigpio.pulse(1 << gpio_pin, 0, bit_time))
+        
+        # Wave oluştur ve gönder
+        pi.wave_clear()
+        pi.wave_add_generic(wave_data)
+        wave_id = pi.wave_create()
+        pi.wave_send_once(wave_id)
+        
+        # Wave'i temizle
+        pi.wave_delete(wave_id)
+        
+    except Exception as e:
+        print(f"UART gönderim hatası: {e}")
+
+def config_worker():
+    """Konfigürasyon değişikliklerini işle"""
+    while True:
+        try:
+            config_file = "pending_config.json"
+            if os.path.exists(config_file):
+                try:
+                    with open(config_file, 'r', encoding='utf-8') as f:
+                        config_data = json.load(f)
+                    os.remove(config_file)
+                    
+                    if config_data.get('type') == 'batconfig':
+                        save_batconfig_to_db(config_data['data'])
+                    elif config_data.get('type') == 'armconfig':
+                        save_armconfig_to_db(config_data['data'])
+                    
+                except Exception as e:
+                    print(f"Konfigürasyon dosyası işlenirken hata: {e}")
+                    if os.path.exists(config_file):
+                        os.remove(config_file)
+            time.sleep(1)
+        except Exception as e:
+            print(f"Config worker hatası: {e}")
+            time.sleep(1)
+
 def main():
     try:
+        # Konfigürasyon tablolarını başlat
+        initialize_config_tables()
+        
         if not pi.connected:
             print("pigpio bağlantısı sağlanamadı!")
             return
@@ -447,6 +651,11 @@ def main():
         db_thread = threading.Thread(target=db_worker, daemon=True)
         db_thread.start()
         print("db_worker thread'i başlatıldı.")
+
+        # Konfigürasyon işlemleri
+        config_thread = threading.Thread(target=config_worker, daemon=True)
+        config_thread.start()
+        print("Config worker thread'i başlatıldı.")
 
         print(f"\nSistem başlatıldı.")
         print("Program çalışıyor... (Ctrl+C ile durdurun)")

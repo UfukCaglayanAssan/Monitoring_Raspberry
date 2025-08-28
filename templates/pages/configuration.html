@@ -2,56 +2,157 @@
 <div class="configuration-page">
     <div class="page-header">
         <h2>Sistem Konfigürasyonu</h2>
-        <p>Sistem ayarlarını yapılandırın ve yönetin</p>
+        <p>Batarya ve kol konfigürasyonlarını yapılandırın ve yönetin</p>
     </div>
     
     <div class="config-sections">
+        <!-- Batarya Konfigürasyonu -->
         <div class="config-card">
-            <h3>Genel Ayarlar</h3>
+            <h3>Batarya Konfigürasyonu</h3>
             <div class="config-form">
-                <div class="form-group">
-                    <label for="systemName">Sistem Adı</label>
-                    <input type="text" id="systemName" value="Akü İzleme Sistemi" class="form-input">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="batArmSelect">Kol Numarası</label>
+                        <select id="batArmSelect" class="form-select">
+                            <option value="">Kol Seçin</option>
+                            <option value="1">Kol 1</option>
+                            <option value="2">Kol 2</option>
+                            <option value="3">Kol 3</option>
+                            <option value="4">Kol 4</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="updateInterval">Güncelleme Aralığı (saniye)</label>
-                    <input type="number" id="updateInterval" value="5" class="form-input">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="Vmin">Vmin (V)</label>
+                        <input type="number" id="Vmin" step="0.01" value="10.12" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="Vmax">Vmax (V)</label>
+                        <input type="number" id="Vmax" step="0.01" value="13.95" class="form-input">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="timezone">Zaman Dilimi</label>
-                    <select id="timezone" class="form-select">
-                        <option value="Europe/Istanbul" selected>İstanbul (UTC+3)</option>
-                        <option value="UTC">UTC</option>
-                        <option value="Europe/London">Londra (UTC+0)</option>
-                    </select>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="Vnom">Nominal Gerilim (V)</label>
+                        <input type="number" id="Vnom" step="0.01" value="11.00" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="Rintnom">Nominal İç Direnç (mΩ)</label>
+                        <input type="number" id="Rintnom" value="150" class="form-input">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="Tempmin_D">Modül Sıcaklık Min (°C)</label>
+                        <input type="number" id="Tempmin_D" value="15" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="Tempmax_D">Modül Sıcaklık Max (°C)</label>
+                        <input type="number" id="Tempmax_D" value="55" class="form-input">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="Tempmin_PN">Kutup Sıcaklık Min (°C)</label>
+                        <input type="number" id="Tempmin_PN" value="15" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="Tempmaks_PN">Kutup Sıcaklık Max (°C)</label>
+                        <input type="number" id="Tempmaks_PN" value="30" class="form-input">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="Socmin">SOC Min (%)</label>
+                        <input type="number" id="Socmin" value="30" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="Sohmin">SOH Min (%)</label>
+                        <input type="number" id="Sohmin" value="30" class="form-input">
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button class="btn btn-primary" id="saveBatConfig">
+                        <i class="fas fa-save"></i>
+                        Batarya Konfigürasyonunu Kaydet
+                    </button>
                 </div>
             </div>
         </div>
         
+        <!-- Kol Konfigürasyonu -->
         <div class="config-card">
-            <h3>Veri Saklama</h3>
+            <h3>Kol Konfigürasyonu</h3>
             <div class="config-form">
-                <div class="form-group">
-                    <label for="retentionDays">Veri Saklama Süresi (gün)</label>
-                    <input type="number" id="retentionDays" value="30" class="form-input">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="armArmSelect">Kol Numarası</label>
+                        <select id="armArmSelect" class="form-select">
+                            <option value="">Kol Seçin</option>
+                            <option value="1">Kol 1</option>
+                            <option value="2">Kol 2</option>
+                            <option value="3">Kol 3</option>
+                            <option value="4">Kol 4</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="backupEnabled">Otomatik Yedekleme</label>
-                    <input type="checkbox" id="backupEnabled" checked>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="akimKats">Akım Katsayısı</label>
+                        <input type="number" id="akimKats" value="150" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="akimMax">Maksimum Akım (A)</label>
+                        <input type="number" id="akimMax" value="1000" class="form-input">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nemMin">Nem Min (%)</label>
+                        <input type="number" id="nemMin" value="0" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="nemMax">Nem Max (%)</label>
+                        <input type="number" id="nemMax" value="100" class="form-input">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="tempMin">Sıcaklık Min (°C)</label>
+                        <input type="number" id="tempMin" value="15" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="tempMax">Sıcaklık Max (°C)</label>
+                        <input type="number" id="tempMax" value="65" class="form-input">
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button class="btn btn-primary" id="saveArmConfig">
+                        <i class="fas fa-save"></i>
+                        Kol Konfigürasyonunu Kaydet
+                    </button>
                 </div>
             </div>
         </div>
     </div>
     
     <div class="config-actions">
-        <button class="btn btn-primary" id="saveConfig">
-            <i class="fas fa-save"></i>
-            Ayarları Kaydet
-        </button>
         <button class="btn btn-secondary" id="resetConfig">
             <i class="fas fa-undo"></i>
             Varsayılana Döndür
         </button>
     </div>
 </div>
-<!-- Configuration sayfası script'i main.js tarafından yüklenecek -->
+
+<!-- Configuration sayfası script'i configuration.js tarafından yüklenecek -->

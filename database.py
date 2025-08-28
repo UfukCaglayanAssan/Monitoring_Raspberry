@@ -721,3 +721,74 @@ class BatteryDatabase:
             size_mb = os.path.getsize(self.db_path) / (1024 * 1024)
             return size_mb
         return 0
+    
+    def get_batconfigs(self):
+        """Tüm batarya konfigürasyonlarını getir"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, 
+                           Tempmin_PN, Tempmaks_PN, Socmin, Sohmin, time, created_at
+                    FROM batconfigs 
+                    ORDER BY armValue
+                ''')
+                
+                rows = cursor.fetchall()
+                configs = []
+                
+                for row in rows:
+                    config = {
+                        'armValue': row[0],
+                        'Vmin': row[1],
+                        'Vmax': row[2],
+                        'Vnom': row[3],
+                        'Rintnom': row[4],
+                        'Tempmin_D': row[5],
+                        'Tempmax_D': row[6],
+                        'Tempmin_PN': row[7],
+                        'Tempmaks_PN': row[8],
+                        'Socmin': row[9],
+                        'Sohmin': row[10],
+                        'time': row[11],
+                        'created_at': row[12]
+                    }
+                    configs.append(config)
+                
+                return configs
+        except Exception as e:
+            print(f"get_batconfigs hatası: {e}")
+            return []
+    
+    def get_armconfigs(self):
+        """Tüm kol konfigürasyonlarını getir"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT armValue, akimKats, akimMax, nemMax, nemMin, tempMax, tempMin, time, created_at
+                    FROM armconfigs 
+                    ORDER BY armValue
+                ''')
+                
+                rows = cursor.fetchall()
+                configs = []
+                
+                for row in rows:
+                    config = {
+                        'armValue': row[0],
+                        'akimKats': row[1],
+                        'akimMax': row[2],
+                        'nemMax': row[3],
+                        'nemMin': row[4],
+                        'tempMax': row[5],
+                        'tempMin': row[6],
+                        'time': row[7],
+                        'created_at': row[8]
+                    }
+                    configs.append(config)
+                
+                return configs
+        except Exception as e:
+            print(f"get_armconfigs hatası: {e}")
+            return []
