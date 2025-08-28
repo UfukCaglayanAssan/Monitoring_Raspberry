@@ -297,7 +297,7 @@ body {
 /* Battery Card - Modern Flip Design */
 .battery-card {
     position: relative;
-    height: 220px;
+    height: 170px;
     width: 100%;
     transition: all 0.5s;
     transform-style: preserve-3d;
@@ -402,6 +402,7 @@ body {
     grid-template-columns: 1fr;
     gap: 6px;
     flex: 1;
+    padding:5px;
 }
 
 .data-item {
