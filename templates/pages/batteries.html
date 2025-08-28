@@ -1,60 +1,155 @@
 <!-- Batteries Sayfası İçeriği -->
 <div class="batteries-page">
+    <!-- Sayfa Başlığı -->
     <div class="page-header">
-        <h2>Batarya Durumu</h2>
-        <p>Tüm bataryaların gerçek zamanlı durumunu izleyin</p>
+        <h2>Batarya Durumları</h2>
+        <div class="header-actions">
+            <button class="btn btn-outline" id="refreshBatteries">
+                <i class="fas fa-sync-alt"></i>
+                Yenile
+            </button>
+            <button class="btn btn-outline" id="exportBatteries">
+                <i class="fas fa-download"></i>
+                Dışa Aktar
+            </button>
+        </div>
     </div>
-    
-    <div class="batteries-grid">
-        <div class="battery-card">
-            <div class="battery-header">
-                <h3>Batarya 1</h3>
-                <span class="battery-status online">Çevrimiçi</span>
+
+    <!-- Filtreleme Bölümü -->
+    <div class="filters-section">
+        <div class="filters-grid">
+            <div class="filter-group">
+                <label for="armFilter">Kol Numarası</label>
+                <select id="armFilter" class="filter-select">
+                    <option value="">Tümü</option>
+                    <option value="1">Kol 1</option>
+                    <option value="2">Kol 2</option>
+                    <option value="3">Kol 3</option>
+                    <option value="4">Kol 4</option>
+                </select>
             </div>
-            <div class="battery-metrics">
-                <div class="metric">
-                    <span class="label">Gerilim:</span>
-                    <span class="value">48.2V</span>
-                </div>
-                <div class="metric">
-                    <span class="label">Şarj:</span>
-                    <span class="value">85%</span>
-                </div>
-                <div class="metric">
-                    <span class="label">Sıcaklık:</span>
-                    <span class="value">32°C</span>
-                </div>
-                <div class="metric">
-                    <span class="label">Sağlık:</span>
-                    <span class="value">92%</span>
-                </div>
+            
+            <div class="filter-group">
+                <label for="batteryFilter">Batarya Adresi</label>
+                <input type="text" id="batteryFilter" placeholder="Batarya adresi giriniz" class="filter-input">
+            </div>
+            
+            <div class="filter-group">
+                <label for="dataTypeFilter">Veri Türü</label>
+                <select id="dataTypeFilter" class="filter-select">
+                    <option value="">Tümü</option>
+                    <option value="10">Gerilim</option>
+                    <option value="11">Şarj Durumu</option>
+                    <option value="12">Sıcaklık</option>
+                    <option value="126">Sağlık Durumu</option>
+                </select>
             </div>
         </div>
         
-        <div class="battery-card">
-            <div class="battery-header">
-                <h3>Batarya 2</h3>
-                <span class="battery-status online">Çevrimiçi</span>
+        <div class="filter-actions">
+            <button class="btn btn-secondary" id="clearFilters">
+                <i class="fas fa-times"></i>
+                Filtreleri Temizle
+            </button>
+            <button class="btn btn-primary" id="applyFilters">
+                <i class="fas fa-filter"></i>
+                Filtrele
+            </button>
+        </div>
+    </div>
+
+    <!-- Batarya Kartları Grid -->
+    <div class="batteries-container">
+        <div class="batteries-grid" id="batteriesGrid">
+            <!-- Batarya kartları JavaScript ile doldurulacak -->
+        </div>
+        
+        <!-- Loading Spinner -->
+        <div class="loading-spinner" id="loadingSpinner">
+            <div class="spinner"></div>
+            <p>Batarya verileri yükleniyor...</p>
+        </div>
+        
+        <!-- Veri Yok Mesajı -->
+        <div class="no-data-message" id="noDataMessage" style="display: none;">
+            <i class="fas fa-battery-empty"></i>
+            <h3>Veri Bulunamadı</h3>
+            <p>Seçilen filtrelere uygun batarya verisi bulunamadı.</p>
+        </div>
+    </div>
+
+    <!-- Sayfalama -->
+    <div class="pagination">
+        <button class="pagination-btn" id="prevPage" disabled>
+            <i class="fas fa-chevron-left"></i>
+            Önceki
+        </button>
+        <span class="page-info">
+            Sayfa <span id="currentPage">1</span> / <span id="totalPages">1</span>
+        </span>
+        <button class="pagination-btn" id="nextPage">
+            Sonraki
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
+</div>
+
+<!-- Batarya kartı template'i -->
+<template id="batteryCardTemplate">
+    <div class="battery-card" data-arm="" data-battery="" data-timestamp="">
+        <div class="card-header">
+            <h3 class="card-title">Batarya Detayları</h3>
+            <div class="battery-info">
+                <span class="arm-label">Kol: <span class="arm-value"></span></span>
+                <span class="battery-label">Batarya: <span class="battery-value"></span></span>
             </div>
-            <div class="battery-metrics">
-                <div class="metric">
-                    <span class="label">Gerilim:</span>
-                    <span class="value">47.8V</span>
+        </div>
+        
+        <div class="card-content">
+            <div class="data-row">
+                <div class="data-icon voltage-icon">
+                    <i class="fas fa-bolt"></i>
                 </div>
-                <div class="metric">
-                    <span class="label">Şarj:</span>
-                    <span class="value">78%</span>
+                <div class="data-label">Gerilim:</div>
+                <div class="data-value voltage-value">--</div>
+            </div>
+            
+            <div class="data-row">
+                <div class="data-icon temperature-icon">
+                    <i class="fas fa-thermometer-half"></i>
                 </div>
-                <div class="metric">
-                    <span class="label">Sıcaklık:</span>
-                    <span class="value">29°C</span>
+                <div class="data-label">Sıcaklık:</div>
+                <div class="data-value temperature-value">--</div>
+            </div>
+            
+            <div class="data-row">
+                <div class="data-icon health-icon">
+                    <i class="fas fa-battery-full"></i>
                 </div>
-                <div class="metric">
-                    <span class="label">Sağlık:</span>
-                    <span class="value">88%</span>
+                <div class="data-label">Sağlık Durumu:</div>
+                <div class="data-value health-value">--</div>
+            </div>
+            
+            <div class="data-row">
+                <div class="data-icon charge-icon">
+                    <i class="fas fa-hashtag"></i>
                 </div>
+                <div class="data-label">Şarj Durumu:</div>
+                <div class="data-value charge-value">--</div>
+            </div>
+        </div>
+        
+        <div class="card-footer">
+            <div class="timestamp">
+                <i class="fas fa-clock"></i>
+                <span class="timestamp-value">--</span>
+            </div>
+            <div class="status-indicator">
+                <span class="status-dot"></span>
+                <span class="status-text">Aktif</span>
             </div>
         </div>
     </div>
-</div>
-<!-- Batteries sayfası script'i main.js tarafından yüklenecek -->
+</template>
+
+<!-- Batteries sayfası script'i batteries.js tarafından yüklenecek -->
