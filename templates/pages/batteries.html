@@ -1,19 +1,6 @@
 <!-- Batteries Sayfası İçeriği -->
 <div class="batteries-page">
-    <!-- Sayfa Başlığı -->
-    <div class="page-header">
-        <h2>Batarya Durumları</h2>
-        <div class="header-actions">
-            <button class="btn btn-outline" id="refreshBatteries">
-                <i class="fas fa-sync-alt"></i>
-                Yenile
-            </button>
-            <button class="btn btn-outline" id="exportBatteries">
-                <i class="fas fa-download"></i>
-                Dışa Aktar
-            </button>
-        </div>
-    </div>
+
 
 
 
@@ -56,56 +43,59 @@
 <!-- Batarya kartı template'i -->
 <template id="batteryCardTemplate">
     <div class="battery-card" data-arm="" data-battery="" data-timestamp="">
-        <div class="card-header">
-            <h3 class="card-title">Batarya Detayları</h3>
-            <div class="battery-info">
-                <span class="arm-label">Kol: <span class="arm-value"></span></span>
-                <span class="battery-label">Batarya: <span class="battery-value"></span></span>
+        <!-- Ön Yüz -->
+        <div class="card-front">
+            <div class="battery-icon">
+                <i class="fas fa-battery-full"></i>
             </div>
-        </div>
-        
-        <div class="card-content">
-            <div class="data-row">
-                <div class="data-icon voltage-icon">
-                    <i class="fas fa-bolt"></i>
-                </div>
-                <div class="data-label">Gerilim:</div>
-                <div class="data-value voltage-value">--</div>
-            </div>
-            
-            <div class="data-row">
-                <div class="data-icon temperature-icon">
-                    <i class="fas fa-thermometer-half"></i>
-                </div>
-                <div class="data-label">Sıcaklık:</div>
-                <div class="data-value temperature-value">--</div>
-            </div>
-            
-            <div class="data-row">
-                <div class="data-icon health-icon">
-                    <i class="fas fa-battery-full"></i>
-                </div>
-                <div class="data-label">Sağlık Durumu:</div>
-                <div class="data-value health-value">--</div>
-            </div>
-            
-            <div class="data-row">
-                <div class="data-icon charge-icon">
+            <div class="card-info">
+                <h3 class="card-title">Batarya Ünitesi</h3>
+                <div class="battery-address">
                     <i class="fas fa-hashtag"></i>
+                    <span>Adres: <span class="battery-value"></span></span>
                 </div>
-                <div class="data-label">Şarj Durumu:</div>
-                <div class="data-value charge-value">--</div>
+                <div class="last-update">
+                    Son güncelleme: <br>
+                    <span class="timestamp-value">--</span>
+                </div>
             </div>
         </div>
         
-        <div class="card-footer">
-            <div class="timestamp">
-                <i class="fas fa-clock"></i>
-                <span class="timestamp-value">--</span>
-            </div>
-            <div class="status-indicator">
-                <span class="status-dot"></span>
-                <span class="status-text">Aktif</span>
+        <!-- Arka Yüz -->
+        <div class="card-back">
+            <h3 class="back-title">Batarya Detayları</h3>
+            <div class="data-grid">
+                <div class="data-item">
+                    <div class="data-header">
+                        <i class="fas fa-bolt voltage-icon"></i>
+                        <span>Gerilim:</span>
+                    </div>
+                    <span class="data-value voltage-value">--</span>
+                </div>
+                
+                <div class="data-item">
+                    <div class="data-header">
+                        <i class="fas fa-thermometer-half temperature-icon"></i>
+                        <span>Sıcaklık:</span>
+                    </div>
+                    <span class="data-value temperature-value">--</span>
+                </div>
+                
+                <div class="data-item">
+                    <div class="data-header">
+                        <i class="fas fa-battery-full health-icon"></i>
+                        <span>Sağlık:</span>
+                    </div>
+                    <span class="data-value health-value">--</span>
+                </div>
+                
+                <div class="data-item">
+                    <div class="data-header">
+                        <i class="fas fa-hashtag charge-icon"></i>
+                        <span>Şarj:</span>
+                    </div>
+                    <span class="data-value charge-value">--</span>
+                </div>
             </div>
         </div>
     </div>

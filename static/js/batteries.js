@@ -126,34 +126,29 @@ class BatteriesPage {
         cardElement.dataset.battery = battery.batteryAddress;
         cardElement.dataset.timestamp = battery.timestamp;
         
-        // Header bilgileri
-        cardElement.querySelector('.arm-value').textContent = battery.arm;
-        cardElement.querySelector('.battery-value').textContent = battery.batteryAddress;
-        
-        // Veri değerleri
-        cardElement.querySelector('.voltage-value').textContent = this.formatValue(battery.voltage, 'V');
-        cardElement.querySelector('.temperature-value').textContent = this.formatValue(battery.temperature, '°C');
-        cardElement.querySelector('.health-value').textContent = this.formatValue(battery.health, '%');
-        cardElement.querySelector('.charge-value').textContent = this.formatValue(battery.charge, '%');
+        // Batarya adresi
+        const batteryValue = cardElement.querySelector('.battery-value');
+        if (batteryValue) batteryValue.textContent = battery.batteryAddress;
         
         // Timestamp
-        const timestamp = new Date(battery.timestamp);
-        cardElement.querySelector('.timestamp-value').textContent = timestamp.toLocaleString('tr-TR');
-        
-        // Status indicator
-        const statusDot = cardElement.querySelector('.status-dot');
-        const statusText = cardElement.querySelector('.status-text');
-        
-        if (battery.isActive) {
-            statusDot.style.background = '#4CAF50';
-            statusText.textContent = 'Aktif';
-            statusText.style.color = '#4CAF50';
-        } else {
-            statusDot.style.background = '#FF6B6B';
-            statusText.textContent = 'Pasif';
-            statusText.style.color = '#FF6B6B';
+        const timestampValue = cardElement.querySelector('.timestamp-value');
+        if (timestampValue) {
+            const timestamp = new Date(battery.timestamp);
+            timestampValue.textContent = timestamp.toLocaleString('tr-TR');
         }
         
+        // Veri değerleri (arka yüzde)
+        const voltageValue = cardElement.querySelector('.voltage-value');
+        const temperatureValue = cardElement.querySelector('.temperature-value');
+        const healthValue = cardElement.querySelector('.health-value');
+        const chargeValue = cardElement.querySelector('.charge-value');
+        
+        if (voltageValue) voltageValue.textContent = this.formatValue(battery.voltage, '');
+        if (temperatureValue) temperatureValue.textContent = this.formatValue(battery.temperature, '');
+        if (healthValue) healthValue.textContent = this.formatValue(battery.health, '');
+        if (chargeValue) chargeValue.textContent = this.formatValue(battery.charge, '');
+        
+        console.log('Kart oluşturuldu:', cardElement);
         return cardElement;
     }
     
