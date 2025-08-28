@@ -77,27 +77,51 @@ class BatteriesPage {
     }
     
     renderBatteries() {
+        console.log('renderBatteries çağrıldı, veri sayısı:', this.batteriesData.length);
+        
         const grid = document.getElementById('batteriesGrid');
+        if (!grid) {
+            console.error('batteriesGrid bulunamadı!');
+            return;
+        }
+        
         grid.innerHTML = '';
         
         if (this.batteriesData.length === 0) {
+            console.log('Veri yok, showNoData çağrılıyor');
             this.showNoData();
             return;
         }
         
+        console.log('Kartlar oluşturuluyor...');
         // Her batarya için kart oluştur
-        this.batteriesData.forEach(battery => {
+        this.batteriesData.forEach((battery, index) => {
+            console.log(`Kart ${index + 1} oluşturuluyor:`, battery);
             const card = this.createBatteryCard(battery);
             grid.appendChild(card);
         });
+        
+        console.log('Tüm kartlar eklendi');
     }
     
     createBatteryCard(battery) {
+        console.log('createBatteryCard çağrıldı:', battery);
+        
         const template = document.getElementById('batteryCardTemplate');
+        if (!template) {
+            console.error('batteryCardTemplate bulunamadı!');
+            return null;
+        }
+        
         const card = template.content.cloneNode(true);
         
         // Kart verilerini doldur
         const cardElement = card.querySelector('.battery-card');
+        if (!cardElement) {
+            console.error('battery-card elementi bulunamadı!');
+            return null;
+        }
+        
         cardElement.dataset.arm = battery.arm;
         cardElement.dataset.battery = battery.batteryAddress;
         cardElement.dataset.timestamp = battery.timestamp;
