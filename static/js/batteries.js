@@ -8,29 +8,16 @@ class BatteriesPage {
         
         this.init();
     }
-    
+
     init() {
         this.bindEvents();
         this.loadBatteries();
         this.startAutoRefresh();
     }
-    
+
     bindEvents() {
         // Pagination
-        const prevPageBtn = document.getElementById('prevPage');
-        const nextPageBtn = document.getElementById('nextPage');
-        
-        if (prevPageBtn) {
-            prevPageBtn.addEventListener('click', () => {
-                this.previousPage();
-            });
-        }
-        
-        if (nextPageBtn) {
-            nextPageBtn.addEventListener('click', () => {
-                this.nextPage();
-            });
-        }
+
     }
     
     async loadBatteries() {
@@ -163,32 +150,9 @@ class BatteriesPage {
     
 
     
-    previousPage() {
-        if (this.currentPage > 1) {
-            this.currentPage--;
-            this.loadBatteries();
-        }
-    }
+
     
-    nextPage() {
-        if (this.currentPage < this.totalPages) {
-            this.currentPage++;
-            this.loadBatteries();
-        }
-    }
-    
-    updatePagination() {
-        const prevBtn = document.getElementById('prevPage');
-        const nextBtn = document.getElementById('nextPage');
-        const currentPageSpan = document.getElementById('currentPage');
-        const totalPagesSpan = document.getElementById('totalPages');
-        
-        prevBtn.disabled = this.currentPage <= 1;
-        nextBtn.disabled = this.currentPage >= this.totalPages;
-        
-        currentPageSpan.textContent = this.currentPage;
-        totalPagesSpan.textContent = this.totalPages;
-    }
+
     
     showLoading(show) {
         const spinner = document.getElementById('loadingSpinner');
