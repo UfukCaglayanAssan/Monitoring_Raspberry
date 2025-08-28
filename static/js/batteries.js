@@ -16,24 +16,21 @@ class BatteriesPage {
     }
     
     bindEvents() {
-        // Refresh button
-        document.getElementById('refreshBatteries').addEventListener('click', () => {
-            this.loadBatteries();
-        });
-        
-        // Export button
-        document.getElementById('exportBatteries').addEventListener('click', () => {
-            this.exportBatteries();
-        });
-        
         // Pagination
-        document.getElementById('prevPage').addEventListener('click', () => {
-            this.previousPage();
-        });
+        const prevPageBtn = document.getElementById('prevPage');
+        const nextPageBtn = document.getElementById('nextPage');
         
-        document.getElementById('nextPage').addEventListener('click', () => {
-            this.nextPage();
-        });
+        if (prevPageBtn) {
+            prevPageBtn.addEventListener('click', () => {
+                this.previousPage();
+            });
+        }
+        
+        if (nextPageBtn) {
+            nextPageBtn.addEventListener('click', () => {
+                this.nextPage();
+            });
+        }
     }
     
     async loadBatteries() {
@@ -239,35 +236,7 @@ class BatteriesPage {
         }, 5000);
     }
     
-    async exportBatteries() {
-        try {
-            const response = await fetch('/api/batteries/export', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({})
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `batteries_export_${new Date().toISOString().split('T')[0]}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            
-        } catch (error) {
-            console.error('Export hatası:', error);
-            this.showError('Export sırasında hata oluştu: ' + error.message);
-        }
-    }
+
     
     startAutoRefresh() {
         // Her 30 saniyede bir otomatik yenile
