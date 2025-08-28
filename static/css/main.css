@@ -384,7 +384,7 @@ body {
     background: linear-gradient(135deg, #059669, #047857);
     color: white;
     border-radius: 8px;
-    padding: 8px;
+    padding: 4px;
     transform: rotateY(180deg);
     backface-visibility: hidden;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -400,7 +400,7 @@ body {
 .data-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 2px;
+    gap: 6px;
     flex: 1;
 }
 
@@ -408,8 +408,8 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 2px 6px;
-    border-radius: 4px;
+    padding: 1px 4px;
+    border-radius: 3px;
     background: rgba(255, 255, 255, 0.1);
 }
 

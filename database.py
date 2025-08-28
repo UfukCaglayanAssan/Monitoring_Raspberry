@@ -577,37 +577,34 @@ class BatteryDatabase:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 
-                # Son batarya verilerini getir (k!=2 olanlar, yani batarya verileri)
-                base_query = '''
-                    SELECT DISTINCT
-                        bd.arm,
-                        bd.k as batteryAddress,
-                        MAX(bd.timestamp) as latest_timestamp
-                    FROM battery_data bd
-                    WHERE bd.k != 2
-                '''
+                # Tüm batarya adreslerini getir (k değeri 2'den farklı olanlar)
+                cursor.execute('''
+                    SELECT DISTINCT arm, k as batteryAddress
+                    FROM battery_data 
+                    WHERE k != 2
+                    ORDER BY arm, k
+                ''')
                 
-                params = []
+                all_batteries = cursor.fetchall()
+                print(f"Bulunan batarya sayısı: {len(all_batteries)}")
+                print(f"Batarya listesi: {all_batteries}")
                 
-                base_query += ' GROUP BY bd.arm, bd.k'
-                
-                # Toplam sayı
-                count_query = f"SELECT COUNT(*) FROM ({base_query})"
-                cursor.execute(count_query, params)
-                total_count = cursor.fetchone()[0]
+                if not all_batteries:
+                    print("Hiç batarya bulunamadı!")
+                    return {
+                        'batteries': [],
+                        'totalPages': 1,
+                        'currentPage': 1
+                    }
                 
                 # Sayfalama
-                base_query += ' ORDER BY bd.arm, bd.k LIMIT ? OFFSET ?'
-                params.extend([page_size, (page - 1) * page_size])
-                
-                cursor.execute(base_query, params)
-                battery_groups = cursor.fetchall()
+                start_idx = (page - 1) * page_size
+                end_idx = start_idx + page_size
+                page_batteries = all_batteries[start_idx:end_idx]
                 
                 batteries = []
                 
-                for group in battery_groups:
-                    arm, battery_address, latest_timestamp = group
-                    
+                for arm, battery_address in page_batteries:
                     # Her batarya için son verileri getir
                     battery_data = self.get_latest_battery_data(arm, battery_address)
                     
@@ -616,7 +613,7 @@ class BatteryDatabase:
                 
                 return {
                     'batteries': batteries,
-                    'totalPages': (total_count + page_size - 1) // page_size,
+                    'totalPages': (len(all_batteries) + page_size - 1) // page_size,
                     'currentPage': page
                 }
         except Exception as e:
