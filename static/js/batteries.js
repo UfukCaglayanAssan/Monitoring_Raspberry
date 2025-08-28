@@ -283,9 +283,23 @@ class BatteriesPage {
 }
 
 // Sayfa yüklendiğinde başlat
-document.addEventListener('DOMContentLoaded', () => {
-    new BatteriesPage();
-});
+function initBatteriesPage() {
+    console.log('Batteries sayfası başlatılıyor...');
+    try {
+        new BatteriesPage();
+        console.log('Batteries sayfası başarıyla başlatıldı');
+    } catch (error) {
+        console.error('Batteries sayfası başlatılırken hata:', error);
+    }
+}
+
+// DOMContentLoaded event'i için
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initBatteriesPage);
+} else {
+    // DOM zaten yüklenmiş
+    initBatteriesPage();
+}
 
 // Global error handler
 window.addEventListener('error', (event) => {
