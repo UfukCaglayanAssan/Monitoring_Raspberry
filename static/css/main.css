@@ -297,7 +297,7 @@ body {
 /* Battery Card - Modern Flip Design */
 .battery-card {
     position: relative;
-    height: 120px;
+    height: 180px;
     width: 100%;
     transition: all 0.5s;
     transform-style: preserve-3d;
@@ -383,7 +383,7 @@ body {
     background: linear-gradient(135deg, #059669, #047857);
     color: white;
     border-radius: 8px;
-    padding: 8px;
+    padding: 16px;
     transform: rotateY(180deg);
     backface-visibility: hidden;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -396,14 +396,14 @@ body {
     font-size: 10px;
     font-weight: 600;
     text-align: center;
-    margin-bottom: 4px;
+    margin-bottom: 12px;
     color: #d1fae5;
 }
 
 .data-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 4px;
+    gap: 8px;
     flex: 1;
 }
 
@@ -411,7 +411,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 4px 6px;
+    padding: 8px 10px;
     border-radius: 6px;
     background: rgba(255, 255, 255, 0.1);
 }

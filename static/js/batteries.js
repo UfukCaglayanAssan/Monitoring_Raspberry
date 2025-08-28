@@ -16,8 +16,8 @@ class BatteriesPage {
     }
 
     bindEvents() {
-        // Pagination
-
+        // Şu anda event listener gerekmiyor
+        // Kartlar hover ile çevriliyor
     }
     
     async loadBatteries() {
@@ -47,7 +47,6 @@ class BatteriesPage {
                 this.totalPages = data.totalPages;
                 this.currentPage = data.currentPage;
                 this.renderBatteries();
-                this.updatePagination();
             } else {
                 throw new Error(data.message || 'Veri yüklenemedi');
             }
@@ -61,8 +60,6 @@ class BatteriesPage {
     }
     
     renderBatteries() {
-        console.log('renderBatteries çağrıldı, veri sayısı:', this.batteriesData.length);
-        
         const grid = document.getElementById('batteriesGrid');
         if (!grid) {
             console.error('batteriesGrid bulunamadı!');
@@ -72,25 +69,18 @@ class BatteriesPage {
         grid.innerHTML = '';
         
         if (this.batteriesData.length === 0) {
-            console.log('Veri yok, showNoData çağrılıyor');
             this.showNoData();
             return;
         }
         
-        console.log('Kartlar oluşturuluyor...');
         // Her batarya için kart oluştur
         this.batteriesData.forEach((battery, index) => {
-            console.log(`Kart ${index + 1} oluşturuluyor:`, battery);
             const card = this.createBatteryCard(battery);
             grid.appendChild(card);
         });
-        
-        console.log('Tüm kartlar eklendi');
     }
     
     createBatteryCard(battery) {
-        console.log('createBatteryCard çağrıldı:', battery);
-        
         const template = document.getElementById('batteryCardTemplate');
         if (!template) {
             console.error('batteryCardTemplate bulunamadı!');
@@ -132,7 +122,6 @@ class BatteriesPage {
         if (healthValue) healthValue.textContent = this.formatValue(battery.health, '');
         if (chargeValue) chargeValue.textContent = this.formatValue(battery.charge, '');
         
-        console.log('Kart oluşturuldu:', cardElement);
         return cardElement;
     }
     
@@ -205,6 +194,7 @@ class BatteriesPage {
     startAutoRefresh() {
         // Her 30 saniyede bir otomatik yenile
         setInterval(() => {
+            console.log('Otomatik yenileme çalışıyor...');
             this.loadBatteries();
         }, 30000);
     }
