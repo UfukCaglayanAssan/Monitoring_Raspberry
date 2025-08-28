@@ -21,6 +21,11 @@ class BatteriesPage {
     }
     
     async loadBatteries() {
+        // Sayfa kontrolü yap
+        if (!this.isPageActive()) {
+            return;
+        }
+        
         try {
             this.showLoading(true);
             
@@ -60,6 +65,11 @@ class BatteriesPage {
     }
     
     renderBatteries() {
+        // Sayfa kontrolü yap
+        if (!this.isPageActive()) {
+            return;
+        }
+        
         const grid = document.getElementById('batteriesGrid');
         if (!grid) {
             console.error('batteriesGrid bulunamadı!');
@@ -76,7 +86,9 @@ class BatteriesPage {
         // Her batarya için kart oluştur
         this.batteriesData.forEach((battery, index) => {
             const card = this.createBatteryCard(battery);
-            grid.appendChild(card);
+            if (card) {
+                grid.appendChild(card);
+            }
         });
     }
     
@@ -144,9 +156,18 @@ class BatteriesPage {
 
     
     showLoading(show) {
+        // Sayfa kontrolü yap
+        if (!this.isPageActive()) {
+            return;
+        }
+        
         const spinner = document.getElementById('loadingSpinner');
         const grid = document.getElementById('batteriesGrid');
         const noData = document.getElementById('noDataMessage');
+        
+        if (!spinner || !grid || !noData) {
+            return;
+        }
         
         if (show) {
             spinner.style.display = 'flex';
@@ -159,8 +180,17 @@ class BatteriesPage {
     }
     
     showNoData() {
+        // Sayfa kontrolü yap
+        if (!this.isPageActive()) {
+            return;
+        }
+        
         const noData = document.getElementById('noDataMessage');
         const grid = document.getElementById('batteriesGrid');
+        
+        if (!noData || !grid) {
+            return;
+        }
         
         noData.style.display = 'block';
         grid.style.display = 'none';
@@ -191,11 +221,20 @@ class BatteriesPage {
     
 
     
+    isPageActive() {
+        // Batteries sayfasında olup olmadığımızı kontrol et
+        const batteriesPage = document.querySelector('.batteries-page');
+        return batteriesPage && batteriesPage.style.display !== 'none';
+    }
+    
     startAutoRefresh() {
         // Her 30 saniyede bir otomatik yenile
         setInterval(() => {
-            console.log('Otomatik yenileme çalışıyor...');
-            this.loadBatteries();
+            // Sadece sayfa aktifse yenile
+            if (this.isPageActive()) {
+                console.log('Otomatik yenileme çalışıyor...');
+                this.loadBatteries();
+            }
         }, 30000);
     }
 }
