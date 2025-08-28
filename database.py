@@ -207,6 +207,21 @@ class BatteryDatabase:
         """Thread-safe bağlantı döndür"""
         return sqlite3.connect(self.db_path)
     
+    def execute_query(self, query, params=None):
+        """Özel SQL sorgusu çalıştır"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                if params:
+                    cursor.execute(query, params)
+                else:
+                    cursor.execute(query)
+                conn.commit()
+                return cursor
+        except Exception as e:
+            print(f"execute_query hatası: {e}")
+            raise e
+    
     def insert_battery_data(self, arm, k, dtype, data, timestamp):
         """Veri ekle (arm ve battery için tek tablo)"""
         with self.get_connection() as conn:

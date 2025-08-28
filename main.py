@@ -525,47 +525,127 @@ def save_armconfig_to_db(config_data):
 def send_batconfig_to_device(config_data):
     """Batarya konfigürasyonunu cihaza gönder"""
     try:
-        # UART paketi hazırla: Header(0x81) + Arm + Dtype(0x7C) + Vnom + Vmax + Vmin
-        packet = [
-            0x81,  # Header
-            config_data['armValue'],  # Arm
-            0x7C,  # Dtype (Batarya konfigürasyonu)
-            int(config_data['Vnom'] * 100),  # Vnom (2 byte)
-            int(config_data['Vmax'] * 100),  # Vmax (2 byte)
-            int(config_data['Vmin'] * 100)   # Vmin (2 byte)
-        ]
+        # UART paketi hazırla: Header(0x81) + Arm + Dtype(0x7C) + tüm parametreler + CRC
+        config_packet = bytearray([0x81])  # Header
+        
+        # Arm değerini ekle
+        arm_value = int(config_data['armValue']) & 0xFF
+        config_packet.append(arm_value)
+        
+        # Dtype ekle
+        config_packet.append(0x7C)
+        
+        # Float değerleri 2 byte olarak hazırla (1 byte tam kısım, 1 byte ondalık kısım)
+        vnom = float(str(config_data['Vnom']))
+        vmax = float(str(config_data['Vmax']))
+        vmin = float(str(config_data['Vmin']))
+        
+        # Float değerleri ekle (Vnom, Vmax, Vmin)
+        config_packet.extend([
+            int(vnom) & 0xFF,                # Vnom tam kısım
+            int((vnom % 1) * 100) & 0xFF,    # Vnom ondalık kısım
+            int(vmax) & 0xFF,                # Vmax tam kısım
+            int((vmax % 1) * 100) & 0xFF,    # Vmax ondalık kısım
+            int(vmin) & 0xFF,                # Vmin tam kısım
+            int((vmin % 1) * 100) & 0xFF     # Vmin ondalık kısım
+        ])
+        
+        # 1 byte değerleri ekle
+        config_packet.extend([
+            int(config_data['Rintnom']) & 0xFF,
+            int(config_data['Tempmin_D']) & 0xFF,
+            int(config_data['Tempmax_D']) & 0xFF,
+            int(config_data['Tempmin_PN']) & 0xFF,
+            int(config_data['Tempmaks_PN']) & 0xFF,
+            int(config_data['Socmin']) & 0xFF,
+            int(config_data['Sohmin']) & 0xFF
+        ])
+        
+        # CRC hesapla (tüm byte'ların toplamı)
+        crc = sum(config_packet) & 0xFF
+        config_packet.append(crc)
+        
+        # Detaylı log
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        print(f"\n*** BATARYA KONFİGÜRASYONU GÖNDERİLİYOR - {timestamp} ***")
+        print(f"Kol: {config_data['armValue']}")
+        print(f"Vnom: {vnom} (2 byte: {int(vnom) & 0xFF}, {int((vnom % 1) * 100) & 0xFF})")
+        print(f"Vmax: {vmax} (2 byte: {int(vmax) & 0xFF}, {int((vmax % 1) * 100) & 0xFF})")
+        print(f"Vmin: {vmin} (2 byte: {int(vmin) & 0xFF}, {int((vmin % 1) * 100) & 0xFF})")
+        print(f"Rintnom: {config_data['Rintnom']}")
+        print(f"Tempmin_D: {config_data['Tempmin_D']}")
+        print(f"Tempmax_D: {config_data['Tempmax_D']}")
+        print(f"Tempmin_PN: {config_data['Tempmin_PN']}")
+        print(f"Tempmaks_PN: {config_data['Tempmaks_PN']}")
+        print(f"Socmin: {config_data['Socmin']}")
+        print(f"Sohmin: {config_data['Sohmin']}")
+        print(f"CRC: 0x{crc:02X}")
+        print(f"UART Paketi: {[f'0x{b:02X}' for b in config_packet]}")
+        print(f"Paket Uzunluğu: {len(config_packet)} byte")
         
         # Paketi gönder
-        wave_uart_send(pi, TX_PIN, packet, int(1e6 / BAUD_RATE))
+        wave_uart_send(pi, TX_PIN, config_packet, int(1e6 / BAUD_RATE))
         print(f"✓ Kol {config_data['armValue']} batarya konfigürasyonu cihaza gönderildi")
+        print("*** BATARYA KONFİGÜRASYONU TAMAMLANDI ***\n")
+        
     except Exception as e:
         print(f"Batarya konfigürasyonu cihaza gönderilirken hata: {e}")
 
 def send_armconfig_to_device(config_data):
     """Kol konfigürasyonunu cihaza gönder"""
     try:
-        # UART paketi hazırla: Header(0x81) + Arm + Dtype(0x7B) + akimKats + akimMax + nem + temp
-        akim_max_bytes = [
-            (config_data['akimMax'] >> 16) & 0xFF,  # MSB
-            (config_data['akimMax'] >> 8) & 0xFF,   # Middle
-            config_data['akimMax'] & 0xFF            # LSB
-        ]
+        # UART paketi hazırla: Header(0x81) + Arm + Dtype(0x7B) + tüm parametreler + CRC
+        config_packet = bytearray([0x81])  # Header
         
-        packet = [
-            0x81,  # Header
-            config_data['armValue'],  # Arm
-            0x7B,  # Dtype (Kol konfigürasyonu)
-            config_data['akimKats'],  # Akım katsayısı
-            *akim_max_bytes,         # Maksimum akım (3 byte)
-            config_data['nemMax'],    # Nem max
-            config_data['nemMin'],    # Nem min
-            config_data['tempMax'],   # Sıcaklık max
-            config_data['tempMin']    # Sıcaklık min
-        ]
+        # Arm değerini ekle
+        arm_value = int(config_data['armValue']) & 0xFF
+        config_packet.append(arm_value)
+        
+        # Dtype ekle (0x7B)
+        config_packet.append(0x7B)
+        
+        # akimMax değerini 3 haneli formata çevir
+        akimMax = int(config_data['akimMax'])
+        akimMax_str = f"{akimMax:03d}"  # 3 haneli string formatı (örn: 045, 126)
+        
+        # ArmConfig değerlerini ekle
+        config_packet.extend([
+            int(config_data['akimKats']) & 0xFF,    # akimKats
+            int(akimMax_str[0]) & 0xFF,            # akimMax1 (ilk hane)
+            int(akimMax_str[1]) & 0xFF,            # akimMax2 (ikinci hane)
+            int(akimMax_str[2]) & 0xFF,            # akimMax3 (üçüncü hane)
+            int(config_data['nemMax']) & 0xFF,      # nemMax
+            int(config_data['nemMin']) & 0xFF,      # nemMin
+            int(config_data['tempMax']) & 0xFF,     # tempMax
+            int(config_data['tempMin']) & 0xFF      # tempMin
+        ])
+        
+        # CRC hesapla (tüm byte'ların toplamı)
+        crc = sum(config_packet) & 0xFF
+        config_packet.append(crc)
+        
+        # Detaylı log
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        print(f"\n*** KOL KONFİGÜRASYONU GÖNDERİLİYOR - {timestamp} ***")
+        print(f"Kol: {config_data['armValue']}")
+        print(f"Akım Katsayısı: {config_data['akimKats']}")
+        print(f"Maksimum Akım: {akimMax} (3 haneli: {akimMax_str})")
+        print(f"akimMax1: {akimMax_str[0]} (ilk hane)")
+        print(f"akimMax2: {akimMax_str[1]} (ikinci hane)")
+        print(f"akimMax3: {akimMax_str[2]} (üçüncü hane)")
+        print(f"Nem Max: {config_data['nemMax']}%")
+        print(f"Nem Min: {config_data['nemMin']}%")
+        print(f"Sıcaklık Max: {config_data['tempMax']}°C")
+        print(f"Sıcaklık Min: {config_data['tempMin']}°C")
+        print(f"CRC: 0x{crc:02X}")
+        print(f"UART Paketi: {[f'0x{b:02X}' for b in config_packet]}")
+        print(f"Paket Uzunluğu: {len(config_packet)} byte")
         
         # Paketi gönder
-        wave_uart_send(pi, TX_PIN, packet, int(1e6 / BAUD_RATE))
+        wave_uart_send(pi, TX_PIN, config_packet, int(1e6 / BAUD_RATE))
         print(f"✓ Kol {config_data['armValue']} konfigürasyonu cihaza gönderildi")
+        print("*** KOL KONFİGÜRASYONU TAMAMLANDI ***\n")
+        
     except Exception as e:
         print(f"Kol konfigürasyonu cihaza gönderilirken hata: {e}")
 
@@ -596,6 +676,10 @@ def wave_uart_send(pi, gpio_pin, data_bytes, bit_time):
         
         # Wave'i temizle
         pi.wave_delete(wave_id)
+        
+        # UART gönderim log'u
+        print(f"  → UART Gönderim: GPIO{TX_PIN}, {len(data_bytes)} byte, {BAUD_RATE} baud")
+        print(f"  → Wave ID: {wave_id}, Wave Data: {len(wave_data)} pulse")
         
     except Exception as e:
         print(f"UART gönderim hatası: {e}")
