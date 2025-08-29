@@ -2,19 +2,31 @@
 class AlarmsPage {
     constructor() {
         this.alarms = [];
+        this.showResolved = false; // Varsayılan olarak sadece aktif alarmları göster
         this.init();
     }
 
     init() {
+        this.bindEvents();
         this.loadAlarms();
         this.startAutoRefresh();
+    }
+
+    bindEvents() {
+        // Alarm geçmişi toggle butonu
+        const toggleBtn = document.getElementById('toggleAlarmHistory');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                this.toggleAlarmHistory();
+            });
+        }
     }
 
     async loadAlarms() {
         try {
             this.showLoading();
             
-            const response = await fetch('/api/alarms', {
+            const response = await fetch(`/api/alarms?show_resolved=${this.showResolved}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
@@ -89,10 +101,27 @@ class AlarmsPage {
         // Durum
         const statusCell = document.createElement('td');
         const statusBadge = document.createElement('span');
+        let statusText;
+        if (alarm.status === 'resolved') {
+            statusText = 'Düzeldi';
+        } else if (alarm.status === 'Düzeldi') {
+            statusText = 'Düzeldi';
+        } else {
+            statusText = 'Aktif';
+        }
         statusBadge.className = `status-badge ${this.getStatusClass(alarm.status)}`;
-        statusBadge.textContent = alarm.status;
+        statusBadge.textContent = statusText;
         statusCell.appendChild(statusBadge);
         row.appendChild(statusCell);
+        
+        // Çözüm Zamanı
+        const resolvedCell = document.createElement('td');
+        if (alarm.status === 'resolved' && alarm.resolved_at) {
+            resolvedCell.textContent = this.formatTimestamp(alarm.resolved_at);
+        } else {
+            resolvedCell.textContent = '-';
+        }
+        row.appendChild(resolvedCell);
         
         return row;
     }
@@ -111,14 +140,12 @@ class AlarmsPage {
 
     getStatusClass(status) {
         switch (status) {
-            case 'Kritik':
-                return 'status-error';
-            case 'Uyarı':
-                return 'status-warning';
-            case 'Bilgi':
-                return 'status-info';
+            case 'resolved':
+            case 'Düzeldi':
+                return 'status-success';
+            case 'active':
             case 'Devam Ediyor':
-                return 'status-ongoing';
+                return 'status-error';
             default:
                 return 'status-default';
         }

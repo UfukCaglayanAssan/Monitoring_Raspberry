@@ -341,8 +341,11 @@ def get_armconfigs():
 def get_alarms():
     """Tüm alarmları getir"""
     try:
+        # Query parametresinden show_resolved değerini al
+        show_resolved = request.args.get('show_resolved', 'false').lower() == 'true'
+        
         # Veritabanından alarmları oku
-        alarms = db.get_all_alarms()
+        alarms = db.get_all_alarms(show_resolved=show_resolved)
         
         # Alarm verilerini işle
         processed_alarms = []
@@ -369,14 +372,18 @@ def process_alarm_data(alarm):
         error_msb = alarm[3]  # error_code_msb
         error_lsb = alarm[4]  # error_code_lsb
         timestamp = alarm[5]  # timestamp
+        status = alarm[6]  # status
+        resolved_at = alarm[7] if len(alarm) > 7 else None  # resolved_at
         
         # Batarya alarmı mı kol alarmı mı kontrol et
         if error_lsb == 9:  # Kol alarmı (Hatkon)
             description = get_arm_alarm_description(error_msb)
-            if not description:  # Boş string ise alarm yok
-                return None
-            battery_display = "Kol Alarmı"
-            status = "Devam Ediyor"
+            if error_msb == 0:  # Düzeldi durumu
+                battery_display = "Kol Alarmı"
+                status = "Düzeldi"
+            else:
+                battery_display = "Kol Alarmı"
+                status = "Devam Ediyor"
         else:  # Batarya alarmı (Batkon)
             description = get_battery_alarm_description(error_msb, error_lsb)
             if not description:  # Açıklama yoksa alarm yok
@@ -393,7 +400,8 @@ def process_alarm_data(alarm):
             'battery': battery_display,
             'description': description,
             'status': status,
-            'timestamp': timestamp
+            'timestamp': timestamp,
+            'resolved_at': resolved_at
         }
     except Exception as e:
         print(f"Alarm verisi işlenirken hata: {e}")
@@ -427,7 +435,7 @@ def get_battery_alarm_description(error_msb, error_lsb):
 def get_arm_alarm_description(error_msb):
     """Kol alarm açıklaması oluştur"""
     if error_msb == 0:
-        return ""  # Düzeldi durumunda boş string
+        return "Alarm Düzeldi"  # Düzeldi durumunda açıklama
     elif error_msb == 2:
         return "Yüksek akım alarmı"
     elif error_msb == 4:

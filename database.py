@@ -83,6 +83,8 @@ class BatteryDatabase:
                         error_code_msb INTEGER,
                         error_code_lsb INTEGER,
                         timestamp INTEGER,
+                        status TEXT DEFAULT 'active',
+                        resolved_at DATETIME,
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
@@ -252,17 +254,40 @@ class BatteryDatabase:
                 VALUES (?, ?, ?, ?, ?)
             ''', (arm, battery, error_code_msb, error_code_lsb, timestamp))
             conn.commit()
+    
+    def resolve_alarm(self, arm, battery):
+        """Belirli bir batarya için aktif alarmı düzelt"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                UPDATE alarms 
+                SET status = 'resolved', resolved_at = CURRENT_TIMESTAMP
+                WHERE arm = ? AND battery = ? AND status = 'active'
+            ''', (arm, battery))
+            conn.commit()
+            return cursor.rowcount > 0
 
-    def get_all_alarms(self):
+    def get_all_alarms(self, show_resolved=True):
         """Tüm alarmları getir"""
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute('''
-                    SELECT id, arm, battery, error_code_msb, error_code_lsb, timestamp, created_at
-                    FROM alarms 
-                    ORDER BY timestamp DESC
-                ''')
+                
+                if show_resolved:
+                    # Tüm alarmları getir (aktif + düzelen)
+                    cursor.execute('''
+                        SELECT id, arm, battery, error_code_msb, error_code_lsb, timestamp, status, resolved_at, created_at
+                        FROM alarms 
+                        ORDER BY timestamp DESC
+                    ''')
+                else:
+                    # Sadece aktif alarmları getir
+                    cursor.execute('''
+                        SELECT id, arm, battery, error_code_msb, error_code_lsb, timestamp, status, resolved_at, created_at
+                        FROM alarms 
+                        WHERE status = 'active'
+                        ORDER BY timestamp DESC
+                    ''')
                 
                 rows = cursor.fetchall()
                 return rows

@@ -1,9 +1,11 @@
 <!-- Alarms Sayfası İçeriği -->
 <div class="alarms-page">
-    <!-- Sayfa Başlığı -->
-    <div class="page-header">
-        <h2><i class="fas fa-exclamation-triangle"></i> Alarmlar</h2>
-        <p>Sistem alarmları ve uyarıları</p>
+    <!-- Alarm Geçmişi Butonu -->
+    <div class="alarm-history-toggle" style="text-align: center; margin-bottom: 20px;">
+        <button id="toggleAlarmHistory" class="btn btn-primary">
+            <i class="fas fa-history"></i>
+            <span id="toggleButtonText">Alarm Geçmişini Göster</span>
+        </button>
     </div>
 
     <!-- Alarm Tablosu -->
@@ -17,6 +19,7 @@
                         <th>Batarya</th>
                         <th>Açıklama</th>
                         <th>Durum</th>
+                        <th>Çözüm Zamanı</th>
                     </tr>
                 </thead>
                 <tbody id="alarmsTableBody">

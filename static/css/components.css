@@ -719,4 +719,33 @@
     }
 }
 
+/* Alarm Geçmişi Toggle Butonu */
+.alarm-history-toggle {
+    margin-top: 15px;
+}
+
+.alarm-history-toggle .btn {
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.alarm-history-toggle .btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+.alarm-history-toggle .btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: white;
+}
+
+.alarm-history-toggle .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
 

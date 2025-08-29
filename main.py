@@ -208,9 +208,16 @@ def db_worker():
                 error_lsb = int(data[5], 16)
                 alarm_timestamp = int(time.time() * 1000)
                 
-                # SQLite'ye kaydet
-                db.insert_alarm(arm_value, battery, error_msb, error_lsb, alarm_timestamp)
-                print("✓ Batkon alarm SQLite'ye kaydedildi")
+                # Eğer errorlsb=1 ve errormsb=1 ise, mevcut alarmı düzelt
+                if error_lsb == 1 and error_msb == 1:
+                    if db.resolve_alarm(arm_value, battery):
+                        print(f"✓ Batkon alarm düzeltildi - Arm: {arm_value}, Battery: {battery}")
+                    else:
+                        print(f"⚠ Düzeltilecek aktif alarm bulunamadı - Arm: {arm_value}, Battery: {battery}")
+                else:
+                    # Yeni alarm ekle
+                    db.insert_alarm(arm_value, battery, error_msb, error_lsb, alarm_timestamp)
+                    print("✓ Yeni Batkon alarm SQLite'ye kaydedildi")
                 continue
 
             # 5 byte'lık missing data verisi kontrolü
@@ -392,8 +399,16 @@ def db_worker():
                     error_lsb = 9
                     alarm_timestamp = int(time.time() * 1000)
                     
-                    db.insert_alarm(arm_value, 2, error_msb, error_lsb, alarm_timestamp)
-                    print("✓ Hatkon alarm SQLite'ye kaydedildi")
+                    # Eğer error_msb=1 veya error_msb=0 ise, mevcut alarmı düzelt
+                    if error_msb == 1 or error_msb == 0:
+                        if db.resolve_alarm(arm_value, 2):  # Hatkon alarmları için battery=2
+                            print(f"✓ Hatkon alarm düzeltildi - Arm: {arm_value} (error_msb: {error_msb})")
+                        else:
+                            print(f"⚠ Düzeltilecek aktif Hatkon alarm bulunamadı - Arm: {arm_value}")
+                    else:
+                        # Yeni alarm ekle
+                        db.insert_alarm(arm_value, 2, error_msb, error_lsb, alarm_timestamp)
+                        print("✓ Yeni Hatkon alarm SQLite'ye kaydedildi")
                     continue
 
             # Batch kontrolü ve kayıt
