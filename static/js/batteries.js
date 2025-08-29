@@ -172,6 +172,9 @@ class BatteriesPage {
         console.log('Health name:', battery.health_name);
         console.log('Charge name:', battery.charge_name);
         
+        // Çeviri attribute'larını ekle
+        this.addTranslationAttributes(cardElement);
+        
         return cardElement;
     }
     
@@ -237,6 +240,57 @@ class BatteriesPage {
                 chargeLabel.textContent = chargeLabel.getAttribute(`data-${language}`) || chargeLabel.textContent;
             }
         });
+    }
+    
+    addTranslationAttributes(cardElement) {
+        // Template'den oluşturulan kartlara çeviri attribute'larını ekle
+        const title = cardElement.querySelector('.card-title');
+        if (title) {
+            title.setAttribute('data-tr', 'Batarya Ünitesi');
+            title.setAttribute('data-en', 'Battery Unit');
+        }
+        
+        const addressLabel = cardElement.querySelector('.battery-address span');
+        if (addressLabel) {
+            addressLabel.setAttribute('data-tr', 'Adres: ');
+            addressLabel.setAttribute('data-en', 'Address: ');
+        }
+        
+        const updateLabel = cardElement.querySelector('.last-update span');
+        if (updateLabel) {
+            updateLabel.setAttribute('data-tr', 'Son güncelleme:');
+            updateLabel.setAttribute('data-en', 'Last update:');
+        }
+        
+        const backTitle = cardElement.querySelector('.back-title');
+        if (backTitle) {
+            backTitle.setAttribute('data-tr', 'Batarya Detayları');
+            backTitle.setAttribute('data-en', 'Battery Details');
+        }
+        
+        const voltageLabel = cardElement.querySelector('.voltage-label');
+        if (voltageLabel) {
+            voltageLabel.setAttribute('data-tr', 'Gerilim:');
+            voltageLabel.setAttribute('data-en', 'Voltage:');
+        }
+        
+        const temperatureLabel = cardElement.querySelector('.temperature-label');
+        if (temperatureLabel) {
+            temperatureLabel.setAttribute('data-tr', 'Sıcaklık:');
+            temperatureLabel.setAttribute('data-en', 'Temperature:');
+        }
+        
+        const healthLabel = cardElement.querySelector('.health-label');
+        if (healthLabel) {
+            healthLabel.setAttribute('data-tr', 'Sağlık:');
+            healthLabel.setAttribute('data-en', 'Health:');
+        }
+        
+        const chargeLabel = cardElement.querySelector('.charge-label');
+        if (chargeLabel) {
+            chargeLabel.setAttribute('data-tr', 'Şarj:');
+            chargeLabel.setAttribute('data-en', 'Charge:');
+        }
     }
     
     formatValue(value, unit) {
@@ -345,7 +399,7 @@ class BatteriesPage {
 function initBatteriesPage() {
     console.log('Batteries sayfası başlatılıyor...');
     try {
-        new BatteriesPage();
+        window.batteriesPage = new BatteriesPage();
         console.log('Batteries sayfası başarıyla başlatıldı');
     } catch (error) {
         console.error('Batteries sayfası başlatılırken hata:', error);
