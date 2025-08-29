@@ -185,8 +185,9 @@ class BatteriesPage {
         console.log('updateCardTexts çağrılıyor...');
         this.updateCardTexts(language);
         console.log('loadBatteries çağrılıyor...');
-        window.batteriesPage.updateCardTexts('en');
+      
         this.loadBatteries();
+        window.batteriesPage.updateCardTexts('en');
     }
     
     updateCardTexts(language) {
