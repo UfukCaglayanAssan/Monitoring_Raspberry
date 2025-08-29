@@ -5,6 +5,7 @@ class BatteriesPage {
         this.pageSize = 30;
         this.totalPages = 1;
         this.batteriesData = [];
+        this.selectedArm = 0; // 0 = Tüm kollar, 1-4 = Belirli kol
         
         this.init();
     }
@@ -16,8 +17,28 @@ class BatteriesPage {
     }
 
     bindEvents() {
-        // Şu anda event listener gerekmiyor
-        // Kartlar hover ile çevriliyor
+        // Kol seçimi event listener'ları
+        const armButtons = document.querySelectorAll('.arm-btn');
+        armButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const arm = parseInt(e.target.closest('.arm-btn').dataset.arm);
+                this.selectArm(arm);
+            });
+        });
+    }
+    
+    selectArm(arm) {
+        // Aktif buton stilini güncelle
+        document.querySelectorAll('.arm-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-arm="${arm}"]`).classList.add('active');
+        
+        // Seçilen kol'u güncelle
+        this.selectedArm = arm;
+        
+        // Bataryaları yeniden yükle
+        this.loadBatteries();
     }
     
     async loadBatteries() {
@@ -37,9 +58,10 @@ class BatteriesPage {
                 },
                 body: JSON.stringify({
                     page: this.currentPage,
-                    pageSize: this.pageSize
+                    pageSize: this.pageSize,
+                    selectedArm: this.selectedArm
                 })
-            });
+            })
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -112,9 +134,9 @@ class BatteriesPage {
         cardElement.dataset.battery = battery.batteryAddress;
         cardElement.dataset.timestamp = battery.timestamp;
         
-        // Batarya adresi
+        // Batarya adresi (2 eksiği olarak göster)
         const batteryValue = cardElement.querySelector('.battery-value');
-        if (batteryValue) batteryValue.textContent = battery.batteryAddress;
+        if (batteryValue) batteryValue.textContent = battery.batteryAddress - 2;
         
         // Timestamp
         const timestampValue = cardElement.querySelector('.timestamp-value');

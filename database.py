@@ -603,21 +603,26 @@ class BatteryDatabase:
             
             return csv_content
 
-    def get_batteries_for_display(self, page=1, page_size=30):
+    def get_batteries_for_display(self, page=1, page_size=30, selected_arm=0):
         """Batteries sayfası için batarya verilerini getir"""
         
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 
+                # Arm filtresi ekle
+                arm_filter = ""
+                if selected_arm > 0:
+                    arm_filter = f"AND bd.arm = {selected_arm}"
+                
                 # Her batarya için en son veri zamanını bul ve sadece en güncel olanları getir
-                cursor.execute('''
+                cursor.execute(f'''
                     SELECT 
                         bd.arm,
                         bd.k as batteryAddress,
                         MAX(bd.timestamp) as latest_timestamp
                     FROM battery_data bd
-                    WHERE bd.k != 2
+                    WHERE bd.k != 2 {arm_filter}
                     GROUP BY bd.arm, bd.k
                     ORDER BY bd.arm, bd.k
                 ''')

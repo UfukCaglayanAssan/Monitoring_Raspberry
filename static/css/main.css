@@ -255,6 +255,52 @@ body {
     margin: 0 auto;
 }
 
+/* Kol Seçimi */
+.arm-selector {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.arm-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.arm-btn {
+    padding: 12px 20px;
+    border: 2px solid #e9ecef;
+    background: white;
+    color: #495057;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.arm-btn:hover {
+    border-color: #1e3c72;
+    color: #1e3c72;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.arm-btn.active {
+    background: #1e3c72;
+    color: white;
+    border-color: #1e3c72;
+    box-shadow: 0 4px 12px rgba(30, 60, 114, 0.3);
+}
+
+.arm-btn i {
+    font-size: 16px;
+}
+
 .page-header {
     display: flex;
     justify-content: space-between;

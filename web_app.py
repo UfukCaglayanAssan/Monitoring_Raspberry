@@ -141,8 +141,9 @@ def get_batteries():
         data = request.get_json()
         page = data.get('page', 1)
         page_size = data.get('pageSize', 30)
+        selected_arm = data.get('selectedArm', 0)
         
-        batteries_data = db.get_batteries_for_display(page, page_size)
+        batteries_data = db.get_batteries_for_display(page, page_size, selected_arm)
         
         return jsonify({
             'success': True,
