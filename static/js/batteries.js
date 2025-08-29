@@ -181,8 +181,11 @@ class BatteriesPage {
     
     onLanguageChanged(language) {
         // Dil değiştiğinde bataryaları yeniden yükle
-        console.log('Dil değişti:', language);
+        console.log('onLanguageChanged çağrıldı, dil:', language);
+        console.log('updateCardTexts çağrılıyor...');
         this.updateCardTexts(language);
+        console.log('loadBatteries çağrılıyor...');
+        window.batteriesPage.updateCardTexts('en');
         this.loadBatteries();
     }
     
@@ -406,6 +409,7 @@ class BatteriesPage {
                 const currentLanguage = localStorage.getItem('language') || 'tr';
                 console.log('Otomatik güncelleme dili:', currentLanguage);
                 this.loadBatteries();
+                
             }
         }, 30000);
     }
