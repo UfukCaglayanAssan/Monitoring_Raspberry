@@ -28,7 +28,12 @@ class BatteriesPage {
         
         // Dil değişikliği dinleyicisi
         window.addEventListener('languageChanged', (e) => {
+            console.log('=== DIL DEGISIKLIGI EVENT\'I ALINDI ===');
+            console.log('Event detail:', e.detail);
+            console.log('Dil:', e.detail.language);
+            console.log('onLanguageChanged cagriliyor...');
             this.onLanguageChanged(e.detail.language);
+            console.log('onLanguageChanged cagrildi');
         });
     }
     
@@ -187,7 +192,6 @@ class BatteriesPage {
         console.log('loadBatteries çağrılıyor...');
       
         this.loadBatteries();
-        window.batteriesPage.updateCardTexts('en');
     }
     
     updateCardTexts(language) {
