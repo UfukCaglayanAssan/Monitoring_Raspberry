@@ -6,14 +6,34 @@ class SummaryPage {
     }
 
     init() {
+        this.bindEvents();
         this.loadSummaryData();
         this.startAutoRefresh();
+    }
+    
+    bindEvents() {
+        // Dil değişikliği dinleyicisi
+        window.addEventListener('languageChanged', (e) => {
+            console.log('🌐 Özet sayfası - Dil değişti:', e.detail.language);
+            this.onLanguageChanged(e.detail.language);
+        });
+        console.log('Summary sayfası event listener\'ları bağlandı');
+    }
+    
+    onLanguageChanged(language) {
+        console.log('🌐 Özet sayfası dil güncelleniyor:', language);
+        // Verileri yeni dil ile yeniden yükle
+        this.loadSummaryData();
     }
 
     async loadSummaryData() {
         try {
             console.log('🔄 Özet verileri yükleniyor...');
             this.showLoading();
+            
+            // Mevcut dili al
+            const currentLanguage = localStorage.getItem('language') || 'tr';
+            console.log('🌐 Özet sayfası dili:', currentLanguage);
             
             const startTime = Date.now();
             const controller = new AbortController();
@@ -22,7 +42,8 @@ class SummaryPage {
             const response = await fetch('/api/summary', {
                 method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-Language': currentLanguage
                 },
                 signal: controller.signal
             });
