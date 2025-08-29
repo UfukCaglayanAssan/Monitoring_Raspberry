@@ -368,14 +368,22 @@ def get_alarms():
 def get_summary():
     """Özet sayfası için veri getir"""
     try:
+        print(f"🔄 /api/summary endpoint'i çağrıldı - {datetime.now()}")
+        
         # Veritabanından özet verileri oku
+        start_time = time.time()
         summary_data = db.get_summary_data()
+        end_time = time.time()
+        
+        print(f"⏱️ Veritabanı sorgu süresi: {end_time - start_time:.3f}s")
+        print(f"📊 {len(summary_data)} kol verisi döndürüldü")
         
         return jsonify({
             'success': True,
             'summary': summary_data
         })
     except Exception as e:
+        print(f"💥 /api/summary hatası: {e}")
         return jsonify({
             'success': False,
             'message': str(e)

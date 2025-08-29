@@ -840,15 +840,20 @@ class BatteryDatabase:
                     
                     arm_data = cursor.fetchall()
                     
+                    print(f"Kol {arm} için k=2 verileri: {arm_data}")
+                    
                     # Nem ve sıcaklık değerlerini al
                     humidity = None
                     temperature = None
                     
                     for dtype, data, name, unit in arm_data:
-                        if dtype == 11:  # Nem
+                        print(f"  dtype={dtype}, data={data}, name={name}, unit={unit}")
+                        if dtype == 13:  # Nem
                             humidity = data
+                            print(f"    Nem bulundu: {humidity}")
                         elif dtype == 12:  # Sıcaklık
                             temperature = data
+                            print(f"    Sıcaklık bulundu: {temperature}")
                     
                     # Bu kol için batarya sayısını ve ortalama değerleri hesapla
                     cursor.execute('''

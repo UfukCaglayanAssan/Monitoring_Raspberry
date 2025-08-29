@@ -553,69 +553,7 @@ body {
 
 
 
-/* ===== ERROR MESSAGE STYLES ===== */
 
-.error-message {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 10000;
-    animation: slideInRight 0.3s ease-out;
-}
-
-.error-content {
-    background: #ff6b6b;
-    color: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(255, 107, 107, 0.3);
-    max-width: 300px;
-    text-align: center;
-}
-
-.error-content i {
-    font-size: 24px;
-    margin-bottom: 10px;
-    display: block;
-}
-
-.error-content h3 {
-    margin: 0 0 10px 0;
-    font-size: 16px;
-    font-weight: 600;
-}
-
-.error-content p {
-    margin: 0 0 15px 0;
-    font-size: 14px;
-    line-height: 1.4;
-}
-
-.error-content button {
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 12px;
-    transition: background 0.3s;
-}
-
-.error-content button:hover {
-    background: rgba(255, 255, 255, 0.3);
-}
-
-@keyframes slideInRight {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
 
 /* ===== ALARMS PAGE STYLES ===== */
 

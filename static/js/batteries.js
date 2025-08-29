@@ -399,26 +399,8 @@ class BatteriesPage {
     }
     
     showError(message) {
-        // Hata mesajını göster
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-message';
-        errorDiv.innerHTML = `
-            <div class="error-content">
-                <i class="fas fa-exclamation-triangle"></i>
-                <h3>Hata</h3>
-                <p>${message}</p>
-                <button onclick="this.parentElement.parentElement.remove()">Kapat</button>
-            </div>
-        `;
-        
-        document.body.appendChild(errorDiv);
-        
-        // 5 saniye sonra otomatik kaldır
-        setTimeout(() => {
-            if (errorDiv.parentElement) {
-                errorDiv.remove();
-            }
-        }, 5000);
+        // Hata mesajını sadece console'da göster
+        console.error('❌ Batteries Sayfası Hatası:', message);
     }
     
 

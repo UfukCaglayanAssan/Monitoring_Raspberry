@@ -57,6 +57,15 @@
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 1.5rem;
     margin-bottom: 2rem;
+    justify-content: center;
+}
+
+/* Tek kart varsa tam ortada olsun */
+.active-arms-grid:has(.arm-card:only-child) {
+    grid-template-columns: 1fr;
+    max-width: 22rem;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .arm-card {
@@ -66,8 +75,8 @@
     color: white;
     box-shadow: 0 4px 15px rgba(30, 60, 114, 0.3);
     transition: all 0.3s ease;
-    height: 28rem;
-    width: 20rem;
+    height: 32rem;
+    width: 22rem;
     font-family: sans-serif;
     position: relative;
     display: flex;

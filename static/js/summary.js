@@ -12,33 +12,52 @@ class SummaryPage {
 
     async loadSummaryData() {
         try {
+            console.log('🔄 Özet verileri yükleniyor...');
             this.showLoading();
+            
+            const startTime = Date.now();
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 saniye timeout
             
             const response = await fetch('/api/summary', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
-                }
+                },
+                signal: controller.signal
             });
+            
+            clearTimeout(timeoutId);
+
+            const responseTime = Date.now() - startTime;
+            console.log(`⏱️ API yanıt süresi: ${responseTime}ms`);
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
+            console.log('📊 API yanıtı:', data);
             
             if (data.success) {
                 this.summaryData = data.summary || [];
+                console.log(`✅ ${this.summaryData.length} kol verisi alındı:`, this.summaryData);
                 this.renderSummary();
             } else {
-                console.error('Özet verileri yüklenirken hata:', data.message);
+                console.error('❌ Özet verileri yüklenirken hata:', data.message);
                 this.showNoData();
             }
         } catch (error) {
-            console.error('Özet verileri yüklenirken hata:', error);
-            this.showNoData();
+            if (error.name === 'AbortError') {
+                console.error('⏰ API yanıt vermedi (10s timeout)');
+                this.showTimeoutError();
+            } else {
+                console.error('💥 Özet verileri yüklenirken hata:', error);
+                this.showNoData();
+            }
         } finally {
             this.hideLoading();
+            console.log('🏁 Özet veri yükleme tamamlandı');
         }
     }
 
@@ -213,6 +232,23 @@ class SummaryPage {
         const loading = document.getElementById('loadingSpinner');
         
         if (noData) noData.style.display = 'block';
+        if (grid) grid.style.display = 'none';
+        if (loading) loading.style.display = 'none';
+    }
+
+    showTimeoutError() {
+        const noData = document.getElementById('noDataMessage');
+        const grid = document.getElementById('activeArmsGrid');
+        const loading = document.getElementById('loadingSpinner');
+        
+        if (noData) {
+            noData.innerHTML = `
+                <i class="fas fa-clock"></i>
+                <h3>Zaman Aşımı</h3>
+                <p>API yanıt vermedi. Lütfen sayfayı yenileyin.</p>
+            `;
+            noData.style.display = 'block';
+        }
         if (grid) grid.style.display = 'none';
         if (loading) loading.style.display = 'none';
     }
