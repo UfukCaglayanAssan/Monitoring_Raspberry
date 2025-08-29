@@ -6,6 +6,7 @@ class BatteriesPage {
         this.totalPages = 1;
         this.batteriesData = [];
         this.selectedArm = 3; // 1-4 = Belirli kol (varsayılan: Kol 3)
+        this.languageListenerAdded = false; // Dil listener'ı sadece bir kez eklemek için
         
         this.init();
     }
@@ -26,15 +27,19 @@ class BatteriesPage {
             });
         });
         
-        // Dil değişikliği dinleyicisi
-        window.addEventListener('languageChanged', (e) => {
-            console.log('=== DIL DEGISIKLIGI EVENT\'I ALINDI ===');
-            console.log('Event detail:', e.detail);
-            console.log('Dil:', e.detail.language);
-            console.log('onLanguageChanged cagriliyor...');
-            this.onLanguageChanged(e.detail.language);
-            console.log('onLanguageChanged cagrildi');
-        });
+        // Dil değişikliği dinleyicisi - sadece bir kez ekle
+        if (!this.languageListenerAdded) {
+            window.addEventListener('languageChanged', (e) => {
+                console.log('=== DIL DEGISIKLIGI EVENT\'I ALINDI ===');
+                console.log('Event detail:', e.detail);
+                console.log('Dil:', e.detail.language);
+                console.log('onLanguageChanged cagriliyor...');
+                this.onLanguageChanged(e.detail.language);
+                console.log('onLanguageChanged cagrildi');
+            });
+            this.languageListenerAdded = true;
+            console.log('Language listener eklendi');
+        }
     }
     
     selectArm(arm) {
@@ -424,7 +429,7 @@ class BatteriesPage {
 function initBatteriesPage() {
     console.log('Batteries sayfası başlatılıyor...');
     try {
-        window.batteriesPage = new BatteriesPage();
+window.batteriesPage = new BatteriesPage();
         console.log('Batteries sayfası başarıyla başlatıldı');
     } catch (error) {
         console.error('Batteries sayfası başlatılırken hata:', error);
