@@ -99,6 +99,10 @@ class LogsPage {
         // Dil değiştiğinde UI metinlerini güncelle
         console.log('Logs: Dil değişti:', language);
         this.updateLogsTexts(language);
+        
+        // Dil değiştiğinde logları yeniden yükle
+        console.log('Logs: loadLogs çağrılıyor...');
+        this.loadLogs();
     }
 
     updateLogsTexts(language) {
