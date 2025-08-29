@@ -365,13 +365,15 @@ def process_alarm_data(alarm):
             if not description:  # Boş string ise alarm yok
                 return None
             battery = "Kol Alarmı"
-            status = "Kritik"
+            status = "Devam Ediyor"
         else:  # Batarya alarmı (Batkon)
             description = get_battery_alarm_description(error_msb, error_lsb)
             if not description:  # Açıklama yoksa alarm yok
                 return None
-            battery = None  # Batarya bilgisi yok
-            status = "Kritik"
+            # Batarya alarmlarında k değeri (batarya adresi) yok, sadece arm var
+            # Bu yüzden boş bırakıyoruz
+            battery = ""
+            status = "Devam Ediyor"
         
         return {
             'arm': arm,

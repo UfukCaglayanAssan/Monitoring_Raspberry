@@ -609,12 +609,16 @@ class BatteryDatabase:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 
-                # Tüm batarya adreslerini getir (k değeri 2'den farklı olanlar)
+                # Her batarya için en son veri zamanını bul ve sadece en güncel olanları getir
                 cursor.execute('''
-                    SELECT DISTINCT arm, k as batteryAddress
-                    FROM battery_data 
-                    WHERE k != 2
-                    ORDER BY arm, k
+                    SELECT 
+                        bd.arm,
+                        bd.k as batteryAddress,
+                        MAX(bd.timestamp) as latest_timestamp
+                    FROM battery_data bd
+                    WHERE bd.k != 2
+                    GROUP BY bd.arm, bd.k
+                    ORDER BY bd.arm, bd.k
                 ''')
                 
                 all_batteries = cursor.fetchall()
@@ -636,8 +640,8 @@ class BatteryDatabase:
                 
                 batteries = []
                 
-                for arm, battery_address in page_batteries:
-                    # Her batarya için son verileri getir
+                for arm, battery_address, latest_timestamp in page_batteries:
+                    # Her batarya için sadece en son verileri getir
                     battery_data = self.get_latest_battery_data(arm, battery_address)
                     
                     if battery_data:
@@ -646,7 +650,7 @@ class BatteryDatabase:
                 return {
                     'batteries': batteries,
                     'totalPages': (len(all_batteries) + page_size - 1) // page_size,
-                    'currentPage': page
+                    'currentPage': 1
                 }
         except Exception as e:
             print(f"get_batteries_for_display hatası: {e}")
@@ -658,7 +662,7 @@ class BatteryDatabase:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 
-                # Son veri zamanını bul
+                # En son veri zamanını bul
                 cursor.execute('''
                     SELECT MAX(timestamp) FROM battery_data 
                     WHERE arm = ? AND k = ?
@@ -669,10 +673,11 @@ class BatteryDatabase:
                 if not latest_timestamp:
                     return None
                 
-                # Son verileri getir
+                # Sadece en son verileri getir (en son timestamp'teki tüm dtype'lar)
                 cursor.execute('''
                     SELECT dtype, data FROM battery_data 
                     WHERE arm = ? AND k = ? AND timestamp = ?
+                    ORDER BY dtype
                 ''', (arm, battery_address, latest_timestamp))
                 
                 data_rows = cursor.fetchall()
@@ -689,6 +694,7 @@ class BatteryDatabase:
                     'isActive': True
                 }
                 
+                # Sadece en son verileri kullan
                 for dtype, data in data_rows:
                     if dtype == 10:  # Gerilim
                         battery_data['voltage'] = data
@@ -710,21 +716,19 @@ class BatteryDatabase:
         with self.get_connection() as conn:
             cursor = conn.cursor()
             
-            # Son batarya verilerini getir
+            # Her batarya için en son veri zamanını bul
             base_query = '''
-                SELECT DISTINCT
+                SELECT 
                     bd.arm,
                     bd.k as batteryAddress,
-                MAX(bd.timestamp) as latest_timestamp
+                    MAX(bd.timestamp) as latest_timestamp
                 FROM battery_data bd
                 WHERE bd.k != 2
+                GROUP BY bd.arm, bd.k 
+                ORDER BY bd.arm, bd.k
             '''
             
-            params = []
-            
-            base_query += ' GROUP BY bd.arm, bd.k ORDER BY bd.arm, bd.k'
-            
-            cursor.execute(base_query, params)
+            cursor.execute(base_query)
             battery_groups = cursor.fetchall()
             
             # CSV formatı
@@ -733,7 +737,7 @@ class BatteryDatabase:
             for group in battery_groups:
                 arm, battery_address, latest_timestamp = group
                 
-                # Her batarya için son verileri getir
+                # Her batarya için sadece en son verileri getir
                 battery_data = self.get_latest_battery_data(arm, battery_address)
                 
                 if battery_data:
@@ -742,8 +746,8 @@ class BatteryDatabase:
                     csv_content += f"{arm},{battery_address},{timestamp},"
                     csv_content += f"{battery_data['voltage'] or '--'},"
                     csv_content += f"{battery_data['temperature'] or '--'},"
-                    csv_content += f"{battery_data['health'] or '--'},"
-                    csv_content += f"{battery_data['charge'] or '--'}\n"
+                    csv_content += f"{battery_data['charge'] or '--'},"
+                    csv_content += f"{battery_data['health'] or '--'}\n"
             
             return csv_content
     

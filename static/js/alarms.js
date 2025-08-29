@@ -117,6 +117,8 @@ class AlarmsPage {
                 return 'status-warning';
             case 'Bilgi':
                 return 'status-info';
+            case 'Devam Ediyor':
+                return 'status-ongoing';
             default:
                 return 'status-default';
         }
