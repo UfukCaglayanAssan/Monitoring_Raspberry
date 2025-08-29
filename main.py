@@ -202,15 +202,13 @@ def db_worker():
                 print(f"\n*** BATKON ALARM VERİSİ ALGILANDI - {timestamp} ***")
                 
                 # Batkon alarm verisi işleme
-                alarm_record = {
-                    "Arm": int(data[3], 16),
-                    "error_code_msb": int(data[4], 16),
-                    "error_code_lsb": int(data[5], 16),
-                    "timestamp": int(time.time() * 1000)
-                }
+                arm_value = int(data[3], 16)
+                error_msb = int(data[4], 16)
+                error_lsb = int(data[5], 16)
+                alarm_timestamp = int(time.time() * 1000)
                 
                 # SQLite'ye kaydet
-                db.insert_alarm(alarm_record)
+                db.insert_alarm(arm_value, error_msb, error_lsb, alarm_timestamp)
                 print("✓ Batkon alarm SQLite'ye kaydedildi")
                 continue
 
@@ -222,15 +220,13 @@ def db_worker():
                 print(f"\n*** MISSING DATA VERİSİ ALGILANDI - {timestamp} ***")
                 
                 # Missing data kaydı hazırla
-                missing_data_record = {
-                    "arm": raw_bytes[3],
-                    "slave": raw_bytes[1],
-                    "status": raw_bytes[4],
-                    "timestamp": int(time.time() * 1000)
-                }
+                arm_value = raw_bytes[3]
+                slave_value = raw_bytes[1]
+                status_value = raw_bytes[4]
+                missing_timestamp = int(time.time() * 1000)
                 
                 # SQLite'ye kaydet
-                db.insert_missing_data(missing_data_record)
+                db.insert_missing_data(arm_value, slave_value, status_value, missing_timestamp)
                 print("✓ Missing data SQLite'ye kaydedildi")
                 continue
 
@@ -356,16 +352,11 @@ def db_worker():
                     
                     try:
                         updated_at = int(time.time() * 1000)
-                        counts_data = {
-                            "arm1": arm1,
-                            "arm2": arm2,
-                            "arm3": arm3,
-                            "arm4": arm4,
-                            "updatedAt": updated_at,
-                            "timestamp": updated_at
-                        }
-                        
-                        db.insert_arm_slave_counts(counts_data)
+                        # Her arm için ayrı kayıt oluştur
+                        db.insert_arm_slave_counts(1, arm1, updated_at)
+                        db.insert_arm_slave_counts(2, arm2, updated_at)
+                        db.insert_arm_slave_counts(3, arm3, updated_at)
+                        db.insert_arm_slave_counts(4, arm4, updated_at)
                         print("✓ Armslavecounts SQLite'ye kaydedildi")
                         
                     except Exception as e:
@@ -378,16 +369,13 @@ def db_worker():
                         updated_at = int(time.time() * 1000)
                         global program_start_time
                         if updated_at > program_start_time:
-                            balance_record = {
-                                "slave": raw_bytes[1],
-                                "arm": raw_bytes[3],
-                                "status": raw_bytes[4],
-                                "updatedAt": updated_at,
-                                "timestamp": updated_at
-                            }
+                            slave_value = raw_bytes[1]
+                            arm_value = raw_bytes[3]
+                            status_value = raw_bytes[4]
+                            balance_timestamp = updated_at
                             
-                            db.insert_passive_balance(balance_record)
-                            print(f"✓ Balans SQLite'ye kaydedildi: Arm={raw_bytes[3]}, Slave={raw_bytes[1]}, Status={raw_bytes[4]}")
+                            db.insert_passive_balance(arm_value, slave_value, status_value, balance_timestamp)
+                            print(f"✓ Balans SQLite'ye kaydedildi: Arm={arm_value}, Slave={slave_value}, Status={status_value}")
                             program_start_time = updated_at
                     except Exception as e:
                         print(f"Balans kayıt hatası: {e}")
@@ -398,14 +386,12 @@ def db_worker():
                     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
                     print(f"\n*** HATKON ALARM VERİSİ ALGILANDI - {timestamp} ***")
 
-                    alarm_record = {
-                        "Arm": raw_bytes[3],
-                        "error_code_msb": raw_bytes[4],
-                        "error_code_lsb": 9,
-                        "timestamp": int(time.time() * 1000)
-                    }
+                    arm_value = raw_bytes[3]
+                    error_msb = raw_bytes[4]
+                    error_lsb = 9
+                    alarm_timestamp = int(time.time() * 1000)
                     
-                    db.insert_alarm(alarm_record)
+                    db.insert_alarm(arm_value, error_msb, error_lsb, alarm_timestamp)
                     print("✓ Hatkon alarm SQLite'ye kaydedildi")
                     continue
 

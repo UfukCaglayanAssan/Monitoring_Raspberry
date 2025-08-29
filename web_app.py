@@ -327,6 +327,103 @@ def get_armconfigs():
             'message': str(e)
         }), 500
 
+@app.route('/api/alarms', methods=['GET'])
+def get_alarms():
+    """Tüm alarmları getir"""
+    try:
+        # Veritabanından alarmları oku
+        alarms = db.get_all_alarms()
+        
+        # Alarm verilerini işle
+        processed_alarms = []
+        for alarm in alarms:
+            processed_alarm = process_alarm_data(alarm)
+            if processed_alarm:  # Sadece geçerli alarmları ekle
+                processed_alarms.append(processed_alarm)
+        
+        return jsonify({
+            'success': True,
+            'alarms': processed_alarms
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+def process_alarm_data(alarm):
+    """Alarm verisini işle ve açıklama oluştur"""
+    try:
+        arm = alarm[1]  # arm
+        error_msb = alarm[2]  # error_code_msb
+        error_lsb = alarm[3]  # error_code_lsb
+        timestamp = alarm[4]  # timestamp
+        
+        # Batarya alarmı mı kol alarmı mı kontrol et
+        if error_lsb == 9:  # Kol alarmı (Hatkon)
+            description = get_arm_alarm_description(error_msb)
+            if not description:  # Boş string ise alarm yok
+                return None
+            battery = "Kol Alarmı"
+            status = "Kritik"
+        else:  # Batarya alarmı (Batkon)
+            description = get_battery_alarm_description(error_msb, error_lsb)
+            if not description:  # Açıklama yoksa alarm yok
+                return None
+            battery = None  # Batarya bilgisi yok
+            status = "Kritik"
+        
+        return {
+            'arm': arm,
+            'battery': battery,
+            'description': description,
+            'status': status,
+            'timestamp': timestamp
+        }
+    except Exception as e:
+        print(f"Alarm verisi işlenirken hata: {e}")
+        return None
+
+def get_battery_alarm_description(error_msb, error_lsb):
+    """Batarya alarm açıklaması oluştur"""
+    description_parts = []
+    
+    # MSB kontrolü
+    if error_msb >= 1:
+        if error_msb == 1:
+            description_parts.append("Pozitif kutup başı alarmı")
+        elif error_msb == 2:
+            description_parts.append("Negatif kutup başı sıcaklık alarmı")
+    
+    # LSB kontrolü
+    if error_lsb == 4:
+        description_parts.append("Düşük batarya gerilim uyarısı")
+    elif error_lsb == 8:
+        description_parts.append("Düşük batarya gerilimi alarmı")
+    elif error_lsb == 16:
+        description_parts.append("Yüksek batarya gerilimi uyarısı")
+    elif error_lsb == 32:
+        return "Yüksek batarya gerilimi alarmı"
+    elif error_lsb == 64:
+        description_parts.append("Modül sıcaklık alarmı")
+    
+    return " + ".join(description_parts) if description_parts else None
+
+def get_arm_alarm_description(error_msb):
+    """Kol alarm açıklaması oluştur"""
+    if error_msb == 0:
+        return ""  # Düzeldi durumunda boş string
+    elif error_msb == 2:
+        return "Yüksek akım alarmı"
+    elif error_msb == 4:
+        return "Yüksek nem alarmı"
+    elif error_msb == 8:
+        return "Yüksek ortam sıcaklığı alarmı"
+    elif error_msb == 16:
+        return "Yüksek kol sıcaklığı alarmı"
+    else:
+        return None
+
 if __name__ == '__main__':
     print("Flask web uygulaması başlatılıyor...")
     print(f"Veritabanı boyutu: {db.get_database_size():.2f} MB")

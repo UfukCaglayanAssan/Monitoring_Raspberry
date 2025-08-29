@@ -1,43 +1,43 @@
 <!-- Alarms Sayfası İçeriği -->
 <div class="alarms-page">
+    <!-- Sayfa Başlığı -->
     <div class="page-header">
-        <h2>Sistem Alarmları</h2>
-        <p>Aktif ve geçmiş alarmları takip edin</p>
+        <h2><i class="fas fa-exclamation-triangle"></i> Alarmlar</h2>
+        <p>Sistem alarmları ve uyarıları</p>
     </div>
-    
+
+    <!-- Alarm Tablosu -->
     <div class="alarms-container">
-        <div class="active-alarms">
-            <h3>Aktif Alarmlar</h3>
-            <div class="alarm-list">
-                <div class="alarm-item critical">
-                    <div class="alarm-icon">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
-                    <div class="alarm-details">
-                        <h4>Yüksek Sıcaklık</h4>
-                        <p>Kol 3 sıcaklığı kritik seviyede</p>
-                        <span class="alarm-time">2 saat önce</span>
-                    </div>
-                    <div class="alarm-status">
-                        <span class="status-badge status-error">Kritik</span>
-                    </div>
-                </div>
-                
-                <div class="alarm-item warning">
-                    <div class="alarm-icon">
-                        <i class="fas fa-exclamation-circle"></i>
-                    </div>
-                    <div class="alarm-details">
-                        <h4>Düşük Gerilim</h4>
-                        <p>Batarya 7 gerilimi düşük</p>
-                        <span class="alarm-time">15 dakika önce</span>
-                    </div>
-                    <div class="alarm-status">
-                        <span class="status-badge status-warning">Uyarı</span>
-                    </div>
-                </div>
+        <div class="table-container">
+            <table class="alarms-table" id="alarmsTable">
+                <thead>
+                    <tr>
+                        <th>Zaman</th>
+                        <th>Kol</th>
+                        <th>Batarya</th>
+                        <th>Açıklama</th>
+                        <th>Durum</th>
+                    </tr>
+                </thead>
+                <tbody id="alarmsTableBody">
+                    <!-- Alarm verileri JavaScript ile doldurulacak -->
+                </tbody>
+            </table>
+            
+            <!-- Loading Spinner -->
+            <div class="loading-spinner" id="loadingSpinner" style="display: flex;">
+                <div class="spinner"></div>
+                <p>Alarm verileri yükleniyor...</p>
+            </div>
+            
+            <!-- Veri Yok Mesajı -->
+            <div class="no-data-message" id="noDataMessage" style="display: none;">
+                <i class="fas fa-check-circle"></i>
+                <h3>Alarm Yok</h3>
+                <p>Sistemde aktif alarm bulunmuyor.</p>
             </div>
         </div>
     </div>
 </div>
-<!-- Alarms sayfası script'i main.js tarafından yüklenecek -->
+
+<!-- Alarms sayfası script'i alarms.js tarafından yüklenecek -->

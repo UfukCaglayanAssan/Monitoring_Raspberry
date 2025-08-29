@@ -251,6 +251,23 @@ class BatteryDatabase:
                 VALUES (?, ?, ?, ?)
             ''', (arm, error_code_msb, error_code_lsb, timestamp))
             conn.commit()
+
+    def get_all_alarms(self):
+        """Tüm alarmları getir"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT id, arm, error_code_msb, error_code_lsb, timestamp, created_at
+                    FROM alarms 
+                    ORDER BY timestamp DESC
+                ''')
+                
+                rows = cursor.fetchall()
+                return rows
+        except Exception as e:
+            print(f"get_all_alarms hatası: {e}")
+            return []
     
     def insert_missing_data(self, arm, slave, status, timestamp):
         """Missing data verisi ekle"""

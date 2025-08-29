@@ -570,3 +570,90 @@ body {
         opacity: 1;
     }
 }
+
+/* ===== ALARMS PAGE STYLES ===== */
+
+.alarms-page {
+    padding: 20px;
+}
+
+.alarms-page .page-header {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.alarms-page .page-header h2 {
+    color: #2c3e50;
+    font-size: 28px;
+    margin-bottom: 10px;
+}
+
+.alarms-page .page-header p {
+    color: #7f8c8d;
+    font-size: 16px;
+}
+
+.alarms-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.table-container {
+    padding: 20px;
+}
+
+.alarms-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.alarms-table th {
+    background: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+    padding: 15px 12px;
+    text-align: left;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.alarms-table td {
+    padding: 12px;
+    border-bottom: 1px solid #dee2e6;
+    vertical-align: middle;
+}
+
+.alarms-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.status-error {
+    background-color: #fee;
+    color: #dc3545;
+}
+
+.status-badge.status-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-badge.status-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.status-badge.status-default {
+    background-color: #e9ecef;
+    color: #495057;
+}
