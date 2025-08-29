@@ -200,7 +200,6 @@ class BatteriesPage {
         this.updateCardTexts(language);
         console.log('loadBatteries çağrılıyor...');
       
-        this.loadBatteries();
     }
     
     updateCardTexts(language) {
