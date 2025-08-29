@@ -79,6 +79,7 @@ class BatteryDatabase:
                     CREATE TABLE IF NOT EXISTS alarms (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         arm INTEGER,
+                        battery INTEGER,
                         error_code_msb INTEGER,
                         error_code_lsb INTEGER,
                         timestamp INTEGER,
@@ -242,14 +243,14 @@ class BatteryDatabase:
             ''', [(record['Arm'], record['k'], record['Dtype'], record['data'], record['timestamp']) for record in batch])
             conn.commit()
     
-    def insert_alarm(self, arm, error_code_msb, error_code_lsb, timestamp):
+    def insert_alarm(self, arm, battery, error_code_msb, error_code_lsb, timestamp):
         """Alarm verisi ekle"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO alarms (arm, error_code_msb, error_code_lsb, timestamp)
-                VALUES (?, ?, ?, ?)
-            ''', (arm, error_code_msb, error_code_lsb, timestamp))
+                INSERT INTO alarms (arm, battery, error_code_msb, error_code_lsb, timestamp)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (arm, battery, error_code_msb, error_code_lsb, timestamp))
             conn.commit()
 
     def get_all_alarms(self):
@@ -258,7 +259,7 @@ class BatteryDatabase:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute('''
-                    SELECT id, arm, error_code_msb, error_code_lsb, timestamp, created_at
+                    SELECT id, arm, battery, error_code_msb, error_code_lsb, timestamp, created_at
                     FROM alarms 
                     ORDER BY timestamp DESC
                 ''')

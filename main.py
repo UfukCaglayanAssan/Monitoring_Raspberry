@@ -203,12 +203,13 @@ def db_worker():
                 
                 # Batkon alarm verisi işleme
                 arm_value = int(data[3], 16)
+                battery = int(data[2], 16)
                 error_msb = int(data[4], 16)
                 error_lsb = int(data[5], 16)
                 alarm_timestamp = int(time.time() * 1000)
                 
                 # SQLite'ye kaydet
-                db.insert_alarm(arm_value, error_msb, error_lsb, alarm_timestamp)
+                db.insert_alarm(arm_value, battery, error_msb, error_lsb, alarm_timestamp)
                 print("✓ Batkon alarm SQLite'ye kaydedildi")
                 continue
 
@@ -391,7 +392,7 @@ def db_worker():
                     error_lsb = 9
                     alarm_timestamp = int(time.time() * 1000)
                     
-                    db.insert_alarm(arm_value, error_msb, error_lsb, alarm_timestamp)
+                    db.insert_alarm(arm_value, 2, error_msb, error_lsb, alarm_timestamp)
                     print("✓ Hatkon alarm SQLite'ye kaydedildi")
                     continue
 

@@ -355,29 +355,32 @@ def process_alarm_data(alarm):
     """Alarm verisini işle ve açıklama oluştur"""
     try:
         arm = alarm[1]  # arm
-        error_msb = alarm[2]  # error_code_msb
-        error_lsb = alarm[3]  # error_code_lsb
-        timestamp = alarm[4]  # timestamp
+        battery = alarm[2]  # battery (k değeri)
+        error_msb = alarm[3]  # error_code_msb
+        error_lsb = alarm[4]  # error_code_lsb
+        timestamp = alarm[5]  # timestamp
         
         # Batarya alarmı mı kol alarmı mı kontrol et
         if error_lsb == 9:  # Kol alarmı (Hatkon)
             description = get_arm_alarm_description(error_msb)
             if not description:  # Boş string ise alarm yok
                 return None
-            battery = "Kol Alarmı"
+            battery_display = "Kol Alarmı"
             status = "Devam Ediyor"
         else:  # Batarya alarmı (Batkon)
             description = get_battery_alarm_description(error_msb, error_lsb)
             if not description:  # Açıklama yoksa alarm yok
                 return None
-            # Batarya alarmlarında k değeri (batarya adresi) yok, sadece arm var
-            # Bu yüzden boş bırakıyoruz
-            battery = ""
+            # Batarya alarmlarında k değeri varsa göster, yoksa boş bırak
+            if battery == 0:
+                battery_display = ""
+            else:
+                battery_display = str(battery)
             status = "Devam Ediyor"
         
         return {
             'arm': arm,
-            'battery': battery,
+            'battery': battery_display,
             'description': description,
             'status': status,
             'timestamp': timestamp
