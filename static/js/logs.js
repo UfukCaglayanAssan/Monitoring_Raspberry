@@ -178,8 +178,8 @@ class LogsPage {
                     <td colspan="6">
                         <div class="empty-state">
                             <i class="fas fa-inbox"></i>
-                            <h4>Veri Bulunamadı</h4>
-                            <p>Seçilen kriterlere uygun log verisi bulunamadı.</p>
+                            <h4>${currentLanguage === 'en' ? 'No Data Found' : 'Veri Bulunamadı'}</h4>
+                            <p>${currentLanguage === 'en' ? 'No log data found matching the selected criteria.' : 'Seçilen kriterlere uygun log verisi bulunamadı.'}</p>
                         </div>
                     </td>
                 </tr>
@@ -189,22 +189,25 @@ class LogsPage {
 
         tableBody.innerHTML = this.logs.map(log => {
             // k değerine göre veri tipi ismini belirle
-            let dataTypeName = log.name || 'Bilinmeyen';
+            let dataTypeName = log.name || (currentLanguage === 'en' ? 'Unknown' : 'Bilinmeyen');
             const unit = log.unit || '';
+            
+            // Mevcut dili al
+            const currentLanguage = localStorage.getItem('language') || 'tr';
             
             if (log.batteryAddress === 2) {
                 // Arm verisi (k=2)
-                if (log.dtype === 10) dataTypeName = 'Akım';
-                else if (log.dtype === 11) dataTypeName = 'Nem';
-                else if (log.dtype === 12) dataTypeName = 'Sıcaklık';
+                if (log.dtype === 10) dataTypeName = currentLanguage === 'en' ? 'Current' : 'Akım';
+                else if (log.dtype === 11) dataTypeName = currentLanguage === 'en' ? 'Humidity' : 'Nem';
+                else if (log.dtype === 12) dataTypeName = currentLanguage === 'en' ? 'Temperature' : 'Sıcaklık';
             } else {
                 // Battery verisi (k!=2)
-                if (log.dtype === 10) dataTypeName = 'Gerilim';
-                else if (log.dtype === 11) dataTypeName = 'Şarj Durumu';
-                else if (log.dtype === 12) dataTypeName = 'Modül Sıcaklığı';
-                else if (log.dtype === 13) dataTypeName = 'Pozitif Kutup Başı Sıcaklığı';
-                else if (log.dtype === 14) dataTypeName = 'Negatif Kutup Başı Sıcaklığı';
-                else if (log.dtype === 126) dataTypeName = 'Sağlık Durumu';
+                if (log.dtype === 10) dataTypeName = currentLanguage === 'en' ? 'Voltage' : 'Gerilim';
+                else if (log.dtype === 11) dataTypeName = currentLanguage === 'en' ? 'Charge Status' : 'Şarj Durumu';
+                else if (log.dtype === 12) dataTypeName = currentLanguage === 'en' ? 'Module Temperature' : 'Modül Sıcaklığı';
+                else if (log.dtype === 13) dataTypeName = currentLanguage === 'en' ? 'Positive Terminal Temperature' : 'Pozitif Kutup Başı Sıcaklığı';
+                else if (log.dtype === 14) dataTypeName = currentLanguage === 'en' ? 'Negative Terminal Temperature' : 'Negatif Kutup Başı Sıcaklığı';
+                else if (log.dtype === 126) dataTypeName = currentLanguage === 'en' ? 'Health Status' : 'Sağlık Durumu';
             }
             
             return `
@@ -216,7 +219,7 @@ class LogsPage {
                     <td>${this.formatNumber(log.data)} ${unit || ''}</td>
                     <td>
                         <span class="status-badge status-success">
-                            BAŞARILI
+                            ${currentLanguage === 'en' ? 'SUCCESS' : 'BAŞARILI'}
                         </span>
                     </td>
                 </tr>
