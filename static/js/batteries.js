@@ -6,7 +6,6 @@ class BatteriesPage {
         this.totalPages = 1;
         this.batteriesData = [];
         this.selectedArm = 3; // 1-4 = Belirli kol (varsayılan: Kol 3)
-        this.languageListenerAdded = false; // Dil listener'ı sadece bir kez eklemek için
         
         this.init();
     }
@@ -27,47 +26,24 @@ class BatteriesPage {
             });
         });
         
-        // Dil değişikliği dinleyicisi - sadece bir kez ekle
-        if (!this.languageListenerAdded) {
-            window.addEventListener('languageChanged', (e) => {
-                console.log('=== DIL DEGISIKLIGI EVENT\'I ALINDI ===');
-                console.log('Event detail:', e.detail);
-                console.log('Dil:', e.detail.language);
+        // Dil değişikliği dinleyicisi - global olarak ekle
+        window.addEventListener('languageChanged', (e) => {
+            console.log('=== DIL DEGISIKLIGI EVENT\'I ALINDI (GLOBAL) ===');
+            console.log('Event detail:', e.detail);
+            console.log('Dil:', e.detail.language);
+            console.log('BatteriesPage instance:', this);
+            
+            if (this && typeof this.onLanguageChanged === 'function') {
                 console.log('onLanguageChanged cagriliyor...');
                 this.onLanguageChanged(e.detail.language);
                 console.log('onLanguageChanged cagrildi');
-            });
-            this.languageListenerAdded = true;
-            console.log('Language listener eklendi');
-        }
+            } else {
+                console.log('BatteriesPage instance bulunamadı veya onLanguageChanged fonksiyonu yok!');
+            }
+        });
+        console.log('Global language listener eklendi');
 
-        // Test butonları için event listener'lar
-        const testEnBtn = document.getElementById('testEnBtn');
-        const testTrBtn = document.getElementById('testTrBtn');
-        const testUpdateBtn = document.getElementById('testUpdateBtn');
 
-        if (testEnBtn) {
-            testEnBtn.addEventListener('click', () => {
-                console.log('=== TEST EN BUTONU TIKLANDI ===');
-                this.updateCardTexts('en');
-            });
-        }
-
-        if (testTrBtn) {
-            testTrBtn.addEventListener('click', () => {
-                console.log('=== TEST TR BUTONU TIKLANDI ===');
-                this.updateCardTexts('tr');
-            });
-        }
-
-        if (testUpdateBtn) {
-            testUpdateBtn.addEventListener('click', () => {
-                console.log('=== TEST UPDATE BUTONU TIKLANDI ===');
-                console.log('Mevcut dil:', localStorage.getItem('language'));
-                console.log('BatteriesPage instance:', this);
-                console.log('updateCardTexts fonksiyonu:', this.updateCardTexts);
-            });
-        }
     }
     
     selectArm(arm) {
