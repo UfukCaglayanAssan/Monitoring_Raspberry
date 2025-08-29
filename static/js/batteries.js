@@ -57,6 +57,7 @@ class BatteriesPage {
             
             // Mevcut dili al
             const currentLanguage = localStorage.getItem('language') || 'tr';
+            console.log('loadBatteries - Kullanılan dil:', currentLanguage);
             
             // API endpoint'den batarya verilerini çek
             const response = await fetch('/api/batteries', {
@@ -186,9 +187,15 @@ class BatteriesPage {
     }
     
     updateCardTexts(language) {
+        // Debug: Fonksiyon çağrıldı mı?
+        console.log('updateCardTexts çağrıldı, dil:', language);
+        
         // Mevcut kartlardaki metinleri güncelle
         const cards = document.querySelectorAll('.battery-card');
-        cards.forEach(card => {
+        console.log('Bulunan kart sayısı:', cards.length);
+        
+        cards.forEach((card, index) => {
+            console.log(`Kart ${index + 1} güncelleniyor...`);
             // Başlık
             const title = card.querySelector('.card-title');
             if (title) {
@@ -389,6 +396,9 @@ class BatteriesPage {
             // Sadece sayfa aktifse yenile
             if (this.isPageActive()) {
                 console.log('Otomatik yenileme çalışıyor...');
+                // Mevcut dili al ve otomatik güncellemede de kullan
+                const currentLanguage = localStorage.getItem('language') || 'tr';
+                console.log('Otomatik güncelleme dili:', currentLanguage);
                 this.loadBatteries();
             }
         }, 30000);
