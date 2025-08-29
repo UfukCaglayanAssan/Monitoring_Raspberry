@@ -5,7 +5,7 @@ class BatteriesPage {
         this.pageSize = 30;
         this.totalPages = 1;
         this.batteriesData = [];
-        this.selectedArm = 0; // 0 = Tüm kollar, 1-4 = Belirli kol
+        this.selectedArm = 3; // 1-4 = Belirli kol (varsayılan: Kol 1)
         
         this.init();
     }

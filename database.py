@@ -610,10 +610,8 @@ class BatteryDatabase:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 
-                # Arm filtresi ekle
-                arm_filter = ""
-                if selected_arm > 0:
-                    arm_filter = f"AND bd.arm = {selected_arm}"
+                # Arm filtresi ekle (her zaman bir kol seçilmeli)
+                arm_filter = f"AND bd.arm = {selected_arm}"
                 
                 # Her batarya için en son veri zamanını bul ve sadece en güncel olanları getir
                 cursor.execute(f'''
