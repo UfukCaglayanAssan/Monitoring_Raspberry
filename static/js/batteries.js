@@ -40,6 +40,34 @@ class BatteriesPage {
             this.languageListenerAdded = true;
             console.log('Language listener eklendi');
         }
+
+        // Test butonları için event listener'lar
+        const testEnBtn = document.getElementById('testEnBtn');
+        const testTrBtn = document.getElementById('testTrBtn');
+        const testUpdateBtn = document.getElementById('testUpdateBtn');
+
+        if (testEnBtn) {
+            testEnBtn.addEventListener('click', () => {
+                console.log('=== TEST EN BUTONU TIKLANDI ===');
+                this.updateCardTexts('en');
+            });
+        }
+
+        if (testTrBtn) {
+            testTrBtn.addEventListener('click', () => {
+                console.log('=== TEST TR BUTONU TIKLANDI ===');
+                this.updateCardTexts('tr');
+            });
+        }
+
+        if (testUpdateBtn) {
+            testUpdateBtn.addEventListener('click', () => {
+                console.log('=== TEST UPDATE BUTONU TIKLANDI ===');
+                console.log('Mevcut dil:', localStorage.getItem('language'));
+                console.log('BatteriesPage instance:', this);
+                console.log('updateCardTexts fonksiyonu:', this.updateCardTexts);
+            });
+        }
     }
     
     selectArm(arm) {
@@ -215,8 +243,21 @@ class BatteriesPage {
             if (title) {
                 const oldText = title.textContent;
                 const newText = title.getAttribute(`data-${language}`) || title.textContent;
+                console.log(`Kart ${index + 1} başlık güncelleniyor: "${oldText}" -> "${newText}"`);
+                
+                // DOM'u güncelle
                 title.textContent = newText;
-                console.log(`Kart ${index + 1} başlık: "${oldText}" -> "${newText}"`);
+                
+                // Güncelleme sonrası kontrol
+                const updatedText = title.textContent;
+                console.log(`Kart ${index + 1} başlık güncellendi: "${updatedText}"`);
+                
+                // DOM'da gerçekten güncellendi mi kontrol et
+                if (updatedText === newText) {
+                    console.log(`Kart ${index + 1} başlık DOM'da başarıyla güncellendi`);
+                } else {
+                    console.log(`Kart ${index + 1} başlık DOM'da güncellenemedi!`);
+                }
             } else {
                 console.log(`Kart ${index + 1} başlık bulunamadı!`);
             }
