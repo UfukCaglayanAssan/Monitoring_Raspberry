@@ -173,6 +173,7 @@ class LogsPage {
         const tableBody = document.getElementById('logsTableBody');
         
         if (this.logs.length === 0) {
+            const currentLanguage = localStorage.getItem('language') || 'tr';
             tableBody.innerHTML = `
                 <tr>
                     <td colspan="6">
@@ -187,13 +188,13 @@ class LogsPage {
             return;
         }
 
+        // Mevcut dili al
+        const currentLanguage = localStorage.getItem('language') || 'tr';
+        
         tableBody.innerHTML = this.logs.map(log => {
             // k değerine göre veri tipi ismini belirle
             let dataTypeName = log.name || (currentLanguage === 'en' ? 'Unknown' : 'Bilinmeyen');
             const unit = log.unit || '';
-            
-            // Mevcut dili al
-            const currentLanguage = localStorage.getItem('language') || 'tr';
             
             if (log.batteryAddress === 2) {
                 // Arm verisi (k=2)
