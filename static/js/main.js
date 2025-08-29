@@ -155,6 +155,9 @@ class App {
         
         // Sayfa metinlerini güncelle
         this.updatePageTexts(lang);
+        
+        // Dil değişikliği event'ini tetikle
+        window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: lang } }));
     }
 
     updatePageTexts(lang) {

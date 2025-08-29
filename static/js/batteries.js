@@ -5,7 +5,7 @@ class BatteriesPage {
         this.pageSize = 30;
         this.totalPages = 1;
         this.batteriesData = [];
-        this.selectedArm = 3; // 1-4 = Belirli kol (varsayılan: Kol 1)
+        this.selectedArm = 3; // 1-4 = Belirli kol (varsayılan: Kol 3)
         
         this.init();
     }
@@ -24,6 +24,11 @@ class BatteriesPage {
                 const arm = parseInt(e.target.closest('.arm-btn').dataset.arm);
                 this.selectArm(arm);
             });
+        });
+        
+        // Dil değişikliği dinleyicisi
+        window.addEventListener('languageChanged', (e) => {
+            this.onLanguageChanged(e.detail.language);
         });
     }
     
@@ -50,11 +55,15 @@ class BatteriesPage {
         try {
             this.showLoading(true);
             
+            // Mevcut dili al
+            const currentLanguage = localStorage.getItem('language') || 'tr';
+            
             // API endpoint'den batarya verilerini çek
             const response = await fetch('/api/batteries', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-Language': currentLanguage
                 },
                 body: JSON.stringify({
                     page: this.currentPage,
@@ -157,6 +166,12 @@ class BatteriesPage {
         if (chargeValue) chargeValue.textContent = this.formatValue(battery.charge, '');
         
         return cardElement;
+    }
+    
+    onLanguageChanged(language) {
+        // Dil değiştiğinde bataryaları yeniden yükle
+        console.log('Dil değişti:', language);
+        this.loadBatteries();
     }
     
     formatValue(value, unit) {

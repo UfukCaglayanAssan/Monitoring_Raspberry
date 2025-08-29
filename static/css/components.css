@@ -708,4 +708,15 @@
     .error-actions {
         flex-direction: column;
     }
+    
+    .top-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .language-selector {
+        justify-content: center;
+    }
 }
+
+

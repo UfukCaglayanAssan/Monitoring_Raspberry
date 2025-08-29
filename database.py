@@ -140,12 +140,12 @@ class BatteryDatabase:
                 cursor.execute('''
                     INSERT OR IGNORE INTO data_types (dtype, name, unit, description)
                     VALUES 
-                        (10, 'Veri Tipi 10', '', 'Genel veri tipi 10'),
-                        (11, 'Veri Tipi 11', '', 'Genel veri tipi 11'),
-                        (12, 'Veri Tipi 12', '', 'Genel veri tipi 12'),
-                        (13, 'Veri Tipi 13', '', 'Genel veri tipi 13'),
-                        (14, 'Veri Tipi 14', '', 'Genel veri tipi 14'),
-                        (126, 'Veri Tipi 126', '', 'Genel veri tipi 126')
+                        (10, 'Gerilim', 'V', 'Batarya gerilim değeri'),
+                        (11, 'Şarj Durumu', '%', 'Batarya şarj yüzdesi'),
+                        (12, 'Sıcaklık', '°C', 'Batarya sıcaklık değeri'),
+                        (13, 'Nem', '%', 'Ortam nem değeri'),
+                        (14, 'Akım', 'A', 'Akım değeri'),
+                        (126, 'Sağlık Durumu', '%', 'Batarya sağlık yüzdesi')
                 ''')
                 print("✓ Veri tipleri eklendi")
                 
@@ -153,12 +153,12 @@ class BatteryDatabase:
                 cursor.execute('''
                     INSERT OR IGNORE INTO data_type_translations (dtype, language_code, name, description)
                     VALUES 
-                        (10, 'tr', 'Veri Tipi 10', 'Genel veri tipi 10'),
-                        (11, 'tr', 'Veri Tipi 11', 'Genel veri tipi 11'),
-                        (12, 'tr', 'Veri Tipi 12', 'Genel veri tipi 12'),
-                        (13, 'tr', 'Veri Tipi 13', 'Genel veri tipi 13'),
-                        (14, 'tr', 'Veri Tipi 14', 'Genel veri tipi 14'),
-                        (126, 'tr', 'Veri Tipi 126', 'Genel veri tipi 126')
+                        (10, 'tr', 'Gerilim', 'Batarya gerilim değeri'),
+                        (11, 'tr', 'Şarj Durumu', 'Batarya şarj yüzdesi'),
+                        (12, 'tr', 'Sıcaklık', 'Batarya sıcaklık değeri'),
+                        (13, 'tr', 'Nem', 'Ortam nem değeri'),
+                        (14, 'tr', 'Akım', 'Akım değeri'),
+                        (126, 'tr', 'Sağlık Durumu', 'Batarya sağlık yüzdesi')
                 ''')
                 print("✓ Türkçe çeviriler eklendi")
                 
@@ -166,12 +166,12 @@ class BatteryDatabase:
                 cursor.execute('''
                     INSERT OR IGNORE INTO data_type_translations (dtype, language_code, name, description)
                     VALUES 
-                        (10, 'en', 'Data Type 10', 'General data type 10'),
-                        (11, 'en', 'Data Type 11', 'General data type 11'),
-                        (12, 'en', 'Data Type 12', 'General data type 12'),
-                        (13, 'en', 'Data Type 13', 'General data type 13'),
-                        (14, 'en', 'Data Type 14', 'General data type 14'),
-                        (126, 'en', 'Data Type 126', 'General data type 126')
+                        (10, 'en', 'Voltage', 'Battery voltage value'),
+                        (11, 'en', 'Charge Status', '%', 'Battery charge percentage'),
+                        (12, 'en', 'Temperature', '°C', 'Battery temperature value'),
+                        (13, 'en', 'Humidity', '%', 'Ambient humidity value'),
+                        (14, 'en', 'Current', 'A', 'Current value'),
+                        (126, 'en', 'Health Status', '%', 'Battery health percentage')
                 ''')
                 print("✓ İngilizce çeviriler eklendi")
                 
@@ -603,7 +603,7 @@ class BatteryDatabase:
             
             return csv_content
 
-    def get_batteries_for_display(self, page=1, page_size=30, selected_arm=0):
+    def get_batteries_for_display(self, page=1, page_size=30, selected_arm=0, language='tr'):
         """Batteries sayfası için batarya verilerini getir"""
         
         try:
@@ -646,7 +646,7 @@ class BatteryDatabase:
                 
                 for arm, battery_address, latest_timestamp in page_batteries:
                     # Her batarya için sadece en son verileri getir
-                    battery_data = self.get_latest_battery_data(arm, battery_address)
+                    battery_data = self.get_latest_battery_data(arm, battery_address, language)
                     
                     if battery_data:
                         batteries.append(battery_data)
@@ -660,7 +660,7 @@ class BatteryDatabase:
             print(f"get_batteries_for_display hatası: {e}")
             raise e
     
-    def get_latest_battery_data(self, arm, battery_address):
+    def get_latest_battery_data(self, arm, battery_address, language='tr'):
         """Belirli bir batarya için son verileri getir"""
         try:
             with self.get_connection() as conn:
@@ -679,10 +679,15 @@ class BatteryDatabase:
                 
                 # Sadece en son verileri getir (en son timestamp'teki tüm dtype'lar)
                 cursor.execute('''
-                    SELECT dtype, data FROM battery_data 
-                    WHERE arm = ? AND k = ? AND timestamp = ?
-                    ORDER BY dtype
-                ''', (arm, battery_address, latest_timestamp))
+                    SELECT bd.dtype, bd.data, dt.name, dt.unit,
+                           COALESCE(dtt.name, dt.name) as translated_name
+                    FROM battery_data bd
+                    LEFT JOIN data_types dt ON bd.dtype = dt.dtype
+                    LEFT JOIN data_type_translations dtt ON dt.dtype = dtt.dtype 
+                        AND dtt.language_code = ?
+                    WHERE bd.arm = ? AND bd.k = ? AND bd.timestamp = ?
+                    ORDER BY bd.dtype
+                ''', (language, arm, battery_address, latest_timestamp))
                 
                 data_rows = cursor.fetchall()
                 
@@ -699,15 +704,19 @@ class BatteryDatabase:
                 }
                 
                 # Sadece en son verileri kullan
-                for dtype, data in data_rows:
+                for dtype, data, name, unit, translated_name in data_rows:
                     if dtype == 10:  # Gerilim
                         battery_data['voltage'] = data
+                        battery_data['voltage_name'] = translated_name or name
                     elif dtype == 11:  # Şarj durumu
                         battery_data['charge'] = data
+                        battery_data['charge_name'] = translated_name or name
                     elif dtype == 12:  # Sıcaklık
                         battery_data['temperature'] = data
+                        battery_data['temperature_name'] = translated_name or name
                     elif dtype == 126:  # Sağlık durumu
                         battery_data['health'] = data
+                        battery_data['health_name'] = translated_name or name
                 
                 return battery_data
         except Exception as e:

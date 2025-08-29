@@ -141,9 +141,12 @@ def get_batteries():
         data = request.get_json()
         page = data.get('page', 1)
         page_size = data.get('pageSize', 30)
-        selected_arm = data.get('selectedArm', 3)
+        selected_arm = data.get('selectedArm', 3)  # Varsayılan: Kol 3
         
-        batteries_data = db.get_batteries_for_display(page, page_size, selected_arm)
+        # Mevcut dili al (localStorage'dan veya varsayılan olarak 'tr')
+        language = request.headers.get('X-Language', 'tr')
+        
+        batteries_data = db.get_batteries_for_display(page, page_size, selected_arm, language)
         
         return jsonify({
             'success': True,
