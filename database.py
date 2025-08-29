@@ -445,7 +445,7 @@ class BatteryDatabase:
                 'translated_description': row[8]
             } for row in rows]
     
-    def get_logs_with_filters(self, page=1, page_size=50, filters=None):
+    def get_logs_with_filters(self, page=1, page_size=50, filters=None, language='tr'):
         """Filtrelenmiş log verilerini getir"""
         if filters is None:
             filters = {}
@@ -453,7 +453,7 @@ class BatteryDatabase:
         with self.get_connection() as conn:
             cursor = conn.cursor()
             
-            # Temel sorgu - JOIN'de k koşulunu kaldırdık
+            # Temel sorgu - JOIN'de k koşulunu kaldırdık ve çeviri ekle
             query = '''
                 SELECT 
                     bd.arm,
@@ -461,14 +461,15 @@ class BatteryDatabase:
                     bd.dtype,
                     bd.data,
                     bd.timestamp,
-                    dt.name,
+                    COALESCE(dtt.name, dt.name) as name,
                     dt.unit
                 FROM battery_data bd
                 LEFT JOIN data_types dt ON bd.dtype = dt.dtype
+                LEFT JOIN data_type_translations dtt ON dt.dtype = dtt.dtype AND dtt.language_code = ?
                 WHERE 1=1
             '''
             
-            params = []
+            params = [language]  # Dil parametresi ilk sırada
             
             # Filtreler
             if filters.get('arm'):

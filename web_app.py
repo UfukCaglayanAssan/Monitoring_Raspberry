@@ -92,12 +92,17 @@ def get_logs():
     page_size = data.get('pageSize', 50)
     filters = data.get('filters', {})
     
+    # Mevcut dili al (localStorage'dan veya varsayılan olarak 'tr')
+    language = request.headers.get('X-Language', 'tr')
+    print(f"DEBUG web_app.py logs: Dil parametresi: {language}")
+    
     try:
         # Veritabanından log verilerini al
         logs_data = db.get_logs_with_filters(
             page=page,
             page_size=page_size,
-            filters=filters
+            filters=filters,
+            language=language
         )
         
         return jsonify({
