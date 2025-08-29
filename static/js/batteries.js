@@ -196,10 +196,16 @@ class BatteriesPage {
         
         cards.forEach((card, index) => {
             console.log(`Kart ${index + 1} güncelleniyor...`);
+            
             // Başlık
             const title = card.querySelector('.card-title');
             if (title) {
-                title.textContent = title.getAttribute(`data-${language}`) || title.textContent;
+                const oldText = title.textContent;
+                const newText = title.getAttribute(`data-${language}`) || title.textContent;
+                title.textContent = newText;
+                console.log(`Kart ${index + 1} başlık: "${oldText}" -> "${newText}"`);
+            } else {
+                console.log(`Kart ${index + 1} başlık bulunamadı!`);
             }
             
             // Adres etiketi
