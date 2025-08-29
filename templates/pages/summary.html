@@ -2,25 +2,26 @@
 <div class="summary-page">
     <div class="welcome-section">
         <h2>Hoş Geldiniz!</h2>
-        <p>Akü İzleme Sistemine hoş geldiniz. Sol menüden istediğiniz bölümü seçebilirsiniz.</p>
+        <p>Akü İzleme Sistemine hoş geldiniz. Son 10 dakikada verisi gelen kollar aşağıda gösterilmektedir.</p>
     </div>
     
-    <div class="quick-stats">
-        <div class="stat-card">
-            <i class="fas fa-battery-three-quarters"></i>
-            <h3>Toplam Batarya</h3>
-            <p class="stat-value">24</p>
-        </div>
-        <div class="stat-card">
-            <i class="fas fa-exclamation-triangle"></i>
-            <h3>Aktif Alarmlar</h3>
-            <p class="stat-value">2</p>
-        </div>
-        <div class="stat-card">
-            <i class="fas fa-chart-line"></i>
-            <h3>Günlük Veri</h3>
-            <p class="stat-value">1,247</p>
-        </div>
+    <!-- Aktif Kollar Grid -->
+    <div class="active-arms-grid" id="activeArmsGrid">
+        <!-- Kol kartları JavaScript ile doldurulacak -->
+    </div>
+    
+    <!-- Loading Spinner -->
+    <div class="loading-spinner" id="loadingSpinner" style="display: flex;">
+        <div class="spinner"></div>
+        <p>Özet verileri yükleniyor...</p>
+    </div>
+    
+    <!-- Veri Yok Mesajı -->
+    <div class="no-data-message" id="noDataMessage" style="display: none;">
+        <i class="fas fa-info-circle"></i>
+        <h3>Veri Yok</h3>
+        <p>Son 10 dakikada verisi gelen kol bulunamadı.</p>
     </div>
 </div>
-<!-- Summary sayfası script'i main.js tarafından yüklenecek -->
+
+<!-- Summary sayfası script'i summary.js tarafından yüklenecek -->

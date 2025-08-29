@@ -804,6 +804,85 @@ class BatteryDatabase:
             return size_mb
         return 0
     
+    def get_summary_data(self):
+        """Özet sayfası için veri getir - son 10 dakikada verisi gelen kollar"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Son 10 dakikada verisi gelen kolları bul
+                ten_minutes_ago = int((datetime.now() - timedelta(minutes=10)).timestamp() * 1000)
+                
+                # Her kol için son veri zamanını bul
+                cursor.execute('''
+                    SELECT arm, MAX(timestamp) as latest_timestamp
+                    FROM battery_data 
+                    WHERE timestamp >= ?
+                    GROUP BY arm
+                    ORDER BY arm
+                ''', (ten_minutes_ago,))
+                
+                active_arms = cursor.fetchall()
+                summary_data = []
+                
+                for arm, latest_timestamp in active_arms:
+                    if not latest_timestamp:
+                        continue
+                    
+                    # Bu kol için nem ve sıcaklık bilgisini al (k=2)
+                    cursor.execute('''
+                        SELECT bd.dtype, bd.data, dt.name, dt.unit
+                        FROM battery_data bd
+                        LEFT JOIN data_types dt ON bd.dtype = dt.dtype
+                        WHERE bd.arm = ? AND bd.k = 2 AND bd.timestamp = ?
+                        ORDER BY bd.dtype
+                    ''', (arm, latest_timestamp))
+                    
+                    arm_data = cursor.fetchall()
+                    
+                    # Nem ve sıcaklık değerlerini al
+                    humidity = None
+                    temperature = None
+                    
+                    for dtype, data, name, unit in arm_data:
+                        if dtype == 11:  # Nem
+                            humidity = data
+                        elif dtype == 12:  # Sıcaklık
+                            temperature = data
+                    
+                    # Bu kol için batarya sayısını ve ortalama değerleri hesapla
+                    cursor.execute('''
+                        SELECT 
+                            COUNT(DISTINCT bd.k) as battery_count,
+                            AVG(CASE WHEN bd.dtype = 10 THEN bd.data END) as avg_voltage,
+                            AVG(CASE WHEN bd.dtype = 11 THEN bd.data END) as avg_charge,
+                            AVG(CASE WHEN bd.dtype = 126 THEN bd.data END) as avg_health
+                        FROM battery_data bd
+                        WHERE bd.arm = ? AND bd.k != 2 AND bd.timestamp = ?
+                    ''', (arm, latest_timestamp))
+                    
+                    battery_stats = cursor.fetchone()
+                    
+                    if battery_stats:
+                        battery_count, avg_voltage, avg_charge, avg_health = battery_stats
+                        
+                        summary_data.append({
+                            'arm': arm,
+                            'timestamp': latest_timestamp,
+                            'humidity': humidity,
+                            'temperature': temperature,
+                            'battery_count': battery_count or 0,
+                            'avg_voltage': round(avg_voltage, 3) if avg_voltage else None,
+                            'avg_charge': round(avg_charge, 3) if avg_charge else None,
+                            'avg_health': round(avg_health, 3) if avg_health else None
+                        })
+                
+                return summary_data
+                
+        except Exception as e:
+            print(f"get_summary_data hatası: {e}")
+            return []
+    
     def get_batconfigs(self):
         """Tüm batarya konfigürasyonlarını getir"""
         try:

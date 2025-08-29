@@ -364,6 +364,23 @@ def get_alarms():
             'message': str(e)
         }), 500
 
+@app.route('/api/summary', methods=['GET'])
+def get_summary():
+    """Özet sayfası için veri getir"""
+    try:
+        # Veritabanından özet verileri oku
+        summary_data = db.get_summary_data()
+        
+        return jsonify({
+            'success': True,
+            'summary': summary_data
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
 def process_alarm_data(alarm):
     """Alarm verisini işle ve açıklama oluştur"""
     try:

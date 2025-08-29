@@ -52,6 +52,154 @@
     margin: 0 auto;
 }
 
+.active-arms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.arm-card {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    color: white;
+    box-shadow: 0 4px 15px rgba(30, 60, 114, 0.3);
+    transition: all 0.3s ease;
+    height: 28rem;
+    width: 20rem;
+    font-family: sans-serif;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.arm-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(30, 60, 114, 0.4);
+}
+
+.arm-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.arm-number {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #bfdbfe;
+}
+
+.arm-timestamp {
+    font-size: 0.75rem;
+    color: #dbeafe;
+}
+
+.arm-main-metric {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.metric-icon {
+    background: #2563eb;
+    border-radius: 50%;
+    padding: 0.5rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    margin-bottom: 0.25rem;
+}
+
+.metric-icon svg {
+    width: 2rem;
+    height: 2rem;
+    color: white;
+}
+
+.metric-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+    display: flex;
+    align-items: end;
+    gap: 0.25rem;
+}
+
+.metric-unit {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-left: 0.25rem;
+}
+
+.metric-label {
+    font-size: 0.75rem;
+    color: #bfdbfe;
+    font-weight: 500;
+}
+
+.arm-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.5rem;
+    padding-right: 0.25rem;
+    min-height: 320px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(30, 60, 114, 0.5);
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+}
+
+.detail-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.detail-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.detail-label {
+    font-size: 0.875rem;
+    color: white;
+}
+
+.detail-value {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* Scrollbar stilleri */
+.arm-details::-webkit-scrollbar {
+    width: 0.375rem;
+}
+
+.arm-details::-webkit-scrollbar-track {
+    background: rgba(30, 60, 114, 0.3);
+    border-radius: 9999px;
+}
+
+.arm-details::-webkit-scrollbar-thumb {
+    background: #3b82f6;
+    border-radius: 9999px;
+}
+
+.arm-details::-webkit-scrollbar-thumb:hover {
+    background: #60a5fa;
+}
+
 .welcome-section {
     background: white;
     border-radius: 12px;
