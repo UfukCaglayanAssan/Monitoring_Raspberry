@@ -136,11 +136,15 @@ class LogsPage {
             // Loading göster
             this.showLoading(tableBody);
 
+            // Mevcut dili al
+            const currentLanguage = localStorage.getItem('language') || 'tr';
+            
             // API'den log verilerini al
             const response = await fetch('/api/logs', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-Language': currentLanguage
                 },
                 body: JSON.stringify({
                     page: this.currentPage,
@@ -156,10 +160,6 @@ class LogsPage {
                 
                 this.renderLogs();
                 this.updatePagination();
-                
-                // Loglar oluşturulduktan sonra çeviri yap
-                const currentLanguage = localStorage.getItem('language') || 'tr';
-                this.updateLogsTexts(currentLanguage);
             } else {
                 throw new Error('Log verileri alınamadı');
             }
@@ -188,28 +188,10 @@ class LogsPage {
             return;
         }
 
-        // Mevcut dili al
-        const currentLanguage = localStorage.getItem('language') || 'tr';
-        
         tableBody.innerHTML = this.logs.map(log => {
-            // k değerine göre veri tipi ismini belirle
-            let dataTypeName = log.name || (currentLanguage === 'en' ? 'Unknown' : 'Bilinmeyen');
+            // Backend'den gelen çevrilmiş veri tipi ismini kullan
+            let dataTypeName = log.name || 'Unknown';
             const unit = log.unit || '';
-            
-            if (log.batteryAddress === 2) {
-                // Arm verisi (k=2)
-                if (log.dtype === 10) dataTypeName = currentLanguage === 'en' ? 'Current' : 'Akım';
-                else if (log.dtype === 11) dataTypeName = currentLanguage === 'en' ? 'Humidity' : 'Nem';
-                else if (log.dtype === 12) dataTypeName = currentLanguage === 'en' ? 'Temperature' : 'Sıcaklık';
-            } else {
-                // Battery verisi (k!=2)
-                if (log.dtype === 10) dataTypeName = currentLanguage === 'en' ? 'Voltage' : 'Gerilim';
-                else if (log.dtype === 11) dataTypeName = currentLanguage === 'en' ? 'Charge Status' : 'Şarj Durumu';
-                else if (log.dtype === 12) dataTypeName = currentLanguage === 'en' ? 'Module Temperature' : 'Modül Sıcaklığı';
-                else if (log.dtype === 13) dataTypeName = currentLanguage === 'en' ? 'Positive Terminal Temperature' : 'Pozitif Kutup Başı Sıcaklığı';
-                else if (log.dtype === 14) dataTypeName = currentLanguage === 'en' ? 'Negative Terminal Temperature' : 'Negatif Kutup Başı Sıcaklığı';
-                else if (log.dtype === 126) dataTypeName = currentLanguage === 'en' ? 'Health Status' : 'Sağlık Durumu';
-            }
             
             return `
                 <tr>
@@ -220,7 +202,7 @@ class LogsPage {
                     <td>${this.formatNumber(log.data)} ${unit || ''}</td>
                     <td>
                         <span class="status-badge status-success">
-                            ${currentLanguage === 'en' ? 'SUCCESS' : 'BAŞARILI'}
+                            ${log.status || 'SUCCESS'}
                         </span>
                     </td>
                 </tr>
