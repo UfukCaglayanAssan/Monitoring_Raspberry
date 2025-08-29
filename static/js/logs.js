@@ -73,6 +73,11 @@ class LogsPage {
         document.getElementById('endDate').addEventListener('change', (e) => {
             this.filters.endDate = e.target.value;
         });
+
+        // Dil değişikliği dinleyicisi
+        window.addEventListener('languageChanged', (e) => {
+            this.onLanguageChanged(e.detail.language);
+        });
     }
 
     setDefaultDates() {
@@ -88,6 +93,40 @@ class LogsPage {
 
     formatDateForInput(date) {
         return date.toISOString().split('T')[0];
+    }
+
+    onLanguageChanged(language) {
+        // Dil değiştiğinde UI metinlerini güncelle
+        console.log('Logs: Dil değişti:', language);
+        this.updateLogsTexts(language);
+    }
+
+    updateLogsTexts(language) {
+        // Tüm data-tr ve data-en attribute'larına sahip elementleri güncelle
+        const elements = document.querySelectorAll('[data-tr][data-en]');
+        elements.forEach(element => {
+            const newText = element.getAttribute(`data-${language}`) || element.textContent;
+            element.textContent = newText;
+        });
+
+        // Select option'ları güncelle
+        const dataTypeSelect = document.getElementById('dataTypeFilter');
+        if (dataTypeSelect) {
+            Array.from(dataTypeSelect.options).forEach(option => {
+                if (option.hasAttribute('data-tr') && option.hasAttribute('data-en')) {
+                    option.textContent = option.getAttribute(`data-${language}`) || option.textContent;
+                }
+            });
+        }
+
+        const statusSelect = document.getElementById('statusFilter');
+        if (statusSelect) {
+            Array.from(statusSelect.options).forEach(option => {
+                if (option.hasAttribute('data-tr') && option.hasAttribute('data-en')) {
+                    option.textContent = option.getAttribute(`data-${language}`) || option.textContent;
+                }
+            });
+        }
     }
 
     async loadLogs() {

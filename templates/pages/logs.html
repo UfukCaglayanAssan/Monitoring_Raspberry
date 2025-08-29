@@ -4,45 +4,45 @@
     <div class="filters-section">
         <div class="filters-grid">
             <div class="filter-group">
-                <label for="armFilter">Kol Numarası</label>
+                <label for="armFilter" data-tr="Kol Numarası" data-en="Arm Number">Kol Numarası</label>
                 <input type="text" id="armFilter" placeholder="Kol numarası giriniz" class="filter-input">
             </div>
             
             <div class="filter-group">
-                <label for="batteryFilter">Batarya Adresi</label>
+                <label for="batteryFilter" data-tr="Batarya Adresi" data-en="Battery Address">Batarya Adresi</label>
                 <input type="text" id="batteryFilter" placeholder="Batarya adresi giriniz" class="filter-input">
             </div>
             
             <div class="filter-group">
-                <label for="dataTypeFilter">Veri Türü</label>
+                <label for="dataTypeFilter" data-tr="Veri Türü" data-en="Data Type">Veri Türü</label>
                 <select id="dataTypeFilter" class="filter-select">
                     <option value="">Tümü</option>
-                    <option value="10">Akım/Gerilim</option>
-                    <option value="11">Nem/Şarj Durumu</option>
-                    <option value="12">Sıcaklık</option>
-                    <option value="13">Pozitif Kutup Sıcaklığı</option>
-                    <option value="14">Negatif Kutup Sıcaklığı</option>
-                    <option value="126">Sağlık Durumu</option>
+                    <option value="10" data-tr="Akım/Gerilim" data-en="Current/Voltage">Akım/Gerilim</option>
+                    <option value="11" data-tr="Nem/Şarj Durumu" data-en="Humidity/Charge Status">Nem/Şarj Durumu</option>
+                    <option value="12" data-tr="Sıcaklık" data-en="Temperature">Sıcaklık</option>
+                    <option value="13" data-tr="Pozitif Kutup Sıcaklığı" data-en="Positive Pole Temperature">Pozitif Kutup Sıcaklığı</option>
+                    <option value="14" data-tr="Negatif Kutup Sıcaklığı" data-en="Negative Pole Temperature">Negatif Kutup Sıcaklığı</option>
+                    <option value="126" data-tr="Sağlık Durumu" data-en="Health Status">Sağlık Durumu</option>
                 </select>
             </div>
             
             <div class="filter-group">
-                <label for="statusFilter">Durum</label>
+                <label for="statusFilter" data-tr="Durum" data-en="Status">Durum</label>
                 <select id="statusFilter" class="filter-select">
                     <option value="">Tümü</option>
-                    <option value="success">Başarılı</option>
-                    <option value="error">Hata</option>
-                    <option value="warning">Uyarı</option>
+                    <option value="success" data-tr="Başarılı" data-en="Success">Başarılı</option>
+                    <option value="error" data-tr="Hata" data-en="Error">Hata</option>
+                    <option value="warning" data-tr="Uyarı" data-en="Warning">Uyarı</option>
                 </select>
             </div>
             
             <div class="filter-group">
-                <label for="startDate">Başlangıç</label>
+                <label for="startDate" data-tr="Başlangıç" data-en="Start Date">Başlangıç</label>
                 <input type="date" id="startDate" class="filter-input">
             </div>
             
             <div class="filter-group">
-                <label for="endDate">Bitiş</label>
+                <label for="endDate" data-tr="Bitiş" data-en="End Date">Bitiş</label>
                 <input type="date" id="endDate" class="filter-input">
             </div>
         </div>
@@ -50,11 +50,11 @@
         <div class="filter-actions">
             <button class="btn btn-secondary" id="clearFilters">
                 <i class="fas fa-times"></i>
-                Filtreleri Temizle
+                <span data-tr="Filtreleri Temizle" data-en="Clear Filters">Filtreleri Temizle</span>
             </button>
             <button class="btn btn-primary" id="applyFilters">
                 <i class="fas fa-filter"></i>
-                Filtrele
+                <span data-tr="Filtrele" data-en="Filter">Filtrele</span>
             </button>
         </div>
     </div>
@@ -62,29 +62,29 @@
     <!-- Log Tablosu -->
     <div class="logs-table-container">
         <div class="table-header">
-            <h3>Sistem Logları</h3>
-                                    <div class="table-actions">
-                            <button class="btn btn-outline" id="refreshLogs">
-                                <i class="fas fa-sync-alt"></i>
-                                Yenile
-                            </button>
-                            <button class="btn btn-outline" id="exportLogs">
-                                <i class="fas fa-download"></i>
-                                Dışa Aktar
-                            </button>
-                        </div>
+            <h3 data-tr="Sistem Logları" data-en="System Logs">Sistem Logları</h3>
+            <div class="table-actions">
+                <button class="btn btn-outline" id="refreshLogs">
+                    <i class="fas fa-sync-alt"></i>
+                    <span data-tr="Yenile" data-en="Refresh">Yenile</span>
+                </button>
+                <button class="btn btn-outline" id="exportLogs">
+                    <i class="fas fa-download"></i>
+                    <span data-tr="Dışa Aktar" data-en="Export">Dışa Aktar</span>
+                </button>
+            </div>
         </div>
         
         <div class="table-wrapper">
             <table class="logs-table">
                 <thead>
                     <tr>
-                        <th>ZAMAN</th>
-                        <th>KOL</th>
-                        <th>BATARYA ADRESİ</th>
-                        <th>VERİ TÜRÜ</th>
-                        <th>VERİ</th>
-                        <th>DURUM</th>
+                        <th data-tr="ZAMAN" data-en="TIME">ZAMAN</th>
+                        <th data-tr="KOL" data-en="ARM">KOL</th>
+                        <th data-tr="BATARYA ADRESİ" data-en="BATTERY ADDRESS">BATARYA ADRESİ</th>
+                        <th data-tr="VERİ TÜRÜ" data-en="DATA TYPE">VERİ TÜRÜ</th>
+                        <th data-tr="VERİ" data-en="DATA">VERİ</th>
+                        <th data-tr="DURUM" data-en="STATUS">DURUM</th>
                     </tr>
                 </thead>
                 <tbody id="logsTableBody">
@@ -97,13 +97,13 @@
         <div class="pagination">
             <button class="pagination-btn" id="prevPage" disabled>
                 <i class="fas fa-chevron-left"></i>
-                Önceki
+                <span data-tr="Önceki" data-en="Previous">Önceki</span>
             </button>
             <span class="page-info">
-                Sayfa <span id="currentPage">1</span> / <span id="totalPages">1</span>
+                <span data-tr="Sayfa" data-en="Page">Sayfa</span> <span id="currentPage">1</span> / <span id="totalPages">1</span>
             </span>
             <button class="pagination-btn" id="nextPage">
-                Sonraki
+                <span data-tr="Sonraki" data-en="Next">Sonraki</span>
                 <i class="fas fa-chevron-right"></i>
             </button>
         </div>

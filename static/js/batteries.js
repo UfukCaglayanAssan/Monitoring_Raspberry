@@ -165,13 +165,78 @@ class BatteriesPage {
         if (healthValue) healthValue.textContent = this.formatValue(battery.health, '');
         if (chargeValue) chargeValue.textContent = this.formatValue(battery.charge, '');
         
+        // Debug: Çeviri verilerini yazdır
+        console.log('Battery data:', battery);
+        console.log('Voltage name:', battery.voltage_name);
+        console.log('Temperature name:', battery.temperature_name);
+        console.log('Health name:', battery.health_name);
+        console.log('Charge name:', battery.charge_name);
+        
         return cardElement;
     }
     
     onLanguageChanged(language) {
         // Dil değiştiğinde bataryaları yeniden yükle
         console.log('Dil değişti:', language);
+        this.updateCardTexts(language);
         this.loadBatteries();
+    }
+    
+    updateCardTexts(language) {
+        // Mevcut kartlardaki metinleri güncelle
+        const cards = document.querySelectorAll('.battery-card');
+        cards.forEach(card => {
+            // Başlık
+            const title = card.querySelector('.card-title');
+            if (title) {
+                title.textContent = title.getAttribute(`data-${language}`) || title.textContent;
+            }
+            
+            // Adres etiketi
+            const addressLabel = card.querySelector('.battery-address span');
+            if (addressLabel) {
+                const labelText = addressLabel.getAttribute(`data-${language}`) || addressLabel.textContent;
+                const batteryValue = addressLabel.querySelector('.battery-value');
+                if (batteryValue) {
+                    addressLabel.innerHTML = labelText + batteryValue.outerHTML;
+                } else {
+                    addressLabel.textContent = labelText;
+                }
+            }
+            
+            // Son güncelleme etiketi
+            const updateLabel = card.querySelector('.last-update span');
+            if (updateLabel) {
+                updateLabel.textContent = updateLabel.getAttribute(`data-${language}`) || updateLabel.textContent;
+            }
+            
+            // Arka yüz başlığı
+            const backTitle = card.querySelector('.back-title');
+            if (backTitle) {
+                backTitle.textContent = backTitle.getAttribute(`data-${language}`) || backTitle.textContent;
+            }
+            
+            // Veri etiketleri
+            const voltageLabel = card.querySelector('.voltage-label');
+            if (voltageLabel) {
+                voltageLabel.textContent = voltageLabel.getAttribute(`data-${language}`) || voltageLabel.textContent;
+            }
+            
+            const temperatureLabel = card.querySelector('.temperature-label');
+            if (temperatureLabel) {
+                temperatureLabel.textContent = temperatureLabel.getAttribute(`data-${language}`) || temperatureLabel.textContent;
+            }
+            
+            const healthLabel = card.querySelector('.health-label');
+            if (healthLabel) {
+                healthLabel.textContent = healthLabel.getAttribute(`data-${language}`) || healthLabel.textContent;
+            }
+            
+            const chargeLabel = card.querySelector('.charge-label');
+            if (chargeLabel) {
+                chargeLabel.textContent = chargeLabel.getAttribute(`data-${language}`) || chargeLabel.textContent;
+            }
+        });
     }
     
     formatValue(value, unit) {

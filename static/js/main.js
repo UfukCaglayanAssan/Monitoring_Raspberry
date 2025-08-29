@@ -109,7 +109,6 @@ class App {
             'alarms': '/static/js/alarms.js',
             'batteries': '/static/js/batteries.js',
             'configuration': '/static/js/configuration.js',
-            'data-retrieval': '/static/js/data-retrieval.js',
             'profile': '/static/js/profile.js'
         };
 
@@ -167,12 +166,10 @@ class App {
                 'mainTitle': 'Akü İzleme Sistemi',
                 'menu': 'MENÜ',
                 'summary': 'Özet',
-                'lineMeasurements': 'Hat ölçümleri',
                 'alarms': 'Alarmlar',
                 'batteries': 'Bataryalar',
                 'logs': 'Loglar',
                 'configuration': 'Konfigürasyon',
-                'dataRetrieval': 'Veri Alma',
                 'profile': 'Profil',
                 'logout': 'Çıkış'
             },
@@ -180,12 +177,10 @@ class App {
                 'mainTitle': 'Battery Monitoring System',
                 'menu': 'MENU',
                 'summary': 'Summary',
-                'lineMeasurements': 'Line Measurements',
                 'alarms': 'Alarms',
                 'batteries': 'Batteries',
                 'logs': 'Logs',
                 'configuration': 'Configuration',
-                'dataRetrieval': 'Data Retrieval',
                 'profile': 'Profile',
                 'logout': 'Logout'
             }
@@ -198,6 +193,30 @@ class App {
         if (mainTitle) {
             mainTitle.textContent = texts.mainTitle;
         }
+
+        // Menü başlığı
+        const menuHeader = document.querySelector('.sidebar-header h3');
+        if (menuHeader) {
+            menuHeader.textContent = texts.menu;
+        }
+
+        // Menü öğeleri
+        const menuItems = {
+            'summary': texts.summary,
+            'alarms': texts.alarms,
+            'batteries': texts.batteries,
+            'logs': texts.logs,
+            'configuration': texts.configuration,
+            'profile': texts.profile,
+            'logout': texts.logout
+        };
+
+        Object.entries(menuItems).forEach(([page, text]) => {
+            const menuLink = document.querySelector(`[data-page="${page}"] span`);
+            if (menuLink) {
+                menuLink.textContent = text;
+            }
+        });
     }
 
     showNotifications() {
