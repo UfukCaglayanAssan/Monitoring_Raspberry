@@ -677,6 +677,9 @@ class BatteryDatabase:
                 if not latest_timestamp:
                     return None
                 
+                # Debug: Dil parametresini yazdır
+                print(f"DEBUG: Dil parametresi: {language}")
+                
                 # Sadece en son verileri getir (en son timestamp'teki tüm dtype'lar)
                 cursor.execute('''
                     SELECT bd.dtype, bd.data, dt.name, dt.unit,
@@ -690,6 +693,9 @@ class BatteryDatabase:
                 ''', (language, arm, battery_address, latest_timestamp))
                 
                 data_rows = cursor.fetchall()
+                
+                # Debug: Veri satırlarını yazdır
+                print(f"DEBUG: Veri satırları: {data_rows}")
                 
                 # Veri tiplerine göre organize et
                 battery_data = {
@@ -705,6 +711,7 @@ class BatteryDatabase:
                 
                 # Sadece en son verileri kullan
                 for dtype, data, name, unit, translated_name in data_rows:
+                    print(f"DEBUG: dtype={dtype}, name={name}, translated_name={translated_name}")
                     if dtype == 10:  # Gerilim
                         battery_data['voltage'] = data
                         battery_data['voltage_name'] = translated_name or name

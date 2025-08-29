@@ -145,6 +145,7 @@ def get_batteries():
         
         # Mevcut dili al (localStorage'dan veya varsayılan olarak 'tr')
         language = request.headers.get('X-Language', 'tr')
+        print(f"DEBUG web_app.py: Dil parametresi: {language}")
         
         batteries_data = db.get_batteries_for_display(page, page_size, selected_arm, language)
         
