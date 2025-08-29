@@ -156,6 +156,10 @@ class LogsPage {
                 
                 this.renderLogs();
                 this.updatePagination();
+                
+                // Loglar oluşturulduktan sonra çeviri yap
+                const currentLanguage = localStorage.getItem('language') || 'tr';
+                this.updateLogsTexts(currentLanguage);
             } else {
                 throw new Error('Log verileri alınamadı');
             }

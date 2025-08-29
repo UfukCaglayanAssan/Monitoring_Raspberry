@@ -98,6 +98,10 @@ class BatteriesPage {
                 this.totalPages = data.totalPages;
                 this.currentPage = data.currentPage;
                 this.renderBatteries();
+                
+                // Kartlar oluşturulduktan sonra çeviri yap
+                const currentLanguage = localStorage.getItem('language') || 'tr';
+                this.updateCardTexts(currentLanguage);
             } else {
                 throw new Error(data.message || 'Veri yüklenemedi');
             }
