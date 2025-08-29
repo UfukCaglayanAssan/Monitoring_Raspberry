@@ -3,6 +3,7 @@ from flask import Flask, render_template, jsonify, request
 from database import BatteryDatabase
 import time
 import json
+from datetime import datetime
 
 app = Flask(__name__)
 db = BatteryDatabase()
