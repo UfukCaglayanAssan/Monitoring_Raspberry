@@ -158,13 +158,23 @@ class App {
             script.src = scriptMap[page];
             script.onload = () => {
                 console.log('Script loaded:', page);
+                console.log('Available init functions:', Object.keys(window).filter(key => key.startsWith('init')));
+                
                 // Script yüklendi, sayfa başlat
                 if (window[`${page}Page`]) {
+                    console.log(`Found ${page}Page, calling init()`);
                     window[`${page}Page`].init();
-                } else if (window[`init${page.charAt(0).toUpperCase() + page.slice(1).replace('-', '')}Page`]) {
-                    // Özel init fonksiyonu varsa çağır
-                    const initFunctionName = `init${page.charAt(0).toUpperCase() + page.slice(1).replace('-', '')}Page`;
-                    window[initFunctionName]();
+                } else {
+                    // Özel durumlar için manuel kontrol
+                    if (page === 'battery-logs' && window.initBatteryLogsPage) {
+                        console.log('Calling initBatteryLogsPage');
+                        window.initBatteryLogsPage();
+                    } else if (page === 'arm-logs' && window.initArmLogsPage) {
+                        console.log('Calling initArmLogsPage');
+                        window.initArmLogsPage();
+                    } else {
+                        console.log(`No init function found for ${page}`);
+                    }
                 }
             };
             script.onerror = () => {
