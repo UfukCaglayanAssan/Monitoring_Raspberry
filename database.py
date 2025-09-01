@@ -1074,28 +1074,12 @@ class BatteryDatabase:
                         SELECT DISTINCT timestamp, arm, k
                         FROM battery_data
                         WHERE k > 2
-                    )
+                    ) AS subquery
                 '''
             
             count_params = []
             
-            if filters.get('arm'):
-                count_query += ' AND arm = ?'
-                count_params.append(filters['arm'])
-            
-            if filters.get('battery'):
-                count_query += ' AND k = ?'
-                count_params.append(filters['battery'])
-            
-            if filters.get('startDate'):
-                start_timestamp = int(datetime.strptime(filters['startDate'], '%Y-%m-%d').timestamp() * 1000)
-                count_query += ' AND timestamp >= ?'
-                count_params.append(start_timestamp)
-            
-            if filters.get('endDate'):
-                end_timestamp = int(datetime.strptime(filters['endDate'], '%Y-%m-%d').timestamp() * 1000) + (24 * 60 * 60 * 1000) - 1
-                count_query += ' AND timestamp <= ?'
-                count_params.append(end_timestamp)
+            # Count query'de filtre eklemeye gerek yok, zaten subquery'de filtreleniyor
             
             cursor.execute(count_query, count_params)
             total_count = cursor.fetchone()[0]
