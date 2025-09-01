@@ -967,11 +967,12 @@ class BatteryDatabase:
         with self.get_connection() as conn:
             cursor = conn.cursor()
             
-            # Önce benzersiz timestamp'leri bul
+            # Önce benzersiz (timestamp, arm, k) kombinasyonlarını bul
+            # k=2 kol verisi, k>2 batarya verisi
             timestamp_query = '''
-                SELECT DISTINCT timestamp
+                SELECT DISTINCT timestamp, arm, k
                 FROM battery_data
-                WHERE 1=1
+                WHERE k > 2
             '''
             
             timestamp_params = []
@@ -998,14 +999,14 @@ class BatteryDatabase:
             timestamp_params.extend([page_size, (page - 1) * page_size])
             
             cursor.execute(timestamp_query, timestamp_params)
-            timestamps = [row[0] for row in cursor.fetchall()]
+            timestamp_combinations = cursor.fetchall()
             
-            if not timestamps:
+            if not timestamp_combinations:
                 return {'logs': [], 'totalCount': 0, 'totalPages': 1, 'currentPage': page}
             
-            # Her timestamp için tüm veri tiplerini getir
+            # Her (timestamp, arm, k) kombinasyonu için tüm veri tiplerini getir
             logs = []
-            for timestamp in timestamps:
+            for timestamp, arm, k in timestamp_combinations:
                 data_query = '''
                     SELECT 
                         bd.arm,
@@ -1018,18 +1019,10 @@ class BatteryDatabase:
                     FROM battery_data bd
                     LEFT JOIN data_types dt ON bd.dtype = dt.dtype
                     LEFT JOIN data_type_translations dtt ON dt.dtype = dtt.dtype AND dtt.language_code = ?
-                    WHERE bd.timestamp = ?
+                    WHERE bd.timestamp = ? AND bd.arm = ? AND bd.k = ?
                 '''
                 
-                data_params = [language, timestamp]
-                
-                if filters.get('arm'):
-                    data_query += ' AND bd.arm = ?'
-                    data_params.append(filters['arm'])
-                
-                if filters.get('battery'):
-                    data_query += ' AND bd.k = ?'
-                    data_params.append(filters['battery'])
+                data_params = [language, timestamp, arm, k]
                 
                 cursor.execute(data_query, data_params)
                 rows = cursor.fetchall()
@@ -1038,8 +1031,8 @@ class BatteryDatabase:
                     # Verileri grupla
                     grouped_data = {
                         'timestamp': timestamp,
-                        'arm': rows[0][0],
-                        'batteryAddress': rows[0][1],
+                        'arm': arm,
+                        'batteryAddress': k,
                         'voltage': None,
                         'charge_status': None,
                         'temperature': None,
@@ -1069,9 +1062,9 @@ class BatteryDatabase:
             
             # Toplam sayfa sayısını hesapla
             count_query = '''
-                SELECT COUNT(DISTINCT timestamp)
+                SELECT COUNT(DISTINCT timestamp, arm, k)
                 FROM battery_data
-                WHERE 1=1
+                WHERE k > 2
             '''
             
             count_params = []
