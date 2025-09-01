@@ -122,7 +122,6 @@ def read_serial(pi):
         try:
             (count, data) = pi.bb_serial_read(RX_PIN)
             if count > 0:
-                print(f"Veri alındı: {buffer}")
                 buffer.extend(data)
                 
                 while len(buffer) >= 3:
@@ -160,7 +159,6 @@ def read_serial(pi):
                                 packet = buffer[:packet_length]
                                 buffer = buffer[packet_length:]
                                 hex_packet = [f"{b:02x}" for b in packet]
-                                print(f"Paket oluşturuldu: {hex_packet}")
                                 data_queue.put(hex_packet)
                             else:
                                 # Paket tamamlanmamış, daha fazla veri bekle
@@ -298,6 +296,7 @@ def db_worker():
                 
                 elif dtype == 11:  # SOH veya Nem
                     if k_value == 2:  # Nem verisi
+                        print(f"*** VERİ ALGILANDI - Arm: {arm_value}, Nem: {salt_data}% ***")
                         record = {
                             "Arm": arm_value,
                             "k": k_value,

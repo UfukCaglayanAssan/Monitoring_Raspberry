@@ -628,16 +628,14 @@ class BatteryDatabase:
         with self.get_connection() as conn:
             cursor = conn.cursor()
             
-            # Basit SQL ile gruplandırılmış verileri getir
+            # Basit SQL ile sadece gerekli verileri getir
             query = '''
                 SELECT 
                     timestamp,
                     arm,
                     MAX(CASE WHEN dtype = 10 THEN data END) as current,
                     MAX(CASE WHEN dtype = 11 THEN data END) as humidity,
-                    MAX(CASE WHEN dtype = 12 THEN data END) as ambient_temperature,
-                    MAX(CASE WHEN dtype = 13 THEN data END) as arm_temperature,
-                    MAX(CASE WHEN dtype = 14 THEN data END) as voltage
+                    MAX(CASE WHEN dtype = 12 THEN data END) as ambient_temperature
                 FROM battery_data 
                 WHERE k = 2
             '''
@@ -664,13 +662,13 @@ class BatteryDatabase:
             cursor.execute(query, params)
             rows = cursor.fetchall()
             
-            # CSV formatı - Gruplandırılmış veriler için
-            csv_content = "ZAMAN,KOL,AKIM,NEM,ORTAM SICAKLIĞI\n"
+            # CSV formatı - Sadece gerekli alanlar
+            csv_content = "KOL,ZAMAN,AKIM,NEM,SICAKLIK\n"
             
             for row in rows:
                 timestamp = datetime.fromtimestamp(row[0] / 1000).strftime('%Y-%m-%d %H:%M:%S')
                 
-                csv_content += f"{timestamp},{row[1]},{row[2] or '-'},{row[3] or '-'},{row[4] or '-'}\n"
+                csv_content += f"{row[1]},{timestamp},{row[2] or '-'},{row[3] or '-'},{row[4] or '-'}\n"
             
             return csv_content
 
@@ -1118,8 +1116,8 @@ class BatteryDatabase:
                     SELECT 
                         timestamp,
                         arm,
-                        MAX(CASE WHEN dtype = 14 THEN data END) as current,
-                        MAX(CASE WHEN dtype = 13 THEN data END) as humidity,
+                        MAX(CASE WHEN dtype = 10 THEN data END) as current,
+                        MAX(CASE WHEN dtype = 11 THEN data END) as humidity,
                         MAX(CASE WHEN dtype = 12 THEN data END) as ambient_temperature
                     FROM battery_data 
                     WHERE k = 2
