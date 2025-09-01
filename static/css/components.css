@@ -5,13 +5,14 @@
 
 .nav-item.has-submenu .nav-link {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
 }
 
 .submenu-arrow {
     font-size: 0.75rem;
     transition: transform 0.3s ease;
+    margin-left: auto;
 }
 
 .nav-item.has-submenu.expanded .submenu-arrow {
@@ -1258,5 +1259,7 @@
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
+
+
 
 

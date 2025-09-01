@@ -139,17 +139,17 @@ class ArmLogsPage {
         
         if (this.logs.length === 0) {
             const currentLanguage = localStorage.getItem('language') || 'tr';
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="7">
-                        <div class="empty-state">
-                            <i class="fas fa-inbox"></i>
-                            <h4>${currentLanguage === 'en' ? 'No Data Found' : 'Veri Bulunamadı'}</h4>
-                            <p>${currentLanguage === 'en' ? 'No log data found matching the selected criteria.' : 'Seçilen kriterlere uygun log verisi bulunamadı.'}</p>
-                        </div>
-                    </td>
-                </tr>
-            `;
+                    tableBody.innerHTML = `
+            <tr>
+                <td colspan="6">
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <h4>${currentLanguage === 'en' ? 'No Data Found' : 'Veri Bulunamadı'}</h4>
+                        <p>${currentLanguage === 'en' ? 'No log data found matching the selected criteria.' : 'Seçilen kriterlere uygun log verisi bulunamadı.'}</p>
+                    </div>
+                </td>
+            </tr>
+        `;
             return;
         }
 
@@ -159,7 +159,6 @@ class ArmLogsPage {
                     <td>${this.formatDate(log.timestamp)}</td>
                     <td>${log.arm}</td>
                     <td>${this.formatValue(log.current, 'A')}</td>
-                    <td>${this.formatValue(log.voltage, 'V')}</td>
                     <td>${this.formatValue(log.humidity, '%')}</td>
                     <td>${this.formatValue(log.ambient_temperature, '°C')}</td>
                     <td>${this.formatValue(log.arm_temperature, '°C')}</td>
@@ -190,7 +189,7 @@ class ArmLogsPage {
     showLoading(tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="7" class="text-center">
+                <td colspan="6" class="text-center">
                     <div class="loading-spinner">
                         <i class="fas fa-spinner fa-spin"></i>
                         <span>Yükleniyor...</span>
@@ -203,7 +202,7 @@ class ArmLogsPage {
     showError(tableBody, message) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="7" class="text-center text-danger">
+                <td colspan="6" class="text-center text-danger">
                     <i class="fas fa-exclamation-triangle"></i>
                     <span>${message}</span>
                 </td>
