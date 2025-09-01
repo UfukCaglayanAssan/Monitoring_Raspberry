@@ -21,6 +21,7 @@ BAUD_RATE = 9600
 current_period_timestamp = None
 period_active = False
 last_data_received = time.time()
+last_k_value = None  # Son gelen verinin k değerini tutar
 
 # Database instance
 db = BatteryDatabase()
@@ -242,10 +243,14 @@ def db_worker():
                 dtype = int(data[2], 16)
                 k_value = int(data[1], 16)
                 
-                # k_value 2 geldiğinde yeni periyot başlat
+                # k_value 2 geldiğinde yeni periyot başlat (ard arda gelmemesi şartıyla)
                 if k_value == 2:
-                    reset_period()
-                    get_period_timestamp()
+                    if last_k_value != 2:  # Non-consecutive arm data
+                        reset_period()
+                        get_period_timestamp()
+                    last_k_value = 2
+                else:  # Battery data
+                    last_k_value = k_value
                 
                 # Arm değeri kontrolü
                 if arm_value not in [1, 2, 3, 4]:

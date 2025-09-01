@@ -657,7 +657,7 @@ class BatteryDatabase:
                 query += ' AND timestamp <= ?'
                 params.append(end_timestamp)
             
-            query += ' GROUP BY timestamp, arm ORDER BY timestamp DESC, arm ASC'
+            query += ' GROUP BY timestamp, arm, k ORDER BY timestamp DESC, arm ASC'
             
             cursor.execute(query, params)
             rows = cursor.fetchall()
@@ -1139,7 +1139,7 @@ class BatteryDatabase:
                     query += ' AND timestamp <= ?'
                     params.append(end_timestamp)
                 
-                query += ' GROUP BY timestamp, arm ORDER BY timestamp DESC, arm ASC LIMIT ? OFFSET ?'
+                query += ' GROUP BY timestamp, arm, k ORDER BY timestamp DESC, arm ASC LIMIT ? OFFSET ?'
                 params.extend([page_size, (page - 1) * page_size])
                 
                 print(f"DEBUG database.py: Arm query: {query}")
@@ -1163,7 +1163,7 @@ class BatteryDatabase:
                 count_query = '''
                     SELECT COUNT(*)
                     FROM (
-                        SELECT DISTINCT timestamp, arm
+                        SELECT DISTINCT timestamp, arm, k
                         FROM battery_data
                         WHERE k = 2
                     ) AS subquery
