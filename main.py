@@ -22,6 +22,7 @@ current_period_timestamp = None
 period_active = False
 last_data_received = time.time()
 last_k_value = None  # Son gelen verinin k değerini tutar
+last_k_value_lock = threading.Lock()  # Thread-safe erişim için
 
 # Database instance
 db = BatteryDatabase()
@@ -54,6 +55,18 @@ def reset_period():
     current_period_timestamp = None
     # timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     # print(f"[{timestamp}] Periyot sıfırlandı")
+
+def update_last_k_value(new_value):
+    """Thread-safe olarak last_k_value güncelle"""
+    global last_k_value
+    with last_k_value_lock:
+        last_k_value = new_value
+
+def get_last_k_value():
+    """Thread-safe olarak last_k_value oku"""
+    global last_k_value
+    with last_k_value_lock:
+        return last_k_value
 
 def Calc_SOH(x):
     if x is None:
@@ -248,12 +261,12 @@ def db_worker():
                 
                 # k_value 2 geldiğinde yeni periyot başlat (ard arda gelmemesi şartıyla)
                 if k_value == 2:
-                    if last_k_value != 2:  # Non-consecutive arm data
+                    if get_last_k_value() != 2:  # Non-consecutive arm data
                         reset_period()
                         get_period_timestamp()
-                    last_k_value = 2
+                    update_last_k_value(2)
                 else:  # Battery data
-                    last_k_value = k_value
+                    update_last_k_value(k_value)
                 
                 # Arm değeri kontrolü
                 if arm_value not in [1, 2, 3, 4]:
