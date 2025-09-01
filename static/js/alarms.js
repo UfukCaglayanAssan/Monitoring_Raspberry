@@ -246,17 +246,17 @@ class AlarmsPage {
 
 // Sayfa yüklendiğinde başlat
 function initAlarmsPage() {
-    if (document.querySelector('.alarms-page')) {
-        new AlarmsPage();
+    console.log('🔧 initAlarmsPage() çağrıldı');
+    if (!window.alarmsPage) {
+        window.alarmsPage = new AlarmsPage();
     }
 }
 
-// DOMContentLoaded event listener
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAlarmsPage);
-} else {
-    initAlarmsPage();
-}
+// Hem DOMContentLoaded hem de manuel çağrı için
+document.addEventListener('DOMContentLoaded', initAlarmsPage);
+
+// Global olarak erişilebilir yap
+window.initAlarmsPage = initAlarmsPage;
 
 
 
