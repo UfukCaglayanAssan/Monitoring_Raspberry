@@ -20,8 +20,8 @@
 
 .submenu {
     position: absolute;
-    left: 100%;
-    top: 0;
+    left: 0;
+    top: 100%;
     background: #1e3c72;
     border-radius: 8px;
     padding: 0.5rem 0;
@@ -29,15 +29,16 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     opacity: 0;
     visibility: hidden;
-    transform: translateX(-10px);
+    transform: translateY(-10px);
     transition: all 0.3s ease;
     z-index: 1000;
 }
 
-.nav-item.has-submenu:hover .submenu {
+.nav-item.has-submenu:hover .submenu,
+.submenu:hover {
     opacity: 1;
     visibility: visible;
-    transform: translateX(0);
+    transform: translateY(0);
 }
 
 .submenu li {

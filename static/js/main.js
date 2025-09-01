@@ -104,7 +104,6 @@ class App {
         
         // Sayfa özel script'lerini yükle
         const scriptMap = {
-            'logs': '/static/js/logs.js',
             'battery-logs': '/static/js/battery-logs.js',
             'arm-logs': '/static/js/arm-logs.js',
             'summary': '/static/js/summary.js',

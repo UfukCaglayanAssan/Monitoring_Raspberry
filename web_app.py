@@ -85,40 +85,7 @@ def get_data_by_date():
     )
     return jsonify(data)
 
-@app.route('/api/logs', methods=['POST'])
-def get_logs():
-    """Log verilerini getir"""
-    data = request.get_json()
-    page = data.get('page', 1)
-    page_size = data.get('pageSize', 50)
-    filters = data.get('filters', {})
-    
-    # Mevcut dili al (localStorage'dan veya varsayılan olarak 'tr')
-    language = request.headers.get('X-Language', 'tr')
-    print(f"DEBUG web_app.py logs: Dil parametresi: {language}")
-    
-    try:
-        # Veritabanından log verilerini al
-        logs_data = db.get_logs_with_filters(
-            page=page,
-            page_size=page_size,
-            filters=filters,
-            language=language
-        )
-        
-        return jsonify({
-            'success': True,
-            'logs': logs_data['logs'],
-            'totalCount': logs_data['totalCount'],
-            'totalPages': logs_data['totalPages'],
-            'currentPage': logs_data['currentPage']
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
+
 
 @app.route('/api/battery-logs', methods=['POST'])
 def get_battery_logs():
