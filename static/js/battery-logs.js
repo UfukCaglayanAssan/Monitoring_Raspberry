@@ -14,6 +14,7 @@ class BatteryLogsPage {
     }
 
     init() {
+        console.log('🚀 BatteryLogsPage init() çağrıldı');
         this.bindEvents();
         this.setDefaultDates();
         this.loadLogs();
@@ -103,9 +104,11 @@ class BatteryLogsPage {
     }
 
     async loadLogs() {
+        console.log('🔍 loadLogs() çağrıldı');
         const tableBody = document.getElementById('batteryLogsTableBody');
         
         try {
+            console.log('📊 API çağrısı yapılıyor...');
             this.showLoading(tableBody);
 
             const currentLanguage = localStorage.getItem('language') || 'tr';

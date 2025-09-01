@@ -19,25 +19,15 @@
 }
 
 .submenu {
-    position: static;
-    background: rgba(255, 255, 255, 0.05);
+    display: none;
+    background: rgba(0, 0, 0, 0.1);
     padding: 0.5rem 0;
     margin: 0.5rem 0 0 0;
-    box-shadow: none;
-    opacity: 0;
-    visibility: hidden;
-    max-height: 0;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    z-index: auto;
-    border-radius: 8px;
-    border-left: 3px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0 0 8px 8px;
 }
 
 .nav-item.has-submenu.expanded .submenu {
-    opacity: 1;
-    visibility: visible;
-    max-height: 200px;
+    display: block;
 }
 
 .submenu li {
