@@ -967,10 +967,9 @@ class BatteryDatabase:
         with self.get_connection() as conn:
             cursor = conn.cursor()
             
-            # Önce benzersiz (timestamp, arm, k) kombinasyonlarını bul
-            # k=2 kol verisi, k>2 batarya verisi
+            # Önce benzersiz timestamp'leri bul (k=2 kol verisi, k>2 batarya verisi)
             timestamp_query = '''
-                SELECT DISTINCT timestamp, arm, k
+                SELECT DISTINCT timestamp, arm
                 FROM battery_data
                 WHERE k > 2
             '''
@@ -1004,9 +1003,9 @@ class BatteryDatabase:
             if not timestamp_combinations:
                 return {'logs': [], 'totalCount': 0, 'totalPages': 1, 'currentPage': page}
             
-            # Her (timestamp, arm, k) kombinasyonu için tüm veri tiplerini getir
+            # Her timestamp için tüm bataryaları getir
             logs = []
-            for timestamp, arm, k in timestamp_combinations:
+            for timestamp, arm in timestamp_combinations:
                 data_query = '''
                     SELECT 
                         bd.arm,
@@ -1019,46 +1018,52 @@ class BatteryDatabase:
                     FROM battery_data bd
                     LEFT JOIN data_types dt ON bd.dtype = dt.dtype
                     LEFT JOIN data_type_translations dtt ON dt.dtype = dtt.dtype AND dtt.language_code = ?
-                    WHERE bd.timestamp = ? AND bd.arm = ? AND bd.k = ?
+                    WHERE bd.timestamp = ? AND bd.arm = ?
                 '''
                 
-                data_params = [language, timestamp, arm, k]
+                data_params = [language, timestamp, arm]
                 
                 cursor.execute(data_query, data_params)
                 rows = cursor.fetchall()
                 
                 if rows:
-                    # Verileri grupla
-                    grouped_data = {
-                        'timestamp': timestamp,
-                        'arm': arm,
-                        'batteryAddress': k,
-                        'voltage': None,
-                        'charge_status': None,
-                        'temperature': None,
-                        'positive_pole_temp': None,
-                        'negative_pole_temp': None,
-                        'health_status': None
-                    }
+                    # Her batarya için ayrı satır oluştur
+                    battery_data = {}
                     
                     for row in rows:
+                        battery_address = row[1]  # k değeri
                         dtype = row[2]
                         data = row[3]
                         
+                        if battery_address not in battery_data:
+                            battery_data[battery_address] = {
+                                'timestamp': timestamp,
+                                'arm': arm,
+                                'batteryAddress': battery_address,
+                                'voltage': None,
+                                'charge_status': None,
+                                'temperature': None,
+                                'positive_pole_temp': None,
+                                'negative_pole_temp': None,
+                                'health_status': None
+                            }
+                        
                         if dtype == 10:  # Gerilim
-                            grouped_data['voltage'] = data
+                            battery_data[battery_address]['voltage'] = data
                         elif dtype == 11:  # Şarj Durumu
-                            grouped_data['charge_status'] = data
+                            battery_data[battery_address]['charge_status'] = data
                         elif dtype == 12:  # Sıcaklık
-                            grouped_data['temperature'] = data
+                            battery_data[battery_address]['temperature'] = data
                         elif dtype == 13:  # Pozitif Kutup Sıcaklığı
-                            grouped_data['positive_pole_temp'] = data
+                            battery_data[battery_address]['positive_pole_temp'] = data
                         elif dtype == 14:  # Negatif Kutup Sıcaklığı
-                            grouped_data['negative_pole_temp'] = data
+                            battery_data[battery_address]['negative_pole_temp'] = data
                         elif dtype == 126:  # Sağlık Durumu
-                            grouped_data['health_status'] = data
+                            battery_data[battery_address]['health_status'] = data
                     
-                    logs.append(grouped_data)
+                    # Her batarya için ayrı satır ekle
+                    for battery_address in sorted(battery_data.keys()):
+                        logs.append(battery_data[battery_address])
             
             # Toplam sayfa sayısını hesapla
             count_query = '''
