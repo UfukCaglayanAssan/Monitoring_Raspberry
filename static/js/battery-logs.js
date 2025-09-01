@@ -125,9 +125,11 @@ class BatteryLogsPage {
 
             if (response.ok) {
                 const data = await response.json();
+                console.log('Battery logs API response:', data);
                 this.logs = data.logs || [];
                 this.totalPages = data.totalPages || 1;
                 
+                console.log('Logs loaded:', this.logs.length, 'items');
                 this.renderLogs();
                 this.updatePagination();
             } else {
