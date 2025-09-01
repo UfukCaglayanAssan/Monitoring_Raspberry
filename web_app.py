@@ -120,6 +120,76 @@ def get_logs():
             'message': str(e)
         }), 500
 
+@app.route('/api/battery-logs', methods=['POST'])
+def get_battery_logs():
+    """Gruplandırılmış batarya log verilerini getir"""
+    data = request.get_json()
+    page = data.get('page', 1)
+    page_size = data.get('pageSize', 50)
+    filters = data.get('filters', {})
+    
+    # Mevcut dili al
+    language = request.headers.get('X-Language', 'tr')
+    print(f"DEBUG web_app.py battery-logs: Dil parametresi: {language}")
+    
+    try:
+        # Veritabanından gruplandırılmış batarya log verilerini al
+        logs_data = db.get_grouped_battery_logs(
+            page=page,
+            page_size=page_size,
+            filters=filters,
+            language=language
+        )
+        
+        return jsonify({
+            'success': True,
+            'logs': logs_data['logs'],
+            'totalCount': logs_data['totalCount'],
+            'totalPages': logs_data['totalPages'],
+            'currentPage': logs_data['currentPage']
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/arm-logs', methods=['POST'])
+def get_arm_logs():
+    """Gruplandırılmış kol log verilerini getir"""
+    data = request.get_json()
+    page = data.get('page', 1)
+    page_size = data.get('pageSize', 50)
+    filters = data.get('filters', {})
+    
+    # Mevcut dili al
+    language = request.headers.get('X-Language', 'tr')
+    print(f"DEBUG web_app.py arm-logs: Dil parametresi: {language}")
+    
+    try:
+        # Veritabanından gruplandırılmış kol log verilerini al
+        logs_data = db.get_grouped_arm_logs(
+            page=page,
+            page_size=page_size,
+            filters=filters,
+            language=language
+        )
+        
+        return jsonify({
+            'success': True,
+            'logs': logs_data['logs'],
+            'totalCount': logs_data['totalCount'],
+            'totalPages': logs_data['totalPages'],
+            'currentPage': logs_data['currentPage']
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
 @app.route('/api/logs/export', methods=['POST'])
 def export_logs():
     """Log verilerini CSV olarak export et"""

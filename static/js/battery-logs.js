@@ -1,5 +1,5 @@
-// Logs sayfası JavaScript
-class LogsPage {
+// Batarya Logları Sayfası JavaScript
+class BatteryLogsPage {
     constructor() {
         this.currentPage = 1;
         this.pageSize = 50;
@@ -7,7 +7,6 @@ class LogsPage {
         this.filters = {
             arm: '',
             battery: '',
-            dataType: '',
             startDate: '',
             endDate: ''
         };
@@ -16,8 +15,8 @@ class LogsPage {
 
     init() {
         this.bindEvents();
-        this.setDefaultDates();  // Önce tarihleri ayarla
-        this.loadLogs();         // Sonra verileri yükle
+        this.setDefaultDates();
+        this.loadLogs();
     }
 
     bindEvents() {
@@ -57,12 +56,6 @@ class LogsPage {
             this.filters.battery = e.target.value;
         });
 
-        document.getElementById('dataTypeFilter').addEventListener('change', (e) => {
-            this.filters.dataType = e.target.value;
-        });
-
-
-
         document.getElementById('startDate').addEventListener('change', (e) => {
             this.filters.startDate = e.target.value;
         });
@@ -93,55 +86,31 @@ class LogsPage {
     }
 
     onLanguageChanged(language) {
-        // Dil değiştiğinde UI metinlerini güncelle
-        console.log('Logs: Dil değişti:', language);
-        this.updateLogsTexts(language);
-        
-        // Dil değiştiğinde logları yeniden yükle
-        console.log('Logs: loadLogs çağrılıyor...');
-        this.loadLogs();
+        console.log('BatteryLogs: Dil değişti:', language);
+        this.updateUITexts(language);
     }
 
-    updateLogsTexts(language) {
-        // Tüm data-tr ve data-en attribute'larına sahip elementleri güncelle
-        const elements = document.querySelectorAll('[data-tr][data-en]');
+    updateUITexts(language) {
+        // UI metinlerini güncelle
+        const elements = document.querySelectorAll('[data-tr], [data-en]');
         elements.forEach(element => {
-            const newText = element.getAttribute(`data-${language}`) || element.textContent;
-            element.textContent = newText;
+            if (language === 'en' && element.hasAttribute('data-en')) {
+                element.textContent = element.getAttribute('data-en');
+            } else if (language === 'tr' && element.hasAttribute('data-tr')) {
+                element.textContent = element.getAttribute('data-tr');
+            }
         });
-
-        // Select option'ları güncelle
-        const dataTypeSelect = document.getElementById('dataTypeFilter');
-        if (dataTypeSelect) {
-            Array.from(dataTypeSelect.options).forEach(option => {
-                if (option.hasAttribute('data-tr') && option.hasAttribute('data-en')) {
-                    option.textContent = option.getAttribute(`data-${language}`) || option.textContent;
-                }
-            });
-        }
-
-        const statusSelect = document.getElementById('statusFilter');
-        if (statusSelect) {
-            Array.from(statusSelect.options).forEach(option => {
-                if (option.hasAttribute('data-tr') && option.hasAttribute('data-en')) {
-                    option.textContent = option.getAttribute(`data-${language}`) || option.textContent;
-                }
-            });
-        }
     }
 
     async loadLogs() {
-        const tableBody = document.getElementById('logsTableBody');
+        const tableBody = document.getElementById('batteryLogsTableBody');
         
         try {
-            // Loading göster
             this.showLoading(tableBody);
 
-            // Mevcut dili al
             const currentLanguage = localStorage.getItem('language') || 'tr';
             
-            // API'den log verilerini al
-            const response = await fetch('/api/logs', {
+            const response = await fetch('/api/battery-logs', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -171,13 +140,13 @@ class LogsPage {
     }
 
     renderLogs() {
-        const tableBody = document.getElementById('logsTableBody');
+        const tableBody = document.getElementById('batteryLogsTableBody');
         
         if (this.logs.length === 0) {
             const currentLanguage = localStorage.getItem('language') || 'tr';
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="5">
+                    <td colspan="9">
                         <div class="empty-state">
                             <i class="fas fa-inbox"></i>
                             <h4>${currentLanguage === 'en' ? 'No Data Found' : 'Veri Bulunamadı'}</h4>
@@ -190,20 +159,27 @@ class LogsPage {
         }
 
         tableBody.innerHTML = this.logs.map(log => {
-            // Backend'den gelen çevrilmiş veri tipi ismini kullan
-            let dataTypeName = log.name || 'Unknown';
-            const unit = log.unit || '';
-            
             return `
                 <tr>
                     <td>${this.formatDate(log.timestamp)}</td>
                     <td>${log.arm}</td>
                     <td>${log.batteryAddress}</td>
-                    <td>${dataTypeName} ${unit ? `(${unit})` : ''}</td>
-                    <td>${this.formatNumber(log.data)} ${unit || ''}</td>
+                    <td>${this.formatValue(log.voltage, 'V')}</td>
+                    <td>${this.formatValue(log.charge_status, '%')}</td>
+                    <td>${this.formatValue(log.temperature, '°C')}</td>
+                    <td>${this.formatValue(log.positive_pole_temp, '°C')}</td>
+                    <td>${this.formatValue(log.negative_pole_temp, '°C')}</td>
+                    <td>${this.formatValue(log.health_status, '%')}</td>
                 </tr>
             `;
         }).join('');
+    }
+
+    formatValue(value, unit) {
+        if (value === null || value === undefined) {
+            return '-';
+        }
+        return `${parseFloat(value).toFixed(3)} ${unit}`;
     }
 
     formatDate(timestamp) {
@@ -218,17 +194,28 @@ class LogsPage {
         });
     }
 
-    formatNumber(number) {
-        return parseFloat(number).toFixed(3);
+    showLoading(tableBody) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="9" class="text-center">
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Yükleniyor...</span>
+                    </div>
+                </td>
+            </tr>
+        `;
     }
 
-    getStatusText(status) {
-        const statusMap = {
-            'success': 'Başarılı',
-            'error': 'Hata',
-            'warning': 'Uyarı'
-        };
-        return statusMap[status] || status;
+    showError(tableBody, message) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="9" class="text-center text-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>${message}</span>
+                </td>
+            </tr>
+        `;
     }
 
     updatePagination() {
@@ -254,96 +241,34 @@ class LogsPage {
     }
 
     applyFilters() {
-        this.currentPage = 1; // İlk sayfaya dön
-        this.loadLogs();
-    }
-
-    clearFilters() {
-        // Filtreleri temizle
-        document.getElementById('armFilter').value = '';
-        document.getElementById('batteryFilter').value = '';
-        document.getElementById('dataTypeFilter').value = '';
-        document.getElementById('statusFilter').value = '';
-        
-        this.setDefaultDates();
-        
-        // Filtre objesini temizle
-        this.filters = {
-            arm: '',
-            battery: '',
-            dataType: '',
-            status: '',
-            startDate: this.filters.startDate,
-            endDate: this.filters.endDate
-        };
-        
-        // Logları yeniden yükle
         this.currentPage = 1;
         this.loadLogs();
     }
 
-    async exportLogs() {
-        try {
-            const response = await fetch('/api/logs/export', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    filters: this.filters
-                })
-            });
-
-            if (response.ok) {
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `logs_${new Date().toISOString().split('T')[0]}.csv`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-                
-                utils.showToast('Log verileri başarıyla dışa aktarıldı.', 'success');
-            } else {
-                throw new Error('Dışa aktarma başarısız');
-            }
-        } catch (error) {
-            console.error('Dışa aktarma hatası:', error);
-            utils.showToast('Dışa aktarma sırasında bir hata oluştu.', 'error');
-        }
+    clearFilters() {
+        this.filters = {
+            arm: '',
+            battery: '',
+            startDate: '',
+            endDate: ''
+        };
+        
+        document.getElementById('armFilter').value = '';
+        document.getElementById('batteryFilter').value = '';
+        this.setDefaultDates();
+        
+        this.currentPage = 1;
+        this.loadLogs();
     }
 
-    showLoading(element) {
-        element.innerHTML = `
-            <tr>
-                <td colspan="6">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        Log verileri yükleniyor...
-                    </div>
-                </td>
-            </tr>
-        `;
+    exportLogs() {
+        // CSV export işlemi
+        console.log('Export işlemi başlatıldı');
     }
-
-    showError(element, message) {
-        element.innerHTML = `
-            <tr>
-                <td colspan="6">
-                    <div class="empty-state">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <h4>Hata Oluştu</h4>
-                        <p>${message}</p>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }
-
-
 }
 
-// Global instance oluştur
-window.logsPage = new LogsPage();
+// Sayfa yüklendiğinde başlat
+document.addEventListener('DOMContentLoaded', () => {
+    window.batteryLogsPage = new BatteryLogsPage();
+    window.batteryLogsPage.init();
+});

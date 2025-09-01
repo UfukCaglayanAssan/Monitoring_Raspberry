@@ -1,5 +1,5 @@
-<!-- Logs Sayfası İçeriği -->
-<div class="logs-page">
+<!-- Kol Logları Sayfası İçeriği -->
+<div class="arm-logs-page">
     <!-- Filtreleme Bölümü -->
     <div class="filters-section">
         <div class="filters-grid">
@@ -7,26 +7,6 @@
                 <label for="armFilter" data-tr="Kol Numarası" data-en="Arm Number">Kol Numarası</label>
                 <input type="text" id="armFilter" placeholder="Kol numarası giriniz" class="filter-input">
             </div>
-            
-            <div class="filter-group">
-                <label for="batteryFilter" data-tr="Batarya Adresi" data-en="Battery Address">Batarya Adresi</label>
-                <input type="text" id="batteryFilter" placeholder="Batarya adresi giriniz" class="filter-input">
-            </div>
-            
-            <div class="filter-group">
-                <label for="dataTypeFilter" data-tr="Veri Türü" data-en="Data Type">Veri Türü</label>
-                <select id="dataTypeFilter" class="filter-select">
-                    <option value="">Tümü</option>
-                    <option value="10" data-tr="Akım/Gerilim" data-en="Current/Voltage">Akım/Gerilim</option>
-                    <option value="11" data-tr="Nem/Şarj Durumu" data-en="Humidity/Charge Status">Nem/Şarj Durumu</option>
-                    <option value="12" data-tr="Sıcaklık" data-en="Temperature">Sıcaklık</option>
-                    <option value="13" data-tr="Pozitif Kutup Sıcaklığı" data-en="Positive Pole Temperature">Pozitif Kutup Sıcaklığı</option>
-                    <option value="14" data-tr="Negatif Kutup Sıcaklığı" data-en="Negative Pole Temperature">Negatif Kutup Sıcaklığı</option>
-                    <option value="126" data-tr="Sağlık Durumu" data-en="Health Status">Sağlık Durumu</option>
-                </select>
-            </div>
-            
-
             
             <div class="filter-group">
                 <label for="startDate" data-tr="Başlangıç" data-en="Start Date">Başlangıç</label>
@@ -54,7 +34,7 @@
     <!-- Log Tablosu -->
     <div class="logs-table-container">
         <div class="table-header">
-            <h3 data-tr="Sistem Logları" data-en="System Logs">Sistem Logları</h3>
+            <h3 data-tr="Kol Verileri" data-en="Arm Data">Kol Verileri</h3>
             <div class="table-actions">
                 <button class="btn btn-outline" id="refreshLogs">
                     <i class="fas fa-sync-alt"></i>
@@ -73,12 +53,14 @@
                     <tr>
                         <th data-tr="ZAMAN" data-en="TIME">ZAMAN</th>
                         <th data-tr="KOL" data-en="ARM">KOL</th>
-                        <th data-tr="BATARYA ADRESİ" data-en="BATTERY ADDRESS">BATARYA ADRESİ</th>
-                        <th data-tr="VERİ TÜRÜ" data-en="DATA TYPE">VERİ TÜRÜ</th>
-                        <th data-tr="VERİ" data-en="DATA">VERİ</th>
+                        <th data-tr="AKIM" data-en="CURRENT">AKIM</th>
+                        <th data-tr="GERİLİM" data-en="VOLTAGE">GERİLİM</th>
+                        <th data-tr="NEM" data-en="HUMIDITY">NEM</th>
+                        <th data-tr="ORTHAM SICAKLIĞI" data-en="AMBIENT TEMPERATURE">ORTHAM SICAKLIĞI</th>
+                        <th data-tr="KOL SICAKLIĞI" data-en="ARM TEMPERATURE">KOL SICAKLIĞI</th>
                     </tr>
                 </thead>
-                <tbody id="logsTableBody">
+                <tbody id="armLogsTableBody">
                     <!-- Log verileri JavaScript ile doldurulacak -->
                 </tbody>
             </table>
@@ -90,9 +72,14 @@
                 <i class="fas fa-chevron-left"></i>
                 <span data-tr="Önceki" data-en="Previous">Önceki</span>
             </button>
-            <span class="page-info">
-                <span data-tr="Sayfa" data-en="Page">Sayfa</span> <span id="currentPage">1</span> / <span id="totalPages">1</span>
-            </span>
+            
+            <div class="pagination-info">
+                <span data-tr="Sayfa" data-en="Page">Sayfa</span>
+                <span id="currentPage">1</span>
+                <span data-tr="/ toplam" data-en="/ of">/ toplam</span>
+                <span id="totalPages">1</span>
+            </div>
+            
             <button class="pagination-btn" id="nextPage">
                 <span data-tr="Sonraki" data-en="Next">Sonraki</span>
                 <i class="fas fa-chevron-right"></i>
@@ -100,4 +87,3 @@
         </div>
     </div>
 </div>
-<!-- Logs sayfası script'i main.js tarafından yüklenecek -->

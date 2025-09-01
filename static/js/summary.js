@@ -10,7 +10,7 @@ class SummaryPage {
         this.loadSummaryData();
         this.startAutoRefresh();
     }
-    
+
     bindEvents() {
         // Dil değişikliği dinleyicisi
         window.addEventListener('languageChanged', (e) => {
@@ -19,7 +19,7 @@ class SummaryPage {
         });
         console.log('Summary sayfası event listener\'ları bağlandı');
     }
-    
+
     onLanguageChanged(language) {
         console.log('🌐 Özet sayfası dil güncelleniyor:', language);
         // Verileri yeni dil ile yeniden yükle

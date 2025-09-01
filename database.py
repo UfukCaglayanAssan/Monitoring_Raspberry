@@ -958,3 +958,281 @@ class BatteryDatabase:
         except Exception as e:
             print(f"get_armconfigs hatası: {e}")
             return []
+    
+    def get_grouped_battery_logs(self, page=1, page_size=50, filters=None, language='tr'):
+        """Gruplandırılmış batarya log verilerini getir"""
+        if filters is None:
+            filters = {}
+        
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Önce benzersiz timestamp'leri bul
+            timestamp_query = '''
+                SELECT DISTINCT timestamp
+                FROM battery_data
+                WHERE 1=1
+            '''
+            
+            timestamp_params = []
+            
+            if filters.get('arm'):
+                timestamp_query += ' AND arm = ?'
+                timestamp_params.append(filters['arm'])
+            
+            if filters.get('battery'):
+                timestamp_query += ' AND k = ?'
+                timestamp_params.append(filters['battery'])
+            
+            if filters.get('startDate'):
+                start_timestamp = int(datetime.strptime(filters['startDate'], '%Y-%m-%d').timestamp() * 1000)
+                timestamp_query += ' AND timestamp >= ?'
+                timestamp_params.append(start_timestamp)
+            
+            if filters.get('endDate'):
+                end_timestamp = int(datetime.strptime(filters['endDate'], '%Y-%m-%d').timestamp() * 1000) + (24 * 60 * 60 * 1000) - 1
+                timestamp_query += ' AND timestamp <= ?'
+                timestamp_params.append(end_timestamp)
+            
+            timestamp_query += ' ORDER BY timestamp DESC LIMIT ? OFFSET ?'
+            timestamp_params.extend([page_size, (page - 1) * page_size])
+            
+            cursor.execute(timestamp_query, timestamp_params)
+            timestamps = [row[0] for row in cursor.fetchall()]
+            
+            if not timestamps:
+                return {'logs': [], 'totalCount': 0, 'totalPages': 1, 'currentPage': page}
+            
+            # Her timestamp için tüm veri tiplerini getir
+            logs = []
+            for timestamp in timestamps:
+                data_query = '''
+                    SELECT 
+                        bd.arm,
+                        bd.k as batteryAddress,
+                        bd.dtype,
+                        bd.data,
+                        bd.timestamp,
+                        COALESCE(dtt.name, dt.name) as name,
+                        dt.unit
+                    FROM battery_data bd
+                    LEFT JOIN data_types dt ON bd.dtype = dt.dtype
+                    LEFT JOIN data_type_translations dtt ON dt.dtype = dtt.dtype AND dtt.language_code = ?
+                    WHERE bd.timestamp = ?
+                '''
+                
+                data_params = [language, timestamp]
+                
+                if filters.get('arm'):
+                    data_query += ' AND bd.arm = ?'
+                    data_params.append(filters['arm'])
+                
+                if filters.get('battery'):
+                    data_query += ' AND bd.k = ?'
+                    data_params.append(filters['battery'])
+                
+                cursor.execute(data_query, data_params)
+                rows = cursor.fetchall()
+                
+                if rows:
+                    # Verileri grupla
+                    grouped_data = {
+                        'timestamp': timestamp,
+                        'arm': rows[0][0],
+                        'batteryAddress': rows[0][1],
+                        'voltage': None,
+                        'charge_status': None,
+                        'temperature': None,
+                        'positive_pole_temp': None,
+                        'negative_pole_temp': None,
+                        'health_status': None
+                    }
+                    
+                    for row in rows:
+                        dtype = row[2]
+                        data = row[3]
+                        
+                        if dtype == 10:  # Gerilim
+                            grouped_data['voltage'] = data
+                        elif dtype == 11:  # Şarj Durumu
+                            grouped_data['charge_status'] = data
+                        elif dtype == 12:  # Sıcaklık
+                            grouped_data['temperature'] = data
+                        elif dtype == 13:  # Pozitif Kutup Sıcaklığı
+                            grouped_data['positive_pole_temp'] = data
+                        elif dtype == 14:  # Negatif Kutup Sıcaklığı
+                            grouped_data['negative_pole_temp'] = data
+                        elif dtype == 126:  # Sağlık Durumu
+                            grouped_data['health_status'] = data
+                    
+                    logs.append(grouped_data)
+            
+            # Toplam sayfa sayısını hesapla
+            count_query = '''
+                SELECT COUNT(DISTINCT timestamp)
+                FROM battery_data
+                WHERE 1=1
+            '''
+            
+            count_params = []
+            
+            if filters.get('arm'):
+                count_query += ' AND arm = ?'
+                count_params.append(filters['arm'])
+            
+            if filters.get('battery'):
+                count_query += ' AND k = ?'
+                count_params.append(filters['battery'])
+            
+            if filters.get('startDate'):
+                start_timestamp = int(datetime.strptime(filters['startDate'], '%Y-%m-%d').timestamp() * 1000)
+                count_query += ' AND timestamp >= ?'
+                count_params.append(start_timestamp)
+            
+            if filters.get('endDate'):
+                end_timestamp = int(datetime.strptime(filters['endDate'], '%Y-%m-%d').timestamp() * 1000) + (24 * 60 * 60 * 1000) - 1
+                count_query += ' AND timestamp <= ?'
+                count_params.append(end_timestamp)
+            
+            cursor.execute(count_query, count_params)
+            total_count = cursor.fetchone()[0]
+            total_pages = (total_count + page_size - 1) // page_size
+            
+            return {
+                'logs': logs,
+                'totalCount': total_count,
+                'totalPages': total_pages,
+                'currentPage': page
+            }
+    
+    def get_grouped_arm_logs(self, page=1, page_size=50, filters=None, language='tr'):
+        """Gruplandırılmış kol log verilerini getir"""
+        if filters is None:
+            filters = {}
+        
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Önce benzersiz timestamp'leri bul
+            timestamp_query = '''
+                SELECT DISTINCT timestamp
+                FROM battery_data
+                WHERE k = 2  # Kol verileri için k=2
+                AND 1=1
+            '''
+            
+            timestamp_params = []
+            
+            if filters.get('arm'):
+                timestamp_query += ' AND arm = ?'
+                timestamp_params.append(filters['arm'])
+            
+            if filters.get('startDate'):
+                start_timestamp = int(datetime.strptime(filters['startDate'], '%Y-%m-%d').timestamp() * 1000)
+                timestamp_query += ' AND timestamp >= ?'
+                timestamp_params.append(start_timestamp)
+            
+            if filters.get('endDate'):
+                end_timestamp = int(datetime.strptime(filters['endDate'], '%Y-%m-%d').timestamp() * 1000) + (24 * 60 * 60 * 1000) - 1
+                timestamp_query += ' AND timestamp <= ?'
+                timestamp_params.append(end_timestamp)
+            
+            timestamp_query += ' ORDER BY timestamp DESC LIMIT ? OFFSET ?'
+            timestamp_params.extend([page_size, (page - 1) * page_size])
+            
+            cursor.execute(timestamp_query, timestamp_params)
+            timestamps = [row[0] for row in cursor.fetchall()]
+            
+            if not timestamps:
+                return {'logs': [], 'totalCount': 0, 'totalPages': 1, 'currentPage': page}
+            
+            # Her timestamp için tüm veri tiplerini getir
+            logs = []
+            for timestamp in timestamps:
+                data_query = '''
+                    SELECT 
+                        bd.arm,
+                        bd.k as batteryAddress,
+                        bd.dtype,
+                        bd.data,
+                        bd.timestamp,
+                        COALESCE(dtt.name, dt.name) as name,
+                        dt.unit
+                    FROM battery_data bd
+                    LEFT JOIN data_types dt ON bd.dtype = dt.dtype
+                    LEFT JOIN data_type_translations dtt ON dt.dtype = dtt.dtype AND dtt.language_code = ?
+                    WHERE bd.timestamp = ? AND bd.k = 2
+                '''
+                
+                data_params = [language, timestamp]
+                
+                if filters.get('arm'):
+                    data_query += ' AND bd.arm = ?'
+                    data_params.append(filters['arm'])
+                
+                cursor.execute(data_query, data_params)
+                rows = cursor.fetchall()
+                
+                if rows:
+                    # Verileri grupla
+                    grouped_data = {
+                        'timestamp': timestamp,
+                        'arm': rows[0][0],
+                        'current': None,
+                        'voltage': None,
+                        'humidity': None,
+                        'ambient_temperature': None,
+                        'arm_temperature': None
+                    }
+                    
+                    for row in rows:
+                        dtype = row[2]
+                        data = row[3]
+                        
+                        if dtype == 10:  # Akım/Gerilim (akım olarak kullan)
+                            grouped_data['current'] = data
+                        elif dtype == 11:  # Nem
+                            grouped_data['humidity'] = data
+                        elif dtype == 12:  # Ortam Sıcaklığı
+                            grouped_data['ambient_temperature'] = data
+                        elif dtype == 13:  # Kol Sıcaklığı
+                            grouped_data['arm_temperature'] = data
+                        elif dtype == 14:  # Gerilim (ayrı kolon)
+                            grouped_data['voltage'] = data
+                    
+                    logs.append(grouped_data)
+            
+            # Toplam sayfa sayısını hesapla
+            count_query = '''
+                SELECT COUNT(DISTINCT timestamp)
+                FROM battery_data
+                WHERE k = 2
+                AND 1=1
+            '''
+            
+            count_params = []
+            
+            if filters.get('arm'):
+                count_query += ' AND arm = ?'
+                count_params.append(filters['arm'])
+            
+            if filters.get('startDate'):
+                start_timestamp = int(datetime.strptime(filters['startDate'], '%Y-%m-%d').timestamp() * 1000)
+                count_query += ' AND timestamp >= ?'
+                count_params.append(start_timestamp)
+            
+            if filters.get('endDate'):
+                end_timestamp = int(datetime.strptime(filters['endDate'], '%Y-%m-%d').timestamp() * 1000) + (24 * 60 * 60 * 1000) - 1
+                count_query += ' AND timestamp <= ?'
+                count_params.append(end_timestamp)
+            
+            cursor.execute(count_query, count_params)
+            total_count = cursor.fetchone()[0]
+            total_pages = (total_count + page_size - 1) // page_size
+            
+            return {
+                'logs': logs,
+                'totalCount': total_count,
+                'totalPages': total_pages,
+                'currentPage': page
+            }

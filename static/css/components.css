@@ -1,3 +1,71 @@
+/* Navigation Submenu */
+.nav-item.has-submenu {
+    position: relative;
+}
+
+.nav-item.has-submenu .nav-link {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.submenu-arrow {
+    font-size: 0.75rem;
+    transition: transform 0.3s ease;
+}
+
+.nav-item.has-submenu:hover .submenu-arrow {
+    transform: rotate(180deg);
+}
+
+.submenu {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    background: #1e3c72;
+    border-radius: 8px;
+    padding: 0.5rem 0;
+    min-width: 200px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-10px);
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.nav-item.has-submenu:hover .submenu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+}
+
+.submenu li {
+    list-style: none;
+}
+
+.submenu-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: white;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border-radius: 4px;
+    margin: 0 0.5rem;
+}
+
+.submenu-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(5px);
+}
+
+.submenu-link i {
+    font-size: 0.875rem;
+    width: 16px;
+}
+
 /* Butonlar */
 .btn {
     display: inline-flex;
