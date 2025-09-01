@@ -255,6 +255,53 @@ class ArmLogsPage {
     exportLogs() {
         // CSV export işlemi
         console.log('Export işlemi başlatıldı');
+        
+        try {
+            // Filtreleri hazırla
+            const exportFilters = {
+                arm: this.filters.arm || '',
+                start_date: this.filters.startDate || '',
+                end_date: this.filters.endDate || ''
+            };
+            
+            // API'ye export isteği gönder
+            fetch('/api/arm-logs/export', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    filters: exportFilters
+                })
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.blob();
+                }
+                throw new Error('Export hatası: ' + response.status);
+            })
+            .then(blob => {
+                // CSV dosyasını indir
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `arm_logs_export_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                console.log('Export başarılı');
+            })
+            .catch(error => {
+                console.error('Export hatası:', error);
+                alert('Export sırasında hata oluştu: ' + error.message);
+            });
+            
+        } catch (error) {
+            console.error('Export hatası:', error);
+            alert('Export sırasında hata oluştu: ' + error.message);
+        }
     }
 }
 

@@ -567,65 +567,110 @@ class BatteryDatabase:
         with self.get_connection() as conn:
             cursor = conn.cursor()
             
+            # Basit SQL ile gruplandırılmış verileri getir
             query = '''
                 SELECT 
-                    bd.arm,
-                    bd.k as batteryAddress,
-                    bd.dtype,
-                    bd.data,
-                    bd.timestamp,
-                    dt.name,
-                    dt.unit
-                FROM battery_data bd
-                LEFT JOIN data_types dt ON bd.dtype = dt.dtype
-                WHERE 1=1
+                    timestamp,
+                    arm,
+                    k as batteryAddress,
+                    MAX(CASE WHEN dtype = 10 THEN data END) as voltage,
+                    MAX(CASE WHEN dtype = 11 THEN data END) as charge_status,
+                    MAX(CASE WHEN dtype = 12 THEN data END) as temperature,
+                    MAX(CASE WHEN dtype = 13 THEN data END) as positive_pole_temp,
+                    MAX(CASE WHEN dtype = 14 THEN data END) as negative_pole_temp,
+                    MAX(CASE WHEN dtype = 126 THEN data END) as health_status
+                FROM battery_data 
+                WHERE k > 2
             '''
             
             params = []
             
             # Filtreler
             if filters.get('arm'):
-                query += ' AND bd.arm = ?'
+                query += ' AND arm = ?'
                 params.append(filters['arm'])
             
             if filters.get('battery'):
-                query += ' AND bd.k = ?'
+                query += ' AND k = ?'
                 params.append(filters['battery'])
-            
-            if filters.get('dtype'):
-                query += ' AND bd.dtype = ?'
-                params.append(filters['dtype'])
-            
-            if filters.get('status'):
-                if filters['status'] == 'success':
-                    query += ' AND bd.data > 0'
-                elif filters['status'] == 'error':
-                    query += ' AND bd.data <= 0'
-                elif filters['status'] == 'warning':
-                    query += ' AND bd.data BETWEEN 0 AND 50'
             
             if filters.get('start_date'):
                 start_timestamp = int(datetime.strptime(filters['start_date'], '%Y-%m-%d').timestamp() * 1000)
-                query += ' AND bd.timestamp >= ?'
+                query += ' AND timestamp >= ?'
                 params.append(start_timestamp)
             
             if filters.get('end_date'):
                 end_timestamp = int(datetime.strptime(filters['end_date'], '%Y-%m-%d').timestamp() * 1000) + (24 * 60 * 60 * 1000) - 1
-                query += ' AND bd.timestamp <= ?'
+                query += ' AND timestamp <= ?'
                 params.append(end_timestamp)
             
-            query += ' ORDER BY bd.timestamp DESC'
+            query += ' GROUP BY timestamp, arm, k ORDER BY timestamp DESC, k ASC'
             
             cursor.execute(query, params)
             rows = cursor.fetchall()
             
-            # CSV formatı - Türkçe karakterler için
-            csv_content = "ZAMAN,KOL,BATARYA ADRESİ,VERİ TÜRÜ,VERİ,DURUM\n"
+            # CSV formatı - Gruplandırılmış veriler için
+            csv_content = "ZAMAN,KOL,BATARYA ADRESİ,GERİLİM,ŞARJ DURUMU,MODÜL SICAKLIĞI,POZİTİF KUTUP SICAKLIĞI,NEGATİF KUTUP SICAKLIĞI,SAĞLIK DURUMU\n"
             
             for row in rows:
-                timestamp = datetime.fromtimestamp(row[4] / 1000).strftime('%Y-%m-%d %H:%M:%S')
+                timestamp = datetime.fromtimestamp(row[0] / 1000).strftime('%Y-%m-%d %H:%M:%S')
+                battery_address = row[2] - 2  # k - 2 olarak göster
                 
-                csv_content += f"{timestamp},{row[0]},{row[1]},{row[5]},{row[3]},Başarılı\n"
+                csv_content += f"{timestamp},{row[1]},{battery_address},{row[3] or '-'},{row[4] or '-'},{row[5] or '-'},{row[6] or '-'},{row[7] or '-'},{row[8] or '-'}\n"
+            
+            return csv_content
+    
+    def export_arm_logs_to_csv(self, filters=None):
+        """Kol log verilerini CSV formatında export et"""
+        if filters is None:
+            filters = {}
+        
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Basit SQL ile gruplandırılmış verileri getir
+            query = '''
+                SELECT 
+                    timestamp,
+                    arm,
+                    MAX(CASE WHEN dtype = 10 THEN data END) as current,
+                    MAX(CASE WHEN dtype = 11 THEN data END) as humidity,
+                    MAX(CASE WHEN dtype = 12 THEN data END) as ambient_temperature,
+                    MAX(CASE WHEN dtype = 13 THEN data END) as arm_temperature,
+                    MAX(CASE WHEN dtype = 14 THEN data END) as voltage
+                FROM battery_data 
+                WHERE k = 2
+            '''
+            
+            params = []
+            
+            # Filtreler
+            if filters.get('arm'):
+                query += ' AND arm = ?'
+                params.append(filters['arm'])
+            
+            if filters.get('start_date'):
+                start_timestamp = int(datetime.strptime(filters['start_date'], '%Y-%m-%d').timestamp() * 1000)
+                query += ' AND timestamp >= ?'
+                params.append(start_timestamp)
+            
+            if filters.get('end_date'):
+                end_timestamp = int(datetime.strptime(filters['end_date'], '%Y-%m-%d').timestamp() * 1000) + (24 * 60 * 60 * 1000) - 1
+                query += ' AND timestamp <= ?'
+                params.append(end_timestamp)
+            
+            query += ' GROUP BY timestamp, arm ORDER BY timestamp DESC, arm ASC'
+            
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+            
+            # CSV formatı - Gruplandırılmış veriler için
+            csv_content = "ZAMAN,KOL,AKIM,NEM,ORTAM SICAKLIĞI,KOL SICAKLIĞI,GERİLİM\n"
+            
+            for row in rows:
+                timestamp = datetime.fromtimestamp(row[0] / 1000).strftime('%Y-%m-%d %H:%M:%S')
+                
+                csv_content += f"{timestamp},{row[1]},{row[2] or '-'},{row[3] or '-'},{row[4] or '-'},{row[5] or '-'},{row[6] or '-'}\n"
             
             return csv_content
 
@@ -1060,132 +1105,91 @@ class BatteryDatabase:
     
     def get_grouped_arm_logs(self, page=1, page_size=50, filters=None, language='tr'):
         """Gruplandırılmış kol log verilerini getir"""
+        print(f"DEBUG database.py: get_grouped_arm_logs çağrıldı - page={page}, page_size={page_size}, filters={filters}, language={language}")
         if filters is None:
             filters = {}
         
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            
-            # Önce benzersiz timestamp'leri bul
-            timestamp_query = '''
-                SELECT DISTINCT timestamp
-                FROM battery_data
-                WHERE k = 2  # Kol verileri için k=2
-                AND 1=1
-            '''
-            
-            timestamp_params = []
-            
-            if filters.get('arm'):
-                timestamp_query += ' AND arm = ?'
-                timestamp_params.append(filters['arm'])
-            
-            if filters.get('startDate'):
-                start_timestamp = int(datetime.strptime(filters['startDate'], '%Y-%m-%d').timestamp() * 1000)
-                timestamp_query += ' AND timestamp >= ?'
-                timestamp_params.append(start_timestamp)
-            
-            if filters.get('endDate'):
-                end_timestamp = int(datetime.strptime(filters['endDate'], '%Y-%m-%d').timestamp() * 1000) + (24 * 60 * 60 * 1000) - 1
-                timestamp_query += ' AND timestamp <= ?'
-                timestamp_params.append(end_timestamp)
-            
-            timestamp_query += ' ORDER BY timestamp DESC LIMIT ? OFFSET ?'
-            timestamp_params.extend([page_size, (page - 1) * page_size])
-            
-            cursor.execute(timestamp_query, timestamp_params)
-            timestamps = [row[0] for row in cursor.fetchall()]
-            
-            if not timestamps:
-                return {'logs': [], 'totalCount': 0, 'totalPages': 1, 'currentPage': page}
-            
-            # Her timestamp için tüm veri tiplerini getir
-            logs = []
-            for timestamp in timestamps:
-                data_query = '''
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Basit SQL ile tüm verileri getir
+                query = '''
                     SELECT 
-                        bd.arm,
-                        bd.k as batteryAddress,
-                        bd.dtype,
-                        bd.data,
-                        bd.timestamp,
-                        COALESCE(dtt.name, dt.name) as name,
-                        dt.unit
-                    FROM battery_data bd
-                    LEFT JOIN data_types dt ON bd.dtype = dt.dtype
-                    LEFT JOIN data_type_translations dtt ON dt.dtype = dtt.dtype AND dtt.language_code = ?
-                    WHERE bd.timestamp = ? AND bd.k = 2
+                        timestamp,
+                        arm,
+                        MAX(CASE WHEN dtype = 10 THEN data END) as current,
+                        MAX(CASE WHEN dtype = 11 THEN data END) as humidity,
+                        MAX(CASE WHEN dtype = 12 THEN data END) as ambient_temperature,
+                        MAX(CASE WHEN dtype = 13 THEN data END) as arm_temperature,
+                        MAX(CASE WHEN dtype = 14 THEN data END) as voltage
+                    FROM battery_data 
+                    WHERE k = 2
                 '''
                 
-                data_params = [language, timestamp]
+                params = []
                 
                 if filters.get('arm'):
-                    data_query += ' AND bd.arm = ?'
-                    data_params.append(filters['arm'])
+                    query += ' AND arm = ?'
+                    params.append(filters['arm'])
                 
-                cursor.execute(data_query, data_params)
+                if filters.get('startDate'):
+                    start_timestamp = int(datetime.strptime(filters['startDate'], '%Y-%m-%d').timestamp() * 1000)
+                    query += ' AND timestamp >= ?'
+                    params.append(start_timestamp)
+                
+                if filters.get('endDate'):
+                    end_timestamp = int(datetime.strptime(filters['endDate'], '%Y-%m-%d').timestamp() * 1000) + (24 * 60 * 60 * 1000) - 1
+                    query += ' AND timestamp <= ?'
+                    params.append(end_timestamp)
+                
+                query += ' GROUP BY timestamp, arm ORDER BY timestamp DESC, arm ASC LIMIT ? OFFSET ?'
+                params.extend([page_size, (page - 1) * page_size])
+                
+                print(f"DEBUG database.py: Arm query: {query}")
+                print(f"DEBUG database.py: Arm params: {params}")
+                
+                cursor.execute(query, params)
                 rows = cursor.fetchall()
                 
-                if rows:
-                    # Verileri grupla
-                    grouped_data = {
-                        'timestamp': timestamp,
-                        'arm': rows[0][0],
-                        'current': None,
-                        'voltage': None,
-                        'humidity': None,
-                        'ambient_temperature': None,
-                        'arm_temperature': None
-                    }
-                    
-                    for row in rows:
-                        dtype = row[2]
-                        data = row[3]
-                        
-                        if dtype == 10:  # Akım/Gerilim (akım olarak kullan)
-                            grouped_data['current'] = data
-                        elif dtype == 11:  # Nem
-                            grouped_data['humidity'] = data
-                        elif dtype == 12:  # Ortam Sıcaklığı
-                            grouped_data['ambient_temperature'] = data
-                        elif dtype == 13:  # Kol Sıcaklığı
-                            grouped_data['arm_temperature'] = data
-                        elif dtype == 14:  # Gerilim (ayrı kolon)
-                            grouped_data['voltage'] = data
-                    
-                    logs.append(grouped_data)
-            
-            # Toplam sayfa sayısını hesapla
-            count_query = '''
-                SELECT COUNT(DISTINCT timestamp)
-                FROM battery_data
-                WHERE k = 2
-                AND 1=1
-            '''
-            
-            count_params = []
-            
-            if filters.get('arm'):
-                count_query += ' AND arm = ?'
-                count_params.append(filters['arm'])
-            
-            if filters.get('startDate'):
-                start_timestamp = int(datetime.strptime(filters['startDate'], '%Y-%m-%d').timestamp() * 1000)
-                count_query += ' AND timestamp >= ?'
-                count_params.append(start_timestamp)
-            
-            if filters.get('endDate'):
-                end_timestamp = int(datetime.strptime(filters['endDate'], '%Y-%m-%d').timestamp() * 1000) + (24 * 60 * 60 * 1000) - 1
-                count_query += ' AND timestamp <= ?'
-                count_params.append(end_timestamp)
-            
-            cursor.execute(count_query, count_params)
-            total_count = cursor.fetchone()[0]
-            total_pages = (total_count + page_size - 1) // page_size
-            
-            return {
-                'logs': logs,
-                'totalCount': total_count,
-                'totalPages': total_pages,
-                'currentPage': page
-            }
+                # Verileri formatla
+                logs = []
+                for row in rows:
+                    logs.append({
+                        'timestamp': row[0],
+                        'arm': row[1],
+                        'current': row[2],
+                        'humidity': row[3],
+                        'ambient_temperature': row[4],
+                        'arm_temperature': row[5],
+                        'voltage': row[6]
+                    })
+                
+                # Toplam sayfa sayısını hesapla
+                count_query = '''
+                    SELECT COUNT(*)
+                    FROM (
+                        SELECT DISTINCT timestamp, arm
+                        FROM battery_data
+                        WHERE k = 2
+                    ) AS subquery
+                '''
+                
+                cursor.execute(count_query)
+                total_count = cursor.fetchone()[0]
+                
+                total_pages = (total_count + page_size - 1) // page_size
+                
+                print(f"DEBUG database.py: {len(logs)} arm log verisi döndürüldü, toplam: {total_count}, sayfa: {total_pages}")
+                
+                return {
+                    'logs': logs,
+                    'totalCount': total_count,
+                    'totalPages': total_pages,
+                    'currentPage': page
+                }
+        except Exception as e:
+            print(f"DEBUG database.py: Arm logs hatası oluştu: {e}")
+            import traceback
+            traceback.print_exc()
+            raise e

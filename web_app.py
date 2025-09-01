@@ -222,6 +222,26 @@ def export_batteries():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/arm-logs/export', methods=['POST'])
+def export_arm_logs():
+    """Kol log verilerini CSV olarak export et"""
+    try:
+        data = request.get_json()
+        filters = data.get('filters', {}) if data else {}
+        
+        csv_content = db.export_arm_logs_to_csv(filters)
+        
+        response = app.response_class(
+            response=csv_content,
+            status=200,
+            mimetype='text/csv'
+        )
+        response.headers['Content-Disposition'] = 'attachment; filename=arm_logs_export.csv'
+        response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+        return response
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/stats')
 def get_stats():
     """İstatistik verilerini getir"""
