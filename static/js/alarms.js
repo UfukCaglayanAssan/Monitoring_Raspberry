@@ -3,6 +3,9 @@ class AlarmsPage {
     constructor() {
         this.alarms = [];
         this.showResolved = false; // Varsayılan olarak sadece aktif alarmları göster
+        this.currentPage = 1;
+        this.pageSize = 50;
+        this.totalPages = 1;
         this.init();
     }
 
@@ -20,13 +23,70 @@ class AlarmsPage {
                 this.toggleAlarmHistory();
             });
         }
+
+        // Sayfalama butonları
+        document.getElementById('prevPage')?.addEventListener('click', () => {
+            this.previousPage();
+        });
+
+        document.getElementById('nextPage')?.addEventListener('click', () => {
+            this.nextPage();
+        });
+    }
+
+    // Alarm geçmişi toggle fonksiyonu
+    toggleAlarmHistory() {
+        const alarmHistoryContainer = document.getElementById('alarmHistoryContainer');
+        if (alarmHistoryContainer) {
+            if (alarmHistoryContainer.style.display === 'none' || 
+                alarmHistoryContainer.style.display === '') {
+                alarmHistoryContainer.style.display = 'block';
+                this.loadAlarmHistory();
+            } else {
+                alarmHistoryContainer.style.display = 'none';
+            }
+        }
+    }
+
+    loadAlarmHistory() {
+        console.log('Alarm geçmişi yükleniyor...');
+        // Burada alarm geçmişi API'den çekilecek
+    }
+
+    updatePagination() {
+        const pagination = document.getElementById('pagination');
+        if (this.totalPages > 1) {
+            pagination.style.display = 'flex';
+            
+            document.getElementById('currentPage').textContent = this.currentPage;
+            document.getElementById('totalPages').textContent = this.totalPages;
+            
+            document.getElementById('prevPage').disabled = this.currentPage <= 1;
+            document.getElementById('nextPage').disabled = this.currentPage >= this.totalPages;
+        } else {
+            pagination.style.display = 'none';
+        }
+    }
+
+    previousPage() {
+        if (this.currentPage > 1) {
+            this.currentPage--;
+            this.loadAlarms();
+        }
+    }
+
+    nextPage() {
+        if (this.currentPage < this.totalPages) {
+            this.currentPage++;
+            this.loadAlarms();
+        }
     }
 
     async loadAlarms() {
         try {
             this.showLoading();
             
-            const response = await fetch(`/api/alarms?show_resolved=${this.showResolved}`, {
+            const response = await fetch(`/api/alarms?show_resolved=${this.showResolved}&page=${this.currentPage}&pageSize=${this.pageSize}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
@@ -41,7 +101,9 @@ class AlarmsPage {
             
             if (data.success) {
                 this.alarms = data.alarms || [];
+                this.totalPages = data.totalPages || 1;
                 this.renderAlarms();
+                this.updatePagination();
             } else {
                 console.error('Alarm verileri yüklenirken hata:', data.message);
                 this.showNoData();
@@ -114,14 +176,7 @@ class AlarmsPage {
         statusCell.appendChild(statusBadge);
         row.appendChild(statusCell);
         
-        // Çözüm Zamanı
-        const resolvedCell = document.createElement('td');
-        if (alarm.status === 'resolved' && alarm.resolved_at) {
-            resolvedCell.textContent = this.formatTimestamp(alarm.resolved_at);
-        } else {
-            resolvedCell.textContent = '-';
-        }
-        row.appendChild(resolvedCell);
+
         
         return row;
     }

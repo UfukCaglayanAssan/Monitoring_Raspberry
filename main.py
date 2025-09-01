@@ -207,6 +207,18 @@ def db_worker():
                 error_lsb = int(data[5], 16)
                 alarm_timestamp = int(time.time() * 1000)
                 
+                # O anda gelen veriyi de logla
+                alarm_data_record = {
+                    "Arm": arm_value,
+                    "k": battery,
+                    "Dtype": "ALARM_BATKON",  # Özel dtype
+                    "data": f"BATKON_ALARM_MSB:{error_msb}_LSB:{error_lsb}",
+                    "timestamp": get_period_timestamp(),
+                    "raw_data": str(data),  # Ham veri
+                    "alarm_type": "BATKON"
+                }
+                batch.append(alarm_data_record)
+                
                 # Eğer errorlsb=1 ve errormsb=1 ise, mevcut alarmı düzelt
                 if error_lsb == 1 and error_msb == 1:
                     if db.resolve_alarm(arm_value, battery):

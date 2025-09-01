@@ -397,24 +397,33 @@ def get_armconfigs():
 
 @app.route('/api/alarms', methods=['GET'])
 def get_alarms():
-    """Tüm alarmları getir"""
+    """Sayfalanmış alarmları getir"""
     try:
-        # Query parametresinden show_resolved değerini al
+        # Query parametrelerini al
         show_resolved = request.args.get('show_resolved', 'false').lower() == 'true'
+        page = int(request.args.get('page', 1))
+        page_size = int(request.args.get('pageSize', 50))
         
-        # Veritabanından alarmları oku
-        alarms = db.get_all_alarms(show_resolved=show_resolved)
+        # Veritabanından sayfalanmış alarmları oku
+        alarms_data = db.get_paginated_alarms(
+            show_resolved=show_resolved,
+            page=page,
+            page_size=page_size
+        )
         
         # Alarm verilerini işle
         processed_alarms = []
-        for alarm in alarms:
+        for alarm in alarms_data['alarms']:
             processed_alarm = process_alarm_data(alarm)
             if processed_alarm:  # Sadece geçerli alarmları ekle
                 processed_alarms.append(processed_alarm)
         
         return jsonify({
             'success': True,
-            'alarms': processed_alarms
+            'alarms': processed_alarms,
+            'totalCount': alarms_data['totalCount'],
+            'totalPages': alarms_data['totalPages'],
+            'currentPage': alarms_data['currentPage']
         })
     except Exception as e:
         return jsonify({

@@ -1,15 +1,17 @@
 <!-- Alarms Sayfası İçeriği -->
 <div class="alarms-page">
-    <!-- Alarm Geçmişi Butonu -->
-    <div class="alarm-history-toggle" style="text-align: center; margin-bottom: 20px;">
-        <button id="toggleAlarmHistory" class="btn btn-primary">
-            <i class="fas fa-history"></i>
-            <span id="toggleButtonText">Alarm Geçmişini Göster</span>
-        </button>
-    </div>
-
     <!-- Alarm Tablosu -->
     <div class="alarms-container">
+        <div class="table-header">
+            <h3>Alarmlar</h3>
+            <div class="table-actions">
+                <button id="toggleAlarmHistory" class="btn btn-outline">
+                    <i class="fas fa-history"></i>
+                    <span id="toggleButtonText">Alarm Geçmişini Göster</span>
+                </button>
+            </div>
+        </div>
+        
         <div class="table-container">
             <table class="alarms-table" id="alarmsTable">
                 <thead>
@@ -19,7 +21,6 @@
                         <th>Batarya</th>
                         <th>Açıklama</th>
                         <th>Durum</th>
-                        <th>Çözüm Zamanı</th>
                     </tr>
                 </thead>
                 <tbody id="alarmsTableBody">
@@ -38,6 +39,26 @@
                 <i class="fas fa-check-circle"></i>
                 <h3>Alarm Yok</h3>
                 <p>Sistemde aktif alarm bulunmuyor.</p>
+            </div>
+            
+            <!-- Sayfalama -->
+            <div class="pagination" id="pagination" style="display: none;">
+                <button class="pagination-btn" id="prevPage" disabled>
+                    <i class="fas fa-chevron-left"></i>
+                    <span>Önceki</span>
+                </button>
+                
+                <div class="pagination-info">
+                    <span>Sayfa</span>
+                    <span id="currentPage">1</span>
+                    <span>/ toplam</span>
+                    <span id="totalPages">1</span>
+                </div>
+                
+                <button class="pagination-btn" id="nextPage">
+                    <span>Sonraki</span>
+                    <i class="fas fa-chevron-right"></i>
+                </button>
             </div>
         </div>
     </div>

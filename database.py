@@ -294,6 +294,60 @@ class BatteryDatabase:
         except Exception as e:
             print(f"get_all_alarms hatası: {e}")
             return []
+
+    def get_paginated_alarms(self, show_resolved=True, page=1, page_size=50):
+        """Sayfalanmış alarmları getir"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Toplam alarm sayısını hesapla
+                if show_resolved:
+                    count_query = 'SELECT COUNT(*) FROM alarms'
+                    cursor.execute(count_query)
+                else:
+                    count_query = 'SELECT COUNT(*) FROM alarms WHERE status = "active"'
+                    cursor.execute(count_query)
+                
+                total_count = cursor.fetchone()[0]
+                
+                # Sayfalama hesapla
+                offset = (page - 1) * page_size
+                total_pages = (total_count + page_size - 1) // page_size
+                
+                # Sayfalanmış verileri getir
+                if show_resolved:
+                    cursor.execute('''
+                        SELECT id, arm, battery, error_code_msb, error_code_lsb, timestamp, status, resolved_at, created_at
+                        FROM alarms 
+                        ORDER BY timestamp DESC
+                        LIMIT ? OFFSET ?
+                    ''', (page_size, offset))
+                else:
+                    cursor.execute('''
+                        SELECT id, arm, battery, error_code_msb, error_code_lsb, timestamp, status, resolved_at, created_at
+                        FROM alarms 
+                        WHERE status = 'active'
+                        ORDER BY timestamp DESC
+                        LIMIT ? OFFSET ?
+                    ''', (page_size, offset))
+                
+                rows = cursor.fetchall()
+                
+                return {
+                    'alarms': rows,
+                    'totalCount': total_count,
+                    'totalPages': total_pages,
+                    'currentPage': page
+                }
+        except Exception as e:
+            print(f"get_paginated_alarms hatası: {e}")
+            return {
+                'alarms': [],
+                'totalCount': 0,
+                'totalPages': 1,
+                'currentPage': 1
+            }
     
     def insert_missing_data(self, arm, slave, status, timestamp):
         """Missing data verisi ekle"""
