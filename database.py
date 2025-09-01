@@ -665,12 +665,12 @@ class BatteryDatabase:
             rows = cursor.fetchall()
             
             # CSV formatı - Gruplandırılmış veriler için
-            csv_content = "ZAMAN,KOL,AKIM,NEM,ORTAM SICAKLIĞI,KOL SICAKLIĞI\n"
+            csv_content = "ZAMAN,KOL,AKIM,NEM,ORTAM SICAKLIĞI\n"
             
             for row in rows:
                 timestamp = datetime.fromtimestamp(row[0] / 1000).strftime('%Y-%m-%d %H:%M:%S')
                 
-                csv_content += f"{timestamp},{row[1]},{row[2] or '-'},{row[3] or '-'},{row[4] or '-'},{row[5] or '-'}\n"
+                csv_content += f"{timestamp},{row[1]},{row[2] or '-'},{row[3] or '-'},{row[4] or '-'}\n"
             
             return csv_content
 
@@ -1119,9 +1119,8 @@ class BatteryDatabase:
                         timestamp,
                         arm,
                         MAX(CASE WHEN dtype = 14 THEN data END) as current,
-                        MAX(CASE WHEN dtype = 11 THEN data END) as humidity,
-                        MAX(CASE WHEN dtype = 12 THEN data END) as ambient_temperature,
-                        MAX(CASE WHEN dtype = 13 THEN data END) as arm_temperature
+                        MAX(CASE WHEN dtype = 13 THEN data END) as humidity,
+                        MAX(CASE WHEN dtype = 12 THEN data END) as ambient_temperature
                     FROM battery_data 
                     WHERE k = 2
                 '''
@@ -1159,8 +1158,7 @@ class BatteryDatabase:
                         'arm': row[1],
                         'current': row[2],
                         'humidity': row[3],
-                        'ambient_temperature': row[4],
-                        'arm_temperature': row[5]
+                        'ambient_temperature': row[4]
                     })
                 
                 # Toplam sayfa sayısını hesapla

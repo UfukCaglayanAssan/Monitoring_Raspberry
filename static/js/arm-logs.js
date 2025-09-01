@@ -141,7 +141,7 @@ class ArmLogsPage {
             const currentLanguage = localStorage.getItem('language') || 'tr';
                     tableBody.innerHTML = `
             <tr>
-                <td colspan="6">
+                <td colspan="5">
                     <div class="empty-state">
                         <i class="fas fa-inbox"></i>
                         <h4>${currentLanguage === 'en' ? 'No Data Found' : 'Veri Bulunamadı'}</h4>
@@ -161,7 +161,6 @@ class ArmLogsPage {
                     <td>${this.formatValue(log.current, 'A')}</td>
                     <td>${this.formatValue(log.humidity, '%')}</td>
                     <td>${this.formatValue(log.ambient_temperature, '°C')}</td>
-                    <td>${this.formatValue(log.arm_temperature, '°C')}</td>
                 </tr>
             `;
         }).join('');
@@ -189,7 +188,7 @@ class ArmLogsPage {
     showLoading(tableBody) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center">
+                <td colspan="5" class="text-center">
                     <div class="loading-spinner">
                         <i class="fas fa-spinner fa-spin"></i>
                         <span>Yükleniyor...</span>
@@ -202,7 +201,7 @@ class ArmLogsPage {
     showError(tableBody, message) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center text-danger">
+                <td colspan="5" class="text-center text-danger">
                     <i class="fas fa-exclamation-triangle"></i>
                     <span>${message}</span>
                 </td>
