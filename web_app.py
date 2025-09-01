@@ -16,18 +16,18 @@ def index():
 @app.route('/page/<page_name>')
 def get_page(page_name):
     """Sayfa içeriğini döndür"""
-    if page_name == 'logs':
-        return render_template('pages/logs.html')
-    elif page_name == 'summary':
+    if page_name == 'summary':
         return render_template('pages/summary.html')
     elif page_name == 'alarms':
         return render_template('pages/alarms.html')
     elif page_name == 'batteries':
         return render_template('pages/batteries.html')
+    elif page_name == 'battery-logs':
+        return render_template('pages/battery-logs.html')
+    elif page_name == 'arm-logs':
+        return render_template('pages/arm-logs.html')
     elif page_name == 'configuration':
         return render_template('pages/configuration.html')
-    elif page_name == 'data-retrieval':
-        return render_template('pages/data-retrieval.html')
     elif page_name == 'profile':
         return render_template('pages/profile.html')
     else:

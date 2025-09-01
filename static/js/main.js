@@ -18,6 +18,23 @@ class App {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 const page = e.currentTarget.dataset.page;
+                
+                // Eğer sub menü varsa, önce sub menüyü aç/kapat
+                const navItem = e.currentTarget.closest('.nav-item');
+                if (navItem && navItem.classList.contains('has-submenu')) {
+                    this.toggleSubmenu(navItem);
+                    return; // Sayfa değiştirme, sadece sub menüyü aç/kapat
+                }
+                
+                this.navigateToPage(page);
+            });
+        });
+
+        // Sub menü navigasyonu
+        document.querySelectorAll('.submenu-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = e.currentTarget.dataset.page;
                 this.navigateToPage(page);
             });
         });
@@ -39,6 +56,18 @@ class App {
         document.querySelector('.logout-btn').addEventListener('click', () => {
             this.logout();
         });
+    }
+
+    toggleSubmenu(navItem) {
+        // Diğer tüm sub menüleri kapat
+        document.querySelectorAll('.nav-item.has-submenu').forEach(item => {
+            if (item !== navItem) {
+                item.classList.remove('expanded');
+            }
+        });
+        
+        // Bu sub menüyü aç/kapat
+        navItem.classList.toggle('expanded');
     }
 
     navigateToPage(page) {
