@@ -968,106 +968,68 @@ class BatteryDatabase:
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-            
-                            # Önce benzersiz timestamp'leri bul (sadece batarya verileri, k>2)
-                timestamp_query = '''
-                    SELECT DISTINCT timestamp, arm
-                    FROM battery_data
+                
+                # Basit SQL ile tüm verileri getir
+                query = '''
+                    SELECT 
+                        timestamp,
+                        arm,
+                        k as batteryAddress,
+                        MAX(CASE WHEN dtype = 10 THEN data END) as voltage,
+                        MAX(CASE WHEN dtype = 11 THEN data END) as charge_status,
+                        MAX(CASE WHEN dtype = 12 THEN data END) as temperature,
+                        MAX(CASE WHEN dtype = 13 THEN data END) as positive_pole_temp,
+                        MAX(CASE WHEN dtype = 14 THEN data END) as negative_pole_temp,
+                        MAX(CASE WHEN dtype = 126 THEN data END) as health_status
+                    FROM battery_data 
                     WHERE k > 2
                 '''
-            
-            timestamp_params = []
-            
-            if filters.get('arm'):
-                timestamp_query += ' AND arm = ?'
-                timestamp_params.append(filters['arm'])
-            
-            if filters.get('battery'):
-                timestamp_query += ' AND k = ?'
-                timestamp_params.append(filters['battery'])
-            
-            if filters.get('startDate'):
-                start_timestamp = int(datetime.strptime(filters['startDate'], '%Y-%m-%d').timestamp() * 1000)
-                timestamp_query += ' AND timestamp >= ?'
-                timestamp_params.append(start_timestamp)
-            
-            if filters.get('endDate'):
-                end_timestamp = int(datetime.strptime(filters['endDate'], '%Y-%m-%d').timestamp() * 1000) + (24 * 60 * 60 * 1000) - 1
-                timestamp_query += ' AND timestamp <= ?'
-                timestamp_params.append(end_timestamp)
-            
-            timestamp_query += ' ORDER BY timestamp DESC LIMIT ? OFFSET ?'
-            timestamp_params.extend([page_size, (page - 1) * page_size])
-            
-            cursor.execute(timestamp_query, timestamp_params)
-            timestamp_combinations = cursor.fetchall()
-            
-            if not timestamp_combinations:
-                return {'logs': [], 'totalCount': 0, 'totalPages': 1, 'currentPage': page}
-            
-            # Her timestamp için tüm bataryaları getir
-            logs = []
-            for timestamp, arm in timestamp_combinations:
-                data_query = '''
-                    SELECT 
-                        bd.arm,
-                        bd.k as batteryAddress,
-                        bd.dtype,
-                        bd.data,
-                        bd.timestamp,
-                        COALESCE(dtt.name, dt.name) as name,
-                        dt.unit
-                    FROM battery_data bd
-                    LEFT JOIN data_types dt ON bd.dtype = dt.dtype
-                    LEFT JOIN data_type_translations dtt ON dt.dtype = dtt.dtype AND dtt.language_code = ?
-                    WHERE bd.timestamp = ? AND bd.arm = ?
-                '''
                 
-                data_params = [language, timestamp, arm]
+                params = []
                 
-                cursor.execute(data_query, data_params)
+                if filters.get('arm'):
+                    query += ' AND arm = ?'
+                    params.append(filters['arm'])
+                
+                if filters.get('battery'):
+                    query += ' AND k = ?'
+                    params.append(filters['battery'])
+                
+                if filters.get('startDate'):
+                    start_timestamp = int(datetime.strptime(filters['startDate'], '%Y-%m-%d').timestamp() * 1000)
+                    query += ' AND timestamp >= ?'
+                    params.append(start_timestamp)
+                
+                if filters.get('endDate'):
+                    end_timestamp = int(datetime.strptime(filters['endDate'], '%Y-%m-%d').timestamp() * 1000) + (24 * 60 * 60 * 1000) - 1
+                    query += ' AND timestamp <= ?'
+                    params.append(end_timestamp)
+                
+                query += ' GROUP BY timestamp, arm, k ORDER BY timestamp DESC, k ASC LIMIT ? OFFSET ?'
+                params.extend([page_size, (page - 1) * page_size])
+                
+                print(f"DEBUG database.py: Query: {query}")
+                print(f"DEBUG database.py: Params: {params}")
+                
+                cursor.execute(query, params)
                 rows = cursor.fetchall()
                 
-                if rows:
-                    # Her batarya için ayrı satır oluştur
-                    battery_data = {}
-                    
-                    for row in rows:
-                        battery_address = row[1]  # k değeri
-                        dtype = row[2]
-                        data = row[3]
-                        
-                        if battery_address not in battery_data:
-                            battery_data[battery_address] = {
-                                'timestamp': timestamp,
-                                'arm': arm,
-                                'batteryAddress': battery_address - 2,  # 2 eksiği göster
-                                'voltage': None,
-                                'charge_status': None,
-                                'temperature': None,
-                                'positive_pole_temp': None,
-                                'negative_pole_temp': None,
-                                'health_status': None
-                            }
-                        
-                        if dtype == 10:  # Gerilim
-                            battery_data[battery_address]['voltage'] = data
-                        elif dtype == 11:  # Şarj Durumu
-                            battery_data[battery_address]['charge_status'] = data
-                        elif dtype == 12:  # Sıcaklık
-                            battery_data[battery_address]['temperature'] = data
-                        elif dtype == 13:  # Pozitif Kutup Sıcaklığı
-                            battery_data[battery_address]['positive_pole_temp'] = data
-                        elif dtype == 14:  # Negatif Kutup Sıcaklığı
-                            battery_data[battery_address]['negative_pole_temp'] = data
-                        elif dtype == 126:  # Sağlık Durumu
-                            battery_data[battery_address]['health_status'] = data
-                    
-                    # Her batarya için ayrı satır ekle
-                    for battery_address in sorted(battery_data.keys()):
-                        logs.append(battery_data[battery_address])
-            
-                            # Toplam sayfa sayısını hesapla
+                # Verileri formatla
+                logs = []
+                for row in rows:
+                    logs.append({
+                        'timestamp': row[0],
+                        'arm': row[1],
+                        'batteryAddress': row[2] - 2,  # k - 2 olarak göster
+                        'voltage': row[3],
+                        'charge_status': row[4],
+                        'temperature': row[5],
+                        'positive_pole_temp': row[6],
+                        'negative_pole_temp': row[7],
+                        'health_status': row[8]
+                    })
+                
+                # Toplam sayfa sayısını hesapla
                 count_query = '''
                     SELECT COUNT(*)
                     FROM (
@@ -1076,21 +1038,20 @@ class BatteryDatabase:
                         WHERE k > 2
                     ) AS subquery
                 '''
-            
-            count_params = []
-            
-            # Count query'de filtre eklemeye gerek yok, zaten subquery'de filtreleniyor
-            
-            cursor.execute(count_query, count_params)
-            total_count = cursor.fetchone()[0]
-            total_pages = (total_count + page_size - 1) // page_size
-            
-            return {
-                'logs': logs,
-                'totalCount': total_count,
-                'totalPages': total_pages,
-                'currentPage': page
-            }
+                
+                cursor.execute(count_query)
+                total_count = cursor.fetchone()[0]
+                
+                total_pages = (total_count + page_size - 1) // page_size
+                
+                print(f"DEBUG database.py: {len(logs)} log verisi döndürüldü, toplam: {total_count}, sayfa: {total_pages}")
+                
+                return {
+                    'logs': logs,
+                    'totalCount': total_count,
+                    'totalPages': total_pages,
+                    'currentPage': page
+                }
         except Exception as e:
             print(f"DEBUG database.py: Hata oluştu: {e}")
             import traceback
