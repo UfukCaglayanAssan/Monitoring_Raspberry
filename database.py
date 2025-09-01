@@ -1067,12 +1067,15 @@ class BatteryDatabase:
                     for battery_address in sorted(battery_data.keys()):
                         logs.append(battery_data[battery_address])
             
-            # Toplam sayfa sayısını hesapla
-            count_query = '''
-                SELECT COUNT(DISTINCT timestamp, arm, k)
-                FROM battery_data
-                WHERE k > 2
-            '''
+                            # Toplam sayfa sayısını hesapla
+                count_query = '''
+                    SELECT COUNT(*)
+                    FROM (
+                        SELECT DISTINCT timestamp, arm, k
+                        FROM battery_data
+                        WHERE k > 2
+                    )
+                '''
             
             count_params = []
             
