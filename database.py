@@ -961,11 +961,13 @@ class BatteryDatabase:
     
     def get_grouped_battery_logs(self, page=1, page_size=50, filters=None, language='tr'):
         """Gruplandırılmış batarya log verilerini getir"""
+        print(f"DEBUG database.py: get_grouped_battery_logs çağrıldı - page={page}, page_size={page_size}, filters={filters}, language={language}")
         if filters is None:
             filters = {}
         
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
             
             # Önce benzersiz timestamp'leri bul (k=2 kol verisi, k>2 batarya verisi)
             timestamp_query = '''
@@ -1102,6 +1104,11 @@ class BatteryDatabase:
                 'totalPages': total_pages,
                 'currentPage': page
             }
+        except Exception as e:
+            print(f"DEBUG database.py: Hata oluştu: {e}")
+            import traceback
+            traceback.print_exc()
+            raise e
     
     def get_grouped_arm_logs(self, page=1, page_size=50, filters=None, language='tr'):
         """Gruplandırılmış kol log verilerini getir"""
