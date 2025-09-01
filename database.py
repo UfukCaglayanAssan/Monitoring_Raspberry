@@ -969,12 +969,12 @@ class BatteryDatabase:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
             
-            # Önce benzersiz timestamp'leri bul (k=2 kol verisi, k>2 batarya verisi)
-            timestamp_query = '''
-                SELECT DISTINCT timestamp, arm
-                FROM battery_data
-                WHERE k > 2
-            '''
+                            # Önce benzersiz timestamp'leri bul (sadece batarya verileri, k>2)
+                timestamp_query = '''
+                    SELECT DISTINCT timestamp, arm
+                    FROM battery_data
+                    WHERE k > 2
+                '''
             
             timestamp_params = []
             
@@ -1041,7 +1041,7 @@ class BatteryDatabase:
                             battery_data[battery_address] = {
                                 'timestamp': timestamp,
                                 'arm': arm,
-                                'batteryAddress': battery_address,
+                                'batteryAddress': battery_address - 2,  # 2 eksiği göster
                                 'voltage': None,
                                 'charge_status': None,
                                 'temperature': None,
