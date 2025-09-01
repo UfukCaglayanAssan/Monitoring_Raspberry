@@ -273,7 +273,16 @@ class BatteryLogsPage {
 }
 
 // Sayfa yüklendiğinde başlat
-document.addEventListener('DOMContentLoaded', () => {
-    window.batteryLogsPage = new BatteryLogsPage();
-    window.batteryLogsPage.init();
-});
+function initBatteryLogsPage() {
+    console.log('🔧 initBatteryLogsPage() çağrıldı');
+    if (!window.batteryLogsPage) {
+        window.batteryLogsPage = new BatteryLogsPage();
+        window.batteryLogsPage.init();
+    }
+}
+
+// Hem DOMContentLoaded hem de manuel çağrı için
+document.addEventListener('DOMContentLoaded', initBatteryLogsPage);
+
+// Global olarak erişilebilir yap
+window.initBatteryLogsPage = initBatteryLogsPage;

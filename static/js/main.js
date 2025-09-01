@@ -161,6 +161,10 @@ class App {
                 // Script yüklendi, sayfa başlat
                 if (window[`${page}Page`]) {
                     window[`${page}Page`].init();
+                } else if (window[`init${page.charAt(0).toUpperCase() + page.slice(1).replace('-', '')}Page`]) {
+                    // Özel init fonksiyonu varsa çağır
+                    const initFunctionName = `init${page.charAt(0).toUpperCase() + page.slice(1).replace('-', '')}Page`;
+                    window[initFunctionName]();
                 }
             };
             script.onerror = () => {

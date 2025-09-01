@@ -259,7 +259,16 @@ class ArmLogsPage {
 }
 
 // Sayfa yüklendiğinde başlat
-document.addEventListener('DOMContentLoaded', () => {
-    window.armLogsPage = new ArmLogsPage();
-    window.armLogsPage.init();
-});
+function initArmLogsPage() {
+    console.log('🔧 initArmLogsPage() çağrıldı');
+    if (!window.armLogsPage) {
+        window.armLogsPage = new ArmLogsPage();
+        window.armLogsPage.init();
+    }
+}
+
+// Hem DOMContentLoaded hem de manuel çağrı için
+document.addEventListener('DOMContentLoaded', initArmLogsPage);
+
+// Global olarak erişilebilir yap
+window.initArmLogsPage = initArmLogsPage;
