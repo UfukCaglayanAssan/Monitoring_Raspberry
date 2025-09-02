@@ -539,6 +539,43 @@ def get_arm_alarm_description(error_msb):
     else:
         return None
 
+@app.route('/api/send-config-to-device', methods=['POST'])
+def send_config_to_device():
+    """Konfigürasyonu cihaza gönder"""
+    try:
+        data = request.get_json()
+        command = data.get('command', '5 5 0x7A')
+        
+        # Konfigürasyonu JSON dosyasına kaydet (main.py için)
+        config_data = {
+            'type': 'send_to_device',
+            'command': command,
+            'timestamp': int(time.time() * 1000)
+        }
+        
+        try:
+            with open('pending_config.json', 'w', encoding='utf-8') as f:
+                json.dump(config_data, f, indent=2, ensure_ascii=False)
+            print(f"Konfigürasyon cihaza gönderilecek: {command}")
+        except Exception as e:
+            print(f"Konfigürasyon dosyaya kaydedilirken hata: {e}")
+            return jsonify({
+                'success': False,
+                'message': 'Konfigürasyon kaydedilemedi'
+            }), 500
+        
+        return jsonify({
+            'success': True,
+            'message': f'Konfigürasyon cihaza gönderildi: {command}',
+            'command': command
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
 if __name__ == '__main__':
     print("Flask web uygulaması başlatılıyor...")
     print(f"Veritabanı boyutu: {db.get_database_size():.2f} MB")

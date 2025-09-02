@@ -7,7 +7,7 @@ class ConfigurationPage {
     init() {
         console.log('Configuration sayfası başlatıldı');
         this.bindEvents();
-        this.loadDefaultValues();
+        this.loadConfigurations();
     }
 
     bindEvents() {
@@ -26,18 +26,127 @@ class ConfigurationPage {
             this.resetToDefaults();
         });
 
-        // Kol seçimi değiştiğinde varsayılan değerleri yükle
+        // Konfigürasyonu cihaza gönder
+        document.getElementById('sendConfigToDevice').addEventListener('click', () => {
+            this.sendConfigToDevice();
+        });
+
+        // Kol seçimi değiştiğinde konfigürasyonları yükle
         document.getElementById('batArmSelect').addEventListener('change', (e) => {
             if (e.target.value) {
-                this.loadBatteryDefaultsForArm(parseInt(e.target.value));
+                this.loadBatteryConfigForSelectedArm(parseInt(e.target.value));
             }
         });
 
         document.getElementById('armArmSelect').addEventListener('change', (e) => {
             if (e.target.value) {
-                this.loadArmDefaultsForArm(parseInt(e.target.value));
+                this.loadArmConfigForSelectedArm(parseInt(e.target.value));
             }
         });
+    }
+
+    async loadConfigurations() {
+        try {
+            // DB'den konfigürasyonları yükle
+            const [batteryConfigs, armConfigs] = await Promise.all([
+                this.loadBatteryConfigsFromDB(),
+                this.loadArmConfigsFromDB()
+            ]);
+            
+            // İlk kol için konfigürasyonları yükle
+            this.loadBatteryConfigForArm(1, batteryConfigs);
+            this.loadArmConfigForArm(1, armConfigs);
+            
+            // Select'leri ilk kol olarak ayarla
+            document.getElementById('batArmSelect').value = '1';
+            document.getElementById('armArmSelect').value = '1';
+        } catch (error) {
+            console.error('Konfigürasyonlar yüklenirken hata:', error);
+            // Hata durumunda default değerleri yükle
+            this.loadDefaultValues();
+        }
+    }
+
+    async loadBatteryConfigsFromDB() {
+        try {
+            const response = await fetch('/api/batconfigs');
+            const result = await response.json();
+            return result.success ? result.data : [];
+        } catch (error) {
+            console.error('Batarya konfigürasyonları yüklenirken hata:', error);
+            return [];
+        }
+    }
+
+    async loadArmConfigsFromDB() {
+        try {
+            const response = await fetch('/api/armconfigs');
+            const result = await response.json();
+            return result.success ? result.data : [];
+        } catch (error) {
+            console.error('Kol konfigürasyonları yüklenirken hata:', error);
+            return [];
+        }
+    }
+
+    loadBatteryConfigForArm(armValue, configs) {
+        // DB'den bu kol için konfigürasyon bul
+        const config = configs.find(c => c.arm === armValue);
+        
+        if (config) {
+            // DB'deki değerleri kullan
+            document.getElementById('Vmin').value = config.Vmin;
+            document.getElementById('Vmax').value = config.Vmax;
+            document.getElementById('Vnom').value = config.Vnom;
+            document.getElementById('Rintnom').value = config.Rintnom;
+            document.getElementById('Tempmin_D').value = config.Tempmin_D;
+            document.getElementById('Tempmax_D').value = config.Tempmax_D;
+            document.getElementById('Tempmin_PN').value = config.Tempmin_PN;
+            document.getElementById('Tempmaks_PN').value = config.Tempmaks_PN;
+            document.getElementById('Socmin').value = config.Socmin;
+            document.getElementById('Sohmin').value = config.Sohmin;
+        } else {
+            // DB'de yoksa default değerleri kullan
+            this.loadBatteryDefaultsForArm(armValue);
+        }
+    }
+
+    loadArmConfigForArm(armValue, configs) {
+        // DB'den bu kol için konfigürasyon bul
+        const config = configs.find(c => c.arm === armValue);
+        
+        if (config) {
+            // DB'deki değerleri kullan
+            document.getElementById('akimKats').value = config.akimKats;
+            document.getElementById('akimMax').value = config.akimMax;
+            document.getElementById('nemMin').value = config.nemMin;
+            document.getElementById('nemMax').value = config.nemMax;
+            document.getElementById('tempMin').value = config.tempMin;
+            document.getElementById('tempMax').value = config.tempMax;
+        } else {
+            // DB'de yoksa default değerleri kullan
+            this.loadArmDefaultsForArm(armValue);
+        }
+    }
+
+    async loadBatteryConfigForSelectedArm(armValue) {
+        try {
+            const configs = await this.loadBatteryConfigsFromDB();
+            this.loadBatteryConfigForArm(armValue, configs);
+        } catch (error) {
+            console.error('Batarya konfigürasyonu yüklenirken hata:', error);
+            this.loadBatteryDefaultsForArm(armValue);
+        }
+    }
+
+    async loadArmConfigForSelectedArm(armValue) {
+        try {
+            const configs = await this.loadArmConfigsFromDB();
+            this.loadArmConfigForArm(armValue, configs);
+        } catch (error) {
+            console.error('Kol konfigürasyonu yüklenirken hata:', error);
+            this.loadArmDefaultsForArm(armValue);
+        }
     }
 
     loadDefaultValues() {
@@ -81,7 +190,7 @@ class ConfigurationPage {
             Vmin: 10.12,
             Vmax: 13.95,
             Vnom: 11.00,
-            Rintnom: 150,
+            Rintnom: 20,
             Tempmin_D: 15,
             Tempmax_D: 55,
             Tempmin_PN: 15,
@@ -200,6 +309,38 @@ class ConfigurationPage {
         if (confirm('Tüm konfigürasyonları varsayılan değerlere sıfırlamak istediğinizden emin misiniz?')) {
             this.loadDefaultValues();
             alert('Konfigürasyonlar varsayılan değerlere sıfırlandı!');
+        }
+    }
+
+    async sendConfigToDevice() {
+        if (confirm('Konfigürasyonu cihaza göndermek istediğinizden emin misiniz?')) {
+            try {
+                console.log('Konfigürasyon cihaza gönderiliyor...');
+                
+                const response = await fetch('/api/send-config-to-device', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        command: '5 5 0x7A'
+                    })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        alert('Konfigürasyon başarıyla cihaza gönderildi!');
+                    } else {
+                        alert('Hata: ' + result.message);
+                    }
+                } else {
+                    alert('Konfigürasyon gönderilemedi!');
+                }
+            } catch (error) {
+                console.error('Konfigürasyon gönderilirken hata:', error);
+                alert('Konfigürasyon gönderilirken hata oluştu!');
+            }
         }
     }
 }
