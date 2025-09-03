@@ -37,20 +37,105 @@ class AlarmsPage {
     // Alarm geçmişi toggle fonksiyonu
     toggleAlarmHistory() {
         const alarmHistoryContainer = document.getElementById('alarmHistoryContainer');
-        if (alarmHistoryContainer) {
+        const alarmsTable = document.getElementById('alarmsTable');
+        const buttonText = document.getElementById('toggleButtonText');
+        
+        if (alarmHistoryContainer && alarmsTable) {
             if (alarmHistoryContainer.style.display === 'none' || 
                 alarmHistoryContainer.style.display === '') {
+                // Alarm geçmişini göster
                 alarmHistoryContainer.style.display = 'block';
+                alarmsTable.style.display = 'none';
                 this.loadAlarmHistory();
+                if (buttonText) buttonText.textContent = 'Aktif Alarmlar';
             } else {
+                // Aktif alarmları göster
                 alarmHistoryContainer.style.display = 'none';
+                alarmsTable.style.display = 'table';
+                this.loadAlarms(); // Aktif alarmları yeniden yükle
+                if (buttonText) buttonText.textContent = 'Alarm Geçmişi';
             }
         }
     }
 
-    loadAlarmHistory() {
+    async loadAlarmHistory() {
         console.log('Alarm geçmişi yükleniyor...');
-        // Burada alarm geçmişi API'den çekilecek
+        try {
+            // Tüm alarmları (aktif + düzelen) getir
+            const response = await fetch(`/api/alarms?show_resolved=true&page=1&pageSize=100`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.success) {
+                this.renderAlarmHistory(data.alarms);
+            } else {
+                console.error('Alarm geçmişi yüklenirken hata:', data.message);
+            }
+        } catch (error) {
+            console.error('Alarm geçmişi yüklenirken hata:', error);
+        }
+    }
+
+    renderAlarmHistory(alarms) {
+        const container = document.getElementById('alarmHistoryContainer');
+        if (!container) return;
+
+        if (alarms.length === 0) {
+            container.innerHTML = `
+                <div class="no-data-message">
+                    <i class="fas fa-check-circle"></i>
+                    <h3>Alarm Geçmişi Yok</h3>
+                    <p>Henüz alarm geçmişi bulunmuyor.</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Alarm geçmişi tablosu oluştur
+        container.innerHTML = `
+            <div class="alarm-history-content">
+                <h4>Alarm Geçmişi</h4>
+                <div class="table-container">
+                    <table class="alarms-table">
+                        <thead>
+                            <tr>
+                                <th>Zaman</th>
+                                <th>Kol</th>
+                                <th>Batarya</th>
+                                <th>Açıklama</th>
+                                <th>Durum</th>
+                                <th>Çözüm Zamanı</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${alarms.map(alarm => `
+                                <tr>
+                                    <td>${this.formatTimestamp(alarm.timestamp)}</td>
+                                    <td>${alarm.arm}</td>
+                                    <td>${alarm.battery || 'Kol Alarmı'}</td>
+                                    <td>${alarm.description}</td>
+                                    <td>
+                                        <span class="status-badge ${this.getStatusClass(alarm.status)}">
+                                            ${alarm.status === 'resolved' || alarm.status === 'Düzeldi' ? 'Düzeldi' : 'Aktif'}
+                                        </span>
+                                    </td>
+                                    <td>${alarm.resolved_at ? this.formatTimestamp(alarm.resolved_at) : '-'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
     }
 
     updatePagination() {
