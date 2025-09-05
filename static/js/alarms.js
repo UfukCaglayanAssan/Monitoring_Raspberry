@@ -337,11 +337,11 @@ function initAlarmsPage() {
     }
 }
 
-// Hem DOMContentLoaded hem de manuel çağrı için
-document.addEventListener('DOMContentLoaded', initAlarmsPage);
-
 // Global olarak erişilebilir yap
 window.initAlarmsPage = initAlarmsPage;
+
+// Hem DOMContentLoaded hem de manuel çağrı için
+document.addEventListener('DOMContentLoaded', initAlarmsPage);
 
 
 

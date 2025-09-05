@@ -172,6 +172,9 @@ class App {
                     } else if (page === 'arm-logs' && window.initArmLogsPage) {
                         console.log('Calling initArmLogsPage');
                         window.initArmLogsPage();
+                    } else if (page === 'alarms' && window.initAlarmsPage) {
+                        console.log('Calling initAlarmsPage');
+                        window.initAlarmsPage();
                     } else {
                         console.log(`No init function found for ${page}`);
                     }

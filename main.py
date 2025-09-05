@@ -26,6 +26,7 @@ last_k_value_lock = threading.Lock()  # Thread-safe erişim için
 
 # Database instance
 db = BatteryDatabase()
+db_lock = threading.Lock()  # Veritabanı işlemleri için lock
 
 pi = pigpio.pi()
 pi.set_mode(TX_PIN, pigpio.OUTPUT)
@@ -211,27 +212,29 @@ def db_worker():
                 raw_bytes = [int(b, 16) for b in data]
                 timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
                 
-                # Detaylı console log
-                print(f"\n*** BATKON ALARM VERİSİ ALGILANDI - {timestamp} ***")
-                print(f"Arm: {arm_value}, Battery: {battery}, Error MSB: {error_msb}, Error LSB: {error_lsb}")
-                print(f"Ham Veri: {data}")
-                
                 # Batkon alarm verisi işleme
                 arm_value = int(data[3], 16)
                 battery = int(data[2], 16)
                 error_msb = int(data[4], 16)
                 error_lsb = int(data[5], 16)
+                
+                # Detaylı console log
+                print(f"\n*** BATKON ALARM VERİSİ ALGILANDI - {timestamp} ***")
+                print(f"Arm: {arm_value}, Battery: {battery}, Error MSB: {error_msb}, Error LSB: {error_lsb}")
+                print(f"Ham Veri: {data}")
                 alarm_timestamp = int(time.time() * 1000)
                 
                 # Eğer errorlsb=1 ve errormsb=1 ise, mevcut alarmı düzelt
                 if error_lsb == 1 and error_msb == 1:
-                    if db.resolve_alarm(arm_value, battery):
-                        print(f"✓ Batkon alarm düzeltildi - Arm: {arm_value}, Battery: {battery}")
-                    else:
-                        print(f"⚠ Düzeltilecek aktif alarm bulunamadı - Arm: {arm_value}, Battery: {battery}")
+                    with db_lock:
+                        if db.resolve_alarm(arm_value, battery):
+                            print(f"✓ Batkon alarm düzeltildi - Arm: {arm_value}, Battery: {battery}")
+                        else:
+                            print(f"⚠ Düzeltilecek aktif alarm bulunamadı - Arm: {arm_value}, Battery: {battery}")
                 else:
                     # Yeni alarm ekle
-                    db.insert_alarm(arm_value, battery, error_msb, error_lsb, alarm_timestamp)
+                    with db_lock:
+                        db.insert_alarm(arm_value, battery, error_msb, error_lsb, alarm_timestamp)
                     print("✓ Yeni Batkon alarm SQLite'ye kaydedildi")
                 continue
 
@@ -249,7 +252,8 @@ def db_worker():
                 missing_timestamp = int(time.time() * 1000)
                 
                 # SQLite'ye kaydet
-                db.insert_missing_data(arm_value, slave_value, status_value, missing_timestamp)
+                with db_lock:
+                    db.insert_missing_data(arm_value, slave_value, status_value, missing_timestamp)
                 print("✓ Missing data SQLite'ye kaydedildi")
                 continue
 
@@ -381,10 +385,11 @@ def db_worker():
                     try:
                         updated_at = int(time.time() * 1000)
                         # Her arm için ayrı kayıt oluştur
-                        db.insert_arm_slave_counts(1, arm1, updated_at)
-                        db.insert_arm_slave_counts(2, arm2, updated_at)
-                        db.insert_arm_slave_counts(3, arm3, updated_at)
-                        db.insert_arm_slave_counts(4, arm4, updated_at)
+                        with db_lock:
+                            db.insert_arm_slave_counts(1, arm1, updated_at)
+                            db.insert_arm_slave_counts(2, arm2, updated_at)
+                            db.insert_arm_slave_counts(3, arm3, updated_at)
+                            db.insert_arm_slave_counts(4, arm4, updated_at)
                         print("✓ Armslavecounts SQLite'ye kaydedildi")
                         
                     except Exception as e:
@@ -402,7 +407,8 @@ def db_worker():
                             status_value = raw_bytes[4]
                             balance_timestamp = updated_at
                             
-                            db.insert_passive_balance(arm_value, slave_value, status_value, balance_timestamp)
+                            with db_lock:
+                                db.insert_passive_balance(arm_value, slave_value, status_value, balance_timestamp)
                             print(f"✓ Balans SQLite'ye kaydedildi: Arm={arm_value}, Slave={slave_value}, Status={status_value}")
                             program_start_time = updated_at
                     except Exception as e:
@@ -421,19 +427,22 @@ def db_worker():
                     
                     # Eğer error_msb=1 veya error_msb=0 ise, mevcut alarmı düzelt
                     if error_msb == 1 or error_msb == 0:
-                        if db.resolve_alarm(arm_value, 2):  # Hatkon alarmları için battery=2
-                            print(f"✓ Hatkon alarm düzeltildi - Arm: {arm_value} (error_msb: {error_msb})")
-                        else:
-                            print(f"⚠ Düzeltilecek aktif Hatkon alarm bulunamadı - Arm: {arm_value}")
+                        with db_lock:
+                            if db.resolve_alarm(arm_value, 2):  # Hatkon alarmları için battery=2
+                                print(f"✓ Hatkon alarm düzeltildi - Arm: {arm_value} (error_msb: {error_msb})")
+                            else:
+                                print(f"⚠ Düzeltilecek aktif Hatkon alarm bulunamadı - Arm: {arm_value}")
                     else:
                         # Yeni alarm ekle
-                        db.insert_alarm(arm_value, 2, error_msb, error_lsb, alarm_timestamp)
+                        with db_lock:
+                            db.insert_alarm(arm_value, 2, error_msb, error_lsb, alarm_timestamp)
                         print("✓ Yeni Hatkon alarm SQLite'ye kaydedildi")
                     continue
 
             # Batch kontrolü ve kayıt
             if len(batch) >= 100 or (time.time() - last_insert) > 5:
-                db.insert_battery_data_batch(batch)
+                with db_lock:
+                    db.insert_battery_data_batch(batch)
                 batch = []
                 last_insert = time.time()
 
@@ -441,7 +450,8 @@ def db_worker():
             
         except queue.Empty:
             if batch:
-                db.insert_battery_data_batch(batch)
+                with db_lock:
+                    db.insert_battery_data_batch(batch)
                 batch = []
                 last_insert = time.time()
         except Exception as e:
@@ -451,38 +461,39 @@ def db_worker():
 def initialize_config_tables():
     """Konfigürasyon tablolarını oluştur ve varsayılan verileri yükle"""
     try:
-        db.execute_query('''
-            CREATE TABLE IF NOT EXISTS batconfigs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                armValue INTEGER NOT NULL,
-                Vmin REAL NOT NULL,
-                Vmax REAL NOT NULL,
-                Vnom REAL NOT NULL,
-                Rintnom INTEGER NOT NULL,
-                Tempmin_D INTEGER NOT NULL,
-                Tempmax_D INTEGER NOT NULL,
-                Tempmin_PN INTEGER NOT NULL,
-                Tempmaks_PN INTEGER NOT NULL,
-                Socmin INTEGER NOT NULL,
-                Sohmin INTEGER NOT NULL,
-                time INTEGER NOT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        db.execute_query('''
-            CREATE TABLE IF NOT EXISTS armconfigs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                armValue INTEGER NOT NULL,
-                akimKats INTEGER NOT NULL,
-                akimMax INTEGER NOT NULL,
-                nemMax INTEGER NOT NULL,
-                nemMin INTEGER NOT NULL,
-                tempMax INTEGER NOT NULL,
-                tempMin INTEGER NOT NULL,
-                time INTEGER NOT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
+        with db_lock:
+            db.execute_query('''
+                CREATE TABLE IF NOT EXISTS batconfigs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    armValue INTEGER NOT NULL,
+                    Vmin REAL NOT NULL,
+                    Vmax REAL NOT NULL,
+                    Vnom REAL NOT NULL,
+                    Rintnom INTEGER NOT NULL,
+                    Tempmin_D INTEGER NOT NULL,
+                    Tempmax_D INTEGER NOT NULL,
+                    Tempmin_PN INTEGER NOT NULL,
+                    Tempmaks_PN INTEGER NOT NULL,
+                    Socmin INTEGER NOT NULL,
+                    Sohmin INTEGER NOT NULL,
+                    time INTEGER NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            db.execute_query('''
+                CREATE TABLE IF NOT EXISTS armconfigs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    armValue INTEGER NOT NULL,
+                    akimKats INTEGER NOT NULL,
+                    akimMax INTEGER NOT NULL,
+                    nemMax INTEGER NOT NULL,
+                    nemMin INTEGER NOT NULL,
+                    tempMax INTEGER NOT NULL,
+                    tempMin INTEGER NOT NULL,
+                    time INTEGER NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
         print("✓ Konfigürasyon tabloları oluşturuldu")
         load_default_configs()
     except Exception as e:
@@ -491,21 +502,22 @@ def initialize_config_tables():
 def load_default_configs():
     """Varsayılan konfigürasyon değerlerini yükle"""
     try:
-        # 4 kol için varsayılan batarya konfigürasyonları
-        for arm in range(1, 5):
-            db.execute_query('''
-                INSERT OR IGNORE INTO batconfigs 
-                (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmaks_PN, Socmin, Sohmin, time)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (arm, 10.12, 13.95, 11.00, 150, 15, 55, 15, 30, 30, 30, int(time.time() * 1000)))
-        
-        # 4 kol için varsayılan kol konfigürasyonları
-        for arm in range(1, 5):
-            db.execute_query('''
-                INSERT OR IGNORE INTO armconfigs 
-                (armValue, akimKats, akimMax, nemMax, nemMin, tempMax, tempMin, time)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (arm, 150, 1000, 100, 0, 65, 15, int(time.time() * 1000)))
+        with db_lock:
+            # 4 kol için varsayılan batarya konfigürasyonları
+            for arm in range(1, 5):
+                db.execute_query('''
+                    INSERT OR IGNORE INTO batconfigs 
+                    (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmaks_PN, Socmin, Sohmin, time)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (arm, 10.12, 13.95, 11.00, 150, 15, 55, 15, 30, 30, 30, int(time.time() * 1000)))
+            
+            # 4 kol için varsayılan kol konfigürasyonları
+            for arm in range(1, 5):
+                db.execute_query('''
+                    INSERT OR IGNORE INTO armconfigs 
+                    (armValue, akimKats, akimMax, nemMax, nemMin, tempMax, tempMin, time)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (arm, 150, 1000, 100, 0, 65, 15, int(time.time() * 1000)))
         
         print("✓ Varsayılan konfigürasyon değerleri yüklendi")
     except Exception as e:
@@ -514,14 +526,15 @@ def load_default_configs():
 def save_batconfig_to_db(config_data):
     """Batarya konfigürasyonunu veritabanına kaydet ve cihaza gönder"""
     try:
-        db.execute_query('''
-            INSERT OR REPLACE INTO batconfigs 
-            (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmaks_PN, Socmin, Sohmin, time)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (config_data['armValue'], config_data['Vmin'], config_data['Vmax'], config_data['Vnom'], 
-              config_data['Rintnom'], config_data['Tempmin_D'], config_data['Tempmax_D'], 
-              config_data['Tempmin_PN'], config_data['Tempmaks_PN'], config_data['Socmin'], 
-              config_data['Sohmin'], config_data['time']))
+        with db_lock:
+            db.execute_query('''
+                INSERT OR REPLACE INTO batconfigs 
+                (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmaks_PN, Socmin, Sohmin, time)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (config_data['armValue'], config_data['Vmin'], config_data['Vmax'], config_data['Vnom'], 
+                  config_data['Rintnom'], config_data['Tempmin_D'], config_data['Tempmax_D'], 
+                  config_data['Tempmin_PN'], config_data['Tempmaks_PN'], config_data['Socmin'], 
+                  config_data['Sohmin'], config_data['time']))
         
         print(f"✓ Kol {config_data['armValue']} batarya konfigürasyonu veritabanına kaydedildi")
         send_batconfig_to_device(config_data)
@@ -531,13 +544,14 @@ def save_batconfig_to_db(config_data):
 def save_armconfig_to_db(config_data):
     """Kol konfigürasyonunu veritabanına kaydet ve cihaza gönder"""
     try:
-        db.execute_query('''
-            INSERT OR REPLACE INTO armconfigs 
-            (armValue, akimKats, akimMax, nemMax, nemMin, tempMax, tempMin, time)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (config_data['armValue'], config_data['akimKats'], config_data['akimMax'], 
-              config_data['nemMax'], config_data['nemMin'], config_data['tempMax'], 
-              config_data['tempMin'], config_data['time']))
+        with db_lock:
+            db.execute_query('''
+                INSERT OR REPLACE INTO armconfigs 
+                (armValue, akimKats, akimMax, nemMax, nemMin, tempMax, tempMin, time)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (config_data['armValue'], config_data['akimKats'], config_data['akimMax'], 
+                  config_data['nemMax'], config_data['nemMin'], config_data['tempMax'], 
+                  config_data['tempMin'], config_data['time']))
         
         print(f"✓ Kol {config_data['armValue']} konfigürasyonu veritabanına kaydedildi")
         send_armconfig_to_device(config_data)
