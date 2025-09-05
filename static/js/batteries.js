@@ -12,6 +12,7 @@ class BatteriesPage {
 
     init() {
         this.bindEvents();
+        this.loadActiveArms(); // Önce aktif kolları yükle
         this.loadBatteries();
         this.startAutoRefresh();
     }
@@ -43,7 +44,53 @@ class BatteriesPage {
         });
         console.log('Global language listener eklendi');
 
+    }
 
+    async loadActiveArms() {
+        // Aktif kolları yükle ve butonları güncelle
+        try {
+            const response = await fetch('/api/active-arms', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    this.updateArmButtons(data.activeArms);
+                }
+            }
+        } catch (error) {
+            console.error('Aktif kollar yüklenirken hata:', error);
+        }
+    }
+
+    updateArmButtons(activeArms) {
+        // Kol butonlarını güncelle - sadece aktif kolları göster
+        const armButtons = document.querySelectorAll('.arm-btn');
+        
+        // Tüm butonları gizle
+        armButtons.forEach(button => {
+            button.style.display = 'none';
+        });
+        
+        // Aktif kolları göster
+        activeArms.forEach(armData => {
+            const button = document.querySelector(`[data-arm="${armData.arm}"]`);
+            if (button) {
+                button.style.display = 'block';
+                // Batarya sayısını göster
+                const batteryCount = armData.batteryCount;
+                button.querySelector('.battery-count').textContent = `${batteryCount} Batarya`;
+            }
+        });
+        
+        // İlk aktif kolu seç
+        if (activeArms.length > 0) {
+            this.selectArm(activeArms[0].arm);
+        }
     }
     
     selectArm(arm) {
@@ -450,6 +497,20 @@ if (document.readyState === 'loading') {
 window.addEventListener('error', (event) => {
     console.error('Global error:', event.error);
 });
+
+// Sayfa yüklendiğinde başlat
+function initBatteriesPage() {
+    console.log('🔧 initBatteriesPage() çağrıldı');
+    if (!window.batteriesPage) {
+        window.batteriesPage = new BatteriesPage();
+    }
+}
+
+// Global olarak erişilebilir yap
+window.initBatteriesPage = initBatteriesPage;
+
+// Hem DOMContentLoaded hem de manuel çağrı için
+document.addEventListener('DOMContentLoaded', initBatteriesPage);
 
 // Unhandled promise rejection handler
 window.addEventListener('unhandledrejection', (event) => {

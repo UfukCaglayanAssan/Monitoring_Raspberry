@@ -205,6 +205,40 @@ def get_batteries():
             'message': str(e)
         }), 500
 
+@app.route('/api/active-arms', methods=['GET'])
+def get_active_arms():
+    """Aktif kolları getir (armslavecount > 0)"""
+    try:
+        active_arms = db.get_active_arms()
+        return jsonify({
+            'success': True,
+            'activeArms': active_arms
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/passive-balance', methods=['GET'])
+def get_passive_balance():
+    """Passive balance verilerini getir"""
+    try:
+        arm = request.args.get('arm')
+        if arm:
+            arm = int(arm)
+        
+        balance_data = db.get_passive_balance(arm)
+        return jsonify({
+            'success': True,
+            'balanceData': balance_data
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
 @app.route('/api/batteries/export', methods=['POST'])
 def export_batteries():
     """Batarya verilerini CSV olarak export et"""

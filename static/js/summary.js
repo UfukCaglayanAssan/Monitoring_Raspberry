@@ -289,17 +289,17 @@ class SummaryPage {
 
 // Sayfa yüklendiğinde başlat
 function initSummaryPage() {
-    if (document.querySelector('.summary-page')) {
-        new SummaryPage();
+    console.log('🔧 initSummaryPage() çağrıldı');
+    if (!window.summaryPage) {
+        window.summaryPage = new SummaryPage();
     }
 }
 
-// DOMContentLoaded event listener
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initSummaryPage);
-} else {
-    initSummaryPage();
-}
+// Global olarak erişilebilir yap
+window.initSummaryPage = initSummaryPage;
+
+// Hem DOMContentLoaded hem de manuel çağrı için
+document.addEventListener('DOMContentLoaded', initSummaryPage);
 
 
 

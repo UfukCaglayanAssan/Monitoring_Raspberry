@@ -17,6 +17,14 @@ RX_PIN = 16
 TX_PIN = 26
 BAUD_RATE = 9600
 
+# Armslavecount verilerini tutmak için
+arm_slave_counts = {1: 0, 2: 0, 3: 0, 4: 0}  # Her kol için batarya sayısı
+arm_slave_counts_lock = threading.Lock()  # Thread-safe erişim için
+
+# Missing data takibi için
+missing_data_tracker = set()  # (arm, battery) tuple'ları
+missing_data_lock = threading.Lock()  # Thread-safe erişim için
+
 # Periyot sistemi için global değişkenler
 current_period_timestamp = None
 period_active = False
@@ -68,6 +76,115 @@ def get_last_k_value():
     global last_k_value
     with last_k_value_lock:
         return last_k_value
+
+def load_arm_slave_counts_from_db():
+    """Veritabanından en son armslavecount değerlerini çek ve RAM'e yükle"""
+    try:
+        with db_lock:
+            # Her kol için en son armslavecount değerini çek
+            for arm in [1, 2, 3, 4]:
+                result = db.execute_query('''
+                    SELECT slave_count FROM arm_slave_counts 
+                    WHERE arm_value = ? 
+                    ORDER BY updated_at DESC 
+                    LIMIT 1
+                ''', (arm,))
+                
+                if result and len(result) > 0:
+                    slave_count = result[0][0]
+                    with arm_slave_counts_lock:
+                        arm_slave_counts[arm] = slave_count
+                    print(f"✓ Kol {arm} armslavecount veritabanından yüklendi: {slave_count}")
+                else:
+                    print(f"⚠️ Kol {arm} için armslavecount verisi bulunamadı, varsayılan: 0")
+        
+        print(f"✓ RAM armslavecount değerleri güncellendi: {arm_slave_counts}")
+        
+    except Exception as e:
+        print(f"❌ Armslavecount verileri yüklenirken hata: {e}")
+
+def is_valid_arm_data(arm_value, k_value):
+    """Veri doğrulama: Sadece aktif kollar ve bataryalar işlenir"""
+    with arm_slave_counts_lock:
+        # Kol aktif mi kontrol et
+        if arm_slave_counts[arm_value] == 0:
+            print(f"⚠️ HATALI VERİ: Kol {arm_value} aktif değil (batarya sayısı: 0)")
+            return False
+        
+        # k=2 ise kol verisi, her zaman geçerli
+        if k_value == 2:
+            return True
+        
+        # Batarya verisi ise, k değeri batarya sayısından fazla olmamalı
+        if k_value > arm_slave_counts[arm_value]:
+            print(f"⚠️ HATALI VERİ: Kol {arm_value} için k={k_value} > batarya sayısı={arm_slave_counts[arm_value]}")
+            return False
+        
+        # k değeri 3'ten küçük olamaz (k=2 kol verisi, k=3+ batarya verisi)
+        if k_value < 3:
+            print(f"⚠️ HATALI VERİ: Kol {arm_value} için geçersiz k değeri: {k_value}")
+            return False
+        
+        return True
+
+def get_last_battery_info():
+    """En son batarya bilgisini döndür (arm, k)"""
+    with arm_slave_counts_lock:
+        last_arm = None
+        last_battery = None
+        
+        # Aktif kolları bul ve en son bataryayı belirle
+        for arm in [1, 2, 3, 4]:
+            if arm_slave_counts[arm] > 0:
+                last_arm = arm
+                last_battery = arm_slave_counts[arm]  # En son batarya numarası
+        
+        return last_arm, last_battery
+
+def is_period_complete(arm_value, k_value, is_missing_data=False):
+    """Periyot tamamlandı mı kontrol et"""
+    last_arm, last_battery = get_last_battery_info()
+    
+    if not last_arm or not last_battery:
+        return False
+    
+    # En son koldaki en son batarya verisi geldi mi?
+    if arm_value == last_arm and k_value == last_battery:
+        print(f"✅ PERİYOT TAMAMLANDI: En son batarya verisi geldi - Kol {arm_value}, Batarya {k_value}")
+        return True
+    
+    # Missing data geldi mi?
+    if is_missing_data:
+        print(f"✅ PERİYOT TAMAMLANDI: Missing data geldi - Kol {arm_value}, Batarya {k_value}")
+        return True
+    
+    return False
+
+def send_reset_system_signal():
+    """Reset system sinyali gönder (0x55 0x55 0x55)"""
+    try:
+        signal_data = [0x55, 0x55, 0x55]
+        wave_uart_send(pi, TX_PIN, signal_data, int(1e6 / BAUD_RATE))
+        print("🔄 Reset system sinyali gönderildi: 0x55 0x55 0x55")
+    except Exception as e:
+        print(f"❌ Reset system sinyali gönderilirken hata: {e}")
+
+def add_missing_data(arm_value, battery_value):
+    """Missing data ekle"""
+    with missing_data_lock:
+        missing_data_tracker.add((arm_value, battery_value))
+        print(f"📝 Missing data eklendi: Kol {arm_value}, Batarya {battery_value}")
+
+def is_new_missing_data(arm_value, battery_value):
+    """Yeni missing data mı kontrol et"""
+    with missing_data_lock:
+        return (arm_value, battery_value) not in missing_data_tracker
+
+def clear_missing_data():
+    """Missing data listesini temizle"""
+    with missing_data_lock:
+        missing_data_tracker.clear()
+        print("🧹 Missing data listesi temizlendi")
 
 def Calc_SOH(x):
     if x is None:
@@ -251,6 +368,25 @@ def db_worker():
                 status_value = raw_bytes[4]
                 missing_timestamp = int(time.time() * 1000)
                 
+                # Missing data ekle
+                add_missing_data(arm_value, slave_value)
+                
+                # Yeni missing data mı kontrol et
+                if is_new_missing_data(arm_value, slave_value):
+                    print(f"🆕 YENİ MISSING DATA: Kol {arm_value}, Batarya {slave_value}")
+                    
+                    # Periyot tamamlandı mı kontrol et
+                    if is_period_complete(arm_value, slave_value, is_missing_data=True):
+                        # Periyot bitti, reset system sinyali gönder
+                        send_reset_system_signal()
+                        # Missing data listesini temizle
+                        clear_missing_data()
+                        # Yeni periyot başlat
+                        reset_period()
+                        get_period_timestamp()
+                else:
+                    print(f"🔄 TEKRAR MISSING DATA: Kol {arm_value}, Batarya {slave_value} - Reset sinyali gönderilmedi")
+                
                 # SQLite'ye kaydet
                 with db_lock:
                     db.insert_missing_data(arm_value, slave_value, status_value, missing_timestamp)
@@ -276,6 +412,20 @@ def db_worker():
                 if arm_value not in [1, 2, 3, 4]:
                     print(f"\nHATALI ARM DEĞERİ: {arm_value}")
                     continue
+                
+                # Veri doğrulama: Sadece aktif kollar ve bataryalar işlenir
+                if not is_valid_arm_data(arm_value, k_value):
+                    continue
+                
+                # Periyot tamamlandı mı kontrol et
+                if is_period_complete(arm_value, k_value, is_missing_data=False):
+                    # Periyot bitti, reset system sinyali gönder
+                    send_reset_system_signal()
+                    # Missing data listesini temizle
+                    clear_missing_data()
+                    # Yeni periyot başlat
+                    reset_period()
+                    get_period_timestamp()
                 
                 # Salt data hesapla
                 if dtype == 11 and k_value == 2:  # Nem hesapla
@@ -382,6 +532,15 @@ def db_worker():
                     arm1, arm2, arm3, arm4 = raw_bytes[2], raw_bytes[3], raw_bytes[4], raw_bytes[5]
                     print(f"armslavecounts verisi tespit edildi: arm1={arm1}, arm2={arm2}, arm3={arm3}, arm4={arm4}")
                     
+                    # RAM'de armslavecounts güncelle
+                    with arm_slave_counts_lock:
+                        arm_slave_counts[1] = arm1
+                        arm_slave_counts[2] = arm2
+                        arm_slave_counts[3] = arm3
+                        arm_slave_counts[4] = arm4
+                    
+                    print(f"✓ Armslavecounts RAM'e kaydedildi: {arm_slave_counts}")
+                    
                     try:
                         updated_at = int(time.time() * 1000)
                         # Her arm için ayrı kayıt oluştur
@@ -408,8 +567,8 @@ def db_worker():
                             balance_timestamp = updated_at
                             
                             with db_lock:
-                                db.insert_passive_balance(arm_value, slave_value, status_value, balance_timestamp)
-                            print(f"✓ Balans SQLite'ye kaydedildi: Arm={arm_value}, Slave={slave_value}, Status={status_value}")
+                                db.update_or_insert_passive_balance(arm_value, slave_value, status_value, balance_timestamp)
+                            print(f"✓ Balans güncellendi: Arm={arm_value}, Slave={slave_value}, Status={status_value}")
                             program_start_time = updated_at
                     except Exception as e:
                         print(f"Balans kayıt hatası: {e}")
@@ -749,6 +908,17 @@ def main():
     try:
         # Konfigürasyon tablolarını başlat
         initialize_config_tables()
+        
+        # Başlangıçta varsayılan armslavecount değerlerini ayarla
+        with arm_slave_counts_lock:
+            arm_slave_counts[1] = 0
+            arm_slave_counts[2] = 0
+            arm_slave_counts[3] = 0
+            arm_slave_counts[4] = 0
+        print(f"✓ Başlangıç varsayılan armslavecount değerleri: {arm_slave_counts}")
+        
+        # Veritabanından en son armslavecount değerlerini çek
+        load_arm_slave_counts_from_db()
         
         if not pi.connected:
             print("pigpio bağlantısı sağlanamadı!")

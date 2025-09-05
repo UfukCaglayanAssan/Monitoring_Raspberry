@@ -11,9 +11,22 @@ class AlarmsPage {
 
     init() {
         this.bindEvents();
-        this.loadAlarms();
+        this.resetToActiveAlarms(); // Her seferinde aktif alarmlara sıfırla
         this.startAutoRefresh();
-        this.updateButtonText(); // İlk açılışta buton metnini güncelle
+    }
+
+    // Her seferinde aktif alarmlara sıfırla
+    resetToActiveAlarms() {
+        this.showResolved = false; // Aktif alarmlar modu
+        this.currentPage = 1; // Sayfa sıfırla
+        this.loadAlarms();
+        this.updateButtonText();
+        
+        // Alarm geçmişi container'ını gizle
+        const alarmHistoryContainer = document.getElementById('alarmHistoryContainer');
+        if (alarmHistoryContainer) {
+            alarmHistoryContainer.style.display = 'none';
+        }
     }
 
     bindEvents() {
@@ -39,6 +52,7 @@ class AlarmsPage {
     toggleAlarmHistory() {
         const alarmHistoryContainer = document.getElementById('alarmHistoryContainer');
         const alarmsTable = document.getElementById('alarmsTable');
+        const noDataMessage = document.getElementById('noDataMessage');
         
         if (alarmHistoryContainer && alarmsTable) {
             if (alarmHistoryContainer.style.display === 'none' || 
@@ -46,6 +60,7 @@ class AlarmsPage {
                 // Alarm geçmişini göster
                 alarmHistoryContainer.style.display = 'block';
                 alarmsTable.style.display = 'none';
+                if (noDataMessage) noDataMessage.style.display = 'none'; // "Alarm Yok" mesajını gizle
                 this.loadAlarmHistory();
                 this.showResolved = true; // Geçmiş moduna geç
             } else {

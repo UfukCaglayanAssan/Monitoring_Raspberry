@@ -10,6 +10,7 @@ class App {
         this.bindEvents();
         this.loadPage('summary'); // İlk sayfa olarak özet'i yükle
         this.setLanguage(this.currentLanguage);
+        this.startAlarmCountRefresh(); // Alarm sayısı güncellemeyi başlat
     }
 
     bindEvents() {
@@ -175,6 +176,15 @@ class App {
                     } else if (page === 'alarms' && window.initAlarmsPage) {
                         console.log('Calling initAlarmsPage');
                         window.initAlarmsPage();
+                    } else if (page === 'summary' && window.initSummaryPage) {
+                        console.log('Calling initSummaryPage');
+                        window.initSummaryPage();
+                    } else if (page === 'batteries' && window.initBatteriesPage) {
+                        console.log('Calling initBatteriesPage');
+                        window.initBatteriesPage();
+                    } else if (page === 'configuration' && window.initConfigurationPage) {
+                        console.log('Calling initConfigurationPage');
+                        window.initConfigurationPage();
                     } else {
                         console.log(`No init function found for ${page}`);
                     }
@@ -326,5 +336,47 @@ window.utils = {
         setTimeout(() => {
             toast.remove();
         }, 3000);
+    }
+
+    // Alarm sayısı güncelleme
+    async updateAlarmCount() {
+        try {
+            const response = await fetch('/api/alarms?show_resolved=false&page=1&pageSize=1', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const alarmCount = data.totalCount || 0;
+                this.displayAlarmCount(alarmCount);
+            }
+        } catch (error) {
+            console.error('Alarm sayısı güncellenirken hata:', error);
+        }
+    }
+
+    displayAlarmCount(count) {
+        const badge = document.getElementById('alarmCount');
+        if (badge) {
+            if (count > 0) {
+                badge.textContent = count > 99 ? '99+' : count.toString();
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    }
+
+    startAlarmCountRefresh() {
+        // İlk yükleme
+        this.updateAlarmCount();
+        
+        // Her 30 saniyede bir güncelle
+        setInterval(() => {
+            this.updateAlarmCount();
+        }, 30000);
     }
 };

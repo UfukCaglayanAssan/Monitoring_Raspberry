@@ -7,6 +7,7 @@ class ConfigurationPage {
     init() {
         console.log('Configuration sayfası başlatıldı');
         this.bindEvents();
+        this.loadActiveArms(); // Önce aktif kolları yükle
         this.loadConfigurations();
     }
 
@@ -42,6 +43,50 @@ class ConfigurationPage {
             if (e.target.value) {
                 this.loadArmConfigForSelectedArm(parseInt(e.target.value));
             }
+        });
+    }
+
+    async loadActiveArms() {
+        // Aktif kolları yükle ve select'leri güncelle
+        try {
+            const response = await fetch('/api/active-arms', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    this.updateArmSelects(data.activeArms);
+                }
+            }
+        } catch (error) {
+            console.error('Aktif kollar yüklenirken hata:', error);
+        }
+    }
+
+    updateArmSelects(activeArms) {
+        // Kol select'lerini güncelle - sadece aktif kolları göster
+        const batArmSelect = document.getElementById('batArmSelect');
+        const armArmSelect = document.getElementById('armArmSelect');
+        
+        // Select'leri temizle
+        batArmSelect.innerHTML = '<option value="">Kol Seçin</option>';
+        armArmSelect.innerHTML = '<option value="">Kol Seçin</option>';
+        
+        // Aktif kolları ekle
+        activeArms.forEach(armData => {
+            const option1 = document.createElement('option');
+            option1.value = armData.arm;
+            option1.textContent = `Kol ${armData.arm} (${armData.batteryCount} Batarya)`;
+            batArmSelect.appendChild(option1);
+            
+            const option2 = document.createElement('option');
+            option2.value = armData.arm;
+            option2.textContent = `Kol ${armData.arm} (${armData.batteryCount} Batarya)`;
+            armArmSelect.appendChild(option2);
         });
     }
 
@@ -345,8 +390,19 @@ class ConfigurationPage {
     }
 }
 
-// Global instance oluştur
-window.configurationPage = new ConfigurationPage();
+// Sayfa yüklendiğinde başlat
+function initConfigurationPage() {
+    console.log('🔧 initConfigurationPage() çağrıldı');
+    if (!window.configurationPage) {
+        window.configurationPage = new ConfigurationPage();
+    }
+}
+
+// Global olarak erişilebilir yap
+window.initConfigurationPage = initConfigurationPage;
+
+// Hem DOMContentLoaded hem de manuel çağrı için
+document.addEventListener('DOMContentLoaded', initConfigurationPage);
 
 
 
