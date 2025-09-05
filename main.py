@@ -214,7 +214,7 @@ def db_worker():
                 
                 # Batkon alarm verisi işleme
                 arm_value = int(data[3], 16)
-                battery = int(data[2], 16)
+                battery = int(data[1], 16)  # 2. byte batarya numarası
                 error_msb = int(data[4], 16)
                 error_lsb = int(data[5], 16)
                 
