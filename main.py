@@ -85,8 +85,8 @@ def load_arm_slave_counts_from_db():
             for arm in [1, 2, 3, 4]:
                 result = db.execute_query('''
                     SELECT slave_count FROM arm_slave_counts 
-                    WHERE arm_value = ? 
-                    ORDER BY updated_at DESC 
+                    WHERE arm = ? 
+                    ORDER BY created_at DESC 
                     LIMIT 1
                 ''', (arm,))
                 
@@ -545,10 +545,10 @@ def db_worker():
                         updated_at = int(time.time() * 1000)
                         # Her arm için ayrı kayıt oluştur
                         with db_lock:
-                            db.insert_arm_slave_counts(1, arm1, updated_at)
-                            db.insert_arm_slave_counts(2, arm2, updated_at)
-                            db.insert_arm_slave_counts(3, arm3, updated_at)
-                            db.insert_arm_slave_counts(4, arm4, updated_at)
+                            db.insert_arm_slave_counts(1, arm1)
+                            db.insert_arm_slave_counts(2, arm2)
+                            db.insert_arm_slave_counts(3, arm3)
+                            db.insert_arm_slave_counts(4, arm4)
                         print("✓ Armslavecounts SQLite'ye kaydedildi")
                         
                     except Exception as e:

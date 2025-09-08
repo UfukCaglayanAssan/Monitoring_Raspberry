@@ -122,7 +122,6 @@ class BatteryDatabase:
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         arm INTEGER,
                         slave_count INTEGER,
-                        timestamp INTEGER,
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
@@ -401,14 +400,14 @@ class BatteryDatabase:
             
             conn.commit()
     
-    def insert_arm_slave_counts(self, arm, slave_count, timestamp):
+    def insert_arm_slave_counts(self, arm, slave_count):
         """Arm slave count verisi ekle"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO arm_slave_counts (arm, slave_count, timestamp)
-                VALUES (?, ?, ?)
-            ''', (arm, slave_count, timestamp))
+                INSERT INTO arm_slave_counts (arm, slave_count)
+                VALUES (?, ?)
+            ''', (arm, slave_count))
             conn.commit()
     
     def get_recent_data_with_translations(self, minutes=5, arm=None, battery=None, dtype=None, data_type=None, limit=100, language='tr'):
