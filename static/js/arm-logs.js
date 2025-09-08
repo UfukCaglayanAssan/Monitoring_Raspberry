@@ -320,4 +320,3 @@ function initArmLogsPage() {
 
 // Global olarak erişilebilir yap
 // window.initArmLogsPage = initArmLogsPage; // Kaldırıldı - karışıklığa neden oluyor
-}

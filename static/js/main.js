@@ -19,28 +19,47 @@ class App {
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                    const page = e.target.getAttribute('data-page');
-                    const toggle = e.target.getAttribute('data-toggle');
-                    
-                    if (page) {
-                        this.loadPage(page);
-                    } else if (toggle === 'submenu') {
-                        this.toggleSubmenu(e.target);
-                    }
+                const timestamp = new Date().toISOString();
+                const page = e.target.getAttribute('data-page');
+                const toggle = e.target.getAttribute('data-toggle');
+                
+                console.log(`🖱️ [${timestamp}] MENÜ TIKLAMA - Ana menü link tıklandı:`, {
+                    page: page,
+                    toggle: toggle,
+                    text: e.target.textContent.trim(),
+                    element: e.target
                 });
+                
+                if (page) {
+                    console.log(`📄 [${timestamp}] SAYFA YÜKLEME - Sayfa yükleniyor: ${page}`);
+                    this.loadPage(page);
+                } else if (toggle === 'submenu') {
+                    console.log(`📂 [${timestamp}] SUBMENU AÇMA - Alt menü açılıyor`);
+                    this.toggleSubmenu(e.target);
+                }
             });
+        });
 
             // Submenu linklerini dinle
         document.querySelectorAll('.submenu-link').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                    const page = e.target.getAttribute('data-page');
-                    if (page) {
-                        this.loadPage(page);
-                    }
+                const timestamp = new Date().toISOString();
+                const page = e.target.getAttribute('data-page');
+                
+                console.log(`🖱️ [${timestamp}] SUBMENU TIKLAMA - Alt menü link tıklandı:`, {
+                    page: page,
+                    text: e.target.textContent.trim(),
+                    element: e.target
                 });
+                
+                if (page) {
+                    console.log(`📄 [${timestamp}] SAYFA YÜKLEME - Alt menüden sayfa yükleniyor: ${page}`);
+                    this.loadPage(page);
+                }
             });
-            
+        });
+
             this.eventsBound = true;
         }
 
@@ -57,16 +76,21 @@ class App {
     }
 
     toggleSubmenu(link) {
+        const timestamp = new Date().toISOString();
         const navItem = link.closest('.nav-item');
         const submenu = navItem.querySelector('.submenu');
         const arrow = navItem.querySelector('.submenu-arrow');
         
+        console.log(`📂 [${timestamp}] SUBMENU TOGGLE - Alt menü durumu değiştiriliyor`);
+        
         if (submenu) {
             // Toggle submenu visibility
             if (submenu.style.display === 'block') {
+                console.log(`📤 [${timestamp}] SUBMENU KAPATILIYOR - Alt menü kapatılıyor`);
                 submenu.style.display = 'none';
                 arrow.style.transform = 'rotate(0deg)';
             } else {
+                console.log(`📥 [${timestamp}] SUBMENU AÇILIYOR - Alt menü açılıyor`);
                 // Close other submenus first
                 document.querySelectorAll('.submenu').forEach(menu => {
                     menu.style.display = 'none';
@@ -79,15 +103,21 @@ class App {
                 submenu.style.display = 'block';
                 arrow.style.transform = 'rotate(180deg)';
             }
+        } else {
+            console.warn(`⚠️ [${timestamp}] SUBMENU BULUNAMADI - Alt menü elementi bulunamadı`);
         }
     }
 
     async loadPage(page) {
-        console.log('Loading page:', page);
+        const timestamp = new Date().toISOString();
+        console.log(`🔄 [${timestamp}] SAYFA YÜKLEME BAŞLADI - Sayfa: ${page}`);
+        
         const pageContent = document.getElementById('pageContent');
+        const startTime = performance.now();
         
         try {
             // Loading göster
+            console.log(`⏳ [${timestamp}] LOADING ANİMASYONU - Loading spinner gösteriliyor`);
             pageContent.innerHTML = `
                 <div class="loading">
                     <div class="spinner"></div>
@@ -96,15 +126,21 @@ class App {
             `;
 
             // Sayfa içeriğini yükle
+            console.log(`📡 [${timestamp}] HTTP İSTEĞİ - /pages/${page}.html fetch ediliyor`);
             const response = await fetch(`/pages/${page}.html`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             
-                const html = await response.text();
-                pageContent.innerHTML = html;
+            const html = await response.text();
+            const loadTime = performance.now() - startTime;
+            console.log(`📄 [${timestamp}] HTML ALINDI - Uzunluk: ${html.length}, Süre: ${loadTime.toFixed(2)}ms`);
+            
+            pageContent.innerHTML = html;
+            console.log(`✅ [${timestamp}] SAYFA YÜKLENDİ - ${page} başarıyla yüklendi`);
                 
             // Aktif menüyü güncelle
+            console.log(`🎯 [${timestamp}] MENÜ GÜNCELLEME - Aktif menü güncelleniyor: ${page}`);
             this.updateActiveMenu(page);
             
             // Sayfa özel JavaScript'ini yükle
@@ -125,9 +161,13 @@ class App {
     }
 
     loadPageScript(page) {
+        const timestamp = new Date().toISOString();
+        console.log(`📜 [${timestamp}] SCRIPT YÜKLEME BAŞLADI - Sayfa: ${page}`);
+        
         // Mevcut script'i kaldır
         const existingScript = document.getElementById('page-script');
         if (existingScript) {
+            console.log(`🗑️ [${timestamp}] ESKİ SCRIPT KALDIRILIYOR - Mevcut script temizleniyor`);
             existingScript.remove();
         }
 
@@ -135,67 +175,96 @@ class App {
         const script = document.createElement('script');
         script.id = 'page-script';
         script.src = `/static/js/${page}.js`;
+        console.log(`📡 [${timestamp}] SCRIPT FETCH EDİLİYOR - /static/js/${page}.js`);
+        
+        const scriptStartTime = performance.now();
+        
         script.onload = () => {
-            console.log(`Script loaded: ${page}.js`);
+            const scriptLoadTime = performance.now() - scriptStartTime;
+            console.log(`✅ [${timestamp}] SCRIPT YÜKLENDİ - ${page}.js (${scriptLoadTime.toFixed(2)}ms)`);
             // Sayfa özel init fonksiyonunu çağır
+            console.log(`🚀 [${timestamp}] INIT FONKSİYONLARI ÇAĞRILIYOR - ${page} için init fonksiyonları`);
             this.initPageSpecificFunctions(page);
         };
         script.onerror = () => {
-            console.error(`Script load failed: ${page}.js`);
+            console.error(`❌ [${timestamp}] SCRIPT YÜKLEME HATASI - ${page}.js yüklenemedi`);
         };
         document.head.appendChild(script);
     }
 
     initPageSpecificFunctions(page) {
+        const timestamp = new Date().toISOString();
+        console.log(`🔧 [${timestamp}] INIT FONKSİYONLARI BAŞLADI - Sayfa: ${page}`);
+        
         // Sayfa özel init fonksiyonlarını çağır
         if (page === 'data-retrieval') {
-            console.log('Calling initDataRetrievalPage');
+            console.log('🚀 Calling initDataRetrievalPage');
             if (typeof initDataRetrievalPage === 'function') {
                 initDataRetrievalPage();
+                console.log('✅ initDataRetrievalPage called successfully');
+            } else {
+                console.warn('⚠️ initDataRetrievalPage function not found');
             }
         } else if (page === 'line-measurements') {
-            console.log('Calling initLineMeasurementsPage');
+            console.log('🚀 Calling initLineMeasurementsPage');
             if (typeof initLineMeasurementsPage === 'function') {
                 initLineMeasurementsPage();
+                console.log('✅ initLineMeasurementsPage called successfully');
+            } else {
+                console.warn('⚠️ initLineMeasurementsPage function not found');
             }
         } else if (page === 'battery-logs') {
-            console.log('Calling initBatteryLogsPage');
+            console.log('🚀 Calling initBatteryLogsPage');
             if (typeof initBatteryLogsPage === 'function') {
                 initBatteryLogsPage();
+                console.log('✅ initBatteryLogsPage called successfully');
+            } else {
+                console.warn('⚠️ initBatteryLogsPage function not found');
             }
         } else if (page === 'arm-logs') {
-            console.log('Calling initArmLogsPage');
+            console.log('🚀 Calling initArmLogsPage');
             if (typeof initArmLogsPage === 'function') {
                 initArmLogsPage();
+                console.log('✅ initArmLogsPage called successfully');
+            } else {
+                console.warn('⚠️ initArmLogsPage function not found');
             }
         } else if (page === 'alarms') {
-            console.log('Calling initAlarmsPage');
-            // Sadece bir kez çağır
+            console.log('🚀 Calling initAlarmsPage');
             if (typeof initAlarmsPage === 'function') {
                 initAlarmsPage();
+                console.log('✅ initAlarmsPage called successfully');
+            } else {
+                console.warn('⚠️ initAlarmsPage function not found');
             }
         } else if (page === 'summary') {
-            console.log('Calling initSummaryPage');
-            // Sadece bir kez çağır
+            console.log('🚀 Calling initSummaryPage');
             if (typeof initSummaryPage === 'function') {
                 initSummaryPage();
+                console.log('✅ initSummaryPage called successfully');
+            } else {
+                console.warn('⚠️ initSummaryPage function not found');
             }
         } else if (page === 'batteries') {
-            console.log('Calling initBatteriesPage');
-            // Sadece bir kez çağır
+            console.log('🚀 Calling initBatteriesPage');
             if (typeof initBatteriesPage === 'function') {
                 initBatteriesPage();
+                console.log('✅ initBatteriesPage called successfully');
+            } else {
+                console.warn('⚠️ initBatteriesPage function not found');
             }
         } else if (page === 'configuration') {
-            console.log('Calling initConfigurationPage');
-            // Sadece bir kez çağır
+            console.log('🚀 Calling initConfigurationPage');
             if (typeof initConfigurationPage === 'function') {
                 initConfigurationPage();
+                console.log('✅ initConfigurationPage called successfully');
+                } else {
+                console.warn('⚠️ initConfigurationPage function not found');
             }
                     } else {
-                        console.log(`No init function found for ${page}`);
-                    }
-                }
+            console.log(`❌ No init function found for ${page}`);
+        }
+    }
 
     updateActiveMenu(page) {
         // Tüm menü linklerini pasif yap

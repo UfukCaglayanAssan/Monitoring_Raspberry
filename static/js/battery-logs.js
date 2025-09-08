@@ -165,6 +165,12 @@ if (typeof window.BatteryLogsPage === 'undefined') {
             return;
         }
 
+        // DOM element kontrolü
+        if (!tableBody) {
+            console.error('❌ tableBody element bulunamadı!');
+            return;
+        }
+        
         tableBody.innerHTML = this.logs.map(log => {
             return `
                 <tr>
