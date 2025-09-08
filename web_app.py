@@ -59,6 +59,21 @@ def get_data_types():
     data_types = db.get_data_types_by_language(language)
     return jsonify(data_types)
 
+@app.route('/api/alarm_count')
+def get_alarm_count():
+    """Aktif alarm sayısını getir"""
+    try:
+        count = db.get_active_alarm_count()
+        return jsonify({
+            'success': True,
+            'count': count
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
 @app.route('/api/recent_data')
 def get_recent_data():
     minutes = int(request.args.get('minutes', 5))

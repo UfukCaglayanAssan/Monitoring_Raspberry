@@ -261,7 +261,7 @@ class App {
     // Alarm sayısı güncelleme
     async updateAlarmCount() {
         try {
-            const response = await fetch('/api/alarms?show_resolved=false&page=1&pageSize=1', {
+            const response = await fetch('/api/alarm_count', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
@@ -270,7 +270,7 @@ class App {
 
             if (response.ok) {
                 const data = await response.json();
-                const alarmCount = data.totalCount || 0;
+                const alarmCount = data.count || 0;
                 this.displayAlarmCount(alarmCount);
             } else {
                 console.error('Alarm sayısı alınamadı:', response.status);

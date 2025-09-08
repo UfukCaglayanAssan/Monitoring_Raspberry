@@ -941,13 +941,14 @@ class BatteryDatabase:
                 # Son 10 dakikada verisi gelen kolları bul
                 ten_minutes_ago = int((datetime.now() - timedelta(minutes=10)).timestamp() * 1000)
                 
-                # Her kol için son veri zamanını bul
+                # Sadece armslavecount tablosunda veri olan kolları getir
                 cursor.execute('''
-                    SELECT arm, MAX(timestamp) as latest_timestamp
-                    FROM battery_data 
-                    WHERE timestamp >= ?
-                    GROUP BY arm
-                    ORDER BY arm
+                    SELECT bd.arm, MAX(bd.timestamp) as latest_timestamp
+                    FROM battery_data bd
+                    INNER JOIN arm_slave_counts asc ON bd.arm = asc.arm
+                    WHERE bd.timestamp >= ? AND asc.slave_count > 0
+                    GROUP BY bd.arm
+                    ORDER BY bd.arm
                 ''', (ten_minutes_ago,))
                 
                 active_arms = cursor.fetchall()
@@ -1336,3 +1337,13 @@ class BatteryDatabase:
         except Exception as e:
             print(f"Aktif kollar getirilirken hata: {e}")
             return []
+
+    def get_active_alarm_count(self):
+        """Aktif alarm sayısını getir"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT COUNT(*) FROM alarms 
+                WHERE status = 'active'
+            ''')
+            return cursor.fetchone()[0]
