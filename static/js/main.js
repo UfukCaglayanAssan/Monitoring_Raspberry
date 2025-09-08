@@ -379,4 +379,9 @@ window.utils = {
             this.updateAlarmCount();
         }, 30000);
     }
-};
+}
+
+// Uygulamayı başlat
+document.addEventListener('DOMContentLoaded', () => {
+    window.app = new App();
+});
