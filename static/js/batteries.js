@@ -524,7 +524,7 @@ function initBatteriesPage() {
 }
 
 // Global olarak erişilebilir yap
-window.initBatteriesPage = initBatteriesPage;
+// window.initBatteriesPage = initBatteriesPage; // Kaldırıldı - karışıklığa neden oluyor
 
 // Hem DOMContentLoaded hem de manuel çağrı için
 document.addEventListener('DOMContentLoaded', initBatteriesPage);

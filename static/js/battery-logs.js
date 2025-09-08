@@ -283,8 +283,6 @@ function initBatteryLogsPage() {
     }
 }
 
-// Hem DOMContentLoaded hem de manuel çağrı için
-document.addEventListener('DOMContentLoaded', initBatteryLogsPage);
-
-// Global olarak erişilebilir yap
-window.initBatteryLogsPage = initBatteryLogsPage;
+// Global olarak erişilebilir yap (sadece main.js için gerekli)
+// window.initBatteryLogsPage = initBatteryLogsPage; // Kaldırıldı - karışıklığa neden oluyor
+}

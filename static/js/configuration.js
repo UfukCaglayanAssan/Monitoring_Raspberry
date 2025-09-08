@@ -406,7 +406,7 @@ function initConfigurationPage() {
 }
 
 // Global olarak erişilebilir yap
-window.initConfigurationPage = initConfigurationPage;
+// window.initConfigurationPage = initConfigurationPage; // Kaldırıldı - karışıklığa neden oluyor
 
 // Hem DOMContentLoaded hem de manuel çağrı için
 document.addEventListener('DOMContentLoaded', initConfigurationPage);

@@ -148,65 +148,81 @@ class App {
 
     initPageSpecificFunctions(page) {
         // Sayfa özel init fonksiyonlarını çağır
-        if (page === 'data-retrieval' && window.initDataRetrievalPage) {
+        if (page === 'data-retrieval') {
             console.log('Calling initDataRetrievalPage');
-            window.initDataRetrievalPage();
-        } else if (page === 'line-measurements' && window.initLineMeasurementsPage) {
+            if (!window.dataRetrievalPageInitialized) {
+                // Direkt fonksiyon çağrısı
+                if (typeof initDataRetrievalPage === 'function') {
+                    initDataRetrievalPage();
+                    window.dataRetrievalPageInitialized = true;
+                }
+            }
+        } else if (page === 'line-measurements') {
             console.log('Calling initLineMeasurementsPage');
-            window.initLineMeasurementsPage();
-        } else if (page === 'battery-logs' && window.initBatteryLogsPage) {
+            if (!window.lineMeasurementsPageInitialized) {
+                // Direkt fonksiyon çağrısı
+                if (typeof initLineMeasurementsPage === 'function') {
+                    initLineMeasurementsPage();
+                    window.lineMeasurementsPageInitialized = true;
+                }
+            }
+        } else if (page === 'battery-logs') {
                         console.log('Calling initBatteryLogsPage');
-                        window.initBatteryLogsPage();
-                    } else if (page === 'arm-logs' && window.initArmLogsPage) {
+                        if (!window.batteryLogsPageInitialized) {
+                            // Direkt fonksiyon çağrısı
+                            if (typeof initBatteryLogsPage === 'function') {
+                                initBatteryLogsPage();
+                                window.batteryLogsPageInitialized = true;
+                            }
+                        }
+                    } else if (page === 'arm-logs') {
                         console.log('Calling initArmLogsPage');
-                        window.initArmLogsPage();
-        } else if (page === 'alarms' && window.initAlarmsPage) {
+                        if (!window.armLogsPageInitialized) {
+                            // Direkt fonksiyon çağrısı
+                            if (typeof initArmLogsPage === 'function') {
+                                initArmLogsPage();
+                                window.armLogsPageInitialized = true;
+                            }
+                        }
+        } else if (page === 'alarms') {
             console.log('Calling initAlarmsPage');
-            if (document.querySelector('.alarms-page')) {
-                window.initAlarmsPage();
-            } else {
-                console.log('Alarms page element not found, retrying...');
-                setTimeout(() => {
-                    if (document.querySelector('.alarms-page')) {
-                        window.initAlarmsPage();
-                    }
-                }, 50);
+            // Sadece bir kez çağır
+            if (!window.alarmsPageInitialized) {
+                // Direkt fonksiyon çağrısı
+                if (typeof initAlarmsPage === 'function') {
+                    initAlarmsPage();
+                    window.alarmsPageInitialized = true;
+                }
             }
-        } else if (page === 'summary' && window.initSummaryPage) {
+        } else if (page === 'summary') {
             console.log('Calling initSummaryPage');
-            if (document.querySelector('.summary-page')) {
-                window.initSummaryPage();
-            } else {
-                console.log('Summary page element not found, retrying...');
-                setTimeout(() => {
-                    if (document.querySelector('.summary-page')) {
-                        window.initSummaryPage();
-                    }
-                }, 50);
+            // Sadece bir kez çağır
+            if (!window.summaryPageInitialized) {
+                // Direkt fonksiyon çağrısı
+                if (typeof initSummaryPage === 'function') {
+                    initSummaryPage();
+                    window.summaryPageInitialized = true;
+                }
             }
-        } else if (page === 'batteries' && window.initBatteriesPage) {
+        } else if (page === 'batteries') {
             console.log('Calling initBatteriesPage');
-            if (document.querySelector('.batteries-page')) {
-                window.initBatteriesPage();
-            } else {
-                console.log('Batteries page element not found, retrying...');
-                setTimeout(() => {
-                    if (document.querySelector('.batteries-page')) {
-                        window.initBatteriesPage();
-                    }
-                }, 50);
+            // Sadece bir kez çağır
+            if (!window.batteriesPageInitialized) {
+                // Direkt fonksiyon çağrısı
+                if (typeof initBatteriesPage === 'function') {
+                    initBatteriesPage();
+                    window.batteriesPageInitialized = true;
+                }
             }
-        } else if (page === 'configuration' && window.initConfigurationPage) {
+        } else if (page === 'configuration') {
             console.log('Calling initConfigurationPage');
-            if (document.querySelector('.configuration-page')) {
-                window.initConfigurationPage();
-            } else {
-                console.log('Configuration page element not found, retrying...');
-                setTimeout(() => {
-                    if (document.querySelector('.configuration-page')) {
-                        window.initConfigurationPage();
-                    }
-                }, 50);
+            // Sadece bir kez çağır
+            if (!window.configurationPageInitialized) {
+                // Direkt fonksiyon çağrısı
+                if (typeof initConfigurationPage === 'function') {
+                    initConfigurationPage();
+                    window.configurationPageInitialized = true;
+                }
             }
                     } else {
                         console.log(`No init function found for ${page}`);

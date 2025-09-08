@@ -318,11 +318,8 @@ async function initSummaryPage() {
     }
 }
 
-// Global olarak erişilebilir yap
-window.initSummaryPage = initSummaryPage;
-
-// Hem DOMContentLoaded hem de manuel çağrı için
-document.addEventListener('DOMContentLoaded', initSummaryPage);
+// Global olarak erişilebilir yap (sadece main.js için gerekli)
+// window.initSummaryPage = initSummaryPage; // Kaldırıldı - karışıklığa neden oluyor
 
 
 

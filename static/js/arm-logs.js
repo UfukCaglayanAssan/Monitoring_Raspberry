@@ -322,4 +322,4 @@ function initArmLogsPage() {
 document.addEventListener('DOMContentLoaded', initArmLogsPage);
 
 // Global olarak erişilebilir yap
-window.initArmLogsPage = initArmLogsPage;
+// window.initArmLogsPage = initArmLogsPage; // Kaldırıldı - karışıklığa neden oluyor
