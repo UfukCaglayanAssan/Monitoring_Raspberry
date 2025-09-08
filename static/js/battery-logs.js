@@ -278,7 +278,8 @@ if (typeof window.BatteryLogsPage === 'undefined') {
         // CSV export işlemi
         console.log('Export işlemi başlatıldı');
     }
-}
+    }; // Class kapanış süslü parantezi
+} // if statement kapanış süslü parantezi
 
 // Sayfa yüklendiğinde başlat
 function initBatteryLogsPage() {

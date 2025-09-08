@@ -126,6 +126,17 @@ if (typeof window.ConfigurationPage === 'undefined') {
         }
     }
 
+    getFirstArmWithBattery() {
+        // Global activeArms verisini kullan
+        if (window.activeArms && window.activeArms.length > 0) {
+            const armsWithBatteries = window.activeArms.filter(arm => arm.slave_count > 0);
+            if (armsWithBatteries.length > 0) {
+                return armsWithBatteries.sort((a, b) => a.arm - b.arm)[0].arm;
+            }
+        }
+        return null;
+    }
+
     async loadConfigurations() {
         try {
             // DB'den konfigürasyonları yükle
@@ -134,13 +145,18 @@ if (typeof window.ConfigurationPage === 'undefined') {
                 this.loadArmConfigsFromDB()
             ]);
             
-            // İlk kol için konfigürasyonları yükle
-            this.loadBatteryConfigForArm(1, batteryConfigs);
-            this.loadArmConfigForArm(1, armConfigs);
-            
-            // Select'leri ilk kol olarak ayarla
-            document.getElementById('batArmSelect').value = '1';
-            document.getElementById('armArmSelect').value = '1';
+            // İlk bataryası olan kol için konfigürasyonları yükle
+            const firstArmWithBattery = this.getFirstArmWithBattery();
+            if (firstArmWithBattery) {
+                this.loadBatteryConfigForArm(firstArmWithBattery, batteryConfigs);
+                this.loadArmConfigForArm(firstArmWithBattery, armConfigs);
+                
+                // Select'leri ilk bataryası olan kol olarak ayarla
+                document.getElementById('batArmSelect').value = firstArmWithBattery.toString();
+                document.getElementById('armArmSelect').value = firstArmWithBattery.toString();
+            } else {
+                console.warn('Hiç bataryası olan kol bulunamadı!');
+            }
         } catch (error) {
             console.error('Konfigürasyonlar yüklenirken hata:', error);
             // Hata durumunda default değerleri yükle

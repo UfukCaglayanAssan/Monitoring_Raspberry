@@ -95,10 +95,12 @@ if (typeof window.BatteriesPage === 'undefined') {
         const armButtons = document.querySelectorAll('.arm-btn');
         console.log('🔘 Bulunan kol butonları:', armButtons.length);
         
-        // Aktif kol listesi oluştur ve sırala (1, 2, 3, 4)
-        const activeArmNumbers = activeArms.map(arm => arm.arm).sort((a, b) => a - b);
+        // Sadece bataryası olan kolları filtrele ve sırala
+        const armsWithBatteries = activeArms.filter(arm => arm.slave_count > 0);
+        const activeArmNumbers = armsWithBatteries.map(arm => arm.arm).sort((a, b) => a - b);
         
-        console.log('📊 Aktif kollar (sıralı):', activeArmNumbers);
+        console.log('📊 Bataryası olan kollar (sıralı):', activeArmNumbers);
+        console.log('📊 Tüm kollar:', activeArms.map(arm => `Kol ${arm.arm}: ${arm.slave_count} batarya`));
         
         // Her kol için detaylı bilgi
         activeArms.forEach(arm => {
