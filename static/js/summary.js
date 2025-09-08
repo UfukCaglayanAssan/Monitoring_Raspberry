@@ -1,6 +1,7 @@
 // Summary Sayfası JavaScript
-if (typeof SummaryPage === 'undefined') {
-    class SummaryPage {
+// Class'ın zaten tanımlanıp tanımlanmadığını kontrol et
+if (typeof window.SummaryPage === 'undefined') {
+    window.SummaryPage = class SummaryPage {
     constructor() {
         this.summaryData = [];
         this.init();
@@ -286,14 +287,14 @@ if (typeof SummaryPage === 'undefined') {
     isPageActive() {
         return document.querySelector('.summary-page') !== null;
     }
-    }
+    };
 }
 
 // Sayfa yüklendiğinde başlat
 function initSummaryPage() {
     console.log('🔧 initSummaryPage() çağrıldı');
     if (!window.summaryPage) {
-        window.summaryPage = new SummaryPage();
+        window.summaryPage = new window.SummaryPage();
     }
 }
 
