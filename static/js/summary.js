@@ -316,19 +316,16 @@ if (typeof window.SummaryPage === 'undefined') {
 }
 
 // Sayfa yüklendiğinde başlat
-async function initSummaryPage() {
+function initSummaryPage() {
     console.log('🔧 initSummaryPage() çağrıldı');
     if (!window.summaryPage) {
         window.summaryPage = new window.SummaryPage();
     } else {
         // Mevcut instance'ı yeniden başlat
         console.log('🔄 Mevcut SummaryPage instance yeniden başlatılıyor');
-        await window.summaryPage.init();
+        window.summaryPage.init();
     }
 }
-
-// Global olarak erişilebilir yap (sadece main.js için gerekli)
-// window.initSummaryPage = initSummaryPage; // Kaldırıldı - karışıklığa neden oluyor
 
 
 
