@@ -100,13 +100,18 @@ if (typeof window.ArmLogsPage === 'undefined') {
     }
 
     async loadLogs() {
+        console.log('🔋 [2025-09-08T11:16:35.221Z] loadLogs() başladı');
         const tableBody = document.getElementById('armLogsTableBody');
+        console.log('📋 Table body bulundu:', tableBody);
         
         try {
+            console.log('⏳ [2025-09-08T11:16:35.221Z] Loading gösteriliyor');
             this.showLoading(tableBody);
 
             const currentLanguage = localStorage.getItem('language') || 'tr';
+            console.log('🌐 [2025-09-08T11:16:35.221Z] Kullanılan dil:', currentLanguage);
             
+            console.log('🌐 [2025-09-08T11:16:35.221Z] API isteği gönderiliyor: /api/arm-logs');
             const response = await fetch('/api/arm-logs', {
                 method: 'POST',
                 headers: {
@@ -121,17 +126,20 @@ if (typeof window.ArmLogsPage === 'undefined') {
             });
 
             if (response.ok) {
+                console.log('✅ [2025-09-08T11:16:35.221Z] API yanıtı alındı');
                 const data = await response.json();
+                console.log('📊 [2025-09-08T11:16:35.221Z] Gelen veri:', data);
                 this.logs = data.logs || [];
                 this.totalPages = data.totalPages || 1;
                 
+                console.log('📋 [2025-09-08T11:16:35.221Z] Log sayısı:', this.logs.length);
                 this.renderLogs();
                 this.updatePagination();
             } else {
                 throw new Error('Log verileri alınamadı');
             }
         } catch (error) {
-            console.error('Log yükleme hatası:', error);
+            console.error('❌ [2025-09-08T11:16:35.221Z] Log yükleme hatası:', error);
             this.showError(tableBody, 'Log verileri yüklenirken bir hata oluştu.');
         }
     }

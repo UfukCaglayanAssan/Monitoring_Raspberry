@@ -8,6 +8,7 @@ if (typeof window.BatteriesPage === 'undefined') {
         this.totalPages = 1;
         this.batteriesData = [];
         this.selectedArm = parseInt(localStorage.getItem('selectedArm')) || 3; // localStorage'dan al, yoksa varsayılan: Kol 3
+        this.isLoading = false; // Yükleme durumu flag'i
         
         this.init();
     }
@@ -194,8 +195,16 @@ if (typeof window.BatteriesPage === 'undefined') {
             return;
         }
         
+        // Yükleme durumu kontrolü
+        if (this.isLoading) {
+            console.log(`⏳ [${timestamp}] Zaten yükleme devam ediyor, iptal edildi`);
+            return;
+        }
+        
+        this.isLoading = true;
+        console.log(`⏳ [${timestamp}] Loading gösteriliyor`);
+        
         try {
-            console.log(`⏳ [${timestamp}] Loading gösteriliyor`);
             this.showLoading(true);
             
             // Mevcut dili al
@@ -239,6 +248,7 @@ if (typeof window.BatteriesPage === 'undefined') {
             console.error('Batarya verileri yüklenirken hata:', error);
             this.showError('Batarya verileri yüklenirken hata oluştu: ' + error.message);
         } finally {
+            this.isLoading = false;
             this.showLoading(false);
         }
     }
@@ -543,14 +553,15 @@ if (typeof window.BatteriesPage === 'undefined') {
     startAutoRefresh() {
         // Her 30 saniyede bir otomatik yenile
         setInterval(() => {
-            // Sadece sayfa aktifse yenile
-            if (this.isPageActive()) {
-                console.log('Otomatik yenileme çalışıyor...');
+            // Sadece sayfa aktifse ve manuel işlem yoksa yenile
+            if (this.isPageActive() && !this.isLoading) {
+                console.log('🔄 Otomatik yenileme çalışıyor...');
                 // Mevcut dili al ve otomatik güncellemede de kullan
                 const currentLanguage = localStorage.getItem('language') || 'tr';
-                console.log('Otomatik güncelleme dili:', currentLanguage);
+                console.log('🌐 Otomatik güncelleme dili:', currentLanguage);
                 this.loadBatteries();
-                
+            } else if (this.isLoading) {
+                console.log('⏳ Manuel yükleme devam ediyor, otomatik yenileme atlanıyor...');
             }
         }, 30000);
     }
