@@ -175,16 +175,54 @@ class App {
                         window.initArmLogsPage();
                     } else if (page === 'alarms' && window.initAlarmsPage) {
                         console.log('Calling initAlarmsPage');
-                        window.initAlarmsPage();
+                        if (document.querySelector('.alarms-page')) {
+                            window.initAlarmsPage();
+                        } else {
+                            console.log('Alarms page element not found, retrying...');
+                            setTimeout(() => {
+                                if (document.querySelector('.alarms-page')) {
+                                    window.initAlarmsPage();
+                                }
+                            }, 50);
+                        }
                     } else if (page === 'summary' && window.initSummaryPage) {
                         console.log('Calling initSummaryPage');
-                        window.initSummaryPage();
+                        // Element'in DOM'da olup olmadığını kontrol et
+                        if (document.querySelector('.summary-page')) {
+                            window.initSummaryPage();
+                        } else {
+                            console.log('Summary page element not found, retrying...');
+                            // Element bulunamazsa kısa süre sonra tekrar dene
+                            setTimeout(() => {
+                                if (document.querySelector('.summary-page')) {
+                                    window.initSummaryPage();
+                                }
+                            }, 50);
+                        }
                     } else if (page === 'batteries' && window.initBatteriesPage) {
                         console.log('Calling initBatteriesPage');
-                        window.initBatteriesPage();
+                        if (document.querySelector('.batteries-page')) {
+                            window.initBatteriesPage();
+                        } else {
+                            console.log('Batteries page element not found, retrying...');
+                            setTimeout(() => {
+                                if (document.querySelector('.batteries-page')) {
+                                    window.initBatteriesPage();
+                                }
+                            }, 50);
+                        }
                     } else if (page === 'configuration' && window.initConfigurationPage) {
                         console.log('Calling initConfigurationPage');
-                        window.initConfigurationPage();
+                        if (document.querySelector('.configuration-page')) {
+                            window.initConfigurationPage();
+                        } else {
+                            console.log('Configuration page element not found, retrying...');
+                            setTimeout(() => {
+                                if (document.querySelector('.configuration-page')) {
+                                    window.initConfigurationPage();
+                                }
+                            }, 50);
+                        }
                     } else {
                         console.log(`No init function found for ${page}`);
                     }
