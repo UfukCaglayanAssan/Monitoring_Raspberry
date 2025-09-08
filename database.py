@@ -4,17 +4,41 @@ import threading
 import os
 from datetime import datetime, timedelta
 import time
+import queue
+from contextlib import contextmanager
 
 class BatteryDatabase:
-    def __init__(self, db_path="battery_data.db"):
+    def __init__(self, db_path="battery_data.db", max_connections=5):
         self.db_path = db_path
         self.lock = threading.Lock()
-        self.conn = None
+        self.connection_pool = queue.Queue(maxsize=max_connections)
+        self.max_connections = max_connections
+        self._create_connections()
         # Veritabanı yoksa oluştur, varsa sadece bağlan
         if not os.path.exists(self.db_path):
             self.init_database()
         else:
             print(f"Veritabanı zaten mevcut: {self.db_path}")
+    
+    def _create_connections(self):
+        """Connection pool oluştur"""
+        for _ in range(self.max_connections):
+            conn = sqlite3.connect(self.db_path, timeout=30.0)
+            conn.execute("PRAGMA journal_mode=WAL")  # WAL mode for better concurrency
+            conn.execute("PRAGMA synchronous=NORMAL")  # Faster writes
+            conn.execute("PRAGMA cache_size=10000")  # Larger cache
+            self.connection_pool.put(conn)
+    
+    @contextmanager
+    def get_connection(self):
+        """Connection pool'dan connection al"""
+        conn = None
+        try:
+            conn = self.connection_pool.get(timeout=5.0)
+            yield conn
+        finally:
+            if conn:
+                self.connection_pool.put(conn)
     
     def init_database(self):
         with self.lock:
@@ -205,9 +229,7 @@ class BatteryDatabase:
                 db_size = os.path.getsize(self.db_path) / (1024 * 1024)  # MB
                 print(f"Veritabanı boyutu: {db_size:.2f} MB")
     
-    def get_connection(self):
-        """Thread-safe bağlantı döndür"""
-        return sqlite3.connect(self.db_path)
+    # get_connection metodu yukarıda connection pool ile tanımlandı
     
     def execute_query(self, query, params=None):
         """Özel SQL sorgusu çalıştır"""
@@ -1329,6 +1351,7 @@ class BatteryDatabase:
                     active_arms.append({
                         'arm': row[0],
                         'slave_count': row[1],
+                        'batteryCount': row[1],  # batteryCount field'ı eklendi
                         'created_at': row[2]
                     })
                 

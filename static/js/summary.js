@@ -24,8 +24,20 @@ if (typeof window.SummaryPage === 'undefined') {
 
     onLanguageChanged(language) {
         console.log('🌐 Özet sayfası dil güncelleniyor:', language);
-        // Verileri yeni dil ile yeniden yükle
-        this.loadSummaryData();
+        // Sadece UI metinlerini güncelle, veri yeniden yükleme
+        this.updateUITexts(language);
+    }
+
+    updateUITexts(language) {
+        // UI metinlerini güncelle
+        const elements = document.querySelectorAll('[data-tr], [data-en]');
+        elements.forEach(element => {
+            if (language === 'en' && element.hasAttribute('data-en')) {
+                element.textContent = element.getAttribute('data-en');
+            } else if (language === 'tr' && element.hasAttribute('data-tr')) {
+                element.textContent = element.getAttribute('data-tr');
+            }
+        });
     }
 
     async loadSummaryData() {
@@ -293,11 +305,8 @@ if (typeof window.SummaryPage === 'undefined') {
     }
 
     startAutoRefresh() {
-        setInterval(() => {
-            if (this.isPageActive()) {
-                this.loadSummaryData();
-            }
-        }, 30000); // 30 saniyede bir yenile
+        // Auto refresh kaldırıldı - gereksiz API çağrıları önleniyor
+        console.log('🔄 Auto refresh devre dışı bırakıldı');
     }
 
     isPageActive() {

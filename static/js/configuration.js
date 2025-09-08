@@ -9,7 +9,7 @@ if (typeof window.ConfigurationPage === 'undefined') {
     init() {
         console.log('Configuration sayfası başlatıldı');
         this.bindEvents();
-        this.loadActiveArms(); // Önce aktif kolları yükle
+        this.loadArmOptions(); // Sabit 4 kol seçeneği yükle
         this.loadConfigurations();
     }
 
@@ -48,8 +48,8 @@ if (typeof window.ConfigurationPage === 'undefined') {
         });
     }
 
-    async loadActiveArms() {
-        // Aktif kolları yükle ve select'leri güncelle
+    async loadArmOptions() {
+        // Sabit 4 kol seçeneği yükle ve batarya durumunu kontrol et
         try {
             const response = await fetch('/api/active-arms', {
                 method: 'GET',
@@ -61,16 +61,18 @@ if (typeof window.ConfigurationPage === 'undefined') {
             if (response.ok) {
                 const data = await response.json();
                 if (data.success) {
-                    this.updateArmSelects(data.activeArms);
+                    this.updateArmSelectsWithBatteryStatus(data.activeArms);
                 }
             }
         } catch (error) {
-            console.error('Aktif kollar yüklenirken hata:', error);
+            console.error('Kol seçenekleri yüklenirken hata:', error);
+            // Hata durumunda sadece sabit kolları göster
+            this.updateArmSelectsWithBatteryStatus([]);
         }
     }
 
-    updateArmSelects(activeArms) {
-        // Kol select'lerini güncelle - sadece aktif kolları göster
+    updateArmSelectsWithBatteryStatus(activeArms) {
+        // Sabit 4 kol seçeneği yükle ve batarya durumunu göster
         const batArmSelect = document.getElementById('batArmSelect');
         const armArmSelect = document.getElementById('armArmSelect');
         
@@ -78,18 +80,40 @@ if (typeof window.ConfigurationPage === 'undefined') {
         batArmSelect.innerHTML = '<option value="">Kol Seçin</option>';
         armArmSelect.innerHTML = '<option value="">Kol Seçin</option>';
         
-        // Aktif kolları ekle
-        activeArms.forEach(armData => {
+        // Aktif kolları map'e çevir (hızlı arama için)
+        const activeArmsMap = new Map();
+        activeArms.forEach(arm => {
+            activeArmsMap.set(arm.arm, arm);
+        });
+        
+        // Sabit 4 kol seçeneği
+        for (let arm = 1; arm <= 4; arm++) {
+            const armData = activeArmsMap.get(arm);
+            const batteryCount = armData ? (armData.batteryCount || armData.slave_count || 0) : 0;
+            const hasBattery = batteryCount > 0;
+            
+            // Batarya konfigürasyonu select'i
             const option1 = document.createElement('option');
-            option1.value = armData.arm;
-            option1.textContent = `Kol ${armData.arm} (${armData.batteryCount} Batarya)`;
+            option1.value = arm;
+            option1.textContent = `Kol ${arm} (${batteryCount} Batarya)`;
+            option1.disabled = !hasBattery; // Batarya yoksa tıklanamaz
+            if (!hasBattery) {
+                option1.style.color = '#999';
+                option1.style.fontStyle = 'italic';
+            }
             batArmSelect.appendChild(option1);
             
+            // Kol konfigürasyonu select'i
             const option2 = document.createElement('option');
-            option2.value = armData.arm;
-            option2.textContent = `Kol ${armData.arm} (${armData.batteryCount} Batarya)`;
+            option2.value = arm;
+            option2.textContent = `Kol ${arm} (${batteryCount} Batarya)`;
+            option2.disabled = !hasBattery; // Batarya yoksa tıklanamaz
+            if (!hasBattery) {
+                option2.style.color = '#999';
+                option2.style.fontStyle = 'italic';
+            }
             armArmSelect.appendChild(option2);
-        });
+        }
     }
 
     async loadConfigurations() {

@@ -318,8 +318,6 @@ function initArmLogsPage() {
     }
 }
 
-// Hem DOMContentLoaded hem de manuel çağrı için
-document.addEventListener('DOMContentLoaded', initArmLogsPage);
-
 // Global olarak erişilebilir yap
 // window.initArmLogsPage = initArmLogsPage; // Kaldırıldı - karışıklığa neden oluyor
+}
