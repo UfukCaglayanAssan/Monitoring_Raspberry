@@ -319,4 +319,8 @@ function initArmLogsPage() {
 }
 
 // Global olarak erişilebilir yap
-// window.initArmLogsPage = initArmLogsPage; // Kaldırıldı - karışıklığa neden oluyor
+window.initArmLogsPage = initArmLogsPage;
+
+// Script yüklendiğinde otomatik init
+console.log('🔧 Arm-logs.js yüklendi, otomatik init başlatılıyor...');
+initArmLogsPage();

@@ -327,5 +327,12 @@ function initSummaryPage() {
     }
 }
 
+// Global olarak erişilebilir yap
+window.initSummaryPage = initSummaryPage;
+
+// Script yüklendiğinde otomatik init
+console.log('🔧 Summary.js yüklendi, otomatik init başlatılıyor...');
+initSummaryPage();
+
 
 

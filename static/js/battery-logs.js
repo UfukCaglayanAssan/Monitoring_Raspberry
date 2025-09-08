@@ -289,6 +289,9 @@ function initBatteryLogsPage() {
     }
 }
 
-// Global olarak erişilebilir yap (sadece main.js için gerekli)
-// window.initBatteryLogsPage = initBatteryLogsPage; // Kaldırıldı - karışıklığa neden oluyor
-}
+// Global olarak erişilebilir yap
+window.initBatteryLogsPage = initBatteryLogsPage;
+
+// Script yüklendiğinde otomatik init
+console.log('🔧 Battery-logs.js yüklendi, otomatik init başlatılıyor...');
+initBatteryLogsPage();

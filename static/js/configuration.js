@@ -458,10 +458,11 @@ function initConfigurationPage() {
 }
 
 // Global olarak erişilebilir yap
-// window.initConfigurationPage = initConfigurationPage; // Kaldırıldı - karışıklığa neden oluyor
+window.initConfigurationPage = initConfigurationPage;
 
-// Hem DOMContentLoaded hem de manuel çağrı için
-document.addEventListener('DOMContentLoaded', initConfigurationPage);
+// Script yüklendiğinde otomatik init
+console.log('🔧 Configuration.js yüklendi, otomatik init başlatılıyor...');
+initConfigurationPage();
 
 
 
