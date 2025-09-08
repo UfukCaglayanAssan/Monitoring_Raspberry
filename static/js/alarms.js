@@ -294,19 +294,35 @@ if (typeof window.AlarmsPage === 'undefined') {
         const statusCell = document.createElement('td');
         const statusBadge = document.createElement('span');
         let statusText;
-        if (alarm.status === 'resolved') {
-            statusText = 'Düzeldi';
-        } else if (alarm.status === 'Düzeldi') {
-            statusText = 'Düzeldi';
+        
+        // Alarm geçmişinde durum mantığı
+        if (this.showResolved) {
+            // Alarm geçmişi görünüyorsa - çözüm zamanı varsa "Düzeldi", yoksa "Aktif"
+            if (alarm.resolved_at) {
+                statusText = 'Düzeldi';
+            } else {
+                statusText = 'Aktif';
+            }
         } else {
+            // Aktif alarmlar görünüyorsa - sadece aktif olanlar
             statusText = 'Aktif';
         }
+        
         statusBadge.className = `status-badge ${this.getStatusClass(alarm.status)}`;
         statusBadge.textContent = statusText;
         statusCell.appendChild(statusBadge);
         row.appendChild(statusCell);
         
-
+        // Çözüm Zamanı (sadece alarm geçmişinde)
+        if (this.showResolved) {
+            const resolvedCell = document.createElement('td');
+            if (alarm.resolved_at) {
+                resolvedCell.textContent = this.formatTimestamp(alarm.resolved_at);
+            } else {
+                resolvedCell.textContent = '-';
+            }
+            row.appendChild(resolvedCell);
+        }
         
         return row;
     }
@@ -357,13 +373,29 @@ if (typeof window.AlarmsPage === 'undefined') {
     }
 
     showNoData() {
+        console.log('🔍 showNoData() çağrıldı');
         const noData = document.getElementById('noDataMessage');
         const table = document.getElementById('alarmsTable');
         const loading = document.getElementById('loadingSpinner');
         
-        if (noData) noData.style.display = 'block';
-        if (table) table.style.display = 'none';
-        if (loading) loading.style.display = 'none';
+        console.log('📋 Elementler:', { noData, table, loading });
+        
+        if (noData) {
+            noData.style.display = 'block';
+            console.log('✅ noDataMessage gösterildi');
+        } else {
+            console.error('❌ noDataMessage bulunamadı!');
+        }
+        
+        if (table) {
+            table.style.display = 'none';
+            console.log('✅ alarmsTable gizlendi');
+        }
+        
+        if (loading) {
+            loading.style.display = 'none';
+            console.log('✅ loadingSpinner gizlendi');
+        }
     }
 
     startAutoRefresh() {

@@ -916,17 +916,35 @@ class BatteryDatabase:
                 # Arm filtresi ekle (her zaman bir kol seçilmeli)
                 arm_filter = f"AND bd.arm = {selected_arm}"
                 
-                # Her batarya için en son veri zamanını bul ve sadece en güncel olanları getir
+                # arm_slave_counts tablosundan seçili kolun batarya sayısını al
+                cursor.execute('''
+                    SELECT slave_count FROM arm_slave_counts 
+                    WHERE arm = ?
+                ''', (selected_arm,))
+                
+                slave_count_result = cursor.fetchone()
+                if not slave_count_result:
+                    print(f"Kol {selected_arm} için slave_count bulunamadı!")
+                    return {
+                        'batteries': [],
+                        'totalPages': 1,
+                        'currentPage': 1
+                    }
+                
+                slave_count = slave_count_result[0]
+                print(f"Kol {selected_arm} için slave_count: {slave_count}")
+                
+                # Sadece mevcut batarya sayısı kadar batarya getir
                 cursor.execute(f'''
                     SELECT 
                         bd.arm,
                         bd.k as batteryAddress,
                         MAX(bd.timestamp) as latest_timestamp
                     FROM battery_data bd
-                    WHERE bd.k != 2 {arm_filter}
+                    WHERE bd.k != 2 AND bd.k <= ? {arm_filter}
                     GROUP BY bd.arm, bd.k
                     ORDER BY bd.arm, bd.k
-                ''')
+                ''', (slave_count,))
                 
                 all_batteries = cursor.fetchall()
                 print(f"Bulunan batarya sayısı: {len(all_batteries)}")
