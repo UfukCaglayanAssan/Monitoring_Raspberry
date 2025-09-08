@@ -70,22 +70,28 @@ if (typeof window.BatteriesPage === 'undefined') {
     }
 
     updateArmButtons(activeArms) {
-        // Kol butonlarını güncelle - sadece aktif kolları göster
+        // Kol butonlarını güncelle - tüm kolları göster, sadece aktif olanları enable et
         const armButtons = document.querySelectorAll('.arm-btn');
         
-        // Tüm butonları gizle
-        armButtons.forEach(button => {
-            button.style.display = 'none';
-        });
+        // Aktif kol listesi oluştur
+        const activeArmNumbers = activeArms.map(arm => arm.arm);
         
-        // Aktif kolları göster
-        activeArms.forEach(armData => {
-            const button = document.querySelector(`[data-arm="${armData.arm}"]`);
-            if (button) {
-                button.style.display = 'block';
-                // Batarya sayısını göster
-                const batteryCount = armData.batteryCount;
+        // Tüm butonları göster ve durumlarını güncelle
+        armButtons.forEach(button => {
+            const armNumber = parseInt(button.getAttribute('data-arm'));
+            button.style.display = 'block';
+            
+            if (activeArmNumbers.includes(armNumber)) {
+                // Aktif kol - enable et
+                button.disabled = false;
+                button.classList.remove('disabled');
+                const batteryCount = activeArms.find(arm => arm.arm === armNumber).slave_count;
                 button.querySelector('.battery-count').textContent = `${batteryCount} Batarya`;
+            } else {
+                // Pasif kol - disable et
+                button.disabled = true;
+                button.classList.add('disabled');
+                button.querySelector('.battery-count').textContent = '0 Batarya';
             }
         });
         
@@ -96,11 +102,18 @@ if (typeof window.BatteriesPage === 'undefined') {
     }
     
     selectArm(arm) {
+        // Sadece aktif kollar seçilebilir
+        const button = document.querySelector(`[data-arm="${arm}"]`);
+        if (button && button.disabled) {
+            console.log(`Kol ${arm} seçilemez - batarya yok`);
+            return;
+        }
+        
         // Aktif buton stilini güncelle
         document.querySelectorAll('.arm-btn').forEach(btn => {
             btn.classList.remove('active');
         });
-        document.querySelector(`[data-arm="${arm}"]`).classList.add('active');
+        button.classList.add('active');
         
         // Seçilen kol'u güncelle
         this.selectedArm = arm;

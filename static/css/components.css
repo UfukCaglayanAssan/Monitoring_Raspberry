@@ -1260,6 +1260,26 @@
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
+/* Disabled Arm Buttons */
+.arm-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #f5f5f5;
+    color: #999;
+    border: 1px solid #ddd;
+}
+
+.arm-btn.disabled:hover {
+    background-color: #f5f5f5;
+    color: #999;
+    transform: none;
+    box-shadow: none;
+}
+
+.arm-btn.disabled .battery-count {
+    color: #999;
+}
+
 
 
 

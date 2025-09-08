@@ -29,6 +29,17 @@ class App {
             });
         });
 
+        // Submenu linklerini dinle
+        document.querySelectorAll('.submenu-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = e.target.getAttribute('data-page');
+                if (page) {
+                    this.loadPage(page);
+                }
+            });
+        });
+
         // Dil değiştirme
         document.querySelectorAll('.language-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
