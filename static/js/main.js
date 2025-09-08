@@ -150,12 +150,11 @@ class App {
         const startTime = performance.now();
         
         try {
-            // Loading göster
+            // Loading göster - sadece spinner
             console.log(`⏳ [${timestamp}] LOADING ANİMASYONU - Loading spinner gösteriliyor`);
             pageContent.innerHTML = `
                 <div class="loading">
                     <div class="spinner"></div>
-                    Sayfa yükleniyor...
                 </div>
             `;
 

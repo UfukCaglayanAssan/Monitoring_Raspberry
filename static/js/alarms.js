@@ -198,9 +198,11 @@ if (typeof window.AlarmsPage === 'undefined') {
     }
 
     async loadAlarms() {
+        console.log('🔔 loadAlarms() başladı');
         try {
             this.showLoading();
             
+            console.log('🌐 API isteği gönderiliyor: /api/alarms');
             const response = await fetch(`/api/alarms?show_resolved=${this.showResolved}&page=${this.currentPage}&pageSize=${this.pageSize}`, {
                 method: 'GET',
                 headers: {
@@ -212,11 +214,14 @@ if (typeof window.AlarmsPage === 'undefined') {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
+            console.log('✅ API yanıtı alındı');
             const data = await response.json();
+            console.log('📊 Gelen veri:', data);
             
             if (data.success) {
                 this.alarms = data.alarms || [];
                 this.totalPages = data.totalPages || 1;
+                console.log('📋 Alarm sayısı:', this.alarms.length);
                 this.renderAlarms();
                 this.updatePagination();
             } else {

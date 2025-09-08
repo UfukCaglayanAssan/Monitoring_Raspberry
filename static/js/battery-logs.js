@@ -13,6 +13,8 @@ if (typeof window.BatteryLogsPage === 'undefined') {
             endDate: ''
         };
         this.logs = [];
+        
+        this.init();
     }
 
     init() {
@@ -285,7 +287,10 @@ if (typeof window.BatteryLogsPage === 'undefined') {
 function initBatteryLogsPage() {
     console.log('🔧 initBatteryLogsPage() çağrıldı');
     if (!window.batteryLogsPage) {
+        console.log('🆕 Yeni BatteryLogsPage instance oluşturuluyor');
         window.batteryLogsPage = new BatteryLogsPage();
+    } else {
+        console.log('🔄 BatteryLogsPage instance yeniden başlatılıyor');
         window.batteryLogsPage.init();
     }
 }
