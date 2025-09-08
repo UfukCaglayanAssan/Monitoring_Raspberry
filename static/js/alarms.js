@@ -63,7 +63,7 @@ if (typeof window.AlarmsPage === 'undefined') {
                 alarmHistoryContainer.style.display = 'block';
                 alarmsTable.style.display = 'none';
                 if (noDataMessage) noDataMessage.style.display = 'none'; // "Alarm Yok" mesajını gizle
-                this.loadAlarmHistory();
+                this.loadAlarms(); // Alarm geçmişi için loadAlarms() çağır
                 this.showResolved = true; // Geçmiş moduna geç
             } else {
                 // Aktif alarmları göster
@@ -297,7 +297,7 @@ if (typeof window.AlarmsPage === 'undefined') {
         // Alarm geçmişinde durum mantığı
         if (this.showResolved) {
             // Alarm geçmişi görünüyorsa - çözüm zamanı varsa "Düzeldi", yoksa "Aktif"
-            if (alarm.resolved_at) {
+            if (alarm.resolved_at && alarm.resolved_at !== '') {
                 statusText = 'Düzeldi';
             } else {
                 statusText = 'Aktif';
@@ -307,7 +307,7 @@ if (typeof window.AlarmsPage === 'undefined') {
             statusText = 'Aktif';
         }
         
-        statusBadge.className = `status-badge ${this.getStatusClass(alarm.status)}`;
+        statusBadge.className = `status-badge ${this.getStatusClass(statusText)}`;
         statusBadge.textContent = statusText;
         statusCell.appendChild(statusBadge);
         row.appendChild(statusCell);
@@ -339,15 +339,13 @@ if (typeof window.AlarmsPage === 'undefined') {
     }
 
     getStatusClass(status) {
-        switch (status) {
-            case 'resolved':
-            case 'Düzeldi':
-                return 'status-success';
-            case 'active':
-            case 'Devam Ediyor':
-                return 'status-error';
-            default:
-                return 'status-default';
+        // Durum metnine göre sınıf döndür
+        if (status === 'Düzeldi' || status === 'resolved') {
+            return 'status-success';
+        } else if (status === 'Aktif' || status === 'active') {
+            return 'status-error';
+        } else {
+            return 'status-default';
         }
     }
 
@@ -382,6 +380,10 @@ if (typeof window.AlarmsPage === 'undefined') {
         if (noData) {
             noData.style.display = 'block';
             console.log('✅ noDataMessage gösterildi');
+            console.log('🔍 noDataMessage display:', noData.style.display);
+            console.log('🔍 noDataMessage visibility:', noData.style.visibility);
+            console.log('🔍 noDataMessage offsetHeight:', noData.offsetHeight);
+            console.log('🔍 noDataMessage innerHTML:', noData.innerHTML);
         } else {
             console.error('❌ noDataMessage bulunamadı!');
         }
