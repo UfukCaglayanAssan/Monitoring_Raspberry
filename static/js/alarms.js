@@ -8,6 +8,7 @@ if (typeof window.AlarmsPage === 'undefined') {
         this.currentPage = 1;
         this.pageSize = 50;
         this.totalPages = 1;
+        this.isLoading = false; // Yükleme durumu flag'i
         this.init();
     }
 
@@ -199,6 +200,14 @@ if (typeof window.AlarmsPage === 'undefined') {
 
     async loadAlarms() {
         console.log('🔔 loadAlarms() başladı');
+        
+        // Çift yükleme kontrolü
+        if (this.isLoading) {
+            console.log('⏳ Zaten yükleme devam ediyor, iptal edildi');
+            return;
+        }
+        
+        this.isLoading = true;
         try {
             this.showLoading();
             
@@ -232,6 +241,7 @@ if (typeof window.AlarmsPage === 'undefined') {
             console.error('Alarm verileri yüklenirken hata:', error);
             this.showNoData();
         } finally {
+            this.isLoading = false;
             this.hideLoading();
         }
     }
@@ -380,10 +390,8 @@ function initAlarmsPage() {
     if (!window.alarmsPage) {
         console.log('🆕 Yeni AlarmsPage instance oluşturuluyor');
         window.alarmsPage = new window.AlarmsPage();
-    }
-    // Mevcut instance varsa yeniden başlat
-    if (window.alarmsPage) {
-        console.log('🔄 AlarmsPage instance yeniden başlatılıyor');
+    } else {
+        console.log('🔄 Mevcut AlarmsPage instance yeniden başlatılıyor');
         window.alarmsPage.init();
     }
 }

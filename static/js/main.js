@@ -150,13 +150,7 @@ class App {
         const startTime = performance.now();
         
         try {
-            // Loading göster - sadece spinner
-            console.log(`⏳ [${timestamp}] LOADING ANİMASYONU - Loading spinner gösteriliyor`);
-            pageContent.innerHTML = `
-                <div class="loading">
-                    <div class="spinner"></div>
-                </div>
-            `;
+            // Loading animasyonu kaldırıldı - sayfa kendi loading'ini gösterir
 
             // Sayfa içeriğini yükle
             console.log(`📡 [${timestamp}] HTTP İSTEĞİ - /pages/${page}.html fetch ediliyor`);

@@ -23,11 +23,11 @@ if (typeof window.BatteriesPage === 'undefined') {
         this.bindEvents();
         console.log(`🔗 [${timestamp}] Event listener'lar bağlandı`);
         
-        this.loadActiveArms(); // Önce aktif kolları yükle
-        console.log(`🔄 [${timestamp}] Aktif kollar yükleniyor`);
-        
-        this.loadBatteries();
-        console.log(`🔋 [${timestamp}] Batarya verileri yükleniyor`);
+        // Önce aktif kolları yükle, sonra bataryaları yükle
+        this.loadActiveArms().then(() => {
+            console.log(`🔄 [${timestamp}] Aktif kollar yüklendi, bataryalar yükleniyor`);
+            this.loadBatteries();
+        });
         
         this.startAutoRefresh();
         console.log(`⏰ [${timestamp}] Auto refresh başlatıldı`);
@@ -98,6 +98,9 @@ if (typeof window.BatteriesPage === 'undefined') {
         } catch (error) {
             console.error('❌ Aktif kollar yüklenirken hata:', error);
         }
+        
+        // Promise döndür (her durumda)
+        return Promise.resolve();
     }
 
     updateArmButtons(activeArms) {
