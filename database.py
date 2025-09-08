@@ -19,6 +19,8 @@ class BatteryDatabase:
             self.init_database()
         else:
             print(f"Veritabanı zaten mevcut: {self.db_path}")
+            # Mevcut veritabanında default değerleri kontrol et
+            self.check_default_arm_slave_counts()
     
     def _create_connections(self):
         """Connection pool oluştur - thread-safe"""
@@ -157,6 +159,17 @@ class BatteryDatabase:
                     )
                 ''')
                 print("✓ arm_slave_counts tablosu oluşturuldu")
+                
+                # Default arm_slave_counts değerlerini ekle
+                cursor.execute('''
+                    INSERT INTO arm_slave_counts (arm, slave_count) 
+                    VALUES 
+                        (1, 0),
+                        (2, 0), 
+                        (3, 7),
+                        (4, 0)
+                ''')
+                print("✓ Default arm_slave_counts değerleri eklendi: Kol 1=0, Kol 2=0, Kol 3=7, Kol 4=0")
                 
                 # Dilleri ekle
                 cursor.execute('''
@@ -430,14 +443,71 @@ class BatteryDatabase:
             conn.commit()
     
     def insert_arm_slave_counts(self, arm, slave_count):
-        """Arm slave count verisi ekle"""
+        """Arm slave count verisi ekle/güncelle (UPSERT)"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
+            
+            # Önce mevcut kaydı kontrol et
             cursor.execute('''
-                INSERT INTO arm_slave_counts (arm, slave_count)
-                VALUES (?, ?)
-            ''', (arm, slave_count))
+                SELECT id FROM arm_slave_counts 
+                WHERE arm = ? 
+                ORDER BY created_at DESC 
+                LIMIT 1
+            ''', (arm,))
+            
+            existing_record = cursor.fetchone()
+            
+            if existing_record:
+                # Mevcut kaydı güncelle
+                cursor.execute('''
+                    UPDATE arm_slave_counts 
+                    SET slave_count = ?, created_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                ''', (slave_count, existing_record[0]))
+                print(f"🔄 Arm {arm} slave_count güncellendi: {slave_count}")
+            else:
+                # Yeni kayıt ekle
+                cursor.execute('''
+                    INSERT INTO arm_slave_counts (arm, slave_count)
+                    VALUES (?, ?)
+                ''', (arm, slave_count))
+                print(f"➕ Arm {arm} slave_count eklendi: {slave_count}")
+            
             conn.commit()
+    
+    def check_default_arm_slave_counts(self):
+        """Mevcut veritabanında default arm_slave_counts değerlerini kontrol et"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Her kol için kayıt var mı kontrol et
+                for arm in [1, 2, 3, 4]:
+                    cursor.execute('''
+                        SELECT COUNT(*) FROM arm_slave_counts WHERE arm = ?
+                    ''', (arm,))
+                    
+                    count = cursor.fetchone()[0]
+                    
+                    if count == 0:
+                        # Bu kol için kayıt yok, default değer ekle
+                        if arm == 3:
+                            slave_count = 7  # Kol 3'te 7 batarya
+                        else:
+                            slave_count = 0  # Diğer kollarda 0 batarya
+                        
+                        cursor.execute('''
+                            INSERT INTO arm_slave_counts (arm, slave_count) 
+                            VALUES (?, ?)
+                        ''', (arm, slave_count))
+                        
+                        print(f"✓ Kol {arm} için default değer eklendi: {slave_count} batarya")
+                
+                conn.commit()
+                print("✅ Default arm_slave_counts değerleri kontrol edildi")
+                
+        except Exception as e:
+            print(f"❌ Default arm_slave_counts kontrolü hatası: {e}")
     
     def get_recent_data_with_translations(self, minutes=5, arm=None, battery=None, dtype=None, data_type=None, limit=100, language='tr'):
         """Son verileri çevirilerle birlikte getir"""
@@ -1342,14 +1412,20 @@ class BatteryDatabase:
             return []
 
     def get_active_arms(self):
-        """Aktif kolları getir (armslavecount > 0)"""
+        """Tüm kolları getir - arm_slave_counts tablosundan"""
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
+                
+                # Her kol için en son slave_count'u al
                 cursor.execute('''
                     SELECT arm, slave_count, created_at
                     FROM arm_slave_counts
-                    WHERE slave_count > 0
+                    WHERE id IN (
+                        SELECT MAX(id) 
+                        FROM arm_slave_counts 
+                        GROUP BY arm
+                    )
                     ORDER BY arm
                 ''')
                 
@@ -1358,7 +1434,6 @@ class BatteryDatabase:
                     active_arms.append({
                         'arm': row[0],
                         'slave_count': row[1],
-                        'batteryCount': row[1],  # batteryCount field'ı eklendi
                         'created_at': row[2]
                     })
                 

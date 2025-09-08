@@ -44,18 +44,31 @@ class App {
         document.querySelectorAll('.submenu-link').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 const timestamp = new Date().toISOString();
-                const page = e.target.getAttribute('data-page');
+                
+                // Tıklanan elementin kendisi veya parent'ından data-page'i al
+                let targetElement = e.target;
+                let page = targetElement.getAttribute('data-page');
+                
+                // Eğer span'a tıklandıysa, parent a elementini bul
+                if (!page && targetElement.tagName === 'SPAN') {
+                    targetElement = targetElement.closest('.submenu-link');
+                    page = targetElement ? targetElement.getAttribute('data-page') : null;
+                }
                 
                 console.log(`🖱️ [${timestamp}] SUBMENU TIKLAMA - Alt menü link tıklandı:`, {
                     page: page,
                     text: e.target.textContent.trim(),
-                    element: e.target
+                    targetElement: e.target.tagName,
+                    linkElement: targetElement ? targetElement.tagName : 'null'
                 });
                 
                 if (page) {
                     console.log(`📄 [${timestamp}] SAYFA YÜKLEME - Alt menüden sayfa yükleniyor: ${page}`);
                     this.loadPage(page);
+                } else {
+                    console.warn(`⚠️ [${timestamp}] SUBMENU HATASI - data-page bulunamadı!`);
                 }
             });
         });

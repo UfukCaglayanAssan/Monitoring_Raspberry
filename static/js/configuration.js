@@ -72,7 +72,7 @@ if (typeof window.ConfigurationPage === 'undefined') {
     }
 
     updateArmSelectsWithBatteryStatus(activeArms) {
-        // Sabit 4 kol seçeneği yükle ve batarya durumunu göster
+        // Sabit 4 kol seçeneği yükle - sadece arm_slave_counts kullan
         const batArmSelect = document.getElementById('batArmSelect');
         const armArmSelect = document.getElementById('armArmSelect');
         
@@ -80,22 +80,21 @@ if (typeof window.ConfigurationPage === 'undefined') {
         batArmSelect.innerHTML = '<option value="">Kol Seçin</option>';
         armArmSelect.innerHTML = '<option value="">Kol Seçin</option>';
         
-        // Aktif kolları map'e çevir (hızlı arama için)
-        const activeArmsMap = new Map();
+        // arm_slave_counts verilerini map'e çevir
+        const armSlaveCountsMap = new Map();
         activeArms.forEach(arm => {
-            activeArmsMap.set(arm.arm, arm);
+            armSlaveCountsMap.set(arm.arm, arm.slave_count || 0);
         });
         
         // Sabit 4 kol seçeneği
         for (let arm = 1; arm <= 4; arm++) {
-            const armData = activeArmsMap.get(arm);
-            const batteryCount = armData ? (armData.batteryCount || armData.slave_count || 0) : 0;
-            const hasBattery = batteryCount > 0;
+            const slaveCount = armSlaveCountsMap.get(arm) || 0;
+            const hasBattery = slaveCount > 0;
             
             // Batarya konfigürasyonu select'i
             const option1 = document.createElement('option');
             option1.value = arm;
-            option1.textContent = `Kol ${arm} (${batteryCount} Batarya)`;
+            option1.textContent = `Kol ${arm}`;
             option1.disabled = !hasBattery; // Batarya yoksa tıklanamaz
             if (!hasBattery) {
                 option1.style.color = '#999';
@@ -106,7 +105,7 @@ if (typeof window.ConfigurationPage === 'undefined') {
             // Kol konfigürasyonu select'i
             const option2 = document.createElement('option');
             option2.value = arm;
-            option2.textContent = `Kol ${arm} (${batteryCount} Batarya)`;
+            option2.textContent = `Kol ${arm}`;
             option2.disabled = !hasBattery; // Batarya yoksa tıklanamaz
             if (!hasBattery) {
                 option2.style.color = '#999';

@@ -13,10 +13,20 @@ if (typeof window.BatteriesPage === 'undefined') {
     }
 
     init() {
+        const timestamp = new Date().toISOString();
+        console.log(`🔧 [${timestamp}] BatteriesPage init() başladı`);
+        
         this.bindEvents();
+        console.log(`🔗 [${timestamp}] Event listener'lar bağlandı`);
+        
         this.loadActiveArms(); // Önce aktif kolları yükle
+        console.log(`🔄 [${timestamp}] Aktif kollar yükleniyor`);
+        
         this.loadBatteries();
+        console.log(`🔋 [${timestamp}] Batarya verileri yükleniyor`);
+        
         this.startAutoRefresh();
+        console.log(`⏰ [${timestamp}] Auto refresh başlatıldı`);
     }
 
     bindEvents() {
@@ -123,17 +133,22 @@ if (typeof window.BatteriesPage === 'undefined') {
     }
     
     async loadBatteries() {
+        const timestamp = new Date().toISOString();
+        console.log(`🔋 [${timestamp}] loadBatteries() başladı`);
+        
         // Sayfa kontrolü yap
         if (!this.isPageActive()) {
+            console.log(`⚠️ [${timestamp}] Sayfa aktif değil, loadBatteries iptal edildi`);
             return;
         }
         
         try {
+            console.log(`⏳ [${timestamp}] Loading gösteriliyor`);
             this.showLoading(true);
             
             // Mevcut dili al
             const currentLanguage = localStorage.getItem('language') || 'tr';
-            console.log('loadBatteries - Kullanılan dil:', currentLanguage);
+            console.log(`🌐 [${timestamp}] Kullanılan dil: ${currentLanguage}`);
             
             // API endpoint'den batarya verilerini çek
             const response = await fetch('/api/batteries', {
@@ -526,8 +541,7 @@ function initBatteriesPage() {
 // Global olarak erişilebilir yap
 // window.initBatteriesPage = initBatteriesPage; // Kaldırıldı - karışıklığa neden oluyor
 
-// Hem DOMContentLoaded hem de manuel çağrı için
-document.addEventListener('DOMContentLoaded', initBatteriesPage);
+// DOMContentLoaded kaldırıldı - main.js'den çağrılıyor
 
 // Unhandled promise rejection handler
 window.addEventListener('unhandledrejection', (event) => {
