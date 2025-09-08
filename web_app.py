@@ -12,11 +12,32 @@ app = Flask(__name__)
 db_lock = threading.Lock()  # Write işlemleri için
 db_read_lock = threading.RLock()  # Read işlemleri için (multiple readers allowed)
 
+# Retry mekanizması için
+import time as time_module
+
 # Database instance'ını thread-safe yapmak için lazy loading
+# main.py'den farklı bir connection pool kullan
 def get_db():
     if not hasattr(get_db, 'instance'):
         get_db.instance = BatteryDatabase()
+        # Connection timeout'ları ayarla
+        get_db.instance.conn.execute("PRAGMA busy_timeout = 30000")  # 30 saniye timeout
+        get_db.instance.conn.execute("PRAGMA journal_mode = WAL")  # WAL mode for better concurrency
     return get_db.instance
+
+# Database işlemleri için retry wrapper
+def db_operation_with_retry(operation, max_retries=3, delay=0.1):
+    """Database işlemini retry ile çalıştır"""
+    for attempt in range(max_retries):
+        try:
+            return operation()
+        except Exception as e:
+            if "database is locked" in str(e).lower() and attempt < max_retries - 1:
+                print(f"⚠️ Database locked, retry {attempt + 1}/{max_retries} in {delay}s...")
+                time_module.sleep(delay)
+                delay *= 2  # Exponential backoff
+            else:
+                raise e
 
 # Global db referansı (backward compatibility için)
 db = None
@@ -253,9 +274,12 @@ def get_batteries():
         print(f"DEBUG web_app.py: Dil parametresi: {language}")
         
         # Read-only işlem için read lock kullan (daha hızlı)
-        db_instance = get_db()
-        with db_read_lock:
-            batteries_data = db_instance.get_batteries_for_display(page, page_size, selected_arm, language)
+        def get_batteries_data():
+            db_instance = get_db()
+            with db_read_lock:
+                return db_instance.get_batteries_for_display(page, page_size, selected_arm, language)
+        
+        batteries_data = db_operation_with_retry(get_batteries_data)
         
         return jsonify({
             'success': True,
@@ -516,13 +540,16 @@ def get_alarms():
         page_size = int(request.args.get('pageSize', 50))
         
         # Veritabanından sayfalanmış alarmları oku
-        db_instance = get_db()
-        with db_read_lock:
-            alarms_data = db_instance.get_paginated_alarms(
-            show_resolved=show_resolved,
-            page=page,
-            page_size=page_size
-        )
+        def get_alarms_data():
+            db_instance = get_db()
+            with db_read_lock:
+                return db_instance.get_paginated_alarms(
+                    show_resolved=show_resolved,
+                    page=page,
+                    page_size=page_size
+                )
+        
+        alarms_data = db_operation_with_retry(get_alarms_data)
         
         # Alarm verilerini işle
         processed_alarms = []
