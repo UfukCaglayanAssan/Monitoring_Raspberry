@@ -3,14 +3,16 @@
 if (typeof window.ConfigurationPage === 'undefined') {
     window.ConfigurationPage = class ConfigurationPage {
     constructor() {
-        this.init();
+        this.init().catch(error => {
+            console.error('Configuration sayfası başlatılırken hata:', error);
+        });
     }
 
-    init() {
+    async init() {
         console.log('Configuration sayfası başlatıldı');
         this.bindEvents();
         this.loadArmOptions(); // Sabit 4 kol seçeneği yükle
-        this.loadConfigurations();
+        await this.loadConfigurations();
     }
 
     bindEvents() {
@@ -126,13 +128,27 @@ if (typeof window.ConfigurationPage === 'undefined') {
         }
     }
 
-    getFirstArmWithBattery() {
-        // Global activeArms verisini kullan
-        if (window.activeArms && window.activeArms.length > 0) {
-            const armsWithBatteries = window.activeArms.filter(arm => arm.slave_count > 0);
-            if (armsWithBatteries.length > 0) {
-                return armsWithBatteries.sort((a, b) => a.arm - b.arm)[0].arm;
+    async getFirstArmWithBattery() {
+        try {
+            // Aktif kolları API'den yükle
+            const response = await fetch('/api/active-arms', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.activeArms) {
+                    const armsWithBatteries = data.activeArms.filter(arm => arm.slave_count > 0);
+                    if (armsWithBatteries.length > 0) {
+                        return armsWithBatteries.sort((a, b) => a.arm - b.arm)[0].arm;
+                    }
+                }
             }
+        } catch (error) {
+            console.error('Aktif kollar yüklenirken hata:', error);
         }
         return null;
     }
@@ -146,7 +162,7 @@ if (typeof window.ConfigurationPage === 'undefined') {
             ]);
             
             // İlk bataryası olan kol için konfigürasyonları yükle
-            const firstArmWithBattery = this.getFirstArmWithBattery();
+            const firstArmWithBattery = await this.getFirstArmWithBattery();
             if (firstArmWithBattery) {
                 this.loadBatteryConfigForArm(firstArmWithBattery, batteryConfigs);
                 this.loadArmConfigForArm(firstArmWithBattery, armConfigs);

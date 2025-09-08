@@ -935,13 +935,15 @@ class BatteryDatabase:
                 print(f"Kol {selected_arm} için slave_count: {slave_count}")
                 
                 # Sadece mevcut batarya sayısı kadar batarya getir
+                # k değerleri 3'ten başlar (arm verisi k=2), slave_count kadar olmalı
+                # Örnek: slave_count=7 ise k=3,4,5,6,7,8,9 (7 adet)
                 cursor.execute(f'''
                     SELECT 
                         bd.arm,
                         bd.k as batteryAddress,
                         MAX(bd.timestamp) as latest_timestamp
                     FROM battery_data bd
-                    WHERE bd.k != 2 AND bd.k <= ? {arm_filter}
+                    WHERE bd.k != 2 AND bd.k >= 3 AND bd.k < (3 + ?) {arm_filter}
                     GROUP BY bd.arm, bd.k
                     ORDER BY bd.arm, bd.k
                 ''', (slave_count,))

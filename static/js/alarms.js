@@ -14,8 +14,7 @@ if (typeof window.AlarmsPage === 'undefined') {
 
     init() {
         this.bindEvents();
-        this.loadAlarms(); // Hemen veri yükle
-        this.startAutoRefresh();
+        this.startAutoRefresh(); // startAutoRefresh içinde loadAlarms() çağrılıyor
     }
 
     // Her seferinde aktif alarmlara sıfırla
