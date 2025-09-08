@@ -22,28 +22,36 @@ class App {
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                    e.stopPropagation();
-                    
-                    const timestamp = new Date().toISOString();
-                    const page = e.target.getAttribute('data-page');
-                    const toggle = e.target.getAttribute('data-toggle');
-                    
-                    console.log(`🖱️ [${timestamp}] MENÜ TIKLAMA - Ana menü link tıklandı:`, {
-                        page: page,
-                        toggle: toggle,
-                        text: e.target.textContent.trim(),
-                        element: e.target.tagName
-                    });
-                    
-                    if (page) {
-                        console.log(`📄 [${timestamp}] SAYFA YÜKLEME - Sayfa yükleniyor: ${page}`);
-                        this.loadPage(page);
-                    } else if (toggle === 'submenu') {
-                        console.log(`📂 [${timestamp}] SUBMENU AÇMA - Alt menü açılıyor`);
-                        this.toggleSubmenu(e.target);
-                    }
+                e.stopPropagation();
+                
+                const timestamp = new Date().toISOString();
+                
+                // Tıklanan element A ise direkt al, değilse parent A'yı bul
+                let targetElement = e.target;
+                if (targetElement.tagName !== 'A') {
+                    targetElement = targetElement.closest('a');
+                }
+                
+                const page = targetElement ? targetElement.getAttribute('data-page') : null;
+                const toggle = targetElement ? targetElement.getAttribute('data-toggle') : null;
+                
+                console.log(`🖱️ [${timestamp}] MENÜ TIKLAMA - Ana menü link tıklandı:`, {
+                    page: page,
+                    toggle: toggle,
+                    text: e.target.textContent.trim(),
+                    element: e.target.tagName,
+                    targetElement: targetElement ? targetElement.tagName : 'null'
                 });
+                
+                if (page) {
+                    console.log(`📄 [${timestamp}] SAYFA YÜKLEME - Sayfa yükleniyor: ${page}`);
+                    this.loadPage(page);
+                } else if (toggle === 'submenu') {
+                    console.log(`📂 [${timestamp}] SUBMENU AÇMA - Alt menü açılıyor`);
+                    this.toggleSubmenu(targetElement || e.target);
+                }
             });
+        });
 
             // Submenu linklerini dinle
         document.querySelectorAll('.submenu-link').forEach(link => {
