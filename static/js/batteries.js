@@ -568,25 +568,7 @@ if (typeof window.BatteriesPage === 'undefined') {
     };
 }
 
-// Sayfa yüklendiğinde başlat
-function initBatteriesPage() {
-    console.log('🔧 initBatteriesPage() çağrıldı');
-    if (!window.batteriesPage) {
-        window.batteriesPage = new window.BatteriesPage();
-    } else {
-        // Mevcut instance'ı yeniden başlat
-        console.log('🔄 Mevcut BatteriesPage instance yeniden başlatılıyor');
-        window.batteriesPage.init();
-    }
-}
-
-// DOMContentLoaded event'i için
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initBatteriesPage);
-} else {
-    // DOM zaten yüklenmiş
-    initBatteriesPage();
-}
+// Eski initBatteriesPage fonksiyonu kaldırıldı - çift init sorunu
 
 // Global error handler
 window.addEventListener('error', (event) => {
@@ -598,6 +580,10 @@ function initBatteriesPage() {
     console.log('🔧 initBatteriesPage() çağrıldı');
     if (!window.batteriesPage) {
         window.batteriesPage = new BatteriesPage();
+    } else {
+        // Mevcut instance'ı yeniden başlat
+        console.log('🔄 Mevcut BatteriesPage instance yeniden başlatılıyor');
+        window.batteriesPage.init();
     }
 }
 
