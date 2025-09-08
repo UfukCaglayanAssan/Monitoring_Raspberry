@@ -33,6 +33,26 @@ def get_page(page_name):
     else:
         return render_template('pages/404.html')
 
+@app.route('/pages/<page_name>.html')
+def get_page_html(page_name):
+    """Sayfa içeriğini HTML olarak döndür (JavaScript için)"""
+    if page_name == 'summary':
+        return render_template('pages/summary.html')
+    elif page_name == 'alarms':
+        return render_template('pages/alarms.html')
+    elif page_name == 'batteries':
+        return render_template('pages/batteries.html')
+    elif page_name == 'battery-logs':
+        return render_template('pages/battery-logs.html')
+    elif page_name == 'arm-logs':
+        return render_template('pages/arm-logs.html')
+    elif page_name == 'configuration':
+        return render_template('pages/configuration.html')
+    elif page_name == 'profile':
+        return render_template('pages/profile.html')
+    else:
+        return render_template('pages/404.html')
+
 @app.route('/api/data_types')
 def get_data_types():
     language = request.args.get('lang', 'tr')  # Varsayılan Türkçe
