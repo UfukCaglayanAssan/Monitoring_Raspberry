@@ -150,79 +150,47 @@ class App {
         // Sayfa özel init fonksiyonlarını çağır
         if (page === 'data-retrieval') {
             console.log('Calling initDataRetrievalPage');
-            if (!window.dataRetrievalPageInitialized) {
-                // Direkt fonksiyon çağrısı
-                if (typeof initDataRetrievalPage === 'function') {
-                    initDataRetrievalPage();
-                    window.dataRetrievalPageInitialized = true;
-                }
+            if (typeof initDataRetrievalPage === 'function') {
+                initDataRetrievalPage();
             }
         } else if (page === 'line-measurements') {
             console.log('Calling initLineMeasurementsPage');
-            if (!window.lineMeasurementsPageInitialized) {
-                // Direkt fonksiyon çağrısı
-                if (typeof initLineMeasurementsPage === 'function') {
-                    initLineMeasurementsPage();
-                    window.lineMeasurementsPageInitialized = true;
-                }
+            if (typeof initLineMeasurementsPage === 'function') {
+                initLineMeasurementsPage();
             }
         } else if (page === 'battery-logs') {
-                        console.log('Calling initBatteryLogsPage');
-                        if (!window.batteryLogsPageInitialized) {
-                            // Direkt fonksiyon çağrısı
-                            if (typeof initBatteryLogsPage === 'function') {
-                                initBatteryLogsPage();
-                                window.batteryLogsPageInitialized = true;
-                            }
-                        }
-                    } else if (page === 'arm-logs') {
-                        console.log('Calling initArmLogsPage');
-                        if (!window.armLogsPageInitialized) {
-                            // Direkt fonksiyon çağrısı
-                            if (typeof initArmLogsPage === 'function') {
-                                initArmLogsPage();
-                                window.armLogsPageInitialized = true;
-                            }
-                        }
+            console.log('Calling initBatteryLogsPage');
+            if (typeof initBatteryLogsPage === 'function') {
+                initBatteryLogsPage();
+            }
+        } else if (page === 'arm-logs') {
+            console.log('Calling initArmLogsPage');
+            if (typeof initArmLogsPage === 'function') {
+                initArmLogsPage();
+            }
         } else if (page === 'alarms') {
             console.log('Calling initAlarmsPage');
             // Sadece bir kez çağır
-            if (!window.alarmsPageInitialized) {
-                // Direkt fonksiyon çağrısı
-                if (typeof initAlarmsPage === 'function') {
-                    initAlarmsPage();
-                    window.alarmsPageInitialized = true;
-                }
+            if (typeof initAlarmsPage === 'function') {
+                initAlarmsPage();
             }
         } else if (page === 'summary') {
             console.log('Calling initSummaryPage');
             // Sadece bir kez çağır
-            if (!window.summaryPageInitialized) {
-                // Direkt fonksiyon çağrısı
-                if (typeof initSummaryPage === 'function') {
-                    initSummaryPage();
-                    window.summaryPageInitialized = true;
-                }
+            if (typeof initSummaryPage === 'function') {
+                initSummaryPage();
             }
         } else if (page === 'batteries') {
             console.log('Calling initBatteriesPage');
             // Sadece bir kez çağır
-            if (!window.batteriesPageInitialized) {
-                // Direkt fonksiyon çağrısı
-                if (typeof initBatteriesPage === 'function') {
-                    initBatteriesPage();
-                    window.batteriesPageInitialized = true;
-                }
+            if (typeof initBatteriesPage === 'function') {
+                initBatteriesPage();
             }
         } else if (page === 'configuration') {
             console.log('Calling initConfigurationPage');
             // Sadece bir kez çağır
-            if (!window.configurationPageInitialized) {
-                // Direkt fonksiyon çağrısı
-                if (typeof initConfigurationPage === 'function') {
-                    initConfigurationPage();
-                    window.configurationPageInitialized = true;
-                }
+            if (typeof initConfigurationPage === 'function') {
+                initConfigurationPage();
             }
                     } else {
                         console.log(`No init function found for ${page}`);
