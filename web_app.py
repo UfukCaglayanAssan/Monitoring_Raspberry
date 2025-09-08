@@ -8,8 +8,9 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# Thread-safe database erişimi için lock
-db_lock = threading.Lock()
+# Thread-safe database erişimi için lock'lar
+db_lock = threading.Lock()  # Write işlemleri için
+db_read_lock = threading.RLock()  # Read işlemleri için (multiple readers allowed)
 
 # Database instance'ını thread-safe yapmak için lazy loading
 def get_db():
@@ -68,8 +69,8 @@ def get_page_html(page_name):
 @app.route('/api/data_types')
 def get_data_types():
     language = request.args.get('lang', 'tr')  # Varsayılan Türkçe
-    with db_lock:
-        db_instance = get_db()
+    db_instance = get_db()
+    with db_read_lock:
         data_types = db_instance.get_data_types_by_language(language)
     return jsonify(data_types)
 
@@ -77,8 +78,8 @@ def get_data_types():
 def get_alarm_count():
     """Aktif alarm sayısını getir"""
     try:
-        with db_lock:
-            db_instance = get_db()
+        db_instance = get_db()
+        with db_read_lock:
             count = db_instance.get_active_alarm_count()
         return jsonify({
             'success': True,
@@ -107,8 +108,8 @@ def get_recent_data():
     if dtype:
         dtype = int(dtype)
     
-    with db_lock:
-        db_instance = get_db()
+    db_instance = get_db()
+    with db_read_lock:
         data = db_instance.get_recent_data_with_translations(
         minutes=minutes, 
         arm=arm, 
@@ -133,8 +134,8 @@ def get_data_by_date():
     if dtype:
         dtype = int(dtype)
     
-    with db_lock:
-        db_instance = get_db()
+    db_instance = get_db()
+    with db_read_lock:
         data = db_instance.get_data_by_date_range_with_translations(
         start_date, end_date, arm, dtype, language
     )
@@ -156,8 +157,8 @@ def get_battery_logs():
     
     try:
         # Veritabanından gruplandırılmış batarya log verilerini al
-        with db_lock:
-            db_instance = get_db()
+        db_instance = get_db()
+        with db_read_lock:
             logs_data = db_instance.get_grouped_battery_logs(
             page=page,
             page_size=page_size,
@@ -193,8 +194,8 @@ def get_arm_logs():
     
     try:
         # Veritabanından gruplandırılmış kol log verilerini al
-        with db_lock:
-            db_instance = get_db()
+        db_instance = get_db()
+        with db_read_lock:
             logs_data = db_instance.get_grouped_arm_logs(
             page=page,
             page_size=page_size,
@@ -223,8 +224,8 @@ def export_logs():
         data = request.get_json()
         filters = data.get('filters', {})
         
-        with db_lock:
-            db_instance = get_db()
+        db_instance = get_db()
+        with db_read_lock:
             csv_content = db_instance.export_logs_to_csv(filters)
         
         response = app.response_class(
@@ -251,8 +252,9 @@ def get_batteries():
         language = request.headers.get('X-Language', 'tr')
         print(f"DEBUG web_app.py: Dil parametresi: {language}")
         
-        with db_lock:
-            db_instance = get_db()
+        # Read-only işlem için read lock kullan (daha hızlı)
+        db_instance = get_db()
+        with db_read_lock:
             batteries_data = db_instance.get_batteries_for_display(page, page_size, selected_arm, language)
         
         return jsonify({
@@ -272,8 +274,8 @@ def get_batteries():
 def get_active_arms():
     """Aktif kolları getir (armslavecount > 0)"""
     try:
-        with db_lock:
-            db_instance = get_db()
+        db_instance = get_db()
+        with db_read_lock:
             active_arms = db_instance.get_active_arms()
         return jsonify({
             'success': True,
@@ -293,8 +295,8 @@ def get_passive_balance():
         if arm:
             arm = int(arm)
         
-        with db_lock:
-            db_instance = get_db()
+        db_instance = get_db()
+        with db_read_lock:
             balance_data = db_instance.get_passive_balance(arm)
         return jsonify({
             'success': True,
@@ -310,8 +312,8 @@ def get_passive_balance():
 def export_batteries():
     """Batarya verilerini CSV olarak export et"""
     try:
-        with db_lock:
-            db_instance = get_db()
+        db_instance = get_db()
+        with db_read_lock:
             csv_content = db_instance.export_batteries_to_csv()
         
         response = app.response_class(
@@ -332,8 +334,8 @@ def export_arm_logs():
         data = request.get_json()
         filters = data.get('filters', {}) if data else {}
         
-        with db_lock:
-            db_instance = get_db()
+        db_instance = get_db()
+        with db_read_lock:
             csv_content = db_instance.export_arm_logs_to_csv(filters)
         
         response = app.response_class(
@@ -473,8 +475,8 @@ def get_batconfigs():
     """Tüm batarya konfigürasyonlarını getir"""
     try:
         # Veritabanından konfigürasyonları oku
-        with db_lock:
-            db_instance = get_db()
+        db_instance = get_db()
+        with db_read_lock:
             configs = db_instance.get_batconfigs()
         return jsonify({
             'success': True,
@@ -491,8 +493,8 @@ def get_armconfigs():
     """Tüm kol konfigürasyonlarını getir"""
     try:
         # Veritabanından konfigürasyonları oku
-        with db_lock:
-            db_instance = get_db()
+        db_instance = get_db()
+        with db_read_lock:
             configs = db_instance.get_armconfigs()
         return jsonify({
             'success': True,
@@ -514,8 +516,8 @@ def get_alarms():
         page_size = int(request.args.get('pageSize', 50))
         
         # Veritabanından sayfalanmış alarmları oku
-        with db_lock:
-            db_instance = get_db()
+        db_instance = get_db()
+        with db_read_lock:
             alarms_data = db_instance.get_paginated_alarms(
             show_resolved=show_resolved,
             page=page,
@@ -550,8 +552,8 @@ def get_summary():
         
         # Veritabanından özet verileri oku
         start_time = time.time()
-        with db_lock:
-            db_instance = get_db()
+        db_instance = get_db()
+        with db_read_lock:
             summary_data = db_instance.get_summary_data()
         end_time = time.time()
         
@@ -691,6 +693,6 @@ def send_config_to_device():
 
 if __name__ == '__main__':
     print("Flask web uygulaması başlatılıyor...")
-    with db_lock:
+    with db_read_lock:
         print(f"Veritabanı boyutu: {get_db().get_database_size():.2f} MB")
     app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
