@@ -14,31 +14,35 @@ class App {
     }
 
     bindEvents() {
-        // Menü navigasyonu
+        // Menü navigasyonu - sadece bir kez ekle
+        if (!this.eventsBound) {
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                const page = e.target.getAttribute('data-page');
-                const toggle = e.target.getAttribute('data-toggle');
-                
-                if (page) {
-                    this.loadPage(page);
-                } else if (toggle === 'submenu') {
-                    this.toggleSubmenu(e.target);
-                }
+                    const page = e.target.getAttribute('data-page');
+                    const toggle = e.target.getAttribute('data-toggle');
+                    
+                    if (page) {
+                        this.loadPage(page);
+                    } else if (toggle === 'submenu') {
+                        this.toggleSubmenu(e.target);
+                    }
+                });
             });
-        });
 
-        // Submenu linklerini dinle
+            // Submenu linklerini dinle
         document.querySelectorAll('.submenu-link').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                const page = e.target.getAttribute('data-page');
-                if (page) {
-                    this.loadPage(page);
-                }
+                    const page = e.target.getAttribute('data-page');
+                    if (page) {
+                        this.loadPage(page);
+                    }
+                });
             });
-        });
+            
+            this.eventsBound = true;
+        }
 
         // Dil değiştirme
         document.querySelectorAll('.language-btn').forEach(btn => {
@@ -46,7 +50,7 @@ class App {
                 e.preventDefault();
                 const lang = e.target.getAttribute('data-lang');
                 if (lang) {
-                    this.setLanguage(lang);
+                this.setLanguage(lang);
                 }
             });
         });
@@ -97,9 +101,9 @@ class App {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             
-            const html = await response.text();
-            pageContent.innerHTML = html;
-            
+                const html = await response.text();
+                pageContent.innerHTML = html;
+                
             // Aktif menüyü güncelle
             this.updateActiveMenu(page);
             
@@ -151,11 +155,11 @@ class App {
             console.log('Calling initLineMeasurementsPage');
             window.initLineMeasurementsPage();
         } else if (page === 'battery-logs' && window.initBatteryLogsPage) {
-            console.log('Calling initBatteryLogsPage');
-            window.initBatteryLogsPage();
-        } else if (page === 'arm-logs' && window.initArmLogsPage) {
-            console.log('Calling initArmLogsPage');
-            window.initArmLogsPage();
+                        console.log('Calling initBatteryLogsPage');
+                        window.initBatteryLogsPage();
+                    } else if (page === 'arm-logs' && window.initArmLogsPage) {
+                        console.log('Calling initArmLogsPage');
+                        window.initArmLogsPage();
         } else if (page === 'alarms' && window.initAlarmsPage) {
             console.log('Calling initAlarmsPage');
             if (document.querySelector('.alarms-page')) {
@@ -204,10 +208,10 @@ class App {
                     }
                 }, 50);
             }
-        } else {
-            console.log(`No init function found for ${page}`);
-        }
-    }
+                    } else {
+                        console.log(`No init function found for ${page}`);
+                    }
+                }
 
     updateActiveMenu(page) {
         // Tüm menü linklerini pasif yap
@@ -252,8 +256,8 @@ class App {
         // 3 saniye sonra kaldır
         setTimeout(() => {
             toast.classList.remove('show');
-            setTimeout(() => {
-                toast.remove();
+        setTimeout(() => {
+            toast.remove();
             }, 300);
         }, 3000);
     }

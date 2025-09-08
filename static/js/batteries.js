@@ -7,7 +7,7 @@ if (typeof window.BatteriesPage === 'undefined') {
         this.pageSize = 30;
         this.totalPages = 1;
         this.batteriesData = [];
-        this.selectedArm = 3; // 1-4 = Belirli kol (varsayılan: Kol 3)
+        this.selectedArm = parseInt(localStorage.getItem('selectedArm')) || 3; // localStorage'dan al, yoksa varsayılan: Kol 3
         
         this.init();
     }

@@ -1111,7 +1111,7 @@ class BatteryDatabase:
                         MAX(CASE WHEN dtype = 14 THEN data END) as negative_pole_temp,
                         MAX(CASE WHEN dtype = 126 THEN data END) as health_status
                     FROM battery_data 
-                    WHERE k > 2
+                    WHERE k != 2
                 '''
                 
                 params = []
