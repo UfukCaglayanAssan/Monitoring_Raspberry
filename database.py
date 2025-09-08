@@ -8,7 +8,7 @@ import queue
 from contextlib import contextmanager
 
 class BatteryDatabase:
-    def __init__(self, db_path="battery_data.db", max_connections=5):
+    def __init__(self, db_path="battery_data.db", max_connections=20):
         self.db_path = db_path
         self.lock = threading.Lock()
         self.connection_pool = queue.Queue(maxsize=max_connections)
@@ -23,31 +23,63 @@ class BatteryDatabase:
             self.check_default_arm_slave_counts()
     
     def _create_connections(self):
-        """Connection pool oluştur - thread-safe"""
+        """Connection pool oluştur - thread-safe ve performanslı"""
         for _ in range(self.max_connections):
             conn = sqlite3.connect(
                 self.db_path, 
-                timeout=30.0,
+                timeout=60.0,  # Daha uzun timeout
                 check_same_thread=False  # Thread-safe için
             )
+            # Performans ve concurrency optimizasyonları
             conn.execute("PRAGMA journal_mode=WAL")  # WAL mode for better concurrency
             conn.execute("PRAGMA synchronous=NORMAL")  # Faster writes
-            conn.execute("PRAGMA cache_size=10000")  # Larger cache
+            conn.execute("PRAGMA cache_size=50000")  # Çok daha büyük cache
+            conn.execute("PRAGMA temp_store=MEMORY")  # Temp tabloları memory'de
+            conn.execute("PRAGMA mmap_size=268435456")  # 256MB mmap
+            conn.execute("PRAGMA page_size=4096")  # 4KB page size
+            conn.execute("PRAGMA auto_vacuum=INCREMENTAL")  # Incremental vacuum
             conn.execute("PRAGMA foreign_keys=ON")  # Foreign key constraints
+            conn.execute("PRAGMA busy_timeout=30000")  # 30 saniye busy timeout
             self.connection_pool.put(conn)
     
     @contextmanager
     def get_connection(self):
-        """Connection pool'dan connection al - thread-safe"""
+        """Connection pool'dan connection al - thread-safe ve güçlü"""
         conn = None
-        try:
-            with self.lock:  # Thread-safe access
-                conn = self.connection_pool.get(timeout=5.0)
-            yield conn
-        finally:
-            if conn:
-                with self.lock:  # Thread-safe return
-                    self.connection_pool.put(conn)
+        retry_count = 0
+        max_retries = 3
+        
+        while retry_count < max_retries:
+            try:
+                with self.lock:  # Thread-safe access
+                    conn = self.connection_pool.get(timeout=10.0)  # Daha uzun timeout
+                yield conn
+                break
+            except queue.Empty:
+                retry_count += 1
+                if retry_count >= max_retries:
+                    print(f"❌ Connection pool timeout after {max_retries} retries")
+                    # Yeni connection oluştur
+                    conn = sqlite3.connect(
+                        self.db_path, 
+                        timeout=30.0,
+                        check_same_thread=False
+                    )
+                    conn.execute("PRAGMA journal_mode=WAL")
+                    conn.execute("PRAGMA synchronous=NORMAL")
+                    conn.execute("PRAGMA cache_size=50000")
+                    yield conn
+                else:
+                    print(f"⚠️ Connection pool timeout, retry {retry_count}/{max_retries}")
+                    time.sleep(0.1)  # Kısa bekleme
+            finally:
+                if conn:
+                    try:
+                        with self.lock:  # Thread-safe return
+                            self.connection_pool.put(conn)
+                    except queue.Full:
+                        # Pool dolu, connection'ı kapat
+                        conn.close()
     
     def init_database(self):
         with self.lock:
@@ -277,14 +309,32 @@ class BatteryDatabase:
             conn.commit()
     
     def insert_battery_data_batch(self, batch):
-        """Batch olarak veri ekle"""
+        """Batch olarak veri ekle - optimize edilmiş"""
+        if not batch:
+            return
+            
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.executemany('''
-                INSERT INTO battery_data (arm, k, dtype, data, timestamp)
-                VALUES (?, ?, ?, ?, ?)
-            ''', [(record['Arm'], record['k'], record['Dtype'], record['data'], record['timestamp']) for record in batch])
-            conn.commit()
+            
+            # Transaction başlat
+            cursor.execute("BEGIN IMMEDIATE")
+            
+            try:
+                # Batch insert
+                cursor.executemany('''
+                    INSERT INTO battery_data (arm, k, dtype, data, timestamp)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', [(record['Arm'], record['k'], record['Dtype'], record['data'], record['timestamp']) for record in batch])
+                
+                # Commit
+                conn.commit()
+                print(f"✅ {len(batch)} veri batch olarak eklendi")
+                
+            except Exception as e:
+                # Rollback on error
+                conn.rollback()
+                print(f"❌ Batch insert hatası: {e}")
+                raise
     
     def insert_alarm(self, arm, battery, error_code_msb, error_code_lsb, timestamp):
         """Alarm verisi ekle"""

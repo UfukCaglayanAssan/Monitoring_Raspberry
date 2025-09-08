@@ -16,29 +16,34 @@ class App {
     bindEvents() {
         // Menü navigasyonu - sadece bir kez ekle
         if (!this.eventsBound) {
+            console.log('🔗 Event listener\'lar bağlanıyor...');
+            
+            // Ana menü linkleri
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                const timestamp = new Date().toISOString();
-                const page = e.target.getAttribute('data-page');
-                const toggle = e.target.getAttribute('data-toggle');
-                
-                console.log(`🖱️ [${timestamp}] MENÜ TIKLAMA - Ana menü link tıklandı:`, {
-                    page: page,
-                    toggle: toggle,
-                    text: e.target.textContent.trim(),
-                    element: e.target
+                    e.stopPropagation();
+                    
+                    const timestamp = new Date().toISOString();
+                    const page = e.target.getAttribute('data-page');
+                    const toggle = e.target.getAttribute('data-toggle');
+                    
+                    console.log(`🖱️ [${timestamp}] MENÜ TIKLAMA - Ana menü link tıklandı:`, {
+                        page: page,
+                        toggle: toggle,
+                        text: e.target.textContent.trim(),
+                        element: e.target.tagName
+                    });
+                    
+                    if (page) {
+                        console.log(`📄 [${timestamp}] SAYFA YÜKLEME - Sayfa yükleniyor: ${page}`);
+                        this.loadPage(page);
+                    } else if (toggle === 'submenu') {
+                        console.log(`📂 [${timestamp}] SUBMENU AÇMA - Alt menü açılıyor`);
+                        this.toggleSubmenu(e.target);
+                    }
                 });
-                
-                if (page) {
-                    console.log(`📄 [${timestamp}] SAYFA YÜKLEME - Sayfa yükleniyor: ${page}`);
-                    this.loadPage(page);
-                } else if (toggle === 'submenu') {
-                    console.log(`📂 [${timestamp}] SUBMENU AÇMA - Alt menü açılıyor`);
-                    this.toggleSubmenu(e.target);
-                }
             });
-        });
 
             // Submenu linklerini dinle
         document.querySelectorAll('.submenu-link').forEach(link => {
@@ -123,6 +128,14 @@ class App {
 
     async loadPage(page) {
         const timestamp = new Date().toISOString();
+        
+        // Çift yükleme kontrolü
+        if (this.currentPage === page && this.isLoading) {
+            console.log(`⚠️ [${timestamp}] ÇİFT YÜKLEME ENGELLENDİ - ${page} zaten yükleniyor`);
+            return;
+        }
+        
+        this.isLoading = true;
         console.log(`🔄 [${timestamp}] SAYFA YÜKLEME BAŞLADI - Sayfa: ${page}`);
         
         const pageContent = document.getElementById('pageContent');
@@ -145,11 +158,11 @@ class App {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             
-            const html = await response.text();
+                const html = await response.text();
             const loadTime = performance.now() - startTime;
             console.log(`📄 [${timestamp}] HTML ALINDI - Uzunluk: ${html.length}, Süre: ${loadTime.toFixed(2)}ms`);
             
-            pageContent.innerHTML = html;
+                pageContent.innerHTML = html;
             console.log(`✅ [${timestamp}] SAYFA YÜKLENDİ - ${page} başarıyla yüklendi`);
                 
             // Aktif menüyü güncelle
@@ -160,10 +173,12 @@ class App {
             this.loadPageScript(page);
             
             this.currentPage = page;
+            this.isLoading = false;
             console.log('Page loaded:', page);
             
         } catch (error) {
             console.error('Sayfa yüklenirken hata:', error);
+            this.isLoading = false;
             pageContent.innerHTML = `
                 <div class="error">
                     <h3>Sayfa yüklenemedi</h3>

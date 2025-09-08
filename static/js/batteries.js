@@ -96,12 +96,18 @@ if (typeof window.BatteriesPage === 'undefined') {
                 button.disabled = false;
                 button.classList.remove('disabled');
                 const batteryCount = activeArms.find(arm => arm.arm === armNumber).slave_count;
-                button.querySelector('.battery-count').textContent = `${batteryCount} Batarya`;
+                const batteryCountElement = button.querySelector('.battery-count');
+                if (batteryCountElement) {
+                    batteryCountElement.textContent = `${batteryCount} Batarya`;
+                }
             } else {
                 // Pasif kol - disable et
                 button.disabled = true;
                 button.classList.add('disabled');
-                button.querySelector('.battery-count').textContent = '0 Batarya';
+                const batteryCountElement = button.querySelector('.battery-count');
+                if (batteryCountElement) {
+                    batteryCountElement.textContent = '0 Batarya';
+                }
             }
         });
         
