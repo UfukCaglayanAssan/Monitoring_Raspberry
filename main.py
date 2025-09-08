@@ -421,15 +421,8 @@ def db_worker():
                 if not is_valid_arm_data(arm_value, k_value):
                     continue
                 
-                # Periyot tamamlandı mı kontrol et
-                if is_period_complete(arm_value, k_value, is_missing_data=False):
-                    # Periyot bitti, reset system sinyali gönder
-                    send_reset_system_signal()
-                    # Missing data listesini temizle
-                    clear_missing_data()
-                    # Yeni periyot başlat
-                    reset_period()
-                    get_period_timestamp()
+                # Normal batarya verisi geldiğinde reset sinyali gönderilmez
+                # Sadece missing data geldiğinde reset sinyali gönderilir
                 
                 # Salt data hesapla
                 if dtype == 11 and k_value == 2:  # Nem hesapla
