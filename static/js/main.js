@@ -208,23 +208,23 @@ class App {
         }
 
         // Yeni script'i yükle
-        const script = document.createElement('script');
+            const script = document.createElement('script');
         script.id = 'page-script';
         script.src = `/static/js/${page}.js`;
         console.log(`📡 [${timestamp}] SCRIPT FETCH EDİLİYOR - /static/js/${page}.js`);
         
         const scriptStartTime = performance.now();
         
-        script.onload = () => {
+            script.onload = () => {
             const scriptLoadTime = performance.now() - scriptStartTime;
             console.log(`✅ [${timestamp}] SCRIPT YÜKLENDİ - ${page}.js (${scriptLoadTime.toFixed(2)}ms)`);
             // Script yüklendikten sonra otomatik init yapılacak (script içinde)
             console.log(`🎯 [${timestamp}] SCRIPT YÜKLENDİ - Otomatik init bekleniyor...`);
-        };
-        script.onerror = () => {
+            };
+            script.onerror = () => {
             console.error(`❌ [${timestamp}] SCRIPT YÜKLEME HATASI - ${page}.js yüklenemedi`);
-        };
-        document.head.appendChild(script);
+            };
+            document.head.appendChild(script);
     }
 
     // initPageSpecificFunctions kaldırıldı - script'ler otomatik init yapıyor

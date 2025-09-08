@@ -13,8 +13,8 @@ if (typeof window.AlarmsPage === 'undefined') {
 
     init() {
         this.bindEvents();
+        this.loadAlarms(); // Hemen veri yükle
         this.startAutoRefresh();
-        // resetToActiveAlarms() kaldırıldı - çift yükleme sorunu
     }
 
     // Her seferinde aktif alarmlara sıfırla

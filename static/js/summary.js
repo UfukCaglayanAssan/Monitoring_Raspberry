@@ -321,9 +321,7 @@ function initSummaryPage() {
     if (!window.summaryPage) {
         console.log('🆕 Yeni SummaryPage instance oluşturuluyor');
         window.summaryPage = new window.SummaryPage();
-    }
-    // Mevcut instance varsa yeniden başlat
-    if (window.summaryPage) {
+    } else {
         console.log('🔄 SummaryPage instance yeniden başlatılıyor');
         window.summaryPage.init();
     }
