@@ -21,30 +21,37 @@ class BatteryDatabase:
             print(f"Veritabanı zaten mevcut: {self.db_path}")
     
     def _create_connections(self):
-        """Connection pool oluştur"""
+        """Connection pool oluştur - thread-safe"""
         for _ in range(self.max_connections):
-            conn = sqlite3.connect(self.db_path, timeout=30.0)
+            conn = sqlite3.connect(
+                self.db_path, 
+                timeout=30.0,
+                check_same_thread=False  # Thread-safe için
+            )
             conn.execute("PRAGMA journal_mode=WAL")  # WAL mode for better concurrency
             conn.execute("PRAGMA synchronous=NORMAL")  # Faster writes
             conn.execute("PRAGMA cache_size=10000")  # Larger cache
+            conn.execute("PRAGMA foreign_keys=ON")  # Foreign key constraints
             self.connection_pool.put(conn)
     
     @contextmanager
     def get_connection(self):
-        """Connection pool'dan connection al"""
+        """Connection pool'dan connection al - thread-safe"""
         conn = None
         try:
-            conn = self.connection_pool.get(timeout=5.0)
+            with self.lock:  # Thread-safe access
+                conn = self.connection_pool.get(timeout=5.0)
             yield conn
         finally:
             if conn:
-                self.connection_pool.put(conn)
+                with self.lock:  # Thread-safe return
+                    self.connection_pool.put(conn)
     
     def init_database(self):
         with self.lock:
             print(f"Yeni veritabanı oluşturuluyor: {self.db_path}")
             
-            with sqlite3.connect(self.db_path) as conn:
+            with sqlite3.connect(self.db_path, check_same_thread=False) as conn:
                 cursor = conn.cursor()
                 
                 print("Yeni veritabanı oluşturuluyor...")
