@@ -72,9 +72,20 @@ if (typeof window.ConfigurationPage === 'undefined') {
     }
 
     updateArmSelectsWithBatteryStatus(activeArms) {
+        // Sayfa kontrolü yap - sadece configuration sayfasında çalış
+        if (!this.isConfigurationPageActive()) {
+            return;
+        }
+        
         // Sabit 4 kol seçeneği yükle - sadece arm_slave_counts kullan
         const batArmSelect = document.getElementById('batArmSelect');
         const armArmSelect = document.getElementById('armArmSelect');
+        
+        // Element kontrolü yap
+        if (!batArmSelect || !armArmSelect) {
+            console.warn('Configuration sayfası elementleri bulunamadı');
+            return;
+        }
         
         // Select'leri temizle
         batArmSelect.innerHTML = '<option value="">Kol Seçin</option>';
@@ -230,9 +241,21 @@ if (typeof window.ConfigurationPage === 'undefined') {
     }
 
     loadBatteryDefaultsForArm(armValue) {
+        // Sayfa kontrolü yap
+        if (!this.isConfigurationPageActive()) {
+            return;
+        }
+        
         const defaults = this.getBatteryDefaults(armValue);
         
-        document.getElementById('Vmin').value = defaults.Vmin;
+        // Element kontrolü yap
+        const vminElement = document.getElementById('Vmin');
+        if (!vminElement) {
+            console.warn('Vmin elementi bulunamadı');
+            return;
+        }
+        
+        vminElement.value = defaults.Vmin;
         document.getElementById('Vmax').value = defaults.Vmax;
         document.getElementById('Vnom').value = defaults.Vnom;
         document.getElementById('Rintnom').value = defaults.Rintnom;
@@ -412,6 +435,12 @@ if (typeof window.ConfigurationPage === 'undefined') {
                 alert('Konfigürasyon gönderilirken hata oluştu!');
             }
         }
+    }
+    
+    isConfigurationPageActive() {
+        // Configuration sayfasında olup olmadığımızı kontrol et
+        const configPage = document.querySelector('.configuration-page');
+        return configPage && configPage.style.display !== 'none';
     }
     };
 }

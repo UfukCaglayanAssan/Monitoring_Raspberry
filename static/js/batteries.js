@@ -60,6 +60,7 @@ if (typeof window.BatteriesPage === 'undefined') {
 
     async loadActiveArms() {
         // Aktif kolları yükle ve butonları güncelle
+        console.log('🔍 Aktif kollar yükleniyor...');
         try {
             const response = await fetch('/api/active-arms', {
                 method: 'GET',
@@ -70,60 +71,100 @@ if (typeof window.BatteriesPage === 'undefined') {
 
             if (response.ok) {
                 const data = await response.json();
+                console.log('📊 API yanıtı:', data);
+                
                 if (data.success) {
+                    console.log('✅ Aktif kollar verisi alındı:', data.activeArms);
                     this.updateArmButtons(data.activeArms);
+                } else {
+                    console.error('❌ API başarısız:', data.message);
                 }
+            } else {
+                console.error('❌ HTTP hatası:', response.status);
             }
         } catch (error) {
-            console.error('Aktif kollar yüklenirken hata:', error);
+            console.error('❌ Aktif kollar yüklenirken hata:', error);
         }
     }
 
     updateArmButtons(activeArms) {
         // Kol butonlarını güncelle - tüm kolları göster, sadece aktif olanları enable et
-        const armButtons = document.querySelectorAll('.arm-btn');
+        console.log('🔧 updateArmButtons çağrıldı');
+        console.log('📋 Gelen aktif kollar:', activeArms);
         
-        // Aktif kol listesi oluştur
-        const activeArmNumbers = activeArms.map(arm => arm.arm);
+        const armButtons = document.querySelectorAll('.arm-btn');
+        console.log('🔘 Bulunan kol butonları:', armButtons.length);
+        
+        // Aktif kol listesi oluştur ve sırala (1, 2, 3, 4)
+        const activeArmNumbers = activeArms.map(arm => arm.arm).sort((a, b) => a - b);
+        
+        console.log('📊 Aktif kollar (sıralı):', activeArmNumbers);
+        
+        // Her kol için detaylı bilgi
+        activeArms.forEach(arm => {
+            console.log(`🔋 Kol ${arm.arm}: ${arm.slave_count} batarya`);
+        });
         
         // Tüm butonları göster ve durumlarını güncelle
-        armButtons.forEach(button => {
+        console.log('🔄 Butonlar güncelleniyor...');
+        armButtons.forEach((button, index) => {
             const armNumber = parseInt(button.getAttribute('data-arm'));
             button.style.display = 'block';
             
+            console.log(`🔘 Buton ${index + 1}: Kol ${armNumber} işleniyor...`);
+            
             if (activeArmNumbers.includes(armNumber)) {
                 // Aktif kol - enable et
+                const batteryCount = activeArms.find(arm => arm.arm === armNumber).slave_count;
                 button.disabled = false;
                 button.classList.remove('disabled');
-                const batteryCount = activeArms.find(arm => arm.arm === armNumber).slave_count;
+                
                 const batteryCountElement = button.querySelector('.battery-count');
                 if (batteryCountElement) {
                     batteryCountElement.textContent = `${batteryCount} Batarya`;
                 }
+                
+                console.log(`✅ Kol ${armNumber}: ${batteryCount} batarya - ENABLED`);
             } else {
                 // Pasif kol - disable et
                 button.disabled = true;
                 button.classList.add('disabled');
+                
                 const batteryCountElement = button.querySelector('.battery-count');
                 if (batteryCountElement) {
                     batteryCountElement.textContent = '0 Batarya';
                 }
+                
+                console.log(`❌ Kol ${armNumber}: 0 batarya - DISABLED`);
             }
         });
         
-        // İlk aktif kolu seç
-        if (activeArms.length > 0) {
-            this.selectArm(activeArms[0].arm);
+        // İlk aktif kolu seç (sıralı olarak)
+        console.log('🎯 Kol seçimi yapılıyor...');
+        if (activeArmNumbers.length > 0) {
+            const firstActiveArm = activeArmNumbers[0];
+            console.log(`🏆 İlk aktif kol seçiliyor: Kol ${firstActiveArm}`);
+            console.log(`📋 Seçim sırası: ${activeArmNumbers.join(', ')}`);
+            this.selectArm(firstActiveArm);
+        } else {
+            console.log('⚠️ Hiç aktif kol bulunamadı!');
         }
     }
     
     selectArm(arm) {
         // Sadece aktif kollar seçilebilir
         const button = document.querySelector(`[data-arm="${arm}"]`);
-        if (button && button.disabled) {
+        if (!button) {
+            console.log(`Kol ${arm} butonu bulunamadı`);
+            return;
+        }
+        
+        if (button.disabled) {
             console.log(`Kol ${arm} seçilemez - batarya yok`);
             return;
         }
+        
+        console.log(`Kol ${arm} seçiliyor...`);
         
         // Aktif buton stilini güncelle
         document.querySelectorAll('.arm-btn').forEach(btn => {
@@ -133,6 +174,9 @@ if (typeof window.BatteriesPage === 'undefined') {
         
         // Seçilen kol'u güncelle
         this.selectedArm = arm;
+        localStorage.setItem('selectedArm', arm); // localStorage'a kaydet
+        
+        console.log(`Kol ${arm} seçildi, bataryalar yükleniyor...`);
         
         // Bataryaları yeniden yükle
         this.loadBatteries();
@@ -545,9 +589,11 @@ function initBatteriesPage() {
 }
 
 // Global olarak erişilebilir yap
-// window.initBatteriesPage = initBatteriesPage; // Kaldırıldı - karışıklığa neden oluyor
+window.initBatteriesPage = initBatteriesPage;
 
-// DOMContentLoaded kaldırıldı - main.js'den çağrılıyor
+// Script yüklendiğinde otomatik init
+console.log('🔧 Batteries.js yüklendi, otomatik init başlatılıyor...');
+initBatteriesPage();
 
 // Unhandled promise rejection handler
 window.addEventListener('unhandledrejection', (event) => {

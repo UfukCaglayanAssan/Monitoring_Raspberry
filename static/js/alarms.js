@@ -373,10 +373,11 @@ function initAlarmsPage() {
 }
 
 // Global olarak erişilebilir yap
-// window.initAlarmsPage = initAlarmsPage; // Kaldırıldı - karışıklığa neden oluyor
+window.initAlarmsPage = initAlarmsPage;
 
-// Hem DOMContentLoaded hem de manuel çağrı için
-document.addEventListener('DOMContentLoaded', initAlarmsPage);
+// Script yüklendiğinde otomatik init
+console.log('🔧 Alarms.js yüklendi, otomatik init başlatılıyor...');
+initAlarmsPage();
 
 
 

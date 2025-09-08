@@ -218,9 +218,8 @@ class App {
         script.onload = () => {
             const scriptLoadTime = performance.now() - scriptStartTime;
             console.log(`✅ [${timestamp}] SCRIPT YÜKLENDİ - ${page}.js (${scriptLoadTime.toFixed(2)}ms)`);
-            // Sayfa özel init fonksiyonunu çağır
-            console.log(`🚀 [${timestamp}] INIT FONKSİYONLARI ÇAĞRILIYOR - ${page} için init fonksiyonları`);
-            this.initPageSpecificFunctions(page);
+            // Script yüklendikten sonra otomatik init yapılacak (script içinde)
+            console.log(`🎯 [${timestamp}] SCRIPT YÜKLENDİ - Otomatik init bekleniyor...`);
         };
         script.onerror = () => {
             console.error(`❌ [${timestamp}] SCRIPT YÜKLEME HATASI - ${page}.js yüklenemedi`);
@@ -228,79 +227,7 @@ class App {
         document.head.appendChild(script);
     }
 
-    initPageSpecificFunctions(page) {
-        const timestamp = new Date().toISOString();
-        console.log(`🔧 [${timestamp}] INIT FONKSİYONLARI BAŞLADI - Sayfa: ${page}`);
-        
-        // Sayfa özel init fonksiyonlarını çağır
-        if (page === 'data-retrieval') {
-            console.log('🚀 Calling initDataRetrievalPage');
-            if (typeof initDataRetrievalPage === 'function') {
-                initDataRetrievalPage();
-                console.log('✅ initDataRetrievalPage called successfully');
-            } else {
-                console.warn('⚠️ initDataRetrievalPage function not found');
-            }
-        } else if (page === 'line-measurements') {
-            console.log('🚀 Calling initLineMeasurementsPage');
-            if (typeof initLineMeasurementsPage === 'function') {
-                initLineMeasurementsPage();
-                console.log('✅ initLineMeasurementsPage called successfully');
-            } else {
-                console.warn('⚠️ initLineMeasurementsPage function not found');
-            }
-        } else if (page === 'battery-logs') {
-            console.log('🚀 Calling initBatteryLogsPage');
-            if (typeof initBatteryLogsPage === 'function') {
-                initBatteryLogsPage();
-                console.log('✅ initBatteryLogsPage called successfully');
-            } else {
-                console.warn('⚠️ initBatteryLogsPage function not found');
-            }
-        } else if (page === 'arm-logs') {
-            console.log('🚀 Calling initArmLogsPage');
-            if (typeof initArmLogsPage === 'function') {
-                initArmLogsPage();
-                console.log('✅ initArmLogsPage called successfully');
-            } else {
-                console.warn('⚠️ initArmLogsPage function not found');
-            }
-        } else if (page === 'alarms') {
-            console.log('🚀 Calling initAlarmsPage');
-            if (typeof initAlarmsPage === 'function') {
-                initAlarmsPage();
-                console.log('✅ initAlarmsPage called successfully');
-            } else {
-                console.warn('⚠️ initAlarmsPage function not found');
-            }
-        } else if (page === 'summary') {
-            console.log('🚀 Calling initSummaryPage');
-            if (typeof initSummaryPage === 'function') {
-                initSummaryPage();
-                console.log('✅ initSummaryPage called successfully');
-            } else {
-                console.warn('⚠️ initSummaryPage function not found');
-            }
-        } else if (page === 'batteries') {
-            console.log('🚀 Calling initBatteriesPage');
-            if (typeof initBatteriesPage === 'function') {
-                initBatteriesPage();
-                console.log('✅ initBatteriesPage called successfully');
-            } else {
-                console.warn('⚠️ initBatteriesPage function not found');
-            }
-        } else if (page === 'configuration') {
-            console.log('🚀 Calling initConfigurationPage');
-            if (typeof initConfigurationPage === 'function') {
-                initConfigurationPage();
-                console.log('✅ initConfigurationPage called successfully');
-                } else {
-                console.warn('⚠️ initConfigurationPage function not found');
-            }
-                    } else {
-            console.log(`❌ No init function found for ${page}`);
-        }
-    }
+    // initPageSpecificFunctions kaldırıldı - script'ler otomatik init yapıyor
 
     updateActiveMenu(page) {
         // Tüm menü linklerini pasif yap
