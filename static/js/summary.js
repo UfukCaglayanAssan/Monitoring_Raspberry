@@ -7,9 +7,9 @@ if (typeof window.SummaryPage === 'undefined') {
         this.init();
     }
 
-    init() {
+    async init() {
         this.bindEvents();
-        this.loadSummaryData();
+        await this.loadSummaryData();
         this.startAutoRefresh();
     }
 
@@ -291,10 +291,14 @@ if (typeof window.SummaryPage === 'undefined') {
 }
 
 // Sayfa yüklendiğinde başlat
-function initSummaryPage() {
+async function initSummaryPage() {
     console.log('🔧 initSummaryPage() çağrıldı');
     if (!window.summaryPage) {
         window.summaryPage = new window.SummaryPage();
+    } else {
+        // Mevcut instance'ı yeniden başlat
+        console.log('🔄 Mevcut SummaryPage instance yeniden başlatılıyor');
+        await window.summaryPage.init();
     }
 }
 
