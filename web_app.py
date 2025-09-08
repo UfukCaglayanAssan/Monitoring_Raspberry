@@ -20,9 +20,8 @@ import time as time_module
 def get_db():
     if not hasattr(get_db, 'instance'):
         get_db.instance = BatteryDatabase()
-        # Connection timeout'ları ayarla
-        get_db.instance.conn.execute("PRAGMA busy_timeout = 30000")  # 30 saniye timeout
-        get_db.instance.conn.execute("PRAGMA journal_mode = WAL")  # WAL mode for better concurrency
+        # Connection pool zaten WAL mode ve timeout ile yapılandırılmış
+        print("✅ Database instance oluşturuldu (WAL mode + timeout enabled)")
     return get_db.instance
 
 # Database işlemleri için retry wrapper
