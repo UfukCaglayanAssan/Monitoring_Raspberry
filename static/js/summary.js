@@ -1,6 +1,5 @@
 // Summary Sayfası JavaScript
-if (typeof SummaryPage === 'undefined') {
-    class SummaryPage {
+class SummaryPage {
     constructor() {
         this.summaryData = [];
         this.init();
@@ -285,7 +284,6 @@ if (typeof SummaryPage === 'undefined') {
 
     isPageActive() {
         return document.querySelector('.summary-page') !== null;
-    }
     }
 }
 
