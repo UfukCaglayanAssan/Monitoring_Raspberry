@@ -419,11 +419,31 @@ def save_batconfig():
         }
         
         try:
+            # Konfigürasyonu dosyaya kaydet (main.py için)
             with open('pending_config.json', 'w', encoding='utf-8') as f:
                 json.dump(config_data, f, indent=2, ensure_ascii=False)
             print(f"Batarya konfigürasyonu dosyaya kaydedildi: {data}")
+            
+            # Konfigürasyonu veritabanına da kaydet
+            db_instance = get_db()
+            with db_lock:
+                db_instance.save_battery_config(
+                    arm=data['armValue'],
+                    vmin=data['Vmin'],
+                    vmax=data['Vmax'],
+                    vnom=data['Vnom'],
+                    rintnom=data['Rintnom'],
+                    tempmin_d=data['Tempmin_D'],
+                    tempmax_d=data['Tempmax_D'],
+                    tempmin_pn=data['Tempmin_PN'],
+                    tempmaks_pn=data['Tempmaks_PN'],
+                    socmin=data['Socmin'],
+                    sohmin=data['Sohmin']
+                )
+            print(f"Batarya konfigürasyonu veritabanına kaydedildi: Kol {data['armValue']}")
+            
         except Exception as e:
-            print(f"Konfigürasyon dosyaya kaydedilirken hata: {e}")
+            print(f"Konfigürasyon kaydedilirken hata: {e}")
             return jsonify({
                 'success': False,
                 'message': 'Konfigürasyon kaydedilemedi'

@@ -597,19 +597,24 @@ def db_worker():
 
             # Batch kontrolü ve kayıt
             if len(batch) >= 100 or (time.time() - last_insert) > 5:
+                # Sadece yazma işlemi için kısa süreli kilit
+                batch_size = len(batch)
                 with db_lock:
                     db.insert_battery_data_batch(batch)
                 batch = []
                 last_insert = time.time()
+                print(f"✅ {batch_size} veri batch olarak eklendi")
 
             data_queue.task_done()
             
         except queue.Empty:
             if batch:
+                batch_size = len(batch)
                 with db_lock:
                     db.insert_battery_data_batch(batch)
                 batch = []
                 last_insert = time.time()
+                print(f"✅ {batch_size} veri batch olarak eklendi")
         except Exception as e:
             print(f"\ndb_worker'da beklenmeyen hata: {e}")
             continue

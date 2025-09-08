@@ -1522,3 +1522,27 @@ class BatteryDatabase:
                 WHERE status = 'active'
             ''')
             return cursor.fetchone()[0]
+    
+    def save_battery_config(self, arm, vmin, vmax, vnom, rintnom, tempmin_d, tempmax_d, tempmin_pn, tempmaks_pn, socmin, sohmin):
+        """Batarya konfigürasyonunu kaydet"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Mevcut konfigürasyonu güncelle veya yeni ekle
+                cursor.execute('''
+                    INSERT OR REPLACE INTO battery_configs 
+                    (arm, vmin, vmax, vnom, rintnom, tempmin_d, tempmax_d, tempmin_pn, tempmaks_pn, socmin, sohmin, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    arm, vmin, vmax, vnom, rintnom, tempmin_d, tempmax_d, 
+                    tempmin_pn, tempmaks_pn, socmin, sohmin, 
+                    int(time.time() * 1000), int(time.time() * 1000)
+                ))
+                
+                conn.commit()
+                print(f"Batarya konfigürasyonu kaydedildi: Kol {arm}")
+                
+        except Exception as e:
+            print(f"Batarya konfigürasyonu kaydedilirken hata: {e}")
+            raise e
