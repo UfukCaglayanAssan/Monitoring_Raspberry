@@ -12,6 +12,8 @@ if (typeof window.ArmLogsPage === 'undefined') {
             endDate: ''
         };
         this.logs = [];
+        
+        this.init();
     }
 
     init() {
@@ -318,6 +320,7 @@ if (typeof window.ArmLogsPage === 'undefined') {
 function initArmLogsPage() {
     console.log('🔧 initArmLogsPage() çağrıldı');
     if (!window.armLogsPage) {
+        console.log('🆕 Yeni ArmLogsPage instance oluşturuluyor');
         window.armLogsPage = new window.ArmLogsPage();
     } else {
         // Mevcut instance'ı yeniden başlat

@@ -4,7 +4,7 @@ if (typeof window.SummaryPage === 'undefined') {
     window.SummaryPage = class SummaryPage {
     constructor() {
         this.summaryData = [];
-        this.init();
+        // init() kaldırıldı - çift yükleme sorunu
     }
 
     async init() {
@@ -319,6 +319,7 @@ if (typeof window.SummaryPage === 'undefined') {
 function initSummaryPage() {
     console.log('🔧 initSummaryPage() çağrıldı');
     if (!window.summaryPage) {
+        console.log('🆕 Yeni SummaryPage instance oluşturuluyor');
         window.summaryPage = new window.SummaryPage();
     } else {
         // Mevcut instance'ı yeniden başlat

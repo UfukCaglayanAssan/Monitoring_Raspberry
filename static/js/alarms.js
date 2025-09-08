@@ -13,8 +13,8 @@ if (typeof window.AlarmsPage === 'undefined') {
 
     init() {
         this.bindEvents();
-        this.resetToActiveAlarms(); // Her seferinde aktif alarmlara sıfırla
         this.startAutoRefresh();
+        // resetToActiveAlarms() kaldırıldı - çift yükleme sorunu
     }
 
     // Her seferinde aktif alarmlara sıfırla
@@ -333,7 +333,12 @@ if (typeof window.AlarmsPage === 'undefined') {
 
     hideLoading() {
         const loading = document.getElementById('loadingSpinner');
+        const table = document.getElementById('alarmsTable');
+        const noData = document.getElementById('noDataMessage');
+        
         if (loading) loading.style.display = 'none';
+        if (table) table.style.display = 'table';
+        if (noData) noData.style.display = 'none';
     }
 
     showNoData() {
@@ -347,6 +352,10 @@ if (typeof window.AlarmsPage === 'undefined') {
     }
 
     startAutoRefresh() {
+        // Hemen veri yükle
+        this.loadAlarms();
+        
+        // Her 30 saniyede bir otomatik yenile
         setInterval(() => {
             if (this.isPageActive()) {
                 this.loadAlarms();
