@@ -17,6 +17,9 @@ if (typeof window.BatteriesPage === 'undefined') {
         const timestamp = new Date().toISOString();
         console.log(`🔧 [${timestamp}] BatteriesPage init() başladı`);
         
+        // Önce tüm butonları disabled yap
+        this.disableAllArmButtons();
+        
         this.bindEvents();
         console.log(`🔗 [${timestamp}] Event listener'lar bağlandı`);
         
@@ -28,6 +31,15 @@ if (typeof window.BatteriesPage === 'undefined') {
         
         this.startAutoRefresh();
         console.log(`⏰ [${timestamp}] Auto refresh başlatıldı`);
+    }
+
+    disableAllArmButtons() {
+        const armButtons = document.querySelectorAll('.arm-btn');
+        armButtons.forEach(button => {
+            button.disabled = true;
+            button.classList.add('disabled');
+        });
+        console.log('🔒 Tüm kol butonları disabled yapıldı');
     }
 
     bindEvents() {

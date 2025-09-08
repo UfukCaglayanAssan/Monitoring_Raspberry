@@ -373,10 +373,12 @@ if (typeof window.AlarmsPage === 'undefined') {
 function initAlarmsPage() {
     console.log('🔧 initAlarmsPage() çağrıldı');
     if (!window.alarmsPage) {
+        console.log('🆕 Yeni AlarmsPage instance oluşturuluyor');
         window.alarmsPage = new window.AlarmsPage();
-    } else {
-        // Mevcut instance'ı yeniden başlat
-        console.log('🔄 Mevcut AlarmsPage instance yeniden başlatılıyor');
+    }
+    // Mevcut instance varsa yeniden başlat
+    if (window.alarmsPage) {
+        console.log('🔄 AlarmsPage instance yeniden başlatılıyor');
         window.alarmsPage.init();
     }
 }
