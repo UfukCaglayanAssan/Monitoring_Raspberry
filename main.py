@@ -116,9 +116,12 @@ def is_valid_arm_data(arm_value, k_value):
         if k_value == 2:
             return True
         
-        # Batarya verisi ise, k değeri batarya sayısından fazla olmamalı
-        if k_value > arm_slave_counts[arm_value]:
-            print(f"⚠️ HATALI VERİ: Kol {arm_value} için k={k_value} > batarya sayısı={arm_slave_counts[arm_value]}")
+        # Batarya verisi ise, k değeri = batarya numarası + 2
+        # k=3 -> batarya 1, k=4 -> batarya 2, k=5 -> batarya 3, vs.
+        # Maksimum k değeri = batarya sayısı + 2
+        max_k_value = arm_slave_counts[arm_value] + 2
+        if k_value > max_k_value:
+            print(f"⚠️ HATALI VERİ: Kol {arm_value} için k={k_value} > maksimum k değeri={max_k_value} (batarya sayısı: {arm_slave_counts[arm_value]})")
             return False
         
         # k değeri 3'ten küçük olamaz (k=2 kol verisi, k=3+ batarya verisi)
