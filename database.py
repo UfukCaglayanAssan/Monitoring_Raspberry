@@ -1310,3 +1310,29 @@ class BatteryDatabase:
         except Exception as e:
             print(f"Passive balance verileri getirilirken hata: {e}")
             return []
+
+    def get_active_arms(self):
+        """Aktif kolları getir (armslavecount > 0)"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT arm, slave_count, created_at
+                    FROM arm_slave_counts
+                    WHERE slave_count > 0
+                    ORDER BY arm
+                ''')
+                
+                active_arms = []
+                for row in cursor.fetchall():
+                    active_arms.append({
+                        'arm': row[0],
+                        'slave_count': row[1],
+                        'created_at': row[2]
+                    })
+                
+                return active_arms
+                
+        except Exception as e:
+            print(f"Aktif kollar getirilirken hata: {e}")
+            return []

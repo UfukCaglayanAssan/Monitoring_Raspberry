@@ -19,8 +19,12 @@ class App {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 const page = e.target.getAttribute('data-page');
+                const toggle = e.target.getAttribute('data-toggle');
+                
                 if (page) {
                     this.loadPage(page);
+                } else if (toggle === 'submenu') {
+                    this.toggleSubmenu(e.target);
                 }
             });
         });
@@ -35,6 +39,32 @@ class App {
                 }
             });
         });
+    }
+
+    toggleSubmenu(link) {
+        const navItem = link.closest('.nav-item');
+        const submenu = navItem.querySelector('.submenu');
+        const arrow = navItem.querySelector('.submenu-arrow');
+        
+        if (submenu) {
+            // Toggle submenu visibility
+            if (submenu.style.display === 'block') {
+                submenu.style.display = 'none';
+                arrow.style.transform = 'rotate(0deg)';
+            } else {
+                // Close other submenus first
+                document.querySelectorAll('.submenu').forEach(menu => {
+                    menu.style.display = 'none';
+                });
+                document.querySelectorAll('.submenu-arrow').forEach(arr => {
+                    arr.style.transform = 'rotate(0deg)';
+                });
+                
+                // Open current submenu
+                submenu.style.display = 'block';
+                arrow.style.transform = 'rotate(180deg)';
+            }
+        }
     }
 
     async loadPage(page) {
