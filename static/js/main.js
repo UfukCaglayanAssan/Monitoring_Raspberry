@@ -18,75 +18,23 @@ class App {
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                const page = e.currentTarget.dataset.page;
-                
-                // Eğer sub menü varsa, önce sub menüyü aç/kapat
-                const navItem = e.currentTarget.closest('.nav-item');
-                if (navItem && navItem.classList.contains('has-submenu')) {
-                    this.toggleSubmenu(navItem);
-                    return; // Sayfa değiştirme, sadece sub menüyü aç/kapat
+                const page = e.target.getAttribute('data-page');
+                if (page) {
+                    this.loadPage(page);
                 }
-                
-                this.navigateToPage(page);
             });
         });
 
-        // Sub menü navigasyonu
-        document.querySelectorAll('.submenu-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const page = e.currentTarget.dataset.page;
-                this.navigateToPage(page);
-            });
-        });
-
-        // Dil seçimi
-        document.querySelectorAll('.lang-btn').forEach(btn => {
+        // Dil değiştirme
+        document.querySelectorAll('.language-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const lang = e.currentTarget.dataset.lang;
-                this.setLanguage(lang);
+                e.preventDefault();
+                const lang = e.target.getAttribute('data-lang');
+                if (lang) {
+                    this.setLanguage(lang);
+                }
             });
         });
-
-        // Bildirimler
-        document.querySelector('.notifications').addEventListener('click', () => {
-            this.showNotifications();
-        });
-
-        // Çıkış
-        document.querySelector('.logout-btn').addEventListener('click', () => {
-            this.logout();
-        });
-    }
-
-    toggleSubmenu(navItem) {
-        // Diğer tüm sub menüleri kapat
-        document.querySelectorAll('.nav-item.has-submenu').forEach(item => {
-            if (item !== navItem) {
-                item.classList.remove('expanded');
-            }
-        });
-        
-        // Bu sub menüyü aç/kapat
-        navItem.classList.toggle('expanded');
-    }
-
-    navigateToPage(page) {
-        console.log('Navigating to page:', page);
-        
-        // Aktif menü öğesini güncelle
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.classList.remove('active');
-        });
-        
-        const activeLink = document.querySelector(`[data-page="${page}"]`);
-        if (activeLink) {
-            activeLink.classList.add('active');
-        }
-        
-        // Sayfa içeriğini yükle
-        this.loadPage(page);
-        this.currentPage = page;
     }
 
     async loadPage(page) {
@@ -103,135 +51,133 @@ class App {
             `;
 
             // Sayfa içeriğini yükle
-            const response = await fetch(`/page/${page}`);
-            console.log('Response status:', response.status);
-            
-            if (response.ok) {
-                const html = await response.text();
-                console.log('HTML loaded, length:', html.length);
-                pageContent.innerHTML = html;
-                
-                // Sayfa özel script'lerini yükle
-                this.loadPageScripts(page);
-            } else {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            const response = await fetch(`/pages/${page}.html`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+            
+            const html = await response.text();
+            pageContent.innerHTML = html;
+            
+            // Aktif menüyü güncelle
+            this.updateActiveMenu(page);
+            
+            // Sayfa özel JavaScript'ini yükle
+            this.loadPageScript(page);
+            
+            this.currentPage = page;
+            console.log('Page loaded:', page);
+            
         } catch (error) {
-            console.error('Sayfa yükleme hatası:', error);
+            console.error('Sayfa yüklenirken hata:', error);
             pageContent.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <h4>Hata Oluştu</h4>
-                    <p>Sayfa yüklenirken bir hata oluştu: ${error.message}</p>
-                    <p>Lütfen tekrar deneyin.</p>
+                <div class="error">
+                    <h3>Sayfa yüklenemedi</h3>
+                    <p>Lütfen sayfayı yenileyin veya daha sonra tekrar deneyin.</p>
                 </div>
             `;
         }
     }
 
-    loadPageScripts(page) {
-        console.log('Loading scripts for page:', page);
-        
-        // Sayfa özel script'lerini yükle
-        const scriptMap = {
-            'battery-logs': '/static/js/battery-logs.js',
-            'arm-logs': '/static/js/arm-logs.js',
-            'summary': '/static/js/summary.js',
-            'alarms': '/static/js/alarms.js',
-            'batteries': '/static/js/batteries.js',
-            'configuration': '/static/js/configuration.js',
-            'profile': '/static/js/profile.js'
+    loadPageScript(page) {
+        // Mevcut script'i kaldır
+        const existingScript = document.getElementById('page-script');
+        if (existingScript) {
+            existingScript.remove();
+        }
+
+        // Yeni script'i yükle
+        const script = document.createElement('script');
+        script.id = 'page-script';
+        script.src = `/static/js/${page}.js`;
+        script.onload = () => {
+            console.log(`Script loaded: ${page}.js`);
+            // Sayfa özel init fonksiyonunu çağır
+            this.initPageSpecificFunctions(page);
         };
+        script.onerror = () => {
+            console.error(`Script load failed: ${page}.js`);
+        };
+        document.head.appendChild(script);
+    }
 
-        if (scriptMap[page]) {
-            // Script zaten yüklenmiş mi kontrol et
-            if (document.querySelector(`script[src="${scriptMap[page]}"]`)) {
-                console.log('Script already loaded:', page);
-                // Script zaten var, sadece başlat
-                if (window[`${page}Page`]) {
-                    window[`${page}Page`].init();
-                }
-                return;
-            }
-
-            console.log('Loading script:', scriptMap[page]);
-            const script = document.createElement('script');
-            script.src = scriptMap[page];
-            script.onload = () => {
-                console.log('Script loaded:', page);
-                console.log('Available init functions:', Object.keys(window).filter(key => key.startsWith('init')));
-                
-                // Script yüklendi, sayfa başlat
-                if (window[`${page}Page`]) {
-                    console.log(`Found ${page}Page, calling init()`);
-                    window[`${page}Page`].init();
-                } else {
-                    // Özel durumlar için manuel kontrol
-                    if (page === 'battery-logs' && window.initBatteryLogsPage) {
-                        console.log('Calling initBatteryLogsPage');
-                        window.initBatteryLogsPage();
-                    } else if (page === 'arm-logs' && window.initArmLogsPage) {
-                        console.log('Calling initArmLogsPage');
-                        window.initArmLogsPage();
-                    } else if (page === 'alarms' && window.initAlarmsPage) {
-                        console.log('Calling initAlarmsPage');
-                        if (document.querySelector('.alarms-page')) {
-                            window.initAlarmsPage();
-                        } else {
-                            console.log('Alarms page element not found, retrying...');
-                            setTimeout(() => {
-                                if (document.querySelector('.alarms-page')) {
-                                    window.initAlarmsPage();
-                                }
-                            }, 50);
-                        }
-                    } else if (page === 'summary' && window.initSummaryPage) {
-                        console.log('Calling initSummaryPage');
-                        // Element'in DOM'da olup olmadığını kontrol et
-                        if (document.querySelector('.summary-page')) {
-                            window.initSummaryPage();
-                        } else {
-                            console.log('Summary page element not found, retrying...');
-                            // Element bulunamazsa kısa süre sonra tekrar dene
-                            setTimeout(() => {
-                                if (document.querySelector('.summary-page')) {
-                                    window.initSummaryPage();
-                                }
-                            }, 50);
-                        }
-                    } else if (page === 'batteries' && window.initBatteriesPage) {
-                        console.log('Calling initBatteriesPage');
-                        if (document.querySelector('.batteries-page')) {
-                            window.initBatteriesPage();
-                        } else {
-                            console.log('Batteries page element not found, retrying...');
-                            setTimeout(() => {
-                                if (document.querySelector('.batteries-page')) {
-                                    window.initBatteriesPage();
-                                }
-                            }, 50);
-                        }
-                    } else if (page === 'configuration' && window.initConfigurationPage) {
-                        console.log('Calling initConfigurationPage');
-                        if (document.querySelector('.configuration-page')) {
-                            window.initConfigurationPage();
-                        } else {
-                            console.log('Configuration page element not found, retrying...');
-                            setTimeout(() => {
-                                if (document.querySelector('.configuration-page')) {
-                                    window.initConfigurationPage();
-                                }
-                            }, 50);
-                        }
-                    } else {
-                        console.log(`No init function found for ${page}`);
+    initPageSpecificFunctions(page) {
+        // Sayfa özel init fonksiyonlarını çağır
+        if (page === 'data-retrieval' && window.initDataRetrievalPage) {
+            console.log('Calling initDataRetrievalPage');
+            window.initDataRetrievalPage();
+        } else if (page === 'line-measurements' && window.initLineMeasurementsPage) {
+            console.log('Calling initLineMeasurementsPage');
+            window.initLineMeasurementsPage();
+        } else if (page === 'battery-logs' && window.initBatteryLogsPage) {
+            console.log('Calling initBatteryLogsPage');
+            window.initBatteryLogsPage();
+        } else if (page === 'arm-logs' && window.initArmLogsPage) {
+            console.log('Calling initArmLogsPage');
+            window.initArmLogsPage();
+        } else if (page === 'alarms' && window.initAlarmsPage) {
+            console.log('Calling initAlarmsPage');
+            if (document.querySelector('.alarms-page')) {
+                window.initAlarmsPage();
+            } else {
+                console.log('Alarms page element not found, retrying...');
+                setTimeout(() => {
+                    if (document.querySelector('.alarms-page')) {
+                        window.initAlarmsPage();
                     }
-                }
-            };
-            script.onerror = () => {
-                console.error('Script load error:', scriptMap[page]);
-            };
-            document.head.appendChild(script);
+                }, 50);
+            }
+        } else if (page === 'summary' && window.initSummaryPage) {
+            console.log('Calling initSummaryPage');
+            if (document.querySelector('.summary-page')) {
+                window.initSummaryPage();
+            } else {
+                console.log('Summary page element not found, retrying...');
+                setTimeout(() => {
+                    if (document.querySelector('.summary-page')) {
+                        window.initSummaryPage();
+                    }
+                }, 50);
+            }
+        } else if (page === 'batteries' && window.initBatteriesPage) {
+            console.log('Calling initBatteriesPage');
+            if (document.querySelector('.batteries-page')) {
+                window.initBatteriesPage();
+            } else {
+                console.log('Batteries page element not found, retrying...');
+                setTimeout(() => {
+                    if (document.querySelector('.batteries-page')) {
+                        window.initBatteriesPage();
+                    }
+                }, 50);
+            }
+        } else if (page === 'configuration' && window.initConfigurationPage) {
+            console.log('Calling initConfigurationPage');
+            if (document.querySelector('.configuration-page')) {
+                window.initConfigurationPage();
+            } else {
+                console.log('Configuration page element not found, retrying...');
+                setTimeout(() => {
+                    if (document.querySelector('.configuration-page')) {
+                        window.initConfigurationPage();
+                    }
+                }, 50);
+            }
+        } else {
+            console.log(`No init function found for ${page}`);
+        }
+    }
+
+    updateActiveMenu(page) {
+        // Tüm menü linklerini pasif yap
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        
+        // Aktif sayfa linkini aktif yap
+        const activeLink = document.querySelector(`[data-page="${page}"]`);
+        if (activeLink) {
+            activeLink.classList.add('active');
         }
     }
 
@@ -239,140 +185,35 @@ class App {
         this.currentLanguage = lang;
         
         // Dil butonlarını güncelle
-        document.querySelectorAll('.lang-btn').forEach(btn => {
+        document.querySelectorAll('.language-btn').forEach(btn => {
             btn.classList.remove('active');
-        });
-        document.querySelector(`[data-lang="${lang}"]`).classList.add('active');
-        
-        // Dil değişikliğini localStorage'a kaydet
-        localStorage.setItem('language', lang);
-        
-        // Sayfa metinlerini güncelle
-        this.updatePageTexts(lang);
-        
-        // Dil değişikliği event'ini tetikle
-        window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: lang } }));
-    }
-
-    updatePageTexts(lang) {
-        // Dil çevirileri
-        const translations = {
-            tr: {
-                'mainTitle': 'Akü İzleme Sistemi',
-                'menu': 'MENÜ',
-                'summary': 'Özet',
-                'alarms': 'Alarmlar',
-                'batteries': 'Bataryalar',
-                'logs': 'Loglar',
-                'configuration': 'Konfigürasyon',
-                'profile': 'Profil',
-                'logout': 'Çıkış'
-            },
-            en: {
-                'mainTitle': 'Battery Monitoring System',
-                'menu': 'MENU',
-                'summary': 'Summary',
-                'alarms': 'Alarms',
-                'batteries': 'Batteries',
-                'logs': 'Logs',
-                'configuration': 'Configuration',
-                'profile': 'Profile',
-                'logout': 'Logout'
-            }
-        };
-
-        const texts = translations[lang] || translations.tr;
-        
-        // Ana başlık
-        const mainTitle = document.querySelector('.main-title');
-        if (mainTitle) {
-            mainTitle.textContent = texts.mainTitle;
-        }
-
-        // Menü başlığı
-        const menuHeader = document.querySelector('.sidebar-header h3');
-        if (menuHeader) {
-            menuHeader.textContent = texts.menu;
-        }
-
-        // Menü öğeleri
-        const menuItems = {
-            'summary': texts.summary,
-            'alarms': texts.alarms,
-            'batteries': texts.batteries,
-            'logs': texts.logs,
-            'configuration': texts.configuration,
-            'profile': texts.profile,
-            'logout': texts.logout
-        };
-
-        Object.entries(menuItems).forEach(([page, text]) => {
-            const menuLink = document.querySelector(`[data-page="${page}"] span`);
-            if (menuLink) {
-                menuLink.textContent = text;
+            if (btn.getAttribute('data-lang') === lang) {
+                btn.classList.add('active');
             }
         });
+        
+        // Sayfa içeriğini yeniden yükle
+        this.loadPage(this.currentPage);
     }
 
-    showNotifications() {
-        // Bildirimler modal'ını göster
-        console.log('Bildirimler gösteriliyor...');
-        alert('Bildirimler özelliği henüz eklenmedi.');
-    }
-
-    logout() {
-        // Çıkış işlemi
-        if (confirm('Çıkış yapmak istediğinizden emin misiniz?')) {
-            console.log('Çıkış yapılıyor...');
-            alert('Çıkış özelliği henüz eklenmedi.');
-        }
-    }
-}
-
-// Uygulama başlat
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('App starting...');
-    window.app = new App();
-});
-
-// Global utility fonksiyonlar
-window.utils = {
-    formatDate: (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('tr-TR', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
-    },
-    
-    formatNumber: (number, decimals = 3) => {
-        return parseFloat(number).toFixed(decimals);
-    },
-    
-    showToast: (message, type = 'info') => {
-        // Toast bildirimi göster
+    showToast(message, type = 'info') {
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
         toast.textContent = message;
-        toast.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #333;
-            color: white;
-            padding: 1rem;
-            border-radius: 8px;
-            z-index: 10000;
-        `;
         
         document.body.appendChild(toast);
         
+        // Animasyon için kısa gecikme
         setTimeout(() => {
-            toast.remove();
+            toast.classList.add('show');
+        }, 100);
+        
+        // 3 saniye sonra kaldır
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
         }, 3000);
     }
 
@@ -390,6 +231,8 @@ window.utils = {
                 const data = await response.json();
                 const alarmCount = data.totalCount || 0;
                 this.displayAlarmCount(alarmCount);
+            } else {
+                console.error('Alarm sayısı alınamadı:', response.status);
             }
         } catch (error) {
             console.error('Alarm sayısı güncellenirken hata:', error);
@@ -400,8 +243,8 @@ window.utils = {
         const badge = document.getElementById('alarmCount');
         if (badge) {
             if (count > 0) {
-                badge.textContent = count > 99 ? '99+' : count.toString();
-                badge.style.display = 'flex';
+                badge.textContent = count;
+                badge.style.display = 'inline';
             } else {
                 badge.style.display = 'none';
             }
