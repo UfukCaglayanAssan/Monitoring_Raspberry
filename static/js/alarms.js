@@ -1,5 +1,7 @@
 // Alarms Sayfası JavaScript
-class AlarmsPage {
+// Class'ın zaten tanımlanıp tanımlanmadığını kontrol et
+if (typeof window.AlarmsPage === 'undefined') {
+    window.AlarmsPage = class AlarmsPage {
     constructor() {
         this.alarms = [];
         this.showResolved = false; // Varsayılan olarak sadece aktif alarmları göster
@@ -355,13 +357,18 @@ class AlarmsPage {
     isPageActive() {
         return document.querySelector('.alarms-page') !== null;
     }
+    };
 }
 
 // Sayfa yüklendiğinde başlat
 function initAlarmsPage() {
     console.log('🔧 initAlarmsPage() çağrıldı');
     if (!window.alarmsPage) {
-        window.alarmsPage = new AlarmsPage();
+        window.alarmsPage = new window.AlarmsPage();
+    } else {
+        // Mevcut instance'ı yeniden başlat
+        console.log('🔄 Mevcut AlarmsPage instance yeniden başlatılıyor');
+        window.alarmsPage.init();
     }
 }
 

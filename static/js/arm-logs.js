@@ -1,5 +1,7 @@
 // Kol Logları Sayfası JavaScript
-class ArmLogsPage {
+// Class'ın zaten tanımlanıp tanımlanmadığını kontrol et
+if (typeof window.ArmLogsPage === 'undefined') {
+    window.ArmLogsPage = class ArmLogsPage {
     constructor() {
         this.currentPage = 1;
         this.pageSize = 50;
@@ -301,13 +303,17 @@ class ArmLogsPage {
             alert('Export sırasında hata oluştu: ' + error.message);
         }
     }
+    };
 }
 
 // Sayfa yüklendiğinde başlat
 function initArmLogsPage() {
     console.log('🔧 initArmLogsPage() çağrıldı');
     if (!window.armLogsPage) {
-        window.armLogsPage = new ArmLogsPage();
+        window.armLogsPage = new window.ArmLogsPage();
+    } else {
+        // Mevcut instance'ı yeniden başlat
+        console.log('🔄 Mevcut ArmLogsPage instance yeniden başlatılıyor');
         window.armLogsPage.init();
     }
 }

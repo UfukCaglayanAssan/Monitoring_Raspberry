@@ -1,5 +1,7 @@
 // Batarya Logları Sayfası JavaScript
-class BatteryLogsPage {
+// Class'ın zaten tanımlanıp tanımlanmadığını kontrol et
+if (typeof window.BatteryLogsPage === 'undefined') {
+    window.BatteryLogsPage = class BatteryLogsPage {
     constructor() {
         this.currentPage = 1;
         this.pageSize = 50;

@@ -1,5 +1,7 @@
 // Batteries Page JavaScript
-class BatteriesPage {
+// Class'ın zaten tanımlanıp tanımlanmadığını kontrol et
+if (typeof window.BatteriesPage === 'undefined') {
+    window.BatteriesPage = class BatteriesPage {
     constructor() {
         this.currentPage = 1;
         this.pageSize = 30;
@@ -472,16 +474,18 @@ class BatteriesPage {
             }
         }, 30000);
     }
+    };
 }
 
 // Sayfa yüklendiğinde başlat
 function initBatteriesPage() {
-    console.log('Batteries sayfası başlatılıyor...');
-    try {
-window.batteriesPage = new BatteriesPage();
-        console.log('Batteries sayfası başarıyla başlatıldı');
-    } catch (error) {
-        console.error('Batteries sayfası başlatılırken hata:', error);
+    console.log('🔧 initBatteriesPage() çağrıldı');
+    if (!window.batteriesPage) {
+        window.batteriesPage = new window.BatteriesPage();
+    } else {
+        // Mevcut instance'ı yeniden başlat
+        console.log('🔄 Mevcut BatteriesPage instance yeniden başlatılıyor');
+        window.batteriesPage.init();
     }
 }
 

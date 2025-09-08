@@ -1,5 +1,7 @@
 // Configuration Sayfası JavaScript
-class ConfigurationPage {
+// Class'ın zaten tanımlanıp tanımlanmadığını kontrol et
+if (typeof window.ConfigurationPage === 'undefined') {
+    window.ConfigurationPage = class ConfigurationPage {
     constructor() {
         this.init();
     }
@@ -388,13 +390,18 @@ class ConfigurationPage {
             }
         }
     }
+    };
 }
 
 // Sayfa yüklendiğinde başlat
 function initConfigurationPage() {
     console.log('🔧 initConfigurationPage() çağrıldı');
     if (!window.configurationPage) {
-        window.configurationPage = new ConfigurationPage();
+        window.configurationPage = new window.ConfigurationPage();
+    } else {
+        // Mevcut instance'ı yeniden başlat
+        console.log('🔄 Mevcut ConfigurationPage instance yeniden başlatılıyor');
+        window.configurationPage.init();
     }
 }
 
