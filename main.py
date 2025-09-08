@@ -90,8 +90,9 @@ def load_arm_slave_counts_from_db():
                     LIMIT 1
                 ''', (arm,))
                 
-                if result and len(result) > 0:
-                    slave_count = result[0][0]
+                rows = result.fetchall()
+                if rows and len(rows) > 0:
+                    slave_count = rows[0][0]
                     with arm_slave_counts_lock:
                         arm_slave_counts[arm] = slave_count
                     print(f"✓ Kol {arm} armslavecount veritabanından yüklendi: {slave_count}")
