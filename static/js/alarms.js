@@ -539,21 +539,17 @@ if (typeof window.AlarmsPage === 'undefined') {
 // Sayfa yüklendiğinde başlat
 function initAlarmsPage() {
     console.log('🔧 initAlarmsPage() çağrıldı');
-    
-    // Eğer alarm sayfası zaten açıksa, tekrar başlatma
-    if (window.alarmsPage && window.alarmsPage.isPageActive()) {
-        console.log('⚠️ Alarm sayfası zaten açık, tekrar başlatma atlanıyor');
-        return;
-    }
-    
     if (!window.alarmsPage) {
         console.log('🆕 Yeni AlarmsPage instance oluşturuluyor');
         window.alarmsPage = new window.AlarmsPage();
     } else {
         console.log('🔄 Mevcut AlarmsPage instance yeniden başlatılıyor');
-        // showResolved değerini sıfırla
-        window.alarmsPage.showResolved = false;
-        window.alarmsPage.init();
+        // Sadece sayfa aktifse yeniden başlat
+        if (window.alarmsPage.isPageActive()) {
+            window.alarmsPage.init();
+        } else {
+            console.log('⚠️ Sayfa aktif değil, yeniden başlatma atlanıyor');
+        }
     }
 }
 
