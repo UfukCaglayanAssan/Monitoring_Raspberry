@@ -89,6 +89,7 @@ if (typeof window.AlarmsPage === 'undefined') {
                 // Aktif alarmları göster
                 alarmHistoryContainer.style.display = 'none';
                 alarmsTable.style.display = 'table';
+                if (pagination) pagination.style.display = 'flex';
                 this.showResolved = false; // Aktif moduna geç
                 this.loadAlarms(); // Aktif alarmları yeniden yükle
             }
@@ -184,20 +185,26 @@ if (typeof window.AlarmsPage === 'undefined') {
                             </tr>
                         </thead>
                         <tbody>
-                            ${alarms.map(alarm => `
+                            ${alarms.map(alarm => {
+                                // Durum mantığı: resolved_at varsa "Düzeldi", yoksa "Aktif"
+                                const statusText = (alarm.resolved_at && alarm.resolved_at !== '') ? 'Düzeldi' : 'Aktif';
+                                const statusClass = this.getStatusClass(statusText);
+                                
+                                return `
                                 <tr>
                                     <td>${this.formatTimestamp(alarm.timestamp)}</td>
                                     <td>${alarm.arm}</td>
                                     <td>${alarm.battery || 'Kol Alarmı'}</td>
                                     <td>${alarm.description}</td>
                                     <td>
-                                        <span class="status-badge ${this.getStatusClass(alarm.status)}">
-                                            ${alarm.status === 'resolved' || alarm.status === 'Düzeldi' ? 'Düzeldi' : 'Aktif'}
+                                        <span class="status-badge ${statusClass}">
+                                            ${statusText}
                                         </span>
                                     </td>
                                     <td>${alarm.resolved_at ? this.formatTimestamp(alarm.resolved_at) : '-'}</td>
                                 </tr>
-                            `).join('')}
+                                `;
+                            }).join('')}
                         </tbody>
                     </table>
                 </div>
@@ -487,7 +494,13 @@ if (typeof window.AlarmsPage === 'undefined') {
         setInterval(() => {
             if (this.isPageActive() && !this.isLoading) {
                 console.log('🔄 Otomatik yenileme çalışıyor...');
-                this.loadAlarms();
+                
+                // Hangi modda olduğumuza göre doğru fonksiyonu çağır
+                if (this.showResolved) {
+                    this.loadAlarmHistory();
+                } else {
+                    this.loadAlarms();
+                }
             }
         }, 30000); // 30 saniyede bir yenile
     }
