@@ -7,12 +7,20 @@ class App {
         
         // F5 ile yenileme kontrolü
         window.addEventListener('pageshow', function(e) {
+            console.log(' PAGESHOW EVENT TETİKLENDİ:', {
+                persisted: e.persisted,
+                currentPage: this.currentPage,
+                lastPage: localStorage.getItem('lastPage')
+            });
+            
             if (!e.persisted) {
                 // Sayfa yeniden yüklendi (F5, Ctrl+R, adres çubuğu)
-                console.log('🔄 Sayfa yeniden yüklendi, sayfa yeniden yükleniyor');
+                console.log(' Sayfa yeniden yüklendi, sayfa yeniden yükleniyor');
                 const lastPage = localStorage.getItem('lastPage') || 'summary';
                 this.currentPage = null; // ← BUNU EKLE
                 this.loadPage(lastPage); // ← BUNU EKLE
+            } else {
+                console.log(' Sayfa cache\'den yüklendi (geri/ileri butonları)');
             }
         }.bind(this));
         
