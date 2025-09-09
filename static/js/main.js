@@ -142,6 +142,11 @@ class App {
             console.log(`⚠️ [${timestamp}] ÇİFT YÜKLEME ENGELLENDİ - ${page} zaten yükleniyor`);
             return;
         }
+
+        if (this.currentPage === page && !this.isLoading) {
+            console.log(`⚠️ [${timestamp}] AYNI SAYFA - ${page} zaten açık, iptal edildi`);
+            return;
+        }
         
         this.isLoading = true;
         console.log(`🔄 [${timestamp}] SAYFA YÜKLEME BAŞLADI - Sayfa: ${page}`);
@@ -212,10 +217,6 @@ class App {
             const scriptLoadTime = performance.now() - scriptStartTime;
             console.log(`✅ [${timestamp}] SCRIPT YÜKLENDİ - ${page}.js (${scriptLoadTime.toFixed(2)}ms)`);
             // Script yüklendikten sonra otomatik init yapılacak (script içinde)
-            if (page === 'alarms' && window.alarmsPage) {
-                console.log(`🔧 [${timestamp}] ALARMS SAYFASI - showResolved sıfırlanıyor`);
-                window.alarmsPage.showResolved = false;
-            }
             console.log(`🎯 [${timestamp}] SCRIPT YÜKLENDİ - Otomatik init bekleniyor...`);
             };
             script.onerror = () => {
