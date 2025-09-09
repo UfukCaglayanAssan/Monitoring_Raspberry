@@ -14,7 +14,6 @@ if (typeof window.AlarmsPage === 'undefined') {
     }
 
     init() {
-        this.showResolved = false;
         console.log('🔧 AlarmsPage init() başladı');
         this.bindEvents();
         
@@ -554,7 +553,6 @@ function initAlarmsPage() {
         window.alarmsPage = new window.AlarmsPage();
     } else {
         console.log('🔄 Mevcut AlarmsPage instance yeniden başlatılıyor');
-        alert("burda1" + window.alarmsPage.showResolved);
         // Sadece sayfa aktifse yeniden başlat
         if (window.alarmsPage.isPageActive()) {
             window.alarmsPage.init();
