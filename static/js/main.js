@@ -10,7 +10,8 @@ class App {
             if (!e.persisted) {
                 // Sayfa yeniden yüklendi (F5, Ctrl+R, adres çubuğu)
                 console.log('🔄 Sayfa yeniden yüklendi, sayfa yeniden yükleniyor');
-                this.loadPage(this.currentPage);
+                this.currentPage = null; // ← BUNU EKLE
+                this.loadPage('summary'); // ← BUNU EKLE
             }
         }.bind(this));
         
