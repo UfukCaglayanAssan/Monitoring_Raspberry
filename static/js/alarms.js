@@ -14,6 +14,7 @@ if (typeof window.AlarmsPage === 'undefined') {
     }
 
     init() {
+        this.showResolved = false;
         console.log('🔧 AlarmsPage init() başladı');
         this.bindEvents();
         
@@ -71,6 +72,11 @@ if (typeof window.AlarmsPage === 'undefined') {
     // Alarm geçmişi toggle fonksiyonu
     toggleAlarmHistory() {
         console.log('🔔 Alarm butonuna tıklandı - showResolved:', this.showResolved);
+        console.log('🔍 Buton elementi bulundu mu?', document.getElementById('toggleAlarmHistory'));
+        console.log('🔍 Container elementleri:', {
+            alarmHistoryContainer: document.getElementById('alarmHistoryContainer'),
+            alarmsTable: document.getElementById('alarmsTable')
+        });
 
         const alarmHistoryContainer = document.getElementById('alarmHistoryContainer');
         const alarmsTable = document.getElementById('alarmsTable');
@@ -549,7 +555,6 @@ function initAlarmsPage() {
     } else {
         console.log('🔄 Mevcut AlarmsPage instance yeniden başlatılıyor');
         alert("burda1" + window.alarmsPage.showResolved);
-        window.alarmsPage.showResolved = false;
         // Sadece sayfa aktifse yeniden başlat
         if (window.alarmsPage.isPageActive()) {
             window.alarmsPage.init();
