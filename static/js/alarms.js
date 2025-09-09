@@ -70,6 +70,8 @@ if (typeof window.AlarmsPage === 'undefined') {
 
     // Alarm geçmişi toggle fonksiyonu
     toggleAlarmHistory() {
+        console.log('🔔 Alarm butonuna tıklandı - showResolved:', this.showResolved);
+
         const alarmHistoryContainer = document.getElementById('alarmHistoryContainer');
         const alarmsTable = document.getElementById('alarmsTable');
         const noDataMessage = document.getElementById('noDataMessage');
@@ -545,7 +547,7 @@ function initAlarmsPage() {
         window.alarmsPage = new window.AlarmsPage();
     } else {
         console.log('🔄 Mevcut AlarmsPage instance yeniden başlatılıyor');
-        window.alarmsPage.showResolved = false;
+        alert("burda1" + window.alarmsPage.showResolved);
         // Sadece sayfa aktifse yeniden başlat
         if (window.alarmsPage.isPageActive()) {
             window.alarmsPage.init();
