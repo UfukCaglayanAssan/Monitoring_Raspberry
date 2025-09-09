@@ -8,9 +8,26 @@ class App {
 
     init() {
         this.bindEvents();
-        this.loadPage('summary'); // İlk sayfa olarak özet'i yükle
+        
+        // URL'den sayfa adını al
+        const path = window.location.pathname;
+        let page = 'summary'; // varsayılan
+        
+        if (path.includes('/alarms')) {
+            page = 'alarms';
+        } else if (path.includes('/batteries')) {
+            page = 'batteries';
+        } else if (path.includes('/logs')) {
+            page = 'logs';
+        } else if (path.includes('/configuration')) {
+            page = 'configuration';
+        } else if (path.includes('/profile')) {
+            page = 'profile';
+        }
+        
+        this.loadPage(page);
         this.setLanguage(this.currentLanguage);
-        this.startAlarmCountRefresh(); // Alarm sayısı güncellemeyi başlat
+        this.startAlarmCountRefresh();
     }
 
     bindEvents() {
