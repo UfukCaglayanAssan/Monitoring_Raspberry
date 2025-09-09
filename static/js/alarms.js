@@ -142,8 +142,6 @@ if (typeof window.AlarmsPage === 'undefined') {
             const data = await response.json();
             
             if (data.success) {
-                // Alarm geçmişi için showResolved'ı true yap
-                this.showResolved = true;
                 this.renderAlarmHistory(data.alarms);
             } else {
                 console.error('Alarm geçmişi yüklenirken hata:', data.message);
