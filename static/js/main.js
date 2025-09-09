@@ -137,20 +137,8 @@ class App {
     async loadPage(page) {
         const timestamp = new Date().toISOString();
         
-        // Aynı sayfa kontrolü - eğer aynı sayfa zaten yüklüyse yeniden yükleme
-        if (this.currentPage === page) {
-            // Alarm sayfası için özel kontrol
-            if (page === 'alarms' && window.alarmsPage && window.alarmsPage.isPageActive()) {
-                console.log(`🔄 [${timestamp}] ALARM SAYFASI - Zaten yüklü, aktif alarmlar moduna geçiliyor`);
-                window.alarmsPage.resetToActiveAlarms();
-                return;
-            }
-            console.log(`⚠️ [${timestamp}] AYNI SAYFA - ${page} zaten yüklü, yeniden yükleme atlanıyor`);
-            return;
-        }
-        
         // Çift yükleme kontrolü
-        if (this.isLoading) {
+        if (this.currentPage === page && this.isLoading) {
             console.log(`⚠️ [${timestamp}] ÇİFT YÜKLEME ENGELLENDİ - ${page} zaten yükleniyor`);
             return;
         }

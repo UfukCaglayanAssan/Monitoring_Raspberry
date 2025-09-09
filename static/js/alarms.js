@@ -19,8 +19,6 @@ if (typeof window.AlarmsPage === 'undefined') {
         
         // Sadece sayfa aktifse veri yükle
         if (this.isPageActive()) {
-            // Her zaman aktif alarmlar modunda başla
-            this.showResolved = false;
             this.loadAlarms(); // Hemen veri yükle
             this.startAutoRefresh(); // Otomatik yenileme başlat
         } else {
@@ -72,8 +70,6 @@ if (typeof window.AlarmsPage === 'undefined') {
 
     // Alarm geçmişi toggle fonksiyonu
     toggleAlarmHistory() {
-        console.log('🔄 toggleAlarmHistory() çağrıldı');
-        
         const alarmHistoryContainer = document.getElementById('alarmHistoryContainer');
         const alarmsTable = document.getElementById('alarmsTable');
         const noDataMessage = document.getElementById('noDataMessage');
@@ -83,7 +79,6 @@ if (typeof window.AlarmsPage === 'undefined') {
             if (alarmHistoryContainer.style.display === 'none' || 
                 alarmHistoryContainer.style.display === '') {
                 // Alarm geçmişini göster
-                console.log('📋 Alarm geçmişi moduna geçiliyor');
                 alarmHistoryContainer.style.display = 'block';
                 alarmsTable.style.display = 'none';
                 if (noDataMessage) noDataMessage.style.display = 'none';
@@ -92,7 +87,6 @@ if (typeof window.AlarmsPage === 'undefined') {
                 this.loadAlarmHistory(); // Alarm geçmişi için loadAlarmHistory() çağır
             } else {
                 // Aktif alarmları göster
-                console.log('📋 Aktif alarmlar moduna geçiliyor');
                 alarmHistoryContainer.style.display = 'none';
                 alarmsTable.style.display = 'table';
                 if (pagination) pagination.style.display = 'flex';
@@ -144,8 +138,6 @@ if (typeof window.AlarmsPage === 'undefined') {
             const data = await response.json();
             
             if (data.success) {
-                // Alarm geçmişi için showResolved'ı true yap
-                this.showResolved = true;
                 this.renderAlarmHistory(data.alarms);
             } else {
                 console.error('Alarm geçmişi yüklenirken hata:', data.message);
@@ -552,15 +544,7 @@ function initAlarmsPage() {
         console.log('🔄 Mevcut AlarmsPage instance yeniden başlatılıyor');
         // Sadece sayfa aktifse yeniden başlat
         if (window.alarmsPage.isPageActive()) {
-            // Mevcut modu koru
-            const currentMode = window.alarmsPage.showResolved;
-            console.log(`📋 Mevcut mod korunuyor: ${currentMode ? 'Alarm Geçmişi' : 'Aktif Alarmlar'}`);
             window.alarmsPage.init();
-            // Modu geri yükle
-            if (currentMode) {
-                window.alarmsPage.showResolved = true;
-                window.alarmsPage.toggleAlarmHistory();
-            }
         } else {
             console.log('⚠️ Sayfa aktif değil, yeniden başlatma atlanıyor');
         }
@@ -573,7 +557,6 @@ window.initAlarmsPage = initAlarmsPage;
 // Script yüklendiğinde otomatik init
 console.log('🔧 Alarms.js yüklendi, otomatik init başlatılıyor...');
 initAlarmsPage();
-
 
 
 
