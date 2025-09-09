@@ -9,8 +9,8 @@ class App {
         window.addEventListener('pageshow', function(e) {
             if (!e.persisted) {
                 // Sayfa yeniden yüklendi (F5, Ctrl+R, adres çubuğu)
-                console.log('🔄 Sayfa yeniden yüklendi, currentPage sıfırlanıyor');
-                this.currentPage = null;
+                console.log('🔄 Sayfa yeniden yüklendi, sayfa yeniden yükleniyor');
+                this.loadPage(this.currentPage);
             }
         }.bind(this));
         
