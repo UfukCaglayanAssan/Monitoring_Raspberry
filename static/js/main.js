@@ -184,8 +184,15 @@ class App {
             // Loading animasyonu kaldırıldı - sayfa kendi loading'ini gösterir
 
             // Sayfa içeriğini yükle
-            console.log(`📡 [${timestamp}] HTTP İSTEĞİ - /pages/${page}.html fetch ediliyor`);
-            const response = await fetch(`/pages/${page}.html`);
+            let pageUrl;
+            if (page === 'mail-management') {
+                pageUrl = '/mail-management';
+            } else {
+                pageUrl = `/pages/${page}.html`;
+            }
+            
+            console.log(`📡 [${timestamp}] HTTP İSTEĞİ - ${pageUrl} fetch ediliyor`);
+            const response = await fetch(pageUrl);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
