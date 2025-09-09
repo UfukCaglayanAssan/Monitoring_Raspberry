@@ -15,6 +15,10 @@ if (typeof window.AlarmsPage === 'undefined') {
 
     init() {
         console.log('🔧 AlarmsPage init() başladı');
+        
+        // showResolved değerini sıfırla
+        this.showResolved = false;
+        
         this.bindEvents();
         
         // Sadece sayfa aktifse veri yükle
@@ -110,7 +114,7 @@ if (typeof window.AlarmsPage === 'undefined') {
     }
 
     async loadAlarmHistory() {
-        console.log('🔍 loadAlarmHistory() çağrıldı - Stack trace:', new Error().stack);
+        console.log('Alarm geçmişi yükleniyor...');
         
         // Çift yükleme kontrolü
         if (this.isLoading) {
@@ -138,6 +142,8 @@ if (typeof window.AlarmsPage === 'undefined') {
             const data = await response.json();
             
             if (data.success) {
+                // Alarm geçmişi için showResolved'ı true yap
+                this.showResolved = true;
                 this.renderAlarmHistory(data.alarms);
             } else {
                 console.error('Alarm geçmişi yüklenirken hata:', data.message);
