@@ -483,13 +483,13 @@ if (typeof window.AlarmsPage === 'undefined') {
     }
 
     startAutoRefresh() {
-        // Her 60 saniyede bir otomatik yenile
+        // Her 30 saniyede bir otomatik yenile
         setInterval(() => {
             if (this.isPageActive() && !this.isLoading) {
                 console.log('🔄 Otomatik yenileme çalışıyor...');
                 this.loadAlarms();
             }
-        }, 60000); // 60 saniyede bir yenile
+        }, 30000); // 30 saniyede bir yenile
     }
 
     isPageActive() {
