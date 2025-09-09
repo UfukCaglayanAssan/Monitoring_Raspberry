@@ -24,7 +24,7 @@ class App {
 
     init() {
         this.bindEvents();
-        this.loadPage('summary'); // İlk sayfa olarak özet'i yükle
+        this.loadPage(this.currentPage); // localStorage'dan gelen sayfa veya summary
         this.setLanguage(this.currentLanguage);
         this.startAlarmCountRefresh(); // Alarm sayısı güncellemeyi başlat
     }
