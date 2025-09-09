@@ -17,6 +17,10 @@ if (typeof window.AlarmsPage === 'undefined') {
         console.log('🔧 AlarmsPage init() başladı');
         this.bindEvents();
         
+        // Her init'te showResolved'ı sıfırla
+        this.showResolved = false;
+        console.log('🔄 showResolved = false yapıldı (init)');
+        
         // Sadece sayfa aktifse veri yükle
         if (this.isPageActive()) {
             this.loadAlarms(); // Hemen veri yükle
@@ -70,10 +74,15 @@ if (typeof window.AlarmsPage === 'undefined') {
 
     // Alarm geçmişi toggle fonksiyonu
     toggleAlarmHistory() {
+        console.log('🔄 toggleAlarmHistory() çağrıldı');
         const alarmHistoryContainer = document.getElementById('alarmHistoryContainer');
         const alarmsTable = document.getElementById('alarmsTable');
         const noDataMessage = document.getElementById('noDataMessage');
         const pagination = document.getElementById('pagination');
+        
+        console.log('📋 Elementler:', { alarmHistoryContainer, alarmsTable, noDataMessage, pagination });
+        console.log('📋 alarmHistoryContainer display:', alarmHistoryContainer?.style.display);
+        console.log('📋 showResolved:', this.showResolved);
         
         if (alarmHistoryContainer && alarmsTable) {
             if (alarmHistoryContainer.style.display === 'none' || 
