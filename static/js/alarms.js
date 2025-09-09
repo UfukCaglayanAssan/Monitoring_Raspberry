@@ -9,13 +9,21 @@ if (typeof window.AlarmsPage === 'undefined') {
         this.pageSize = 50;
         this.totalPages = 1;
         this.isLoading = false; // Yükleme durumu flag'i
+        this.eventsBound = false; // Event listener'ların bağlanıp bağlanmadığını kontrol et
         this.init();
     }
 
     init() {
+        console.log('🔧 AlarmsPage init() başladı');
         this.bindEvents();
-        this.loadAlarms(); // Hemen veri yükle
-        this.startAutoRefresh(); // Otomatik yenileme başlat
+        
+        // Sadece sayfa aktifse veri yükle
+        if (this.isPageActive()) {
+            this.loadAlarms(); // Hemen veri yükle
+            this.startAutoRefresh(); // Otomatik yenileme başlat
+        } else {
+            console.log('⚠️ Sayfa aktif değil, init iptal edildi');
+        }
     }
 
     // Her seferinde aktif alarmlara sıfırla
@@ -33,6 +41,12 @@ if (typeof window.AlarmsPage === 'undefined') {
     }
 
     bindEvents() {
+        // Event listener'ları sadece bir kez ekle
+        if (this.eventsBound) {
+            console.log('⚠️ Event listener\'lar zaten bağlı, atlanıyor');
+            return;
+        }
+        
         // Alarm geçmişi toggle butonu
         const toggleBtn = document.getElementById('toggleAlarmHistory');
         if (toggleBtn) {
@@ -49,6 +63,9 @@ if (typeof window.AlarmsPage === 'undefined') {
         document.getElementById('nextPage')?.addEventListener('click', () => {
             this.nextPage();
         });
+        
+        this.eventsBound = true;
+        console.log('✅ Event listener\'lar bağlandı');
     }
 
     // Alarm geçmişi toggle fonksiyonu
@@ -56,6 +73,7 @@ if (typeof window.AlarmsPage === 'undefined') {
         const alarmHistoryContainer = document.getElementById('alarmHistoryContainer');
         const alarmsTable = document.getElementById('alarmsTable');
         const noDataMessage = document.getElementById('noDataMessage');
+        const pagination = document.getElementById('pagination');
         
         if (alarmHistoryContainer && alarmsTable) {
             if (alarmHistoryContainer.style.display === 'none' || 
@@ -63,7 +81,8 @@ if (typeof window.AlarmsPage === 'undefined') {
                 // Alarm geçmişini göster
                 alarmHistoryContainer.style.display = 'block';
                 alarmsTable.style.display = 'none';
-                if (noDataMessage) noDataMessage.style.display = 'none'; // "Alarm Yok" mesajını gizle
+                if (noDataMessage) noDataMessage.style.display = 'none';
+                if (pagination) pagination.style.display = 'none';
                 this.showResolved = true; // Geçmiş moduna geç
                 this.loadAlarmHistory(); // Alarm geçmişi için loadAlarmHistory() çağır
             } else {
@@ -118,6 +137,8 @@ if (typeof window.AlarmsPage === 'undefined') {
             const data = await response.json();
             
             if (data.success) {
+                // Alarm geçmişi için showResolved'ı true yap
+                this.showResolved = true;
                 this.renderAlarmHistory(data.alarms);
             } else {
                 console.error('Alarm geçmişi yüklenirken hata:', data.message);
@@ -219,6 +240,12 @@ if (typeof window.AlarmsPage === 'undefined') {
         // Çift yükleme kontrolü
         if (this.isLoading) {
             console.log('⏳ Zaten yükleme devam ediyor, iptal edildi');
+            return;
+        }
+        
+        // Sayfa kontrolü
+        if (!this.isPageActive()) {
+            console.log('⚠️ Sayfa aktif değil, loadAlarms iptal edildi');
             return;
         }
         
@@ -456,12 +483,13 @@ if (typeof window.AlarmsPage === 'undefined') {
     }
 
     startAutoRefresh() {
-        // Her 30 saniyede bir otomatik yenile
+        // Her 60 saniyede bir otomatik yenile
         setInterval(() => {
-            if (this.isPageActive()) {
+            if (this.isPageActive() && !this.isLoading) {
+                console.log('🔄 Otomatik yenileme çalışıyor...');
                 this.loadAlarms();
             }
-        }, 30000); // 30 saniyede bir yenile
+        }, 60000); // 60 saniyede bir yenile
     }
 
     isPageActive() {
@@ -503,7 +531,12 @@ function initAlarmsPage() {
         window.alarmsPage = new window.AlarmsPage();
     } else {
         console.log('🔄 Mevcut AlarmsPage instance yeniden başlatılıyor');
-        window.alarmsPage.init();
+        // Sadece sayfa aktifse yeniden başlat
+        if (window.alarmsPage.isPageActive()) {
+            window.alarmsPage.init();
+        } else {
+            console.log('⚠️ Sayfa aktif değil, yeniden başlatma atlanıyor');
+        }
     }
 }
 
