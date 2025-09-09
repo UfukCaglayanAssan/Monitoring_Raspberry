@@ -14,7 +14,8 @@ if (typeof window.AlarmsPage === 'undefined') {
 
     init() {
         this.bindEvents();
-        this.startAutoRefresh(); // startAutoRefresh içinde loadAlarms() çağrılıyor
+        this.loadAlarms(); // Hemen veri yükle
+        this.startAutoRefresh(); // Otomatik yenileme başlat
     }
 
     // Her seferinde aktif alarmlara sıfırla
@@ -63,8 +64,8 @@ if (typeof window.AlarmsPage === 'undefined') {
                 alarmHistoryContainer.style.display = 'block';
                 alarmsTable.style.display = 'none';
                 if (noDataMessage) noDataMessage.style.display = 'none'; // "Alarm Yok" mesajını gizle
-                this.loadAlarms(); // Alarm geçmişi için loadAlarms() çağır
                 this.showResolved = true; // Geçmiş moduna geç
+                this.loadAlarmHistory(); // Alarm geçmişi için loadAlarmHistory() çağır
             } else {
                 // Aktif alarmları göster
                 alarmHistoryContainer.style.display = 'none';
@@ -90,7 +91,18 @@ if (typeof window.AlarmsPage === 'undefined') {
 
     async loadAlarmHistory() {
         console.log('Alarm geçmişi yükleniyor...');
+        
+        // Çift yükleme kontrolü
+        if (this.isLoading) {
+            console.log('⏳ Zaten yükleme devam ediyor, iptal edildi');
+            return;
+        }
+        
+        this.isLoading = true;
         try {
+            // Loading göster
+            this.showAlarmHistoryLoading();
+            
             // Tüm alarmları (aktif + düzelen) getir
             const response = await fetch(`/api/alarms?show_resolved=true&page=1&pageSize=100`, {
                 method: 'GET',
@@ -109,9 +121,13 @@ if (typeof window.AlarmsPage === 'undefined') {
                 this.renderAlarmHistory(data.alarms);
             } else {
                 console.error('Alarm geçmişi yüklenirken hata:', data.message);
+                this.showAlarmHistoryNoData();
             }
         } catch (error) {
             console.error('Alarm geçmişi yüklenirken hata:', error);
+            this.showAlarmHistoryNoData();
+        } finally {
+            this.isLoading = false;
         }
     }
 
@@ -257,13 +273,50 @@ if (typeof window.AlarmsPage === 'undefined') {
         tbody.innerHTML = '';
         
         this.alarms.forEach(alarm => {
-            const row = this.createAlarmRow(alarm);
+            const row = this.createActiveAlarmRow(alarm);
             tbody.appendChild(row);
         });
 
-        // Tabloyu göster
+        // Tabloyu göster ve no-data mesajını gizle
         const table = document.getElementById('alarmsTable');
+        const noData = document.getElementById('noDataMessage');
+        
         if (table) table.style.display = 'table';
+        if (noData) noData.style.display = 'none';
+    }
+
+    createActiveAlarmRow(alarm) {
+        const row = document.createElement('tr');
+        
+        // Zaman
+        const timeCell = document.createElement('td');
+        timeCell.textContent = this.formatTimestamp(alarm.timestamp);
+        row.appendChild(timeCell);
+        
+        // Kol
+        const armCell = document.createElement('td');
+        armCell.textContent = alarm.arm;
+        row.appendChild(armCell);
+        
+        // Batarya
+        const batteryCell = document.createElement('td');
+        batteryCell.textContent = alarm.battery || 'Kol Alarmı';
+        row.appendChild(batteryCell);
+        
+        // Açıklama
+        const descriptionCell = document.createElement('td');
+        descriptionCell.textContent = alarm.description;
+        row.appendChild(descriptionCell);
+        
+        // Durum (aktif alarmlar için her zaman "Aktif")
+        const statusCell = document.createElement('td');
+        const statusBadge = document.createElement('span');
+        statusBadge.className = 'status-badge status-error';
+        statusBadge.textContent = 'Aktif';
+        statusCell.appendChild(statusBadge);
+        row.appendChild(statusCell);
+        
+        return row;
     }
 
     createAlarmRow(alarm) {
@@ -365,8 +418,15 @@ if (typeof window.AlarmsPage === 'undefined') {
         const noData = document.getElementById('noDataMessage');
         
         if (loading) loading.style.display = 'none';
-        if (table) table.style.display = 'table';
-        if (noData) noData.style.display = 'none';
+        
+        // Eğer veri varsa tabloyu göster, yoksa no-data mesajını göster
+        if (this.alarms && this.alarms.length > 0) {
+            if (table) table.style.display = 'table';
+            if (noData) noData.style.display = 'none';
+        } else {
+            if (table) table.style.display = 'none';
+            if (noData) noData.style.display = 'block';
+        }
     }
 
     showNoData() {
@@ -380,10 +440,6 @@ if (typeof window.AlarmsPage === 'undefined') {
         if (noData) {
             noData.style.display = 'block';
             console.log('✅ noDataMessage gösterildi');
-            console.log('🔍 noDataMessage display:', noData.style.display);
-            console.log('🔍 noDataMessage visibility:', noData.style.visibility);
-            console.log('🔍 noDataMessage offsetHeight:', noData.offsetHeight);
-            console.log('🔍 noDataMessage innerHTML:', noData.innerHTML);
         } else {
             console.error('❌ noDataMessage bulunamadı!');
         }
@@ -400,9 +456,6 @@ if (typeof window.AlarmsPage === 'undefined') {
     }
 
     startAutoRefresh() {
-        // Hemen veri yükle
-        this.loadAlarms();
-        
         // Her 30 saniyede bir otomatik yenile
         setInterval(() => {
             if (this.isPageActive()) {
@@ -413,6 +466,31 @@ if (typeof window.AlarmsPage === 'undefined') {
 
     isPageActive() {
         return document.querySelector('.alarms-page') !== null;
+    }
+    
+    showAlarmHistoryLoading() {
+        const container = document.getElementById('alarmHistoryContainer');
+        if (container) {
+            container.innerHTML = `
+                <div class="loading-spinner" style="display: flex;">
+                    <div class="spinner"></div>
+                    <p>Alarm geçmişi yükleniyor...</p>
+                </div>
+            `;
+        }
+    }
+    
+    showAlarmHistoryNoData() {
+        const container = document.getElementById('alarmHistoryContainer');
+        if (container) {
+            container.innerHTML = `
+                <div class="no-data-message">
+                    <i class="fas fa-check-circle"></i>
+                    <h3>Alarm Geçmişi Yok</h3>
+                    <p>Henüz alarm geçmişi bulunmuyor.</p>
+                </div>
+            `;
+        }
     }
     };
 }
