@@ -78,22 +78,23 @@ if (typeof window.AlarmsPage === 'undefined') {
         const pagination = document.getElementById('pagination');
         
         if (alarmHistoryContainer && alarmsTable) {
-            if (alarmHistoryContainer.style.display === 'none' || 
-                alarmHistoryContainer.style.display === '') {
+            if (this.showResolved) {
+                // Aktif alarmları göster
+                console.log('📋 Aktif alarmlar moduna geçiliyor');
+                alarmHistoryContainer.style.display = 'none';
+                alarmsTable.style.display = 'table';
+                if (pagination) pagination.style.display = 'flex';
+                this.showResolved = false; // Aktif moduna geç
+                this.loadAlarms(); // Aktif alarmları yeniden yükle
+            } else {
                 // Alarm geçmişini göster
+                console.log('📋 Alarm geçmişi moduna geçiliyor');
                 alarmHistoryContainer.style.display = 'block';
                 alarmsTable.style.display = 'none';
                 if (noDataMessage) noDataMessage.style.display = 'none';
                 if (pagination) pagination.style.display = 'none';
                 this.showResolved = true; // Geçmiş moduna geç
                 this.loadAlarmHistory(); // Alarm geçmişi için loadAlarmHistory() çağır
-            } else {
-                // Aktif alarmları göster
-                alarmHistoryContainer.style.display = 'none';
-                alarmsTable.style.display = 'table';
-                if (pagination) pagination.style.display = 'flex';
-                this.showResolved = false; // Aktif moduna geç
-                this.loadAlarms(); // Aktif alarmları yeniden yükle
             }
             this.updateButtonText(); // Buton metnini güncelle
         }
@@ -546,7 +547,15 @@ function initAlarmsPage() {
         console.log('🆕 Yeni AlarmsPage instance oluşturuluyor');
         window.alarmsPage = new window.AlarmsPage();
     } else {
-       
+        console.log('🔄 Mevcut AlarmsPage instance yeniden başlatılıyor');
+        alert("burda1" + window.alarmsPage.showResolved);
+        window.alarmsPage.showResolved = false;
+        // Sadece sayfa aktifse yeniden başlat
+        if (window.alarmsPage.isPageActive()) {
+            window.alarmsPage.init();
+        } else {
+            console.log('⚠️ Sayfa aktif değil, yeniden başlatma atlanıyor');
+        }
     }
 }
 
