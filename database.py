@@ -155,6 +155,18 @@ class BatteryDatabase:
                 ''')
                 print("✓ alarms tablosu oluşturuldu")
                 
+                # Mail alıcıları tablosu
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS mail_recipients (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        email TEXT NOT NULL UNIQUE,
+                        is_active BOOLEAN DEFAULT 1,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+                print("✓ mail_recipients tablosu oluşturuldu")
+                
                 # Missing data tablosu
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS missing_data (
@@ -1153,10 +1165,20 @@ class BatteryDatabase:
                             temperature = data
                             print(f"    Sıcaklık bulundu: {temperature}")
                     
-                    # Bu kol için batarya sayısını ve ortalama değerleri hesapla
+                    # Bu kol için armslavecounts tablosundan batarya sayısını al
+                    cursor.execute('''
+                        SELECT slave_count FROM arm_slave_counts 
+                        WHERE arm = ?
+                        ORDER BY created_at DESC 
+                        LIMIT 1
+                    ''', (arm,))
+                    
+                    slave_count_result = cursor.fetchone()
+                    battery_count = slave_count_result[0] if slave_count_result else 0
+                    
+                    # Ortalama değerleri hesapla
                     cursor.execute('''
                         SELECT 
-                            COUNT(DISTINCT bd.k) as battery_count,
                             AVG(CASE WHEN bd.dtype = 10 THEN bd.data END) as avg_voltage,
                             AVG(CASE WHEN bd.dtype = 11 THEN bd.data END) as avg_charge,
                             AVG(CASE WHEN bd.dtype = 126 THEN bd.data END) as avg_health
@@ -1167,7 +1189,7 @@ class BatteryDatabase:
                     battery_stats = cursor.fetchone()
                     
                     if battery_stats:
-                        battery_count, avg_voltage, avg_charge, avg_health = battery_stats
+                        avg_voltage, avg_charge, avg_health = battery_stats
                         
                         summary_data.append({
                             'arm': arm,
@@ -1186,6 +1208,157 @@ class BatteryDatabase:
             print(f"get_summary_data hatası: {e}")
             return []
     
+    def get_mail_recipients(self):
+        """Aktif mail alıcılarını getir"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT id, name, email, is_active, created_at
+                    FROM mail_recipients 
+                    WHERE is_active = 1
+                    ORDER BY created_at
+                ''')
+                
+                rows = cursor.fetchall()
+                recipients = []
+                
+                for row in rows:
+                    recipients.append({
+                        'id': row[0],
+                        'name': row[1],
+                        'email': row[2],
+                        'is_active': bool(row[3]),
+                        'created_at': row[4]
+                    })
+                
+                return recipients
+        except Exception as e:
+            print(f"Mail alıcıları getirilirken hata: {e}")
+            return []
+    
+    def add_mail_recipient(self, name, email):
+        """Yeni mail alıcısı ekle"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Maksimum 8 alıcı kontrolü
+                cursor.execute('SELECT COUNT(*) FROM mail_recipients WHERE is_active = 1')
+                count = cursor.fetchone()[0]
+                
+                if count >= 8:
+                    return {'success': False, 'message': 'Maksimum 8 mail alıcısı eklenebilir'}
+                
+                # Email benzersizlik kontrolü
+                cursor.execute('SELECT id FROM mail_recipients WHERE email = ?', (email,))
+                if cursor.fetchone():
+                    return {'success': False, 'message': 'Bu email adresi zaten kayıtlı'}
+                
+                cursor.execute('''
+                    INSERT INTO mail_recipients (name, email)
+                    VALUES (?, ?)
+                ''', (name, email))
+                
+                conn.commit()
+                return {'success': True, 'message': 'Mail alıcısı başarıyla eklendi'}
+        except Exception as e:
+            print(f"Mail alıcısı eklenirken hata: {e}")
+            return {'success': False, 'message': str(e)}
+    
+    def update_mail_recipient(self, recipient_id, name, email):
+        """Mail alıcısını güncelle"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Email benzersizlik kontrolü (kendi ID'si hariç)
+                cursor.execute('SELECT id FROM mail_recipients WHERE email = ? AND id != ?', (email, recipient_id))
+                if cursor.fetchone():
+                    return {'success': False, 'message': 'Bu email adresi zaten başka bir alıcı tarafından kullanılıyor'}
+                
+                cursor.execute('''
+                    UPDATE mail_recipients 
+                    SET name = ?, email = ?
+                    WHERE id = ?
+                ''', (name, email, recipient_id))
+                
+                conn.commit()
+                return {'success': True, 'message': 'Mail alıcısı başarıyla güncellendi'}
+        except Exception as e:
+            print(f"Mail alıcısı güncellenirken hata: {e}")
+            return {'success': False, 'message': str(e)}
+    
+    def delete_mail_recipient(self, recipient_id):
+        """Mail alıcısını sil (soft delete)"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    UPDATE mail_recipients 
+                    SET is_active = 0
+                    WHERE id = ?
+                ''', (recipient_id,))
+                
+                conn.commit()
+                return {'success': True, 'message': 'Mail alıcısı başarıyla silindi'}
+        except Exception as e:
+            print(f"Mail alıcısı silinirken hata: {e}")
+            return {'success': False, 'message': str(e)}
+    
+    def batch_insert_alarms(self, alarms):
+        """Alarmları toplu olarak kaydet"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Alarm verilerini hazırla
+                alarm_data = []
+                for alarm in alarms:
+                    alarm_data.append((
+                        alarm['arm'],
+                        alarm['battery'],
+                        alarm['error_code_msb'],
+                        alarm['error_code_lsb'],
+                        alarm['timestamp']
+                    ))
+                
+                # Toplu insert
+                cursor.executemany('''
+                    INSERT INTO alarms (arm, battery, error_code_msb, error_code_lsb, timestamp)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', alarm_data)
+                
+                conn.commit()
+                print(f"✅ {len(alarms)} alarm toplu olarak kaydedildi")
+                return True
+                
+        except Exception as e:
+            print(f"❌ Alarm toplu kayıt hatası: {e}")
+            return False
+    
+    def batch_resolve_alarms(self, alarm_ids):
+        """Alarmları toplu olarak düzelt"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                
+                # Toplu update
+                cursor.executemany('''
+                    UPDATE alarms 
+                    SET status = 'resolved', resolved_at = ?
+                    WHERE id = ? AND status = 'active'
+                ''', [(current_time, alarm_id) for alarm_id in alarm_ids])
+                
+                conn.commit()
+                print(f"✅ {len(alarm_ids)} alarm toplu olarak düzeltildi")
+                return True
+                
+        except Exception as e:
+            print(f"❌ Alarm toplu düzeltme hatası: {e}")
+            return False
+
     def get_batconfigs(self):
         """Tüm batarya konfigürasyonlarını getir"""
         try:

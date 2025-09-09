@@ -46,6 +46,10 @@ def index():
     # Ana sayfa olarak logs sayfasını göster
     return render_template('layout.html')
 
+@app.route('/mail-management')
+def mail_management():
+    return render_template('pages/mail-management.html')
+
 @app.route('/page/<page_name>')
 def get_page(page_name):
     """Sayfa içeriğini döndür"""
@@ -628,6 +632,95 @@ def get_summary():
         })
     except Exception as e:
         print(f"💥 /api/summary hatası: {e}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+# Mail Yönetimi API'leri
+@app.route('/api/mail-recipients', methods=['GET'])
+def get_mail_recipients():
+    """Mail alıcılarını getir"""
+    try:
+        db_instance = get_db()
+        with db_read_lock:
+            recipients = db_instance.get_mail_recipients()
+        
+        return jsonify({
+            'success': True,
+            'recipients': recipients
+        })
+    except Exception as e:
+        print(f"💥 /api/mail-recipients GET hatası: {e}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/mail-recipients', methods=['POST'])
+def add_mail_recipient():
+    """Yeni mail alıcısı ekle"""
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        email = data.get('email', '').strip()
+        
+        if not name or not email:
+            return jsonify({
+                'success': False,
+                'message': 'Ad soyad ve email adresi gereklidir'
+            }), 400
+        
+        db_instance = get_db()
+        with db_write_lock:
+            result = db_instance.add_mail_recipient(name, email)
+        
+        return jsonify(result)
+    except Exception as e:
+        print(f"💥 /api/mail-recipients POST hatası: {e}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/mail-recipients', methods=['PUT'])
+def update_mail_recipient():
+    """Mail alıcısını güncelle"""
+    try:
+        data = request.get_json()
+        recipient_id = data.get('id')
+        name = data.get('name', '').strip()
+        email = data.get('email', '').strip()
+        
+        if not recipient_id or not name or not email:
+            return jsonify({
+                'success': False,
+                'message': 'ID, ad soyad ve email adresi gereklidir'
+            }), 400
+        
+        db_instance = get_db()
+        with db_write_lock:
+            result = db_instance.update_mail_recipient(recipient_id, name, email)
+        
+        return jsonify(result)
+    except Exception as e:
+        print(f"💥 /api/mail-recipients PUT hatası: {e}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/mail-recipients/<int:recipient_id>', methods=['DELETE'])
+def delete_mail_recipient(recipient_id):
+    """Mail alıcısını sil"""
+    try:
+        db_instance = get_db()
+        with db_write_lock:
+            result = db_instance.delete_mail_recipient(recipient_id)
+        
+        return jsonify(result)
+    except Exception as e:
+        print(f"💥 /api/mail-recipients DELETE hatası: {e}")
         return jsonify({
             'success': False,
             'message': str(e)

@@ -9,6 +9,7 @@ import pigpio
 import json
 import os
 from database import BatteryDatabase
+from alarm_processor import alarm_processor
 
 # Global variables
 buffer = bytearray()
@@ -347,16 +348,13 @@ def db_worker():
                 
                 # Eğer errorlsb=1 ve errormsb=1 ise, mevcut alarmı düzelt
                 if error_lsb == 1 and error_msb == 1:
-                    with db_lock:
-                        if db.resolve_alarm(arm_value, battery):
-                            print(f"✓ Batkon alarm düzeltildi - Arm: {arm_value}, Battery: {battery}")
-                        else:
-                            print(f"⚠ Düzeltilecek aktif alarm bulunamadı - Arm: {arm_value}, Battery: {battery}")
+                    # Periyot bitiminde işlenecek şekilde düzeltme ekle
+                    alarm_processor.add_resolve(arm_value, battery)
+                    print(f"📝 Batkon alarm düzeltme eklendi (beklemede) - Arm: {arm_value}, Battery: {battery}")
                 else:
-                    # Yeni alarm ekle
-                    with db_lock:
-                        db.insert_alarm(arm_value, battery, error_msb, error_lsb, alarm_timestamp)
-                    print("✓ Yeni Batkon alarm SQLite'ye kaydedildi")
+                    # Periyot bitiminde işlenecek şekilde alarm ekle
+                    alarm_processor.add_alarm(arm_value, battery, error_msb, error_lsb, alarm_timestamp)
+                    print("📝 Yeni Batkon alarm eklendi (beklemede)")
                 continue
 
             # 5 byte'lık missing data verisi kontrolü
@@ -381,7 +379,9 @@ def db_worker():
                     
                     # Periyot tamamlandı mı kontrol et
                     if is_period_complete(arm_value, slave_value, is_missing_data=True):
-                        # Periyot bitti, reset system sinyali gönder
+                        # Periyot bitti, alarmları işle
+                        alarm_processor.process_period_end()
+                        # Reset system sinyali gönder
                         send_reset_system_signal()
                         # Missing data listesini temizle
                         clear_missing_data()
@@ -538,6 +538,31 @@ def db_worker():
                     
                     print(f"✓ Armslavecounts RAM'e kaydedildi: {arm_slave_counts}")
                     
+                # Hatkon (kol) alarm verisi: 2. byte (index 1) 0x8E ise
+                elif raw_bytes[1] == 0x8E:
+                    arm_value = raw_bytes[2]
+                    error_msb = raw_bytes[3]
+                    error_lsb = raw_bytes[4]
+                    status = raw_bytes[5]
+                    
+                    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+                    print(f"\n*** HATKON ALARM VERİSİ ALGILANDI - {timestamp} ***")
+                    print(f"Arm: {arm_value}, Error MSB: {error_msb}, Error LSB: {error_lsb}, Status: {status}")
+                    print(f"Ham Veri: {data}")
+                    
+                    alarm_timestamp = int(time.time() * 1000)
+                    
+                    # Eğer errorlsb=9 ve errormsb=1 ise, mevcut kol alarmını düzelt
+                    if error_lsb == 9 and error_msb == 1:
+                        # Periyot bitiminde işlenecek şekilde düzeltme ekle
+                        alarm_processor.add_resolve(arm_value, 0)  # 0 = kol alarmı
+                        print(f"📝 Hatkon alarm düzeltme eklendi (beklemede) - Arm: {arm_value}")
+                    else:
+                        # Periyot bitiminde işlenecek şekilde alarm ekle
+                        alarm_processor.add_alarm(arm_value, 0, error_msb, error_lsb, alarm_timestamp)  # 0 = kol alarmı
+                        print("📝 Yeni Hatkon alarm eklendi (beklemede)")
+                    
+                    continue
                     try:
                         updated_at = int(time.time() * 1000)
                         # Her arm için ayrı kayıt oluştur

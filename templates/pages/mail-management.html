@@ -1,0 +1,309 @@
+<div class="mail-management-page">
+    <div class="page-header">
+        <h2 data-tr="Mail Yönetimi" data-en="Mail Management">Mail Yönetimi</h2>
+        <div class="header-actions">
+            <button id="addRecipientBtn" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                <span data-tr="Yeni Alıcı Ekle" data-en="Add New Recipient">Yeni Alıcı Ekle</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="mail-recipients-container">
+        <div class="recipients-list" id="recipientsList">
+            <!-- Mail alıcıları buraya yüklenecek -->
+        </div>
+    </div>
+
+    <!-- Yeni Alıcı Ekleme Modal -->
+    <div id="addRecipientModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-tr="Yeni Mail Alıcısı Ekle" data-en="Add New Mail Recipient">Yeni Mail Alıcısı Ekle</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="addRecipientForm">
+                    <div class="form-group">
+                        <label for="recipientName" data-tr="Ad Soyad" data-en="Full Name">Ad Soyad</label>
+                        <input type="text" id="recipientName" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="recipientEmail" data-tr="E-mail Adresi" data-en="Email Address">E-mail Adresi</label>
+                        <input type="email" id="recipientEmail" name="email" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelAdd">
+                            <span data-tr="İptal" data-en="Cancel">İptal</span>
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <span data-tr="Ekle" data-en="Add">Ekle</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Düzenleme Modal -->
+    <div id="editRecipientModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-tr="Mail Alıcısını Düzenle" data-en="Edit Mail Recipient">Mail Alıcısını Düzenle</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="editRecipientForm">
+                    <input type="hidden" id="editRecipientId" name="id">
+                    <div class="form-group">
+                        <label for="editRecipientName" data-tr="Ad Soyad" data-en="Full Name">Ad Soyad</label>
+                        <input type="text" id="editRecipientName" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editRecipientEmail" data-tr="E-mail Adresi" data-en="Email Address">E-mail Adresi</label>
+                        <input type="email" id="editRecipientEmail" name="email" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelEdit">
+                            <span data-tr="İptal" data-en="Cancel">İptal</span>
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <span data-tr="Güncelle" data-en="Update">Güncelle</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.mail-management-page {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.page-header h2 {
+    margin: 0;
+    color: #2d5a2d;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.header-actions {
+    display: flex;
+    gap: 15px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: #1e3c72;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #2c4a8a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+}
+
+.recipients-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.recipient-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.recipient-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.recipient-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.recipient-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.recipient-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.recipient-email {
+    color: #6c757d;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.recipient-date {
+    color: #95a5a6;
+    font-size: 12px;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: #000;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #1e3c72;
+    box-shadow: 0 0 0 2px rgba(30, 60, 114, 0.2);
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.no-recipients {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6c757d;
+}
+
+.no-recipients i {
+    font-size: 48px;
+    color: #ddd;
+    margin-bottom: 20px;
+}
+
+.loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #1e3c72;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
