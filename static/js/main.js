@@ -25,6 +25,9 @@ class App {
             page = 'profile';
         }
         
+        // currentPage'i güncelle
+        this.currentPage = page;
+        
         this.loadPage(page);
         this.setLanguage(this.currentLanguage);
         this.startAlarmCountRefresh();
