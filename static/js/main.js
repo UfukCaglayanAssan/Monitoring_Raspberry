@@ -10,8 +10,9 @@ class App {
             if (!e.persisted) {
                 // Sayfa yeniden yüklendi (F5, Ctrl+R, adres çubuğu)
                 console.log('🔄 Sayfa yeniden yüklendi, sayfa yeniden yükleniyor');
+                const lastPage = localStorage.getItem('lastPage') || 'summary';
                 this.currentPage = null; // ← BUNU EKLE
-                this.loadPage('summary'); // ← BUNU EKLE
+                this.loadPage(lastPage); // ← BUNU EKLE
             }
         }.bind(this));
         
