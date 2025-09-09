@@ -553,6 +553,7 @@ function initAlarmsPage() {
         window.alarmsPage = new window.AlarmsPage();
     } else {
         console.log('🔄 Mevcut AlarmsPage instance yeniden başlatılıyor');
+        window.alarmsPage.showResolved = false; // ← BUNU EKLE
         // Sadece sayfa aktifse yeniden başlat
         if (window.alarmsPage.isPageActive()) {
             window.alarmsPage.init();
