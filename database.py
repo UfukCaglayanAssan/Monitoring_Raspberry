@@ -1529,15 +1529,35 @@ class BatteryDatabase:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 
+                # Önce tabloyu oluştur (eğer yoksa)
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS batconfigs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        armValue INTEGER NOT NULL,
+                        Vmin REAL NOT NULL,
+                        Vmax REAL NOT NULL,
+                        Vnom REAL NOT NULL,
+                        Rintnom INTEGER NOT NULL,
+                        Tempmin_D INTEGER NOT NULL,
+                        Tempmax_D INTEGER NOT NULL,
+                        Tempmin_PN INTEGER NOT NULL,
+                        Tempmaks_PN INTEGER NOT NULL,
+                        Socmin INTEGER NOT NULL,
+                        Sohmin INTEGER NOT NULL,
+                        time INTEGER NOT NULL,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+                
                 # Mevcut konfigürasyonu güncelle veya yeni ekle
                 cursor.execute('''
-                    INSERT OR REPLACE INTO battery_configs 
-                    (arm, vmin, vmax, vnom, rintnom, tempmin_d, tempmax_d, tempmin_pn, tempmaks_pn, socmin, sohmin, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT OR REPLACE INTO batconfigs 
+                    (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmaks_PN, Socmin, Sohmin, time)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     arm, vmin, vmax, vnom, rintnom, tempmin_d, tempmax_d, 
                     tempmin_pn, tempmaks_pn, socmin, sohmin, 
-                    int(time.time() * 1000), int(time.time() * 1000)
+                    int(time.time() * 1000)
                 ))
                 
                 conn.commit()
@@ -1545,4 +1565,43 @@ class BatteryDatabase:
                 
         except Exception as e:
             print(f"Batarya konfigürasyonu kaydedilirken hata: {e}")
+            raise e
+    
+    def save_arm_config(self, arm, akim_kats, akim_max, nem_max, nem_min, temp_max, temp_min):
+        """Kol konfigürasyonunu kaydet"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Önce tabloyu oluştur (eğer yoksa)
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS armconfigs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        armValue INTEGER NOT NULL,
+                        akimKats INTEGER NOT NULL,
+                        akimMax INTEGER NOT NULL,
+                        nemMax INTEGER NOT NULL,
+                        nemMin INTEGER NOT NULL,
+                        tempMax INTEGER NOT NULL,
+                        tempMin INTEGER NOT NULL,
+                        time INTEGER NOT NULL,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+                
+                # Mevcut konfigürasyonu güncelle veya yeni ekle
+                cursor.execute('''
+                    INSERT OR REPLACE INTO armconfigs 
+                    (armValue, akimKats, akimMax, nemMax, nemMin, tempMax, tempMin, time)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    arm, akim_kats, akim_max, nem_max, nem_min, 
+                    temp_max, temp_min, int(time.time() * 1000)
+                ))
+                
+                conn.commit()
+                print(f"Kol konfigürasyonu kaydedildi: Kol {arm}")
+                
+        except Exception as e:
+            print(f"Kol konfigürasyonu kaydedilirken hata: {e}")
             raise e

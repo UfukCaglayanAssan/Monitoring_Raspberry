@@ -491,11 +491,27 @@ def save_armconfig():
         }
         
         try:
+            # Konfigürasyonu dosyaya kaydet (main.py için)
             with open('pending_config.json', 'w', encoding='utf-8') as f:
                 json.dump(config_data, f, indent=2, ensure_ascii=False)
             print(f"Kol konfigürasyonu dosyaya kaydedildi: {data}")
+            
+            # Konfigürasyonu veritabanına da kaydet
+            db_instance = get_db()
+            with db_lock:
+                db_instance.save_arm_config(
+                    arm=data['armValue'],
+                    akim_kats=data['akimKats'],
+                    akim_max=data['akimMax'],
+                    nem_max=data['nemMax'],
+                    nem_min=data['nemMin'],
+                    temp_max=data['tempMax'],
+                    temp_min=data['tempMin']
+                )
+            print(f"Kol konfigürasyonu veritabanına kaydedildi: Kol {data['armValue']}")
+            
         except Exception as e:
-            print(f"Konfigürasyon dosyaya kaydedilirken hata: {e}")
+            print(f"Konfigürasyon kaydedilirken hata: {e}")
             return jsonify({
                 'success': False,
                 'message': 'Konfigürasyon kaydedilemedi'
