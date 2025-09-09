@@ -672,7 +672,7 @@ def add_mail_recipient():
             }), 400
         
         db_instance = get_db()
-        with db_write_lock:
+        with db_lock:
             result = db_instance.add_mail_recipient(name, email)
         
         return jsonify(result)
@@ -699,7 +699,7 @@ def update_mail_recipient():
             }), 400
         
         db_instance = get_db()
-        with db_write_lock:
+        with db_lock:
             result = db_instance.update_mail_recipient(recipient_id, name, email)
         
         return jsonify(result)
@@ -715,7 +715,7 @@ def delete_mail_recipient(recipient_id):
     """Mail alıcısını sil"""
     try:
         db_instance = get_db()
-        with db_write_lock:
+        with db_lock:
             result = db_instance.delete_mail_recipient(recipient_id)
         
         return jsonify(result)
