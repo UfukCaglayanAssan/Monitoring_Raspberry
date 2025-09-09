@@ -110,7 +110,7 @@ if (typeof window.AlarmsPage === 'undefined') {
     }
 
     async loadAlarmHistory() {
-        console.log('Alarm geçmişi yükleniyor...');
+        console.log('🔍 loadAlarmHistory() çağrıldı - Stack trace:', new Error().stack);
         
         // Çift yükleme kontrolü
         if (this.isLoading) {
