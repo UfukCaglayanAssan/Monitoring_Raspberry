@@ -546,15 +546,7 @@ function initAlarmsPage() {
         console.log('🆕 Yeni AlarmsPage instance oluşturuluyor');
         window.alarmsPage = new window.AlarmsPage();
     } else {
-        console.log('🔄 Mevcut AlarmsPage instance yeniden başlatılıyor');
-        alert("burda1" + window.alarmsPage.showResolved);
-        window.alarmsPage.showResolved = false;
-        // Sadece sayfa aktifse yeniden başlat
-        if (window.alarmsPage.isPageActive()) {
-            window.alarmsPage.init();
-        } else {
-            console.log('⚠️ Sayfa aktif değil, yeniden başlatma atlanıyor');
-        }
+       
     }
 }
 
