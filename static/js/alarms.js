@@ -540,10 +540,12 @@ if (typeof window.AlarmsPage === 'undefined') {
 function initAlarmsPage() {
     console.log('🔧 initAlarmsPage() çağrıldı');
     if (!window.alarmsPage) {
+        alert("burda1" + window.alarmsPage.showResolved);
         console.log('🆕 Yeni AlarmsPage instance oluşturuluyor');
         window.alarmsPage = new window.AlarmsPage();
     } else {
         console.log('🔄 Mevcut AlarmsPage instance yeniden başlatılıyor');
+        alert("burda" + window.alarmsPage.showResolved);
         // Sadece sayfa aktifse yeniden başlat
         if (window.alarmsPage.isPageActive()) {
             window.alarmsPage.init();
