@@ -546,6 +546,9 @@ function initAlarmsPage() {
         console.log('🔄 Mevcut AlarmsPage instance yeniden başlatılıyor');
         // Sadece sayfa aktifse yeniden başlat
         if (window.alarmsPage.isPageActive()) {
+            // showResolved'ı sıfırla - her zaman aktif alarmlarla başla
+            window.alarmsPage.showResolved = false;
+            console.log('🔄 showResolved = false yapıldı');
             window.alarmsPage.init();
         } else {
             console.log('⚠️ Sayfa aktif değil, yeniden başlatma atlanıyor');
