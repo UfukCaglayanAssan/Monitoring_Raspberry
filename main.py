@@ -146,7 +146,7 @@ def get_last_battery_info():
         
         return last_arm, last_battery
 
-def is_period_complete(arm_value, k_value, is_missing_data=False):
+def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False):
     """Periyot tamamlandı mı kontrol et"""
     last_arm, last_battery = get_last_battery_info()
     
@@ -161,6 +161,11 @@ def is_period_complete(arm_value, k_value, is_missing_data=False):
     # Missing data geldi mi?
     if is_missing_data:
         print(f"✅ PERİYOT TAMAMLANDI: Missing data geldi - Kol {arm_value}, Batarya {k_value}")
+        return True
+    
+    # Alarm geldi mi? (son batarya alarmından sonra periyot biter)
+    if is_alarm and arm_value == last_arm and k_value == last_battery:
+        print(f"✅ PERİYOT TAMAMLANDI: Son batarya alarmı geldi - Kol {arm_value}, Batarya {k_value}")
         return True
     
     return False
@@ -355,6 +360,18 @@ def db_worker():
                     # Periyot bitiminde işlenecek şekilde alarm ekle
                     alarm_processor.add_alarm(arm_value, battery, error_msb, error_lsb, alarm_timestamp)
                     print("📝 Yeni Batkon alarm eklendi (beklemede)")
+                
+                # Periyot tamamlandı mı kontrol et (son batarya alarmından sonra)
+                if is_period_complete(arm_value, battery, is_alarm=True):
+                    print(f"🔄 PERİYOT BİTTİ - Son batarya alarmı: Kol {arm_value}, Batarya {battery}")
+                    # Periyot bitti, alarmları işle
+                    alarm_processor.process_period_end()
+                    # Reset system sinyali gönder
+                    send_reset_system_signal()
+                    # Yeni periyot başlat
+                    reset_period()
+                    get_period_timestamp()
+                
                 continue
 
             # 5 byte'lık missing data verisi kontrolü
@@ -808,6 +825,27 @@ def send_batconfig_to_device(config_data):
         # Paketi gönder
         wave_uart_send(pi, TX_PIN, config_packet, int(1e6 / BAUD_RATE))
         print(f"✓ Kol {config_data['armValue']} batarya konfigürasyonu cihaza gönderildi")
+        
+        # Veritabanına kaydet
+        try:
+            with db_lock:
+                db.insert_batconfig(
+                    arm=config_data['armValue'],
+                    vnom=config_data['Vnom'],
+                    vmax=config_data['Vmax'],
+                    vmin=config_data['Vmin'],
+                    rintnom=config_data['Rintnom'],
+                    tempmin_d=config_data['Tempmin_D'],
+                    tempmax_d=config_data['Tempmaks_D'],
+                    tempmin_pn=config_data['Tempmin_PN'],
+                    tempmax_pn=config_data['Tempmaks_PN'],
+                    socmin=config_data['Socmin'],
+                    sohmin=config_data['Sohmin']
+                )
+            print(f"✓ Kol {config_data['armValue']} batarya konfigürasyonu veritabanına kaydedildi")
+        except Exception as e:
+            print(f"❌ Veritabanı kayıt hatası: {e}")
+        
         print("*** BATARYA KONFİGÜRASYONU TAMAMLANDI ***\n")
         
     except Exception as e:
@@ -866,6 +904,21 @@ def send_armconfig_to_device(config_data):
         # Paketi gönder
         wave_uart_send(pi, TX_PIN, config_packet, int(1e6 / BAUD_RATE))
         print(f"✓ Kol {config_data['armValue']} konfigürasyonu cihaza gönderildi")
+        
+        # Veritabanına kaydet
+        try:
+            with db_lock:
+                db.insert_armconfig(
+                    arm=config_data['armValue'],
+                    nem_max=config_data['nemMax'],
+                    nem_min=config_data['nemMin'],
+                    temp_max=config_data['tempMax'],
+                    temp_min=config_data['tempMin']
+                )
+            print(f"✓ Kol {config_data['armValue']} konfigürasyonu veritabanına kaydedildi")
+        except Exception as e:
+            print(f"❌ Veritabanı kayıt hatası: {e}")
+        
         print("*** KOL KONFİGÜRASYONU TAMAMLANDI ***\n")
         
     except Exception as e:
@@ -906,6 +959,33 @@ def wave_uart_send(pi, gpio_pin, data_bytes, bit_time):
     except Exception as e:
         print(f"UART gönderim hatası: {e}")
 
+def send_read_all_command(command):
+    """Tümünü oku komutu gönder (0x81 0x05 0x7A)"""
+    try:
+        # Komutu parse et: "5 5 0x7A" -> [0x81, 0x05, 0x7A]
+        parts = command.split()
+        if len(parts) >= 3:
+            arm = int(parts[0])
+            dtype = int(parts[1])
+            cmd = int(parts[2], 16) if parts[2].startswith('0x') else int(parts[2])
+            
+            # UART paketi hazırla
+            packet = [0x81, arm, dtype, cmd]
+            
+            print(f"*** TÜMÜNÜ OKU KOMUTU GÖNDERİLİYOR ***")
+            print(f"Arm: {arm}, Dtype: 0x{dtype:02X}, Cmd: 0x{cmd:02X}")
+            print(f"UART Paketi: {[f'0x{b:02X}' for b in packet]}")
+            
+            # UART'a gönder
+            wave_uart_send(pi, TX_PIN, packet, int(1e6 / BAUD_RATE))
+            print(f"✓ Tümünü oku komutu cihaza gönderildi")
+            
+        else:
+            print(f"❌ Geçersiz komut formatı: {command}")
+            
+    except Exception as e:
+        print(f"❌ Tümünü oku komutu gönderilirken hata: {e}")
+
 def config_worker():
     """Konfigürasyon değişikliklerini işle"""
     while True:
@@ -921,6 +1001,10 @@ def config_worker():
                         save_batconfig_to_db(config_data['data'])
                     elif config_data.get('type') == 'armconfig':
                         save_armconfig_to_db(config_data['data'])
+                    elif config_data.get('type') == 'send_to_device':
+                        # Tümünü oku komutu gönder
+                        command = config_data.get('command', '5 5 0x7A')
+                        send_read_all_command(command)
                     
                 except Exception as e:
                     print(f"Konfigürasyon dosyası işlenirken hata: {e}")
