@@ -1,7 +1,6 @@
 // Ana JavaScript dosyası
 class App {
     constructor() {
-        this.currentPage = 'summary';
         this.currentLanguage = 'tr';
         this.init();
     }
