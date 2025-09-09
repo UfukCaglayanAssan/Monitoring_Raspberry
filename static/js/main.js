@@ -139,6 +139,12 @@ class App {
         
         // Aynı sayfa kontrolü - eğer aynı sayfa zaten yüklüyse yeniden yükleme
         if (this.currentPage === page) {
+            // Alarm sayfası için özel kontrol
+            if (page === 'alarms' && window.alarmsPage && window.alarmsPage.isPageActive()) {
+                console.log(`🔄 [${timestamp}] ALARM SAYFASI - Zaten yüklü, aktif alarmlar moduna geçiliyor`);
+                window.alarmsPage.resetToActiveAlarms();
+                return;
+            }
             console.log(`⚠️ [${timestamp}] AYNI SAYFA - ${page} zaten yüklü, yeniden yükleme atlanıyor`);
             return;
         }

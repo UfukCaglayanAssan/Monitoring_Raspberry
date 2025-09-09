@@ -21,7 +21,8 @@ if (typeof window.AlarmsPage === 'undefined') {
         if (this.isPageActive()) {
             // Her zaman aktif alarmlar modunda başla
             this.showResolved = false;
-            this.resetToActiveAlarms(); // Aktif alarmlar moduna geç
+            this.loadAlarms(); // Hemen veri yükle
+            this.startAutoRefresh(); // Otomatik yenileme başlat
         } else {
             console.log('⚠️ Sayfa aktif değil, init iptal edildi');
         }
@@ -29,27 +30,16 @@ if (typeof window.AlarmsPage === 'undefined') {
 
     // Her seferinde aktif alarmlara sıfırla
     resetToActiveAlarms() {
-        console.log('🔄 resetToActiveAlarms() çağrıldı');
         this.showResolved = false; // Aktif alarmlar modu
         this.currentPage = 1; // Sayfa sıfırla
+        this.loadAlarms();
+        this.updateButtonText();
         
-        // UI'yi sıfırla
+        // Alarm geçmişi container'ını gizle
         const alarmHistoryContainer = document.getElementById('alarmHistoryContainer');
-        const alarmsTable = document.getElementById('alarmsTable');
-        const pagination = document.getElementById('pagination');
-        
         if (alarmHistoryContainer) {
             alarmHistoryContainer.style.display = 'none';
         }
-        if (alarmsTable) {
-            alarmsTable.style.display = 'table';
-        }
-        if (pagination) {
-            pagination.style.display = 'flex';
-        }
-        
-        this.updateButtonText();
-        this.loadAlarms(); // Aktif alarmları yükle
     }
 
     bindEvents() {
@@ -62,9 +52,7 @@ if (typeof window.AlarmsPage === 'undefined') {
         // Alarm geçmişi toggle butonu
         const toggleBtn = document.getElementById('toggleAlarmHistory');
         if (toggleBtn) {
-            toggleBtn.addEventListener('click', (e) => {
-                e.preventDefault(); // Sayfa yeniden yüklenmesini engelle
-                e.stopPropagation(); // Event'in parent elementlere yayılmasını engelle
+            toggleBtn.addEventListener('click', () => {
                 this.toggleAlarmHistory();
             });
         }
@@ -564,8 +552,15 @@ function initAlarmsPage() {
         console.log('🔄 Mevcut AlarmsPage instance yeniden başlatılıyor');
         // Sadece sayfa aktifse yeniden başlat
         if (window.alarmsPage.isPageActive()) {
-            console.log('📋 Alarm sayfası yeniden yüklendi, aktif alarmlar moduna geçiliyor');
+            // Mevcut modu koru
+            const currentMode = window.alarmsPage.showResolved;
+            console.log(`📋 Mevcut mod korunuyor: ${currentMode ? 'Alarm Geçmişi' : 'Aktif Alarmlar'}`);
             window.alarmsPage.init();
+            // Modu geri yükle
+            if (currentMode) {
+                window.alarmsPage.showResolved = true;
+                window.alarmsPage.toggleAlarmHistory();
+            }
         } else {
             console.log('⚠️ Sayfa aktif değil, yeniden başlatma atlanıyor');
         }
