@@ -1,35 +1,32 @@
 // Ana JavaScript dosyası
 class App {
     constructor() {
+        // localStorage'dan son sayfayı oku, yoksa summary
+        this.currentPage = localStorage.getItem('lastPage') || 'summary';
         this.currentLanguage = 'tr';
+        
+        // F5 ile yenileme kontrolü
+        window.addEventListener('pageshow', function(e) {
+            if (!e.persisted) {
+                // Sayfa yeniden yüklendi (F5, Ctrl+R, adres çubuğu)
+                console.log('🔄 Sayfa yeniden yüklendi, currentPage sıfırlanıyor');
+                this.currentPage = null;
+            }
+        }.bind(this));
+        
+        // Sayfa kapatıldığında localStorage'ı sıfırla
+        window.addEventListener('beforeunload', function() {
+            localStorage.removeItem('lastPage');
+        });
+        
         this.init();
     }
 
     init() {
         this.bindEvents();
-        
-        // URL'den sayfa adını al
-        const path = window.location.pathname;
-        let page = 'summary'; // varsayılan
-        
-        if (path.includes('/alarms')) {
-            page = 'alarms';
-        } else if (path.includes('/batteries')) {
-            page = 'batteries';
-        } else if (path.includes('/logs')) {
-            page = 'logs';
-        } else if (path.includes('/configuration')) {
-            page = 'configuration';
-        } else if (path.includes('/profile')) {
-            page = 'profile';
-        }
-        
-        // currentPage'i güncelle
-        this.currentPage = page;
-        
-        this.loadPage(page);
+        this.loadPage('summary'); // İlk sayfa olarak özet'i yükle
         this.setLanguage(this.currentLanguage);
-        this.startAlarmCountRefresh();
+        this.startAlarmCountRefresh(); // Alarm sayısı güncellemeyi başlat
     }
 
     bindEvents() {
@@ -199,6 +196,10 @@ class App {
             
             this.currentPage = page;
             this.isLoading = false;
+            
+            // Son sayfayı localStorage'a kaydet
+            localStorage.setItem('lastPage', page);
+            
             console.log('Page loaded:', page);
             
         } catch (error) {
