@@ -17,10 +17,6 @@ if (typeof window.AlarmsPage === 'undefined') {
         console.log('🔧 AlarmsPage init() başladı');
         this.bindEvents();
         
-        // Her init'te showResolved'ı sıfırla
-        this.showResolved = false;
-        console.log('🔄 showResolved = false yapıldı (init)');
-        
         // Sadece sayfa aktifse veri yükle
         if (this.isPageActive()) {
             this.loadAlarms(); // Hemen veri yükle
@@ -74,15 +70,10 @@ if (typeof window.AlarmsPage === 'undefined') {
 
     // Alarm geçmişi toggle fonksiyonu
     toggleAlarmHistory() {
-        console.log('🔄 toggleAlarmHistory() çağrıldı');
         const alarmHistoryContainer = document.getElementById('alarmHistoryContainer');
         const alarmsTable = document.getElementById('alarmsTable');
         const noDataMessage = document.getElementById('noDataMessage');
         const pagination = document.getElementById('pagination');
-        
-        console.log('📋 Elementler:', { alarmHistoryContainer, alarmsTable, noDataMessage, pagination });
-        console.log('📋 alarmHistoryContainer display:', alarmHistoryContainer?.style.display);
-        console.log('📋 showResolved:', this.showResolved);
         
         if (alarmHistoryContainer && alarmsTable) {
             if (alarmHistoryContainer.style.display === 'none' || 
@@ -548,20 +539,21 @@ if (typeof window.AlarmsPage === 'undefined') {
 // Sayfa yüklendiğinde başlat
 function initAlarmsPage() {
     console.log('🔧 initAlarmsPage() çağrıldı');
+    
+    // Eğer alarm sayfası zaten açıksa, tekrar başlatma
+    if (window.alarmsPage && window.alarmsPage.isPageActive()) {
+        console.log('⚠️ Alarm sayfası zaten açık, tekrar başlatma atlanıyor');
+        return;
+    }
+    
     if (!window.alarmsPage) {
         console.log('🆕 Yeni AlarmsPage instance oluşturuluyor');
         window.alarmsPage = new window.AlarmsPage();
     } else {
         console.log('🔄 Mevcut AlarmsPage instance yeniden başlatılıyor');
-        // Sadece sayfa aktifse yeniden başlat
-        if (window.alarmsPage.isPageActive()) {
-            // showResolved'ı sıfırla - her zaman aktif alarmlarla başla
-            window.alarmsPage.showResolved = false;
-            console.log('🔄 showResolved = false yapıldı');
-            window.alarmsPage.init();
-        } else {
-            console.log('⚠️ Sayfa aktif değil, yeniden başlatma atlanıyor');
-        }
+        // showResolved değerini sıfırla
+        window.alarmsPage.showResolved = false;
+        window.alarmsPage.init();
     }
 }
 
