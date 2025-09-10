@@ -438,32 +438,34 @@ if (typeof window.ConfigurationPage === 'undefined') {
     }
 
     async sendConfigToDevice() {
-        try {
-            console.log('Konfigürasyon cihaza gönderiliyor...');
-            
-            const response = await fetch('/api/send-config-to-device', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    command: '5 5 0x7A'
-                })
-            });
+        if (confirm('Konfigürasyonu cihaza göndermek istediğinizden emin misiniz?')) {
+            try {
+                console.log('Konfigürasyon cihaza gönderiliyor...');
+                
+                const response = await fetch('/api/send-config-to-device', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        command: '5 5 0x7A'
+                    })
+                });
 
-            if (response.ok) {
-                const result = await response.json();
-                if (result.success) {
-                    alert('Konfigürasyon başarıyla cihaza gönderildi!');
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        alert('Konfigürasyon başarıyla cihaza gönderildi!');
+                    } else {
+                        alert('Hata: ' + result.message);
+                    }
                 } else {
-                    alert('Hata: ' + result.message);
+                    alert('Konfigürasyon gönderilemedi!');
                 }
-            } else {
-                alert('Konfigürasyon gönderilemedi!');
+            } catch (error) {
+                console.error('Konfigürasyon gönderilirken hata:', error);
+                alert('Konfigürasyon gönderilirken hata oluştu!');
             }
-        } catch (error) {
-            console.error('Konfigürasyon gönderilirken hata:', error);
-            alert('Konfigürasyon gönderilirken hata oluştu!');
         }
     }
     

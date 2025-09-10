@@ -142,7 +142,8 @@ def get_last_battery_info():
         for arm in [1, 2, 3, 4]:
             if arm_slave_counts[arm] > 0:
                 last_arm = arm
-                last_battery = arm_slave_counts[arm]  # En son batarya numarası
+                # k değerleri 3'ten başlar, son k değeri = armslavecount + 2
+                last_battery = arm_slave_counts[arm] + 2
         
         return last_arm, last_battery
 
@@ -152,6 +153,9 @@ def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False
     
     if not last_arm or not last_battery:
         return False
+    
+    # Debug: Periyot kontrol bilgilerini yazdır
+    print(f"🔍 PERİYOT KONTROL: Kol {arm_value}, k={k_value}, Beklenen son k: {last_battery}")
     
     # En son koldaki en son batarya verisi geldi mi?
     if arm_value == last_arm and k_value == last_battery:
@@ -969,8 +973,8 @@ def send_read_all_command(command):
             dtype = int(parts[1])
             cmd = int(parts[2], 16) if parts[2].startswith('0x') else int(parts[2])
             
-            # UART paketi hazırla - sadece [0x81, arm, cmd] (dtype kaldırıldı)
-            packet = [0x81, arm, cmd]
+            # UART paketi hazırla
+            packet = [0x81, arm, dtype, cmd]
             
             print(f"*** TÜMÜNÜ OKU KOMUTU GÖNDERİLİYOR ***")
             print(f"Arm: {arm}, Dtype: 0x{dtype:02X}, Cmd: 0x{cmd:02X}")

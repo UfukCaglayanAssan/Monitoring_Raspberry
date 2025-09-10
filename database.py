@@ -1778,3 +1778,20 @@ class BatteryDatabase:
         except Exception as e:
             print(f"Kol konfigürasyonu kaydedilirken hata: {e}")
             raise e
+    
+    def insert_batconfig(self, arm, vmin, vmax, vnom, rintnom, tempmin_d, tempmax_d, tempmin_pn, tempmax_pn, socmin, sohmin):
+        """Batarya konfigürasyonunu kaydet (main.py ile uyumlu interface)"""
+        try:
+            self.save_battery_config(arm, vmin, vmax, vnom, rintnom, tempmin_d, tempmax_d, tempmin_pn, tempmax_pn, socmin, sohmin)
+        except Exception as e:
+            print(f"insert_batconfig hatası: {e}")
+            raise e
+    
+    def insert_armconfig(self, arm, nem_max, nem_min, temp_max, temp_min):
+        """Kol konfigürasyonunu kaydet (main.py ile uyumlu interface)"""
+        try:
+            # Varsayılan değerlerle save_arm_config çağır
+            self.save_arm_config(arm, 150, 1000, nem_max, nem_min, temp_max, temp_min)
+        except Exception as e:
+            print(f"insert_armconfig hatası: {e}")
+            raise e
