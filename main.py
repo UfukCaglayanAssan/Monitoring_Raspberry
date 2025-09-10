@@ -680,7 +680,7 @@ def initialize_config_tables():
                     Tempmin_D INTEGER NOT NULL,
                     Tempmax_D INTEGER NOT NULL,
                     Tempmin_PN INTEGER NOT NULL,
-                    Tempmax_PN INTEGER NOT NULL,
+                    Tempmaks_PN INTEGER NOT NULL,
                     Socmin INTEGER NOT NULL,
                     Sohmin INTEGER NOT NULL,
                     time INTEGER NOT NULL,
@@ -714,7 +714,7 @@ def load_default_configs():
             for arm in range(1, 5):
                 db.execute_query('''
                     INSERT OR IGNORE INTO batconfigs 
-                    (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmax_PN, Socmin, Sohmin, time)
+                    (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmaks_PN, Socmin, Sohmin, time)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (arm, 10.12, 13.95, 11.00, 150, 15, 55, 15, 30, 30, 30, int(time.time() * 1000)))
             
@@ -736,11 +736,11 @@ def save_batconfig_to_db(config_data):
         with db_lock:
             db.execute_query('''
                 INSERT OR REPLACE INTO batconfigs 
-                (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmax_PN, Socmin, Sohmin, time)
+                (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmaks_PN, Socmin, Sohmin, time)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (config_data['armValue'], config_data['Vmin'], config_data['Vmax'], config_data['Vnom'], 
                   config_data['Rintnom'], config_data['Tempmin_D'], config_data['Tempmax_D'], 
-                  config_data['Tempmin_PN'], config_data['Tempmax_PN'], config_data['Socmin'], 
+                  config_data['Tempmin_PN'], config_data['Tempmaks_PN'], config_data['Socmin'], 
                   config_data['Sohmin'], config_data['time']))
         
         print(f"✓ Kol {config_data['armValue']} batarya konfigürasyonu veritabanına kaydedildi")
