@@ -665,106 +665,6 @@ def db_worker():
             print(f"\ndb_worker'da beklenmeyen hata: {e}")
             continue
 
-def initialize_config_tables():
-    """Konfigürasyon tablolarını oluştur ve varsayılan verileri yükle"""
-    try:
-        with db_lock:
-            db.execute_query('''
-                CREATE TABLE IF NOT EXISTS batconfigs (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    armValue INTEGER NOT NULL,
-                    Vmin REAL NOT NULL,
-                    Vmax REAL NOT NULL,
-                    Vnom REAL NOT NULL,
-                    Rintnom INTEGER NOT NULL,
-                    Tempmin_D INTEGER NOT NULL,
-                    Tempmax_D INTEGER NOT NULL,
-                    Tempmin_PN INTEGER NOT NULL,
-                    Tempmax_PN INTEGER NOT NULL,
-                    Socmin INTEGER NOT NULL,
-                    Sohmin INTEGER NOT NULL,
-                    time INTEGER NOT NULL,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
-            db.execute_query('''
-                CREATE TABLE IF NOT EXISTS armconfigs (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    armValue INTEGER NOT NULL,
-                    akimKats INTEGER NOT NULL,
-                    akimMax INTEGER NOT NULL,
-                    nemMax INTEGER NOT NULL,
-                    nemMin INTEGER NOT NULL,
-                    tempMax INTEGER NOT NULL,
-                    tempMin INTEGER NOT NULL,
-                    time INTEGER NOT NULL,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
-        print("✓ Konfigürasyon tabloları oluşturuldu")
-        load_default_configs()
-    except Exception as e:
-        print(f"Konfigürasyon tabloları oluşturulurken hata: {e}")
-
-def load_default_configs():
-    """Varsayılan konfigürasyon değerlerini yükle"""
-    try:
-        with db_lock:
-            # 4 kol için varsayılan batarya konfigürasyonları
-            for arm in range(1, 5):
-                db.execute_query('''
-                    INSERT OR IGNORE INTO batconfigs 
-                    (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmax_PN, Socmin, Sohmin, time)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (arm, 10.12, 13.95, 11.00, 150, 15, 55, 15, 30, 30, 30, int(time.time() * 1000)))
-            
-            # 4 kol için varsayılan kol konfigürasyonları
-            for arm in range(1, 5):
-                db.execute_query('''
-                    INSERT OR IGNORE INTO armconfigs 
-                    (armValue, akimKats, akimMax, nemMax, nemMin, tempMax, tempMin, time)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (arm, 150, 1000, 100, 0, 65, 15, int(time.time() * 1000)))
-        
-        print("✓ Varsayılan konfigürasyon değerleri yüklendi")
-    except Exception as e:
-        print(f"Varsayılan konfigürasyon yüklenirken hata: {e}")
-
-def save_batconfig_to_db(config_data):
-    """Batarya konfigürasyonunu veritabanına kaydet ve cihaza gönder"""
-    try:
-        with db_lock:
-            db.execute_query('''
-                INSERT OR REPLACE INTO batconfigs 
-                (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmax_PN, Socmin, Sohmin, time)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (config_data['armValue'], config_data['Vmin'], config_data['Vmax'], config_data['Vnom'], 
-                  config_data['Rintnom'], config_data['Tempmin_D'], config_data['Tempmax_D'], 
-                  config_data['Tempmin_PN'], config_data['Tempmax_PN'], config_data['Socmin'], 
-                  config_data['Sohmin'], config_data['time']))
-        
-        print(f"✓ Kol {config_data['armValue']} batarya konfigürasyonu veritabanına kaydedildi")
-        send_batconfig_to_device(config_data)
-    except Exception as e:
-        print(f"Batarya konfigürasyonu kaydedilirken hata: {e}")
-
-def save_armconfig_to_db(config_data):
-    """Kol konfigürasyonunu veritabanına kaydet ve cihaza gönder"""
-    try:
-        with db_lock:
-            db.execute_query('''
-                INSERT OR REPLACE INTO armconfigs 
-                (armValue, akimKats, akimMax, nemMax, nemMin, tempMax, tempMin, time)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (config_data['armValue'], config_data['akimKats'], config_data['akimMax'], 
-                  config_data['nemMax'], config_data['nemMin'], config_data['tempMax'], 
-                  config_data['tempMin'], config_data['time']))
-        
-        print(f"✓ Kol {config_data['armValue']} konfigürasyonu veritabanına kaydedildi")
-        send_armconfig_to_device(config_data)
-    except Exception as e:
-        print(f"Kol konfigürasyonu kaydedilirken hata: {e}")
-
 def send_batconfig_to_device(config_data):
     """Batarya konfigürasyonunu cihaza gönder"""
     try:
@@ -1021,11 +921,7 @@ def config_worker():
 
 def main():
     try:
-        # Konfigürasyon tablolarını başlat
-        initialize_config_tables()
-        
-        # Eksik tabloları oluştur (migration)
-        db.create_missing_tables()
+        # Database sınıfı __init__'de tabloları ve default değerleri oluşturuyor
         
         # Başlangıçta varsayılan armslavecount değerlerini ayarla
         with arm_slave_counts_lock:

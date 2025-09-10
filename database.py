@@ -167,6 +167,44 @@ class BatteryDatabase:
                 ''')
                 print("✓ mail_recipients tablosu oluşturuldu")
                 
+                # Batarya konfigürasyon tablosu
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS batconfigs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        armValue INTEGER NOT NULL,
+                        Vmin REAL NOT NULL,
+                        Vmax REAL NOT NULL,
+                        Vnom REAL NOT NULL,
+                        Rintnom INTEGER NOT NULL,
+                        Tempmin_D INTEGER NOT NULL,
+                        Tempmax_D INTEGER NOT NULL,
+                        Tempmin_PN INTEGER NOT NULL,
+                        Tempmax_PN INTEGER NOT NULL,
+                        Socmin INTEGER NOT NULL,
+                        Sohmin INTEGER NOT NULL,
+                        time INTEGER NOT NULL,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+                print("✓ batconfigs tablosu oluşturuldu")
+                
+                # Kol konfigürasyon tablosu
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS armconfigs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        armValue INTEGER NOT NULL,
+                        akimKats REAL NOT NULL,
+                        akimMax REAL NOT NULL,
+                        nemMax REAL NOT NULL,
+                        nemMin REAL NOT NULL,
+                        tempMax REAL NOT NULL,
+                        tempMin REAL NOT NULL,
+                        time INTEGER NOT NULL,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+                print("✓ armconfigs tablosu oluşturuldu")
+                
                 # Missing data tablosu
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS missing_data (
@@ -288,6 +326,9 @@ class BatteryDatabase:
                 
                 conn.commit()
                 print("✓ Veritabanı başarıyla oluşturuldu!")
+                
+                # Default konfigürasyon değerlerini kaydet
+                self._initialize_default_configs(cursor, arm_count=4)
                 
                 # Veritabanı boyutunu göster
                 db_size = os.path.getsize(self.db_path) / (1024 * 1024)  # MB
@@ -1720,6 +1761,74 @@ class BatteryDatabase:
         except Exception as e:
             print(f"❌ Eksik tablolar oluşturulurken hata: {e}")
             raise e
+
+    def _initialize_default_configs(self, cursor, arm_count=4):
+        """Private: Default konfigürasyon değerlerini kaydet (cursor ile)"""
+        try:
+            # Her kol için default batarya konfigürasyonu
+            for arm in range(1, arm_count + 1):
+                cursor.execute('''
+                    INSERT OR IGNORE INTO batconfigs 
+                    (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmax_PN, Socmin, Sohmin, time)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    arm, 10.12, 13.95, 11.0, 50,  # Rintnom = 50 mΩ
+                    15, 55, 15, 30, 30, 30, 
+                    int(time.time() * 1000)
+                ))
+            
+            # Her kol için default kol konfigürasyonu
+            for arm in range(1, arm_count + 1):
+                cursor.execute('''
+                    INSERT OR IGNORE INTO armconfigs 
+                    (armValue, akimKats, akimMax, nemMax, nemMin, tempMax, tempMin, time)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    arm, 1.0, 100, 80, 20, 50, 10, 
+                    int(time.time() * 1000)
+                ))
+            
+            print(f"✅ Default konfigürasyonlar kaydedildi: {arm_count} kol")
+            
+        except Exception as e:
+            print(f"❌ Default konfigürasyon kaydetme hatası: {e}")
+            raise e
+
+    def initialize_default_configs(self, arm_count=4):
+        """Tüm kollar için default konfigürasyon değerlerini kaydet"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Her kol için default batarya konfigürasyonu
+                for arm in range(1, arm_count + 1):
+                    cursor.execute('''
+                        INSERT OR IGNORE INTO batconfigs 
+                        (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmax_PN, Socmin, Sohmin, time)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        arm, 10.12, 13.95, 11.0, 50,  # Rintnom = 50 mΩ
+                        15, 55, 15, 30, 30, 30, 
+                        int(time.time() * 1000)
+                    ))
+                
+                # Her kol için default kol konfigürasyonu
+                for arm in range(1, arm_count + 1):
+                    cursor.execute('''
+                        INSERT OR IGNORE INTO armconfigs 
+                        (armValue, akimKats, akimMax, nemMax, nemMin, tempMax, tempMin, time)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        arm, 1.0, 100, 80, 20, 50, 10, 
+                        int(time.time() * 1000)
+                    ))
+                
+                conn.commit()
+                print(f"✅ Default konfigürasyonlar kaydedildi: {arm_count} kol")
+                
+        except Exception as e:
+            print(f"❌ Default konfigürasyon kaydetme hatası: {e}")
+            raise e
     
     def save_battery_config(self, arm, vmin, vmax, vnom, rintnom, tempmin_d, tempmax_d, tempmin_pn, tempmax_pn, socmin, sohmin):
         """Batarya konfigürasyonunu kaydet"""
@@ -1727,35 +1836,18 @@ class BatteryDatabase:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 
-                # Önce tabloyu oluştur (eğer yoksa)
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS batconfigs (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        armValue INTEGER NOT NULL,
-                        Vmin REAL NOT NULL,
-                        Vmax REAL NOT NULL,
-                        Vnom REAL NOT NULL,
-                        Rintnom INTEGER NOT NULL,
-                        Tempmin_D INTEGER NOT NULL,
-                        Tempmax_D INTEGER NOT NULL,
-                        Tempmin_PN INTEGER NOT NULL,
-                        Tempmax_PN INTEGER NOT NULL,
-                        Socmin INTEGER NOT NULL,
-                        Sohmin INTEGER NOT NULL,
-                        time INTEGER NOT NULL,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                    )
-                ''')
                 
-                # Mevcut konfigürasyonu güncelle veya yeni ekle
+                # Direkt UPDATE - kayıt her zaman var olacak
                 cursor.execute('''
-                    INSERT OR REPLACE INTO batconfigs 
-                    (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmax_PN, Socmin, Sohmin, time)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    UPDATE batconfigs SET 
+                    Vmin = ?, Vmax = ?, Vnom = ?, Rintnom = ?, 
+                    Tempmin_D = ?, Tempmax_D = ?, Tempmin_PN = ?, Tempmax_PN = ?, 
+                    Socmin = ?, Sohmin = ?, time = ?
+                    WHERE armValue = ?
                 ''', (
-                    arm, vmin, vmax, vnom, rintnom, tempmin_d, tempmax_d, 
+                    vmin, vmax, vnom, rintnom, tempmin_d, tempmax_d, 
                     tempmin_pn, tempmax_pn, socmin, sohmin, 
-                    int(time.time() * 1000)
+                    int(time.time() * 1000), arm
                 ))
                 
                 conn.commit()
@@ -1771,30 +1863,16 @@ class BatteryDatabase:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 
-                # Önce tabloyu oluştur (eğer yoksa)
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS armconfigs (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        armValue INTEGER NOT NULL,
-                        akimKats INTEGER NOT NULL,
-                        akimMax INTEGER NOT NULL,
-                        nemMax INTEGER NOT NULL,
-                        nemMin INTEGER NOT NULL,
-                        tempMax INTEGER NOT NULL,
-                        tempMin INTEGER NOT NULL,
-                        time INTEGER NOT NULL,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                    )
-                ''')
                 
-                # Mevcut konfigürasyonu güncelle veya yeni ekle
+                # Direkt UPDATE - kayıt her zaman var olacak
                 cursor.execute('''
-                    INSERT OR REPLACE INTO armconfigs 
-                    (armValue, akimKats, akimMax, nemMax, nemMin, tempMax, tempMin, time)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    UPDATE armconfigs SET 
+                    akimKats = ?, akimMax = ?, nemMax = ?, nemMin = ?, 
+                    tempMax = ?, tempMin = ?, time = ?
+                    WHERE armValue = ?
                 ''', (
-                    arm, akim_kats, akim_max, nem_max, nem_min, 
-                    temp_max, temp_min, int(time.time() * 1000)
+                    akim_kats, akim_max, nem_max, nem_min, 
+                    temp_max, temp_min, int(time.time() * 1000), arm
                 ))
                 
                 conn.commit()
