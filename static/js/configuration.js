@@ -182,11 +182,20 @@ if (typeof window.ConfigurationPage === 'undefined') {
 
     async loadBatteryConfigsFromDB() {
         try {
+            console.log('🔄 DB\'den batarya konfigürasyonları yükleniyor...');
             const response = await fetch('/api/batconfigs');
             const result = await response.json();
-            return result.success ? result.data : [];
+            console.log('📡 API Response:', result);
+            
+            if (result.success) {
+                console.log(`✅ ${result.data.length} adet batarya konfigürasyonu yüklendi:`, result.data);
+                return result.data;
+            } else {
+                console.error('❌ API hatası:', result.message);
+                return [];
+            }
         } catch (error) {
-            console.error('Batarya konfigürasyonları yüklenirken hata:', error);
+            console.error('❌ Batarya konfigürasyonları yüklenirken hata:', error);
             return [];
         }
     }
@@ -203,10 +212,28 @@ if (typeof window.ConfigurationPage === 'undefined') {
     }
 
     loadBatteryConfigForArm(armValue, configs) {
+        console.log(`🔍 Kol ${armValue} için konfigürasyon aranıyor...`);
+        console.log(`📋 Mevcut konfigürasyonlar:`, configs);
+        
         // DB'den bu kol için konfigürasyon bul
         const config = configs.find(c => c.armValue === armValue);
+        console.log(`🔍 Bulunan konfigürasyon:`, config);
         
         if (config) {
+            console.log(`✅ Kol ${armValue} konfigürasyonu bulundu, DB değerleri yükleniyor`);
+            console.log(`📊 DB Değerleri:`, {
+                Vmin: config.Vmin,
+                Vmax: config.Vmax,
+                Vnom: config.Vnom,
+                Rintnom: config.Rintnom,
+                Tempmin_D: config.Tempmin_D,
+                Tempmax_D: config.Tempmax_D,
+                Tempmin_PN: config.Tempmin_PN,
+                Tempmax_PN: config.Tempmax_PN,
+                Socmin: config.Socmin,
+                Sohmin: config.Sohmin
+            });
+            
             // DB'deki değerleri kullan
             document.getElementById('Vmin').value = config.Vmin;
             document.getElementById('Vmax').value = config.Vmax;
@@ -218,7 +245,10 @@ if (typeof window.ConfigurationPage === 'undefined') {
             document.getElementById('Tempmax_PN').value = config.Tempmax_PN;
             document.getElementById('Socmin').value = config.Socmin;
             document.getElementById('Sohmin').value = config.Sohmin;
+            
+            console.log(`✅ Form alanları DB değerleri ile dolduruldu`);
         } else {
+            console.log(`❌ Kol ${armValue} konfigürasyonu bulunamadı, default değerler yükleniyor`);
             // DB'de yoksa default değerleri kullan
             this.loadBatteryDefaultsForArm(armValue);
         }
@@ -244,10 +274,12 @@ if (typeof window.ConfigurationPage === 'undefined') {
 
     async loadBatteryConfigForSelectedArm(armValue) {
         try {
+            console.log(`🔄 Kol ${armValue} için batarya konfigürasyonu yükleniyor...`);
             const configs = await this.loadBatteryConfigsFromDB();
+            console.log(`📋 Yüklenen konfigürasyonlar:`, configs);
             this.loadBatteryConfigForArm(armValue, configs);
         } catch (error) {
-            console.error('Batarya konfigürasyonu yüklenirken hata:', error);
+            console.error('❌ Batarya konfigürasyonu yüklenirken hata:', error);
             this.loadBatteryDefaultsForArm(armValue);
         }
     }
@@ -454,16 +486,15 @@ if (typeof window.ConfigurationPage === 'undefined') {
                 if (response.ok) {
                     const result = await response.json();
                     if (result.success) {
-                        alert('Konfigürasyon başarıyla cihaza gönderildi!');
+                        console.log('Tümünü oku komutu başarıyla gönderildi');
                     } else {
-                        alert('Hata: ' + result.message);
+                        console.error('Hata: ' + result.message);
                     }
                 } else {
-                    alert('Konfigürasyon gönderilemedi!');
+                    console.error('Tümünü oku komutu gönderilemedi');
                 }
         } catch (error) {
-            console.error('Konfigürasyon gönderilirken hata:', error);
-            alert('Konfigürasyon gönderilirken hata oluştu!');
+            console.error('Tümünü oku komutu gönderilirken hata:', error);
         }
     }
     

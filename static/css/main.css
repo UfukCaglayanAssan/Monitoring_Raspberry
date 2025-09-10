@@ -210,25 +210,25 @@ body {
 
 /* Notification Badge */
 .notification-badge {
-    position: absolute;
-    top: -3px;
-    right: -3px;
-    background-color: #dc3545;
-    color: white;
-    border-radius: 50%;
-    width: 16px;
-    height: 16px;
-    font-size: 10px;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 16px;
-    padding: 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    animation: pulse 2s infinite;
-    line-height: 1;
-    text-align: center;
+    position: absolute !important;
+    top: -3px !important;
+    right: -3px !important;
+    background-color: #dc3545 !important;
+    color: white !important;
+    border-radius: 50% !important;
+    width: 16px !important;
+    height: 16px !important;
+    font-size: 10px !important;
+    font-weight: bold !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 16px !important;
+    padding: 0 !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+    animation: pulse 2s infinite !important;
+    line-height: 1 !important;
+    text-align: center !important;
 }
 
 @keyframes pulse {
