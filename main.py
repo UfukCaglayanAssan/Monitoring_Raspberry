@@ -969,8 +969,8 @@ def send_read_all_command(command):
             dtype = int(parts[1])
             cmd = int(parts[2], 16) if parts[2].startswith('0x') else int(parts[2])
             
-            # UART paketi hazırla
-            packet = [0x81, arm, dtype, cmd]
+            # UART paketi hazırla - sadece [0x81, arm, cmd] (dtype kaldırıldı)
+            packet = [0x81, arm, cmd]
             
             print(f"*** TÜMÜNÜ OKU KOMUTU GÖNDERİLİYOR ***")
             print(f"Arm: {arm}, Dtype: 0x{dtype:02X}, Cmd: 0x{cmd:02X}")
