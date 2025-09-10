@@ -370,8 +370,8 @@ def db_worker():
                     print(f"🔄 PERİYOT BİTTİ - Son batarya alarmı: Kol {arm_value}, Batarya {battery}")
                     # Periyot bitti, alarmları işle
                     alarm_processor.process_period_end()
-                    # Reset system sinyali gönder
-                    send_reset_system_signal()
+                    # Normal alarm verisi geldiğinde reset sinyali gönderme
+                    # Reset sinyali sadece missing data durumunda gönderilir
                     # Yeni periyot başlat
                     reset_period()
                     get_period_timestamp()
@@ -680,7 +680,7 @@ def initialize_config_tables():
                     Tempmin_D INTEGER NOT NULL,
                     Tempmax_D INTEGER NOT NULL,
                     Tempmin_PN INTEGER NOT NULL,
-                    Tempmaks_PN INTEGER NOT NULL,
+                    Tempmax_PN INTEGER NOT NULL,
                     Socmin INTEGER NOT NULL,
                     Sohmin INTEGER NOT NULL,
                     time INTEGER NOT NULL,
@@ -714,7 +714,7 @@ def load_default_configs():
             for arm in range(1, 5):
                 db.execute_query('''
                     INSERT OR IGNORE INTO batconfigs 
-                    (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmaks_PN, Socmin, Sohmin, time)
+                    (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmax_PN, Socmin, Sohmin, time)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (arm, 10.12, 13.95, 11.00, 150, 15, 55, 15, 30, 30, 30, int(time.time() * 1000)))
             
@@ -736,11 +736,11 @@ def save_batconfig_to_db(config_data):
         with db_lock:
             db.execute_query('''
                 INSERT OR REPLACE INTO batconfigs 
-                (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmaks_PN, Socmin, Sohmin, time)
+                (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmax_PN, Socmin, Sohmin, time)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (config_data['armValue'], config_data['Vmin'], config_data['Vmax'], config_data['Vnom'], 
                   config_data['Rintnom'], config_data['Tempmin_D'], config_data['Tempmax_D'], 
-                  config_data['Tempmin_PN'], config_data['Tempmaks_PN'], config_data['Socmin'], 
+                  config_data['Tempmin_PN'], config_data['Tempmax_PN'], config_data['Socmin'], 
                   config_data['Sohmin'], config_data['time']))
         
         print(f"✓ Kol {config_data['armValue']} batarya konfigürasyonu veritabanına kaydedildi")
@@ -799,7 +799,7 @@ def send_batconfig_to_device(config_data):
             int(config_data['Tempmin_D']) & 0xFF,
             int(config_data['Tempmax_D']) & 0xFF,
             int(config_data['Tempmin_PN']) & 0xFF,
-            int(config_data['Tempmaks_PN']) & 0xFF,
+            int(config_data['Tempmax_PN']) & 0xFF,
             int(config_data['Socmin']) & 0xFF,
             int(config_data['Sohmin']) & 0xFF
         ])
@@ -819,7 +819,7 @@ def send_batconfig_to_device(config_data):
         print(f"Tempmin_D: {config_data['Tempmin_D']}")
         print(f"Tempmax_D: {config_data['Tempmax_D']}")
         print(f"Tempmin_PN: {config_data['Tempmin_PN']}")
-        print(f"Tempmaks_PN: {config_data['Tempmaks_PN']}")
+        print(f"Tempmax_PN: {config_data['Tempmax_PN']}")
         print(f"Socmin: {config_data['Socmin']}")
         print(f"Sohmin: {config_data['Sohmin']}")
         print(f"CRC: 0x{crc:02X}")
@@ -840,9 +840,9 @@ def send_batconfig_to_device(config_data):
                     vmin=config_data['Vmin'],
                     rintnom=config_data['Rintnom'],
                     tempmin_d=config_data['Tempmin_D'],
-                    tempmax_d=config_data['Tempmaks_D'],
+                    tempmax_d=config_data['Tempmax_D'],
                     tempmin_pn=config_data['Tempmin_PN'],
-                    tempmax_pn=config_data['Tempmaks_PN'],
+                    tempmax_pn=config_data['Tempmax_PN'],
                     socmin=config_data['Socmin'],
                     sohmin=config_data['Sohmin']
                 )
@@ -973,8 +973,8 @@ def send_read_all_command(command):
             dtype = int(parts[1])
             cmd = int(parts[2], 16) if parts[2].startswith('0x') else int(parts[2])
             
-            # UART paketi hazırla
-            packet = [0x81, arm, dtype, cmd]
+            # UART paketi hazırla (0x81 zaten dtype değeri içeriyor)
+            packet = [0x81, arm, cmd]
             
             print(f"*** TÜMÜNÜ OKU KOMUTU GÖNDERİLİYOR ***")
             print(f"Arm: {arm}, Dtype: 0x{dtype:02X}, Cmd: 0x{cmd:02X}")

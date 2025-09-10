@@ -150,7 +150,7 @@ class AlarmProcessor:
                     return {
                         'type': 'battery',
                         'arm': arm,
-                        'battery': str(battery) if battery > 0 else '',
+                        'battery': str(battery - 2) if battery > 2 else '',
                         'description': description,
                         'timestamp': formatted_time
                     }
@@ -173,27 +173,29 @@ class AlarmProcessor:
         return descriptions.get(error_msb, f"Bilinmeyen kol alarmı (Kod: {error_msb})")
     
     def get_battery_alarm_description(self, error_msb, error_lsb):
-        """Batarya alarm açıklaması"""
-        # MSB ve LSB kombinasyonlarına göre açıklama
-        if error_msb == 0 and error_lsb == 0:
-            return None  # Alarm yok
+        """Batarya alarm açıklaması oluştur"""
+        description_parts = []
         
-        if error_msb == 0 and error_lsb == 1:
-            return "Batarya düşük voltaj alarmı"
-        elif error_msb == 0 and error_lsb == 2:
-            return "Batarya yüksek voltaj alarmı"
-        elif error_msb == 0 and error_lsb == 3:
-            return "Batarya düşük sıcaklık alarmı"
-        elif error_msb == 0 and error_lsb == 4:
-            return "Batarya yüksek sıcaklık alarmı"
-        elif error_msb == 1 and error_lsb == 0:
-            return "Batarya şarj hatası"
-        elif error_msb == 1 and error_lsb == 1:
-            return "Batarya deşarj hatası"
-        elif error_msb == 1 and error_lsb == 2:
-            return "Batarya balans hatası"
-        else:
-            return f"Bilinmeyen batarya alarmı (MSB: {error_msb}, LSB: {error_lsb})"
+        # MSB kontrolü
+        if error_msb >= 1:
+            if error_msb == 1:
+                description_parts.append("Pozitif kutup başı alarmı")
+            elif error_msb == 2:
+                description_parts.append("Negatif kutup başı sıcaklık alarmı")
+        
+        # LSB kontrolü
+        if error_lsb == 4:
+            description_parts.append("Düşük batarya gerilim uyarısı")
+        elif error_lsb == 8:
+            description_parts.append("Düşük batarya gerilimi alarmı")
+        elif error_lsb == 16:
+            description_parts.append("Yüksek batarya gerilimi uyarısı")
+        elif error_lsb == 32:
+            return "Yüksek batarya gerilimi alarmı"
+        elif error_lsb == 64:
+            description_parts.append("Modül sıcaklık alarmı")
+        
+        return " + ".join(description_parts) if description_parts else None
 
 # Global alarm processor instance
 alarm_processor = AlarmProcessor()

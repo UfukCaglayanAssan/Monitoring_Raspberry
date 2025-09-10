@@ -211,19 +211,19 @@ body {
 /* Notification Badge */
 .notification-badge {
     position: absolute;
-    top: 2px;
-    right: 2px;
+    top: -5px;
+    right: -5px;
     background-color: #dc3545;
     color: white;
     border-radius: 50%;
-    width: 16px;
-    height: 16px;
-    font-size: 9px;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
     font-weight: bold;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 16px;
+    min-width: 20px;
     padding: 0;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     animation: pulse 2s infinite;
@@ -233,7 +233,7 @@ body {
 
 @keyframes pulse {
     0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+    50% { transform: scale(1.1); }
     100% { transform: scale(1); }
 }
 

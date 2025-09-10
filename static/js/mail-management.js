@@ -159,12 +159,33 @@ if (typeof window.MailManagementPage === 'undefined') {
             document.getElementById('editRecipientForm').reset();
         }
 
+        isEmailExists(email) {
+            // Mevcut alıcılar listesinde email kontrolü
+            return this.recipients.some(recipient => 
+                recipient.email.toLowerCase() === email.toLowerCase()
+            );
+        }
+
+        isEmailExistsForUpdate(email, currentId) {
+            // Mevcut alıcılar listesinde email kontrolü (kendi ID'si hariç)
+            return this.recipients.some(recipient => 
+                recipient.email.toLowerCase() === email.toLowerCase() && 
+                recipient.id !== currentId
+            );
+        }
+
         async addRecipient() {
             const formData = new FormData(document.getElementById('addRecipientForm'));
             const data = {
                 name: formData.get('name'),
                 email: formData.get('email')
             };
+
+            // Email tekrar kontrolü
+            if (this.isEmailExists(data.email)) {
+                this.showError('Bu email adresi zaten kayıtlı!');
+                return;
+            }
 
             try {
                 const response = await fetch('/api/mail-recipients', {
@@ -197,6 +218,12 @@ if (typeof window.MailManagementPage === 'undefined') {
                 name: formData.get('name'),
                 email: formData.get('email')
             };
+
+            // Email tekrar kontrolü (kendi ID'si hariç)
+            if (this.isEmailExistsForUpdate(data.email, data.id)) {
+                this.showError('Bu email adresi başka bir alıcı tarafından kullanılıyor!');
+                return;
+            }
 
             try {
                 const response = await fetch('/api/mail-recipients', {

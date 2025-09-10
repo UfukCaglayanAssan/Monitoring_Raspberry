@@ -401,7 +401,7 @@ def save_batconfig():
         # Veri doğrulama
         required_fields = [
             'armValue', 'Vmin', 'Vmax', 'Vnom', 'Rintnom',
-            'Tempmin_D', 'Tempmax_D', 'Tempmin_PN', 'Tempmaks_PN',
+            'Tempmin_D', 'Tempmax_D', 'Tempmin_PN', 'Tempmax_PN',
             'Socmin', 'Sohmin'
         ]
         
@@ -440,7 +440,7 @@ def save_batconfig():
                     tempmin_d=data['Tempmin_D'],
                     tempmax_d=data['Tempmax_D'],
                     tempmin_pn=data['Tempmin_PN'],
-                    tempmaks_pn=data['Tempmaks_PN'],
+                    tempmax_pn=data['Tempmax_PN'],
                     socmin=data['Socmin'],
                     sohmin=data['Sohmin']
                 )
@@ -610,6 +610,46 @@ def get_alarms():
             'message': str(e)
         }), 500
 
+@app.route('/api/alarm-history', methods=['GET'])
+def get_alarm_history():
+    """Alarm geçmişini getir (sadece çözülmüş alarmlar)"""
+    try:
+        # Query parametrelerini al
+        page = int(request.args.get('page', 1))
+        page_size = int(request.args.get('pageSize', 50))
+        
+        # Veritabanından sadece çözülmüş alarmları oku
+        def get_alarm_history_data():
+            db_instance = get_db()
+            with db_read_lock:
+                return db_instance.get_paginated_alarms(
+                    show_resolved=True,  # Sadece çözülmüş alarmlar
+                    page=page,
+                    page_size=page_size
+                )
+        
+        alarms_data = db_operation_with_retry(get_alarm_history_data)
+        
+        # Alarm verilerini işle
+        processed_alarms = []
+        for alarm in alarms_data['alarms']:
+            processed_alarm = process_alarm_data(alarm)
+            if processed_alarm:  # Sadece geçerli alarmları ekle
+                processed_alarms.append(processed_alarm)
+        
+        return jsonify({
+            'success': True,
+            'alarms': processed_alarms,
+            'totalCount': alarms_data['totalCount'],
+            'totalPages': alarms_data['totalPages'],
+            'currentPage': alarms_data['currentPage']
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
 @app.route('/api/summary', methods=['GET'])
 def get_summary():
     """Özet sayfası için veri getir"""
@@ -750,11 +790,11 @@ def process_alarm_data(alarm):
             description = get_battery_alarm_description(error_msb, error_lsb)
             if not description:  # Açıklama yoksa alarm yok
                 return None
-            # Batarya alarmlarında k değeri varsa göster, yoksa boş bırak
+            # Batarya alarmlarında k değeri varsa göster (2 eksik), yoksa boş bırak
             if battery == 0:
                 battery_display = ""
             else:
-                battery_display = str(battery)
+                battery_display = str(battery - 2)  # k değerinden 2 çıkar
             status = "Devam Ediyor"
         
         return {

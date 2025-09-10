@@ -215,7 +215,7 @@ if (typeof window.ConfigurationPage === 'undefined') {
             document.getElementById('Tempmin_D').value = config.Tempmin_D;
             document.getElementById('Tempmax_D').value = config.Tempmax_D;
             document.getElementById('Tempmin_PN').value = config.Tempmin_PN;
-            document.getElementById('Tempmaks_PN').value = config.Tempmaks_PN;
+            document.getElementById('Tempmax_PN').value = config.Tempmax_PN;
             document.getElementById('Socmin').value = config.Socmin;
             document.getElementById('Sohmin').value = config.Sohmin;
         } else {
@@ -294,7 +294,7 @@ if (typeof window.ConfigurationPage === 'undefined') {
         document.getElementById('Tempmin_D').value = defaults.Tempmin_D;
         document.getElementById('Tempmax_D').value = defaults.Tempmax_D;
         document.getElementById('Tempmin_PN').value = defaults.Tempmin_PN;
-        document.getElementById('Tempmaks_PN').value = defaults.Tempmaks_PN;
+        document.getElementById('Tempmax_PN').value = defaults.Tempmax_PN;
         document.getElementById('Socmin').value = defaults.Socmin;
         document.getElementById('Sohmin').value = defaults.Sohmin;
     }
@@ -319,7 +319,7 @@ if (typeof window.ConfigurationPage === 'undefined') {
             Tempmin_D: 15,
             Tempmax_D: 55,
             Tempmin_PN: 15,
-            Tempmaks_PN: 30,
+            Tempmax_PN: 30,
             Socmin: 30,
             Sohmin: 30
         };
@@ -354,7 +354,7 @@ if (typeof window.ConfigurationPage === 'undefined') {
                 Tempmin_D: parseInt(document.getElementById('Tempmin_D').value),
                 Tempmax_D: parseInt(document.getElementById('Tempmax_D').value),
                 Tempmin_PN: parseInt(document.getElementById('Tempmin_PN').value),
-                Tempmaks_PN: parseInt(document.getElementById('Tempmaks_PN').value),
+                Tempmax_PN: parseInt(document.getElementById('Tempmax_PN').value),
                 Socmin: parseInt(document.getElementById('Socmin').value),
                 Sohmin: parseInt(document.getElementById('Sohmin').value)
             };

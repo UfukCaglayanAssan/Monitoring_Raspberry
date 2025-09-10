@@ -40,6 +40,28 @@ if (typeof window.AlarmsPage === 'undefined') {
         }
     }
 
+    // Alarm geçmişini yükle (sadece çözülmüş alarmlar)
+    async loadAlarmHistory() {
+        try {
+            this.isLoading = true;
+            const response = await fetch(`/api/alarm-history?page=${this.currentPage}&pageSize=${this.pageSize}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                this.alarms = data.alarms;
+                this.totalPages = data.totalPages;
+                this.renderAlarms();
+                this.updatePagination();
+            } else {
+                console.error('Alarm geçmişi yüklenirken hata:', data.message);
+            }
+        } catch (error) {
+            console.error('Alarm geçmişi yüklenirken hata:', error);
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
     bindEvents() {
         // Event listener'ları sadece bir kez ekle
         if (this.eventsBound) {
@@ -108,11 +130,15 @@ if (typeof window.AlarmsPage === 'undefined') {
     // Buton metnini güncelle
     updateButtonText() {
         const buttonText = document.getElementById('toggleButtonText');
+        const alarmHistoryTitle = document.getElementById('alarmHistoryTitle');
+        
         if (buttonText) {
             if (this.showResolved) {
                 buttonText.textContent = 'Aktif Alarmlar';
+                if (alarmHistoryTitle) alarmHistoryTitle.style.display = 'inline';
             } else {
                 buttonText.textContent = 'Alarm Geçmişi';
+                if (alarmHistoryTitle) alarmHistoryTitle.style.display = 'none';
             }
         }
     }
