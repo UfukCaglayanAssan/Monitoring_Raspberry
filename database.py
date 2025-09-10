@@ -1366,7 +1366,7 @@ class BatteryDatabase:
                 cursor = conn.cursor()
                 cursor.execute('''
                     SELECT armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, 
-                           Tempmin_PN, Tempmaks_PN, Socmin, Sohmin, time, created_at
+                           Tempmin_PN, Tempmax_PN, Socmin, Sohmin, time, created_at
                     FROM batconfigs 
                     ORDER BY armValue
                 ''')
@@ -1384,7 +1384,7 @@ class BatteryDatabase:
                         'Tempmin_D': row[5],
                         'Tempmax_D': row[6],
                         'Tempmin_PN': row[7],
-                        'Tempmaks_PN': row[8],
+                        'Tempmax_PN': row[8],
                         'Socmin': row[9],
                         'Sohmin': row[10],
                         'time': row[11],
@@ -1696,7 +1696,32 @@ class BatteryDatabase:
             ''')
             return cursor.fetchone()[0]
     
-    def save_battery_config(self, arm, vmin, vmax, vnom, rintnom, tempmin_d, tempmax_d, tempmin_pn, tempmaks_pn, socmin, sohmin):
+    def create_missing_tables(self):
+        """Eksik tabloları oluştur (migration)"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # mail_recipients tablosu oluştur
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS mail_recipients (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        email TEXT NOT NULL UNIQUE,
+                        is_active BOOLEAN DEFAULT 1,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+                print("✓ mail_recipients tablosu oluşturuldu (migration)")
+                
+                conn.commit()
+                print("✅ Eksik tablolar başarıyla oluşturuldu")
+                
+        except Exception as e:
+            print(f"❌ Eksik tablolar oluşturulurken hata: {e}")
+            raise e
+    
+    def save_battery_config(self, arm, vmin, vmax, vnom, rintnom, tempmin_d, tempmax_d, tempmin_pn, tempmax_pn, socmin, sohmin):
         """Batarya konfigürasyonunu kaydet"""
         try:
             with self.get_connection() as conn:
@@ -1714,7 +1739,7 @@ class BatteryDatabase:
                         Tempmin_D INTEGER NOT NULL,
                         Tempmax_D INTEGER NOT NULL,
                         Tempmin_PN INTEGER NOT NULL,
-                        Tempmaks_PN INTEGER NOT NULL,
+                        Tempmax_PN INTEGER NOT NULL,
                         Socmin INTEGER NOT NULL,
                         Sohmin INTEGER NOT NULL,
                         time INTEGER NOT NULL,
@@ -1725,11 +1750,11 @@ class BatteryDatabase:
                 # Mevcut konfigürasyonu güncelle veya yeni ekle
                 cursor.execute('''
                     INSERT OR REPLACE INTO batconfigs 
-                    (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmaks_PN, Socmin, Sohmin, time)
+                    (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmax_PN, Socmin, Sohmin, time)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     arm, vmin, vmax, vnom, rintnom, tempmin_d, tempmax_d, 
-                    tempmin_pn, tempmaks_pn, socmin, sohmin, 
+                    tempmin_pn, tempmax_pn, socmin, sohmin, 
                     int(time.time() * 1000)
                 ))
                 

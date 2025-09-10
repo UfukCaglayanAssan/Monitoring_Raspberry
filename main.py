@@ -1024,6 +1024,9 @@ def main():
         # Konfigürasyon tablolarını başlat
         initialize_config_tables()
         
+        # Eksik tabloları oluştur (migration)
+        db.create_missing_tables()
+        
         # Başlangıçta varsayılan armslavecount değerlerini ayarla
         with arm_slave_counts_lock:
             arm_slave_counts[1] = 0
