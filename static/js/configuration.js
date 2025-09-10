@@ -204,7 +204,7 @@ if (typeof window.ConfigurationPage === 'undefined') {
 
     loadBatteryConfigForArm(armValue, configs) {
         // DB'den bu kol için konfigürasyon bul
-        const config = configs.find(c => c.arm === armValue);
+        const config = configs.find(c => c.armValue === armValue);
         
         if (config) {
             // DB'deki değerleri kullan
@@ -226,7 +226,7 @@ if (typeof window.ConfigurationPage === 'undefined') {
 
     loadArmConfigForArm(armValue, configs) {
         // DB'den bu kol için konfigürasyon bul
-        const config = configs.find(c => c.arm === armValue);
+        const config = configs.find(c => c.armValue === armValue);
         
         if (config) {
             // DB'deki değerleri kullan
@@ -438,9 +438,8 @@ if (typeof window.ConfigurationPage === 'undefined') {
     }
 
     async sendConfigToDevice() {
-        if (confirm('Konfigürasyonu cihaza göndermek istediğinizden emin misiniz?')) {
-            try {
-                console.log('Konfigürasyon cihaza gönderiliyor...');
+        try {
+            console.log('Tümünü oku komutu gönderiliyor...');
                 
                 const response = await fetch('/api/send-config-to-device', {
                     method: 'POST',
@@ -462,10 +461,9 @@ if (typeof window.ConfigurationPage === 'undefined') {
                 } else {
                     alert('Konfigürasyon gönderilemedi!');
                 }
-            } catch (error) {
-                console.error('Konfigürasyon gönderilirken hata:', error);
-                alert('Konfigürasyon gönderilirken hata oluştu!');
-            }
+        } catch (error) {
+            console.error('Konfigürasyon gönderilirken hata:', error);
+            alert('Konfigürasyon gönderilirken hata oluştu!');
         }
     }
     
