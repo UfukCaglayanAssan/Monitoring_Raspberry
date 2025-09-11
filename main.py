@@ -920,12 +920,13 @@ def config_worker():
                     elif config_data.get('type') == 'manual_set':
                         # Manuel kol set komutu gönder
                         arm = config_data.get('arm')
+                        slave = config_data.get('slave', 0)
                         command = config_data.get('command')
                         if command:
                             print(f"*** MANUEL KOL SET KOMUTU GÖNDERİLİYOR ***")
-                            print(f"Arm: {arm}, Komut: {[hex(x) for x in command]}")
+                            print(f"Arm: {arm}, Slave: {slave}, Komut: {[hex(x) for x in command]}")
                             wave_uart_send(pi, TX_PIN, command, int(1e6 / BAUD_RATE))
-                            print(f"✓ Kol {arm} manuel set komutu cihaza gönderildi")
+                            print(f"✓ Kol {arm}, Batarya {slave} manuel set komutu cihaza gönderildi")
                     
                 except Exception as e:
                     print(f"Konfigürasyon dosyası işlenirken hata: {e}")

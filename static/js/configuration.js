@@ -495,23 +495,31 @@ if (typeof window.ConfigurationPage === 'undefined') {
     async manualSetArm() {
         try {
             const armSelect = document.getElementById('manualArmSelect');
+            const slaveInput = document.getElementById('manualSlaveSelect');
             const selectedArm = armSelect.value;
+            const selectedSlave = slaveInput.value;
             
             if (!selectedArm) {
                 this.showToast('Lütfen bir kol seçin!', 'warning');
                 return;
             }
             
-            this.showToast(`Kol ${selectedArm} manuel set komutu gönderiliyor...`, 'info');
+            if (!selectedSlave || selectedSlave < 0 || selectedSlave > 255) {
+                this.showToast('Lütfen geçerli bir batarya adresi girin (0-255)!', 'warning');
+                return;
+            }
             
-            // Manuel set komutu gönder (0x81 0xkol_no 0x78)
+            this.showToast(`Kol ${selectedArm}, Batarya ${selectedSlave} manuel set komutu gönderiliyor...`, 'info');
+            
+            // Manuel set komutu gönder (0x81 0xkol_no 0xslave 0x78)
             const response = await fetch('/api/send-manual-set-command', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    arm: parseInt(selectedArm)
+                    arm: parseInt(selectedArm),
+                    slave: parseInt(selectedSlave)
                 })
             });
 

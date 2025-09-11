@@ -1079,6 +1079,7 @@ def send_manual_set_command():
     try:
         data = request.get_json()
         arm = data.get('arm')
+        slave = data.get('slave', 0)  # Varsayılan 0
         
         if not arm or arm < 1 or arm > 4:
             return jsonify({
@@ -1086,8 +1087,14 @@ def send_manual_set_command():
                 'message': 'Geçersiz kol numarası (1-4 arası olmalı)'
             }), 400
         
-        # Manuel set komutu: 0x81 0xkol_no 0x78
-        manual_set_command = [0x81, arm, 0x78]
+        if slave < 0 or slave > 255:
+            return jsonify({
+                'success': False,
+                'message': 'Geçersiz batarya adresi (0-255 arası olmalı)'
+            }), 400
+        
+        # Manuel set komutu: 0x81 0xkol_no 0xslave 0x78
+        manual_set_command = [0x81, arm, slave, 0x78]
         
         # UART gönderimi için main.py'deki mevcut sistemi kullan
         try:
@@ -1098,6 +1105,7 @@ def send_manual_set_command():
             config_data = {
                 "type": "manual_set",
                 "arm": arm,
+                "slave": slave,
                 "command": manual_set_command,
                 "timestamp": time.time()
             }
