@@ -819,6 +819,39 @@ def send_armconfig_to_device(config_data):
     except Exception as e:
         print(f"Kol konfigürasyonu cihaza gönderilirken hata: {e}")
 
+def send_uart_command(command_bytes):
+    """UART komutu gönder (web_app.py için)"""
+    try:
+        import pigpio
+        import time
+        
+        # GPIO pin ve bit time
+        GPIO_PIN = 26
+        BIT_TIME = 104  # 9600 baud için
+        
+        # pigpio bağlantısı
+        pi = pigpio.pi()
+        if not pi.connected:
+            print("❌ pigpio bağlantısı kurulamadı")
+            return False
+        
+        # Komutu gönder
+        print(f"📡 UART Komutu gönderiliyor: {[hex(x) for x in command_bytes]}")
+        wave_uart_send(pi, GPIO_PIN, command_bytes, BIT_TIME)
+        
+        # Kısa bekleme
+        time.sleep(0.1)
+        
+        # Bağlantıyı kapat
+        pi.stop()
+        
+        print("✅ UART komutu başarıyla gönderildi")
+        return True
+        
+    except Exception as e:
+        print(f"❌ UART komutu gönderilirken hata: {e}")
+        return False
+
 def wave_uart_send(pi, gpio_pin, data_bytes, bit_time):
     """Bit-banging UART ile veri gönder"""
     try:
