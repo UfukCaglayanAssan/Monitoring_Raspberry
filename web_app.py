@@ -1089,26 +1089,34 @@ def send_manual_set_command():
         # Manuel set komutu: 0x81 0xkol_no 0x78
         manual_set_command = [0x81, arm, 0x78]
         
-        # UART gönderimi için main.py'deki fonksiyonu çağır
+        # UART gönderimi için main.py'deki mevcut sistemi kullan
         try:
-            from main import send_uart_command
-            success = send_uart_command(manual_set_command)
+            # pending_config.json dosyasına komutu yaz
+            import json
+            import os
             
-            if success:
-                return jsonify({
-                    'success': True,
-                    'message': f'Kol {arm} manuel set komutu başarıyla gönderildi'
-                })
-            else:
-                return jsonify({
-                    'success': False,
-                    'message': 'Manuel set komutu gönderilemedi'
-                }), 500
+            config_data = {
+                "type": "manual_set",
+                "arm": arm,
+                "command": manual_set_command,
+                "timestamp": time.time()
+            }
+            
+            with open("pending_config.json", "w") as f:
+                json.dump(config_data, f)
+            
+            print(f"🔄 Manuel set komutu pending_config.json'a yazıldı: {manual_set_command}")
+            
+            return jsonify({
+                'success': True,
+                'message': f'Kol {arm} manuel set komutu gönderildi'
+            })
                 
-        except ImportError:
+        except Exception as e:
+            print(f"❌ Manuel set komutu gönderilirken hata: {e}")
             return jsonify({
                 'success': False,
-                'message': 'UART fonksiyonu bulunamadı'
+                'message': f'Manuel set komutu gönderilirken hata: {str(e)}'
             }), 500
             
     except Exception as e:
