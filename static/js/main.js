@@ -188,6 +188,10 @@ class App {
             let pageUrl;
             if (page === 'mail-management') {
                 pageUrl = '/mail-management';
+            } else if (page === 'mail-server-config') {
+                pageUrl = '/mail-server-config';
+            } else if (page === 'interface-ip-settings') {
+                pageUrl = '/interface-ip-settings';
             } else {
                 pageUrl = `/pages/${page}.html`;
             }

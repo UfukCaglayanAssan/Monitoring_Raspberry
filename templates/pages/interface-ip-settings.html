@@ -1,0 +1,111 @@
+{% extends "layout.html" %}
+
+{% block title %}Arayüz IP Ayarları{% endblock %}
+
+{% block content %}
+<div class="interface-ip-settings-page">
+    <div class="page-header">
+        <h2>🌐 Arayüz IP Ayarları</h2>
+        <p>Raspberry Pi ağ konfigürasyonunu yönetin</p>
+    </div>
+
+    <div class="config-container">
+        <div class="config-card">
+            <div class="config-header">
+                <h3>Ağ Konfigürasyonu</h3>
+                <div class="status-indicator">
+                    <span id="ipStatus" class="status-inactive">IP Ataması Yok</span>
+                </div>
+            </div>
+
+            <div class="current-ip-info">
+                <h4>Mevcut IP Adresi</h4>
+                <div class="ip-display">
+                    <span id="currentIp" class="ip-address">Yükleniyor...</span>
+                    <button id="refreshIp" class="btn btn-sm btn-secondary">
+                        <i class="fas fa-sync-alt"></i> Yenile
+                    </button>
+                </div>
+            </div>
+
+            <form id="ipConfigForm" class="config-form">
+                <div class="form-group">
+                    <label for="ipAddress">IP Adresi *</label>
+                    <input type="text" id="ipAddress" name="ip_address" placeholder="192.168.1.100" required>
+                    <small class="form-help">Raspberry Pi'nin kullanacağı statik IP adresi</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="subnetMask">Alt Ağ Maskesi *</label>
+                    <select id="subnetMask" name="subnet_mask" required>
+                        <option value="255.255.255.0">255.255.255.0 (/24)</option>
+                        <option value="255.255.0.0">255.255.0.0 (/16)</option>
+                        <option value="255.0.0.0">255.0.0.0 (/8)</option>
+                    </select>
+                    <small class="form-help">Ağ alt ağ maskesi</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="gateway">Gateway (Varsayılan Ağ Geçidi)</label>
+                    <input type="text" id="gateway" name="gateway" placeholder="192.168.1.1">
+                    <small class="form-help">Genellikle router IP adresi</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="dnsServers">DNS Sunucuları</label>
+                    <input type="text" id="dnsServers" name="dns_servers" placeholder="8.8.8.8,8.8.4.4">
+                    <small class="form-help">Virgülle ayırın (örn: 8.8.8.8,8.8.4.4)</small>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" id="testConnection" class="btn btn-secondary">
+                        🔗 Bağlantıyı Test Et
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        💾 IP Konfigürasyonunu Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="help-card">
+            <h3>📋 Yardım</h3>
+            <div class="help-content">
+                <h4>IP Adresi Seçimi:</h4>
+                <ul>
+                    <li>Şirket ağında kullanılacak IP aralığında olmalı</li>
+                    <li>Diğer cihazlarla çakışmamalı</li>
+                    <li>Router'ın DHCP aralığı dışında olmalı</li>
+                </ul>
+                
+                <h4>Yaygın IP Aralıkları:</h4>
+                <ul>
+                    <li><strong>192.168.1.x</strong> - Ev/Ofis ağları</li>
+                    <li><strong>192.168.0.x</strong> - Ev ağları</li>
+                    <li><strong>10.0.0.x</strong> - Kurumsal ağlar</li>
+                    <li><strong>172.16.x.x</strong> - Kurumsal ağlar</li>
+                </ul>
+                
+                <h4>Güvenlik Notları:</h4>
+                <ul>
+                    <li>IP değişikliği sonrası sistem yeniden başlar</li>
+                    <li>Yeni IP ile erişim sağlanmalıdır</li>
+                    <li>Port 5000 üzerinden erişim devam eder</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="warning-card">
+        <div class="warning-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="warning-content">
+            <h4>⚠️ Önemli Uyarı</h4>
+            <p>IP konfigürasyonu değiştirildiğinde sistem otomatik olarak yeniden başlatılacak ve yeni IP adresi üzerinden erişim sağlanacaktır. Lütfen yeni IP adresini not alın.</p>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/interface-ip-settings.js') }}"></script>
+{% endblock %}

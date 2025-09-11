@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Akü İzleme Sistemi{% endblock %}</title>
     
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+    
     <!-- CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
@@ -72,6 +76,27 @@
                             <i class="fas fa-envelope"></i>
                             <span data-tr="Mail Yönetimi" data-en="Mail Management">Mail Yönetimi</span>
                         </a>
+                    </li>
+                    <li class="nav-item has-submenu">
+                        <a href="#" class="nav-link">
+                            <i class="fas fa-network-wired"></i>
+                            <span data-tr="Ağ Ayarları" data-en="Network Settings">Ağ Ayarları</span>
+                            <i class="fas fa-chevron-down submenu-arrow"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li>
+                                <a href="#" class="submenu-link" data-page="mail-server-config">
+                                    <i class="fas fa-server"></i>
+                                    <span data-tr="Mail Sunucu Konfigürasyonu" data-en="Mail Server Config">Mail Sunucu Konfigürasyonu</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="submenu-link" data-page="interface-ip-settings">
+                                    <i class="fas fa-globe"></i>
+                                    <span data-tr="Arayüz IP Ayarları" data-en="Interface IP Settings">Arayüz IP Ayarları</span>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                 </ul>
                 

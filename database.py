@@ -167,6 +167,40 @@ class BatteryDatabase:
                 ''')
                 print("✓ mail_recipients tablosu oluşturuldu")
                 
+                # Mail sunucu konfigürasyon tablosu
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS mail_server_config (
+                        id INTEGER PRIMARY KEY DEFAULT 1,
+                        smtp_server TEXT,
+                        smtp_port INTEGER,
+                        smtp_username TEXT,
+                        smtp_password TEXT,
+                        use_tls BOOLEAN DEFAULT 1,
+                        is_active BOOLEAN DEFAULT 0,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        CONSTRAINT single_config CHECK (id = 1)
+                    )
+                ''')
+                print("✓ mail_server_config tablosu oluşturuldu")
+                
+                # IP konfigürasyon tablosu
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS ip_config (
+                        id INTEGER PRIMARY KEY DEFAULT 1,
+                        ip_address TEXT,
+                        subnet_mask TEXT,
+                        gateway TEXT,
+                        dns_servers TEXT,
+                        is_assigned BOOLEAN DEFAULT 0,
+                        is_active BOOLEAN DEFAULT 0,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        CONSTRAINT single_ip_config CHECK (id = 1)
+                    )
+                ''')
+                print("✓ ip_config tablosu oluşturuldu")
+                
                 # Batarya konfigürasyon tablosu
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS batconfigs (
@@ -1898,3 +1932,119 @@ class BatteryDatabase:
         except Exception as e:
             print(f"insert_armconfig hatası: {e}")
             raise e
+    
+    def get_mail_server_config(self):
+        """Mail sunucu konfigürasyonunu getir"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT smtp_server, smtp_port, smtp_username, smtp_password, use_tls, is_active
+                    FROM mail_server_config 
+                    WHERE id = 1
+                """)
+                result = cursor.fetchone()
+                if result:
+                    return {
+                        'smtp_server': result[0],
+                        'smtp_port': result[1],
+                        'smtp_username': result[2],
+                        'smtp_password': result[3],
+                        'use_tls': bool(result[4]),
+                        'is_active': bool(result[5])
+                    }
+                return None
+        except Exception as e:
+            print(f"Mail sunucu konfigürasyonu getirilirken hata: {e}")
+            return None
+    
+    def save_mail_server_config(self, smtp_server, smtp_port, smtp_username, smtp_password, use_tls=True, is_active=True):
+        """Mail sunucu konfigürasyonunu kaydet veya güncelle"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Mevcut kayıt var mı kontrol et
+                cursor.execute("SELECT id FROM mail_server_config WHERE id = 1")
+                exists = cursor.fetchone()
+                
+                if exists:
+                    # Güncelle
+                    cursor.execute("""
+                        UPDATE mail_server_config 
+                        SET smtp_server = ?, smtp_port = ?, smtp_username = ?, 
+                            smtp_password = ?, use_tls = ?, is_active = ?, 
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = 1
+                    """, (smtp_server, smtp_port, smtp_username, smtp_password, use_tls, is_active))
+                else:
+                    # Yeni kayıt oluştur
+                    cursor.execute("""
+                        INSERT INTO mail_server_config 
+                        (id, smtp_server, smtp_port, smtp_username, smtp_password, use_tls, is_active)
+                        VALUES (1, ?, ?, ?, ?, ?, ?)
+                    """, (smtp_server, smtp_port, smtp_username, smtp_password, use_tls, is_active))
+                
+                conn.commit()
+                return True
+        except Exception as e:
+            print(f"Mail sunucu konfigürasyonu kaydedilirken hata: {e}")
+            return False
+    
+    def get_ip_config(self):
+        """IP konfigürasyonunu getir"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT ip_address, subnet_mask, gateway, dns_servers, is_assigned, is_active
+                    FROM ip_config 
+                    WHERE id = 1
+                """)
+                result = cursor.fetchone()
+                if result:
+                    return {
+                        'ip_address': result[0],
+                        'subnet_mask': result[1],
+                        'gateway': result[2],
+                        'dns_servers': result[3],
+                        'is_assigned': bool(result[4]),
+                        'is_active': bool(result[5])
+                    }
+                return None
+        except Exception as e:
+            print(f"IP konfigürasyonu getirilirken hata: {e}")
+            return None
+    
+    def save_ip_config(self, ip_address, subnet_mask, gateway, dns_servers, is_assigned=False, is_active=True):
+        """IP konfigürasyonunu kaydet veya güncelle"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Mevcut kayıt var mı kontrol et
+                cursor.execute("SELECT id FROM ip_config WHERE id = 1")
+                exists = cursor.fetchone()
+                
+                if exists:
+                    # Güncelle
+                    cursor.execute("""
+                        UPDATE ip_config 
+                        SET ip_address = ?, subnet_mask = ?, gateway = ?, 
+                            dns_servers = ?, is_assigned = ?, is_active = ?, 
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = 1
+                    """, (ip_address, subnet_mask, gateway, dns_servers, is_assigned, is_active))
+                else:
+                    # Yeni kayıt oluştur
+                    cursor.execute("""
+                        INSERT INTO ip_config 
+                        (id, ip_address, subnet_mask, gateway, dns_servers, is_assigned, is_active)
+                        VALUES (1, ?, ?, ?, ?, ?, ?)
+                    """, (ip_address, subnet_mask, gateway, dns_servers, is_assigned, is_active))
+                
+                conn.commit()
+                return True
+        except Exception as e:
+            print(f"IP konfigürasyonu kaydedilirken hata: {e}")
+            return False

@@ -50,6 +50,14 @@ def index():
 def mail_management():
     return render_template('pages/mail-management.html')
 
+@app.route('/mail-server-config')
+def mail_server_config():
+    return render_template('pages/mail-server-config.html')
+
+@app.route('/interface-ip-settings')
+def interface_ip_settings():
+    return render_template('pages/interface-ip-settings.html')
+
 @app.route('/page/<page_name>')
 def get_page(page_name):
     """Sayfa içeriğini döndür"""
@@ -886,8 +894,232 @@ def send_config_to_device():
             'message': str(e)
         }), 500
 
+@app.route('/api/mail-server-config', methods=['GET'])
+def get_mail_server_config():
+    """Mail sunucu konfigürasyonunu getir"""
+    try:
+        def get_config():
+            db_instance = get_db()
+            with db_read_lock:
+                return db_instance.get_mail_server_config()
+        
+        config = db_operation_with_retry(get_config)
+        
+        return jsonify({
+            'success': True,
+            'config': config
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/mail-server-config', methods=['POST'])
+def save_mail_server_config():
+    """Mail sunucu konfigürasyonunu kaydet"""
+    try:
+        data = request.get_json()
+        
+        # Gerekli alanları kontrol et
+        required_fields = ['smtp_server', 'smtp_port']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({
+                    'success': False,
+                    'message': f'{field} alanı zorunludur'
+                }), 400
+        
+        def save_config():
+            db_instance = get_db()
+            with db_write_lock:
+                return db_instance.save_mail_server_config(
+                    smtp_server=data['smtp_server'],
+                    smtp_port=int(data['smtp_port']),
+                    smtp_username=data.get('smtp_username', ''),
+                    smtp_password=data.get('smtp_password', ''),
+                    use_tls=data.get('use_tls', True),
+                    is_active=data.get('is_active', True)
+                )
+        
+        success = db_operation_with_retry(save_config)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Mail sunucu konfigürasyonu başarıyla kaydedildi'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Mail sunucu konfigürasyonu kaydedilemedi'
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/ip-config', methods=['GET'])
+def get_ip_config():
+    """IP konfigürasyonunu getir"""
+    try:
+        def get_config():
+            db_instance = get_db()
+            with db_read_lock:
+                return db_instance.get_ip_config()
+        
+        config = db_operation_with_retry(get_config)
+        
+        return jsonify({
+            'success': True,
+            'config': config
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/ip-config', methods=['POST'])
+def save_ip_config():
+    """IP konfigürasyonunu kaydet"""
+    try:
+        data = request.get_json()
+        
+        # Gerekli alanları kontrol et
+        required_fields = ['ip_address']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({
+                    'success': False,
+                    'message': f'{field} alanı zorunludur'
+                }), 400
+        
+        def save_config():
+            db_instance = get_db()
+            with db_write_lock:
+                return db_instance.save_ip_config(
+                    ip_address=data['ip_address'],
+                    subnet_mask=data.get('subnet_mask', '255.255.255.0'),
+                    gateway=data.get('gateway', ''),
+                    dns_servers=data.get('dns_servers', '8.8.8.8,8.8.4.4'),
+                    is_assigned=True,
+                    is_active=True
+                )
+        
+        success = db_operation_with_retry(save_config)
+        
+        if success:
+            # IP ataması yap
+            try:
+                import subprocess
+                result = subprocess.run([
+                    'python', 'ip_manager.py', 'update',
+                    data['ip_address'],
+                    data.get('subnet_mask', '255.255.255.0'),
+                    data.get('gateway', ''),
+                    data.get('dns_servers', '8.8.8.8,8.8.4.4')
+                ], capture_output=True, text=True, timeout=30)
+                
+                if result.returncode == 0:
+                    return jsonify({
+                        'success': True,
+                        'message': 'IP konfigürasyonu başarıyla kaydedildi ve uygulandı'
+                    })
+                else:
+                    return jsonify({
+                        'success': False,
+                        'message': f'IP ataması başarısız: {result.stderr}'
+                    }), 500
+            except Exception as e:
+                return jsonify({
+                    'success': False,
+                    'message': f'IP ataması hatası: {str(e)}'
+                }), 500
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'IP konfigürasyonu kaydedilemedi'
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/current-ip', methods=['GET'])
+def get_current_ip():
+    """Mevcut IP adresini getir"""
+    try:
+        import subprocess
+        result = subprocess.run(['hostname', '-I'], capture_output=True, text=True)
+        if result.returncode == 0:
+            ips = result.stdout.strip().split()
+            current_ip = ips[0] if ips else 'Bilinmiyor'
+        else:
+            current_ip = 'Alınamadı'
+        
+        return jsonify({
+            'success': True,
+            'ip': current_ip
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e),
+            'ip': 'Hata'
+        }), 500
+
+@app.route('/api/send-reset-command', methods=['POST'])
+def send_reset_command():
+    """Sistem reset komutu gönder (81 55 55)"""
+    try:
+        # Reset komutu: 81 55 55
+        reset_command = [0x81, 0x55, 0x55]
+        
+        # UART gönderimi için main.py'deki fonksiyonu çağır
+        try:
+            from main import send_uart_command
+            success = send_uart_command(reset_command)
+            
+            if success:
+                return jsonify({
+                    'success': True,
+                    'message': 'Sistem reset komutu başarıyla gönderildi'
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': 'Reset komutu gönderilemedi'
+                }), 500
+                
+        except ImportError:
+            return jsonify({
+                'success': False,
+                'message': 'UART fonksiyonu bulunamadı'
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
 if __name__ == '__main__':
     import sys
+    
+    # IP ataması kontrolü
+    try:
+        from ip_manager import IPManager
+        ip_manager = IPManager()
+        print("🔄 IP ataması kontrol ediliyor...")
+        ip_manager.initialize_default_ip()
+        print("✅ IP ataması kontrolü tamamlandı")
+    except Exception as e:
+        print(f"⚠️ IP ataması kontrol hatası: {e}")
     
     # Port parametresini al (varsayılan: 5000)
     port = 5000

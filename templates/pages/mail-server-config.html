@@ -1,0 +1,98 @@
+{% extends "layout.html" %}
+
+{% block title %}Mail Sunucu Konfigürasyonu{% endblock %}
+
+{% block content %}
+<div class="mail-server-config-page">
+    <div class="page-header">
+        <h2>📧 Mail Sunucu Konfigürasyonu</h2>
+        <p>Mail gönderimi için sunucu ayarlarını yapılandırın</p>
+    </div>
+
+    <div class="config-container">
+        <div class="config-card">
+            <div class="config-header">
+                <h3>SMTP Sunucu Ayarları</h3>
+                <div class="status-indicator">
+                    <span id="configStatus" class="status-inactive">Konfigürasyon Yok</span>
+                </div>
+            </div>
+
+            <form id="mailConfigForm" class="config-form">
+                <div class="form-group">
+                    <label for="smtpServer">SMTP Sunucu Adresi *</label>
+                    <input type="text" id="smtpServer" name="smtp_server" placeholder="smtp.gmail.com" required>
+                    <small class="form-help">Mail sunucunuzun SMTP adresi</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="smtpPort">SMTP Port *</label>
+                    <input type="number" id="smtpPort" name="smtp_port" placeholder="587" min="1" max="65535" required>
+                    <small class="form-help">Genellikle 587 (TLS) veya 465 (SSL)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="smtpUsername">Kullanıcı Adı</label>
+                    <input type="text" id="smtpUsername" name="smtp_username" placeholder="your-email@domain.com">
+                    <small class="form-help">Boş bırakılabilir (şifresiz sunucular için)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="smtpPassword">Şifre</label>
+                    <input type="password" id="smtpPassword" name="smtp_password" placeholder="••••••••">
+                    <small class="form-help">Boş bırakılabilir (şifresiz sunucular için)</small>
+                </div>
+
+                <div class="form-group checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="useTls" name="use_tls" checked>
+                        <span class="checkmark"></span>
+                        TLS Kullan
+                    </label>
+                    <small class="form-help">Güvenli bağlantı için TLS şifrelemesi</small>
+                </div>
+
+                <div class="form-group checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="isActive" name="is_active" checked>
+                        <span class="checkmark"></span>
+                        Konfigürasyonu Aktif Et
+                    </label>
+                    <small class="form-help">Mail gönderimi için bu konfigürasyonu kullan</small>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" id="testConnection" class="btn btn-secondary">
+                        🔗 Bağlantıyı Test Et
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        💾 Konfigürasyonu Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="help-card">
+            <h3>📋 Yardım</h3>
+            <div class="help-content">
+                <h4>Yaygın SMTP Ayarları:</h4>
+                <ul>
+                    <li><strong>Gmail:</strong> smtp.gmail.com:587</li>
+                    <li><strong>Outlook:</strong> smtp-mail.outlook.com:587</li>
+                    <li><strong>Yahoo:</strong> smtp.mail.yahoo.com:587</li>
+                    <li><strong>Yandex:</strong> smtp.yandex.com:587</li>
+                </ul>
+                
+                <h4>Güvenlik Notları:</h4>
+                <ul>
+                    <li>Şifre alanı boş bırakılabilir</li>
+                    <li>TLS kullanımı önerilir</li>
+                    <li>Gmail için "Uygulama Şifreleri" kullanın</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/mail-server-config.js') }}"></script>
+{% endblock %}

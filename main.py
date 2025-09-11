@@ -464,20 +464,8 @@ def db_worker():
                 # Veri tipine göre log mesajı - KALDIRILDI
                 
                 # Veri işleme ve kayıt (tek tabloya)
-                if dtype == 10:  # SOC
-                    if k_value != 2:  # k_value 2 değilse SOC hesapla
-                        soc_value = Calc_SOC(salt_data)
-                        
-                        record = {
-                            "Arm": arm_value,
-                            "k": k_value,
-                            "Dtype": 126,
-                            "data": soc_value,
-                            "timestamp": get_period_timestamp()
-                        }
-                        batch.append(record)
-                    
-                    # Her durumda ham veriyi kaydet
+                if dtype == 10:  # Gerilim
+                    # Ham gerilim verisini kaydet
                     record = {
                         "Arm": arm_value,
                         "k": k_value,
@@ -486,10 +474,22 @@ def db_worker():
                         "timestamp": get_period_timestamp()
                     }
                     batch.append(record)
+                    
+                    # SOC hesapla ve dtype=126'ya kaydet (sadece batarya verisi için)
+                    if k_value != 2:  # k_value 2 değilse SOC hesapla
+                        soc_value = Calc_SOC(salt_data)
+                        soc_record = {
+                            "Arm": arm_value,
+                            "k": k_value,
+                            "Dtype": 126,
+                            "data": soc_value,
+                            "timestamp": get_period_timestamp()
+                        }
+                        batch.append(soc_record)
                 
                 elif dtype == 11:  # SOH veya Nem
                     if k_value == 2:  # Nem verisi
-                        print(f"*** VERİ ALGILANDI - Arm: {arm_value}, Data: {salt_data}% ***")
+                        print(f"*** VERİ ALGILANDI - Arm: {arm_value}, Nem: {salt_data}% ***")
                         record = {
                             "Arm": arm_value,
                             "k": k_value,
@@ -512,6 +512,7 @@ def db_worker():
                             soh_value = tam_kisim + kusurat_kisim
                             soh_value = round(soh_value, 4)
                         
+                        # SOH verisini dtype=11'e kaydet (çift kayıt kaldırıldı)
                         record = {
                             "Arm": arm_value,
                             "k": k_value,
@@ -520,16 +521,6 @@ def db_worker():
                             "timestamp": get_period_timestamp()
                         }
                         batch.append(record)
-                        
-                        # SOH verisi için ek kayıt (dtype=126)
-                        soh_record = {
-                            "Arm": arm_value,
-                            "k": k_value,
-                            "Dtype": 126,  # SOH için özel dtype
-                            "data": soh_value,
-                            "timestamp": get_period_timestamp()
-                        }
-                        batch.append(soh_record)
                 
                 else:  # Diğer Dtype değerleri için
                     record = {

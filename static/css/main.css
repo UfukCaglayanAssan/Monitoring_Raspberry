@@ -751,3 +751,516 @@ body {
     font-size: 1rem;
     line-height: 1.5;
 }
+
+/* Alarm Durumu Stilleri */
+.arm-btn.arm-alarm {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
+    border-color: #c0392b !important;
+    color: white !important;
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3) !important;
+    animation: pulse-red 2s infinite;
+}
+
+.arm-btn.battery-alarm {
+    background: linear-gradient(135deg, #e67e22 0%, #d35400 100%) !important;
+    border-color: #d35400 !important;
+    color: white !important;
+    box-shadow: 0 4px 15px rgba(230, 126, 34, 0.3) !important;
+    animation: pulse-orange 2s infinite;
+}
+
+.battery-card.battery-alarm {
+    border: 2px solid #e74c3c !important;
+    background: linear-gradient(135deg, #fff5f5 0%, #ffe6e6 100%) !important;
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.2) !important;
+    animation: pulse-card 2s infinite;
+}
+
+@keyframes pulse-red {
+    0% { box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3); }
+    50% { box-shadow: 0 6px 20px rgba(231, 76, 60, 0.5); }
+    100% { box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3); }
+}
+
+@keyframes pulse-orange {
+    0% { box-shadow: 0 4px 15px rgba(230, 126, 34, 0.3); }
+    50% { box-shadow: 0 6px 20px rgba(230, 126, 34, 0.5); }
+    100% { box-shadow: 0 4px 15px rgba(230, 126, 34, 0.3); }
+}
+
+@keyframes pulse-card {
+    0% { box-shadow: 0 4px 15px rgba(231, 76, 60, 0.2); }
+    50% { box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4); }
+    100% { box-shadow: 0 4px 15px rgba(231, 76, 60, 0.2); }
+}
+
+/* Mail Server Config Sayfası */
+.mail-server-config-page {
+    padding: 2rem;
+}
+
+.config-container {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.config-card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 2rem;
+}
+
+.config-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.config-header h3 {
+    color: #2c3e50;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.status-indicator span {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.status-active {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-inactive {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.status-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.config-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.9rem;
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group input[type="password"] {
+    padding: 0.75rem;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+}
+
+.form-help {
+    color: #6c757d;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+}
+
+.checkbox-group {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #0056b3;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #545b62;
+    transform: translateY(-1px);
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.help-card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 2rem;
+    height: fit-content;
+}
+
+.help-card h3 {
+    color: #2c3e50;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.help-content h4 {
+    color: #495057;
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 1.5rem 0 0.5rem 0;
+}
+
+.help-content h4:first-child {
+    margin-top: 0;
+}
+
+.help-content ul {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+}
+
+.help-content li {
+    margin: 0.25rem 0;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.help-content strong {
+    color: #2c3e50;
+}
+
+/* Toast Notifications */
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    z-index: 1000;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+}
+
+.toast.show {
+    transform: translateX(0);
+}
+
+.toast-success {
+    background: #28a745;
+}
+
+.toast-error {
+    background: #dc3545;
+}
+
+.toast-info {
+    background: #17a2b8;
+}
+
+.toast-warning {
+    background: #ffc107;
+    color: #212529;
+}
+
+/* Interface IP Settings Sayfası */
+.interface-ip-settings-page {
+    padding: 2rem;
+}
+
+.current-ip-info {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border-left: 4px solid #007bff;
+}
+
+.current-ip-info h4 {
+    color: #2c3e50;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.ip-display {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.ip-address {
+    font-family: 'Courier New', monospace;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #007bff;
+    background: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: 2px solid #e9ecef;
+}
+
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+.form-group select {
+    padding: 0.75rem;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 1rem;
+    background: white;
+    transition: border-color 0.3s ease;
+}
+
+.form-group select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+}
+
+.warning-card {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.warning-icon {
+    color: #856404;
+    font-size: 1.5rem;
+    margin-top: 0.25rem;
+}
+
+.warning-content h4 {
+    color: #856404;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.warning-content p {
+    color: #856404;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Configuration Actions */
+.config-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #eee;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+/* Reset Confirmation Modal */
+.reset-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.reset-modal.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.reset-modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    transform: scale(0.8);
+    transition: transform 0.3s ease;
+}
+
+.reset-modal.show .reset-modal-content {
+    transform: scale(1);
+}
+
+.reset-modal-icon {
+    font-size: 3rem;
+    color: #dc3545;
+    margin-bottom: 1rem;
+}
+
+.reset-modal h3 {
+    color: #2c3e50;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.reset-modal p {
+    color: #6c757d;
+    margin-bottom: 2rem;
+    line-height: 1.5;
+}
+
+.reset-modal-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.reset-modal-actions .btn {
+    min-width: 100px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .config-container {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .ip-display {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .warning-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .config-actions {
+        flex-direction: column;
+    }
+    
+    .reset-modal-actions {
+        flex-direction: column;
+    }
+}

@@ -148,14 +148,35 @@
     </div>
     
     <div class="config-actions">
-        <button class="btn btn-secondary" id="resetConfig">
-            <i class="fas fa-undo"></i>
-            Varsayılana Döndür
-        </button>
         <button class="btn btn-primary" id="sendConfigToDevice">
             <i class="fas fa-paper-plane"></i>
             Tümünü Oku
         </button>
+        <button class="btn btn-danger" id="resetSystem">
+            <i class="fas fa-power-off"></i>
+            Tümünü Resetle
+        </button>
+    </div>
+</div>
+
+<!-- Reset Confirmation Modal -->
+<div class="reset-modal" id="resetModal">
+    <div class="reset-modal-content">
+        <div class="reset-modal-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3>Sistemi Resetlemek İstediğinizden Emin misiniz?</h3>
+        <p>Bu işlem sistem reset komutunu gönderecek ve tüm konfigürasyonlar sıfırlanacaktır. Bu işlem geri alınamaz.</p>
+        <div class="reset-modal-actions">
+            <button class="btn btn-secondary" id="cancelReset">
+                <i class="fas fa-times"></i>
+                İptal
+            </button>
+            <button class="btn btn-danger" id="confirmReset">
+                <i class="fas fa-power-off"></i>
+                Evet, Resetle
+            </button>
+        </div>
     </div>
 </div>
 

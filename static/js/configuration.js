@@ -26,9 +26,19 @@ if (typeof window.ConfigurationPage === 'undefined') {
             this.saveArmConfig();
         });
 
-        // Varsayılana döndür
-        document.getElementById('resetConfig').addEventListener('click', () => {
-            this.resetToDefaults();
+        // Tümünü resetle
+        document.getElementById('resetSystem').addEventListener('click', () => {
+            this.showResetModal();
+        });
+
+        // Reset modal iptal
+        document.getElementById('cancelReset').addEventListener('click', () => {
+            this.hideResetModal();
+        });
+
+        // Reset onayla
+        document.getElementById('confirmReset').addEventListener('click', () => {
+            this.confirmReset();
         });
 
         // Konfigürasyonu cihaza gönder
@@ -372,7 +382,7 @@ if (typeof window.ConfigurationPage === 'undefined') {
         const armValue = document.getElementById('batArmSelect').value;
         
         if (!armValue) {
-            alert('Lütfen bir kol seçin!');
+            this.showToast('Lütfen bir kol seçin!', 'warning');
             return;
         }
 
@@ -404,16 +414,16 @@ if (typeof window.ConfigurationPage === 'undefined') {
             if (response.ok) {
                 const result = await response.json();
                 if (result.success) {
-                    alert(`Kol ${armValue} batarya konfigürasyonu başarıyla kaydedildi!`);
+                    this.showToast(`Kol ${armValue} batarya konfigürasyonu başarıyla kaydedildi!`, 'success');
                 } else {
-                    alert('Hata: ' + result.message);
+                    this.showToast('Hata: ' + result.message, 'error');
                 }
             } else {
-                alert('Konfigürasyon kaydedilemedi!');
+                this.showToast('Konfigürasyon kaydedilemedi!', 'error');
             }
         } catch (error) {
             console.error('Batarya konfigürasyonu kaydedilirken hata:', error);
-            alert('Konfigürasyon kaydedilirken hata oluştu!');
+            this.showToast('Konfigürasyon kaydedilirken hata oluştu!', 'error');
         }
     }
 
@@ -421,7 +431,7 @@ if (typeof window.ConfigurationPage === 'undefined') {
         const armValue = document.getElementById('armArmSelect').value;
         
         if (!armValue) {
-            alert('Lütfen bir kol seçin!');
+            this.showToast('Lütfen bir kol seçin!', 'warning');
             return;
         }
 
@@ -449,25 +459,19 @@ if (typeof window.ConfigurationPage === 'undefined') {
             if (response.ok) {
                 const result = await response.json();
                 if (result.success) {
-                    alert(`Kol ${armValue} konfigürasyonu başarıyla kaydedildi!`);
+                    this.showToast(`Kol ${armValue} konfigürasyonu başarıyla kaydedildi!`, 'success');
                 } else {
-                    alert('Hata: ' + result.message);
+                    this.showToast('Hata: ' + result.message, 'error');
                 }
             } else {
-                alert('Konfigürasyon kaydedilemedi!');
+                this.showToast('Konfigürasyon kaydedilemedi!', 'error');
             }
         } catch (error) {
             console.error('Kol konfigürasyonu kaydedilirken hata:', error);
-            alert('Konfigürasyon kaydedilirken hata oluştu!');
+            this.showToast('Konfigürasyon kaydedilirken hata oluştu!', 'error');
         }
     }
 
-    resetToDefaults() {
-        if (confirm('Tüm konfigürasyonları varsayılan değerlere sıfırlamak istediğinizden emin misiniz?')) {
-            this.loadDefaultValues();
-            alert('Konfigürasyonlar varsayılan değerlere sıfırlandı!');
-        }
-    }
 
     async sendConfigToDevice() {
         try {
@@ -498,6 +502,61 @@ if (typeof window.ConfigurationPage === 'undefined') {
         }
     }
     
+    showResetModal() {
+        const modal = document.getElementById('resetModal');
+        modal.classList.add('show');
+    }
+
+    hideResetModal() {
+        const modal = document.getElementById('resetModal');
+        modal.classList.remove('show');
+    }
+
+    async confirmReset() {
+        try {
+            this.hideResetModal();
+            this.showToast('Sistem reset komutu gönderiliyor...', 'info');
+            
+            // Reset komutu gönder (81 55 55)
+            const response = await fetch('/api/send-reset-command', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    this.showToast('Sistem reset komutu başarıyla gönderildi', 'success');
+                } else {
+                    this.showToast('Reset komutu gönderilemedi: ' + result.message, 'error');
+                }
+            } else {
+                this.showToast('Reset komutu gönderilemedi', 'error');
+            }
+        } catch (error) {
+            console.error('Reset komutu gönderilirken hata:', error);
+            this.showToast('Reset komutu gönderilirken hata oluştu', 'error');
+        }
+    }
+
+    showToast(message, type = 'info') {
+        // Toast notification göster
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+        
+        document.body.appendChild(toast);
+        
+        // Animasyon
+        setTimeout(() => toast.classList.add('show'), 100);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => document.body.removeChild(toast), 300);
+        }, 3000);
+    }
+
     isConfigurationPageActive() {
         // Configuration sayfasında olup olmadığımızı kontrol et
         const configPage = document.querySelector('.configuration-page');

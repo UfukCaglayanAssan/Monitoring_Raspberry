@@ -7,28 +7,43 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 import threading
 import time
+from database import BatteryDatabase
 
 class MailSender:
     def __init__(self):
-        # Mail sunucu ayarları
-        self.smtp_server = "mail.mailhizmeti.com"
-        self.smtp_port = 587  # SSL için 465, TLS için 587
-        self.sender_email = "alarm@assanbms.com"
-        self.sender_password = "g39*253ey"
+        # Veritabanı bağlantısı
+        self.db = BatteryDatabase()
         
         # SSL/TLS ayarları
         self.context = ssl.create_default_context()
+    
+    def get_mail_config(self):
+        """Veritabanından mail konfigürasyonunu al"""
+        try:
+            config = self.db.get_mail_server_config()
+            if config and config.get('is_active', False):
+                return config
+            return None
+        except Exception as e:
+            print(f"Mail konfigürasyonu alınırken hata: {e}")
+            return None
         
     def send_alarm_email(self, recipients, alarm_data):
         """Alarm maili gönder"""
         try:
+            # Mail konfigürasyonunu kontrol et
+            config = self.get_mail_config()
+            if not config:
+                print("❌ Mail sunucu konfigürasyonu bulunamadı veya aktif değil")
+                return False
+            
             # Mail içeriği oluştur
             subject = "🚨 Akü İzleme Sistemi - Alarm Bildirimi"
             body = self.create_alarm_email_body(alarm_data)
             
             # Her alıcıya mail gönder
             for recipient in recipients:
-                self.send_single_email(recipient['email'], recipient['name'], subject, body)
+                self.send_single_email(recipient['email'], recipient['name'], subject, body, config)
                 
             print(f"✅ Alarm maili {len(recipients)} alıcıya gönderildi")
             return True
@@ -37,13 +52,13 @@ class MailSender:
             print(f"❌ Mail gönderme hatası: {e}")
             return False
     
-    def send_single_email(self, recipient_email, recipient_name, subject, body):
+    def send_single_email(self, recipient_email, recipient_name, subject, body, config):
         """Tek alıcıya mail gönder"""
         try:
             # Mail mesajı oluştur
             message = MIMEMultipart("alternative")
             message["Subject"] = subject
-            message["From"] = self.sender_email
+            message["From"] = config['smtp_username']
             message["To"] = recipient_email
             
             # HTML içerik
@@ -51,10 +66,15 @@ class MailSender:
             message.attach(html_body)
             
             # SMTP bağlantısı ve mail gönderme
-            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
-                server.starttls(context=self.context)
-                server.login(self.sender_email, self.sender_password)
-                server.sendmail(self.sender_email, recipient_email, message.as_string())
+            with smtplib.SMTP(config['smtp_server'], config['smtp_port']) as server:
+                if config.get('use_tls', True):
+                    server.starttls(context=self.context)
+                
+                # Kullanıcı adı ve şifre varsa giriş yap
+                if config.get('smtp_username') and config.get('smtp_password'):
+                    server.login(config['smtp_username'], config['smtp_password'])
+                
+                server.sendmail(config['smtp_username'], recipient_email, message.as_string())
                 
             print(f"✅ Mail gönderildi: {recipient_name} ({recipient_email})")
             
