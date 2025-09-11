@@ -489,7 +489,7 @@ def db_worker():
                 
                 elif dtype == 11:  # SOH veya Nem
                     if k_value == 2:  # Nem verisi
-                        print(f"*** VERİ ALGILANDI - Arm: {arm_value}, Nem: {salt_data}% ***")
+                        print(f"*** VERİ ALGILANDI - Arm: {arm_value}, Data: {salt_data}% ***")
                         record = {
                             "Arm": arm_value,
                             "k": k_value,
@@ -909,6 +909,8 @@ def config_worker():
                             data['Rintnom'], data['Tempmin_D'], data['Tempmax_D'],
                             data['Tempmin_PN'], data['Tempmax_PN'], data['Socmin'], data['Sohmin']
                         )
+                        # Cihaza da gönder
+                        send_batconfig_to_device(data)
                     elif config_data.get('type') == 'armconfig':
                         # Database'deki yeni fonksiyonu kullan
                         data = config_data['data']
@@ -916,6 +918,8 @@ def config_worker():
                             data['armValue'], data['akimKats'], data['akimMax'],
                             data['nemMax'], data['nemMin'], data['tempMax'], data['tempMin']
                         )
+                        # Cihaza da gönder
+                        send_armconfig_to_device(data)
                     elif config_data.get('type') == 'send_to_device':
                         # Tümünü oku komutu gönder
                         command = config_data.get('command', '5 5 0x7A')
