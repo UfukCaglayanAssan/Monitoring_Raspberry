@@ -924,7 +924,7 @@ def config_worker():
                         command = config_data.get('command')
                         if command:
                             print(f"*** MANUEL KOL SET KOMUTU GÖNDERİLİYOR ***")
-                            print(f"Arm: {arm}, Slave: {slave}, Komut: {[hex(x) for x in command]}")
+                            print(f"Arm: {arm}, Slave: {slave}, Komut: {command} (Hex: {[hex(x) for x in command]})")
                             wave_uart_send(pi, TX_PIN, command, int(1e6 / BAUD_RATE))
                             print(f"✓ Kol {arm}, Batarya {slave} manuel set komutu cihaza gönderildi")
                     
