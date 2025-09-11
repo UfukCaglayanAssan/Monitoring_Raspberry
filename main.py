@@ -17,6 +17,7 @@ data_queue = queue.Queue()
 RX_PIN = 16
 TX_PIN = 26
 BAUD_RATE = 9600
+BIT_TIME = int(1e6 / BAUD_RATE)
 
 # Armslavecount verilerini tutmak için
 arm_slave_counts = {1: 0, 2: 0, 3: 0, 4: 0}  # Her kol için batarya sayısı
@@ -923,7 +924,7 @@ def config_worker():
                         if command:
                             print(f"*** MANUEL KOL SET KOMUTU GÖNDERİLİYOR ***")
                             print(f"Arm: {arm}, Komut: {[hex(x) for x in command]}")
-                            wave_uart_send(pi, TX_PIN, command, BIT_TIME)
+                            wave_uart_send(pi, TX_PIN, command, int(1e6 / BAUD_RATE))
                             print(f"✓ Kol {arm} manuel set komutu cihaza gönderildi")
                     
                 except Exception as e:
@@ -955,8 +956,6 @@ def main():
             return
             
         pi.write(TX_PIN, 1)
-
-        BIT_TIME = int(1e6 / BAUD_RATE)
 
         # Okuma thread'i
         pi.bb_serial_read_open(RX_PIN, BAUD_RATE)
