@@ -902,9 +902,20 @@ def config_worker():
                     os.remove(config_file)
                     
                     if config_data.get('type') == 'batconfig':
-                        save_batconfig_to_db(config_data['data'])
+                        # Database'deki yeni fonksiyonu kullan
+                        data = config_data['data']
+                        db.save_battery_config(
+                            data['armValue'], data['Vmin'], data['Vmax'], data['Vnom'],
+                            data['Rintnom'], data['Tempmin_D'], data['Tempmax_D'],
+                            data['Tempmin_PN'], data['Tempmax_PN'], data['Socmin'], data['Sohmin']
+                        )
                     elif config_data.get('type') == 'armconfig':
-                        save_armconfig_to_db(config_data['data'])
+                        # Database'deki yeni fonksiyonu kullan
+                        data = config_data['data']
+                        db.save_arm_config(
+                            data['armValue'], data['akimKats'], data['akimMax'],
+                            data['nemMax'], data['nemMin'], data['tempMax'], data['tempMin']
+                        )
                     elif config_data.get('type') == 'send_to_device':
                         # Tümünü oku komutu gönder
                         command = config_data.get('command', '5 5 0x7A')
