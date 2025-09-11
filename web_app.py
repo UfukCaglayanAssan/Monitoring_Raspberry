@@ -1073,27 +1073,36 @@ def get_current_ip():
             'ip': 'Hata'
         }), 500
 
-@app.route('/api/send-reset-command', methods=['POST'])
-def send_reset_command():
-    """Sistem reset komutu gönder (81 55 55)"""
+@app.route('/api/send-manual-set-command', methods=['POST'])
+def send_manual_set_command():
+    """Manuel kol set komutu gönder (0x81 0xkol_no 0x78)"""
     try:
-        # Reset komutu: 81 55 55
-        reset_command = [0x81, 0x55, 0x55]
+        data = request.get_json()
+        arm = data.get('arm')
+        
+        if not arm or arm < 1 or arm > 4:
+            return jsonify({
+                'success': False,
+                'message': 'Geçersiz kol numarası (1-4 arası olmalı)'
+            }), 400
+        
+        # Manuel set komutu: 0x81 0xkol_no 0x78
+        manual_set_command = [0x81, arm, 0x78]
         
         # UART gönderimi için main.py'deki fonksiyonu çağır
         try:
             from main import send_uart_command
-            success = send_uart_command(reset_command)
+            success = send_uart_command(manual_set_command)
             
             if success:
                 return jsonify({
                     'success': True,
-                    'message': 'Sistem reset komutu başarıyla gönderildi'
+                    'message': f'Kol {arm} manuel set komutu başarıyla gönderildi'
                 })
             else:
                 return jsonify({
                     'success': False,
-                    'message': 'Reset komutu gönderilemedi'
+                    'message': 'Manuel set komutu gönderilemedi'
                 }), 500
                 
         except ImportError:

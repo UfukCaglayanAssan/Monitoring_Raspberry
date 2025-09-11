@@ -152,32 +152,28 @@
             <i class="fas fa-paper-plane"></i>
             Tümünü Oku
         </button>
-        <button class="btn btn-danger" id="resetSystem">
-            <i class="fas fa-power-off"></i>
-            Tümünü Resetle
-        </button>
+    </div>
+    
+    <div class="manual-set-section">
+        <h3>Manuel Kol Ayarlama</h3>
+        <div class="manual-set-controls">
+            <div class="form-group">
+                <label for="manualArmSelect">Kol Seçimi</label>
+                <select id="manualArmSelect" class="form-select">
+                    <option value="">Kol Seçin</option>
+                    <option value="1">Kol 1</option>
+                    <option value="2">Kol 2</option>
+                    <option value="3">Kol 3</option>
+                    <option value="4">Kol 4</option>
+                </select>
+            </div>
+            <button class="btn btn-warning" id="manualSetArm">
+                <i class="fas fa-cog"></i>
+                Manuel Set
+            </button>
+        </div>
     </div>
 </div>
 
-<!-- Reset Confirmation Modal -->
-<div class="reset-modal" id="resetModal">
-    <div class="reset-modal-content">
-        <div class="reset-modal-icon">
-            <i class="fas fa-exclamation-triangle"></i>
-        </div>
-        <h3>Sistemi Resetlemek İstediğinizden Emin misiniz?</h3>
-        <p>Bu işlem sistem reset komutunu gönderecek ve tüm konfigürasyonlar sıfırlanacaktır. Bu işlem geri alınamaz.</p>
-        <div class="reset-modal-actions">
-            <button class="btn btn-secondary" id="cancelReset">
-                <i class="fas fa-times"></i>
-                İptal
-            </button>
-            <button class="btn btn-danger" id="confirmReset">
-                <i class="fas fa-power-off"></i>
-                Evet, Resetle
-            </button>
-        </div>
-    </div>
-</div>
 
 <!-- Configuration sayfası script'i configuration.js tarafından yüklenecek -->

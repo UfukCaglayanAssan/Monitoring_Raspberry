@@ -1135,11 +1135,59 @@ body {
 /* Configuration Actions */
 .config-actions {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     gap: 1rem;
     margin-top: 2rem;
     padding-top: 2rem;
     border-top: 1px solid #eee;
+}
+
+/* Manual Set Section */
+.manual-set-section {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 2rem;
+    margin-top: 2rem;
+    border-left: 4px solid #ffc107;
+}
+
+.manual-set-section h3 {
+    color: #2c3e50;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+.manual-set-controls {
+    display: flex;
+    align-items: end;
+    gap: 1rem;
+}
+
+.manual-set-controls .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.btn-warning {
+    background: #ffc107;
+    color: #212529;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-warning:hover {
+    background: #e0a800;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
 }
 
 .btn-danger {
@@ -1260,7 +1308,12 @@ body {
         flex-direction: column;
     }
     
-    .reset-modal-actions {
+    .manual-set-controls {
         flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .manual-set-controls .form-group {
+        margin-bottom: 1rem;
     }
 }

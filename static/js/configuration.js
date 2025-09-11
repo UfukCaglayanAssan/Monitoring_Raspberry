@@ -26,19 +26,9 @@ if (typeof window.ConfigurationPage === 'undefined') {
             this.saveArmConfig();
         });
 
-        // Tümünü resetle
-        document.getElementById('resetSystem').addEventListener('click', () => {
-            this.showResetModal();
-        });
-
-        // Reset modal iptal
-        document.getElementById('cancelReset').addEventListener('click', () => {
-            this.hideResetModal();
-        });
-
-        // Reset onayla
-        document.getElementById('confirmReset').addEventListener('click', () => {
-            this.confirmReset();
+        // Manuel kol set
+        document.getElementById('manualSetArm').addEventListener('click', () => {
+            this.manualSetArm();
         });
 
         // Konfigürasyonu cihaza gönder
@@ -502,42 +492,42 @@ if (typeof window.ConfigurationPage === 'undefined') {
         }
     }
     
-    showResetModal() {
-        const modal = document.getElementById('resetModal');
-        modal.classList.add('show');
-    }
-
-    hideResetModal() {
-        const modal = document.getElementById('resetModal');
-        modal.classList.remove('show');
-    }
-
-    async confirmReset() {
+    async manualSetArm() {
         try {
-            this.hideResetModal();
-            this.showToast('Sistem reset komutu gönderiliyor...', 'info');
+            const armSelect = document.getElementById('manualArmSelect');
+            const selectedArm = armSelect.value;
             
-            // Reset komutu gönder (81 55 55)
-            const response = await fetch('/api/send-reset-command', {
+            if (!selectedArm) {
+                this.showToast('Lütfen bir kol seçin!', 'warning');
+                return;
+            }
+            
+            this.showToast(`Kol ${selectedArm} manuel set komutu gönderiliyor...`, 'info');
+            
+            // Manuel set komutu gönder (0x81 0xkol_no 0x78)
+            const response = await fetch('/api/send-manual-set-command', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({
+                    arm: parseInt(selectedArm)
+                })
             });
 
             if (response.ok) {
                 const result = await response.json();
                 if (result.success) {
-                    this.showToast('Sistem reset komutu başarıyla gönderildi', 'success');
+                    this.showToast(`Kol ${selectedArm} manuel set komutu başarıyla gönderildi`, 'success');
                 } else {
-                    this.showToast('Reset komutu gönderilemedi: ' + result.message, 'error');
+                    this.showToast('Manuel set komutu gönderilemedi: ' + result.message, 'error');
                 }
             } else {
-                this.showToast('Reset komutu gönderilemedi', 'error');
+                this.showToast('Manuel set komutu gönderilemedi', 'error');
             }
         } catch (error) {
-            console.error('Reset komutu gönderilirken hata:', error);
-            this.showToast('Reset komutu gönderilirken hata oluştu', 'error');
+            console.error('Manuel set komutu gönderilirken hata:', error);
+            this.showToast('Manuel set komutu gönderilirken hata oluştu', 'error');
         }
     }
 

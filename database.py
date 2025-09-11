@@ -19,6 +19,8 @@ class BatteryDatabase:
             self.init_database()
         else:
             print(f"Veritabanı zaten mevcut: {self.db_path}")
+            # Mevcut veritabanında eksik tabloları kontrol et ve oluştur
+            self.check_and_create_missing_tables()
             # Mevcut veritabanında default değerleri kontrol et
             self.check_default_arm_slave_counts()
     
@@ -612,6 +614,42 @@ class BatteryDatabase:
             
             conn.commit()
     
+    def check_and_create_missing_tables(self):
+        """Mevcut veritabanında eksik tabloları kontrol et ve oluştur"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # ip_config tablosu var mı kontrol et
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='ip_config'
+                """)
+                
+                if not cursor.fetchone():
+                    print("🔄 ip_config tablosu eksik, oluşturuluyor...")
+                    cursor.execute('''
+                        CREATE TABLE IF NOT EXISTS ip_config (
+                            id INTEGER PRIMARY KEY DEFAULT 1,
+                            ip_address TEXT,
+                            subnet_mask TEXT,
+                            gateway TEXT,
+                            dns_servers TEXT,
+                            is_assigned BOOLEAN DEFAULT 0,
+                            is_active BOOLEAN DEFAULT 0,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            CONSTRAINT single_ip_config CHECK (id = 1)
+                        )
+                    ''')
+                    conn.commit()
+                    print("✅ ip_config tablosu oluşturuldu")
+                else:
+                    print("✅ ip_config tablosu mevcut")
+                    
+        except Exception as e:
+            print(f"⚠️ Eksik tablo kontrol hatası: {e}")
+
     def check_default_arm_slave_counts(self):
         """Mevcut veritabanında default arm_slave_counts değerlerini kontrol et"""
         try:
