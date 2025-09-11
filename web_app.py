@@ -887,7 +887,26 @@ def send_config_to_device():
         }), 500
 
 if __name__ == '__main__':
-    print("Flask web uygulaması başlatılıyor...")
+    import sys
+    
+    # Port parametresini al (varsayılan: 5000)
+    port = 5000
+    if len(sys.argv) > 1:
+        try:
+            port = int(sys.argv[1])
+        except ValueError:
+            print("Geçersiz port numarası, varsayılan port 5000 kullanılıyor")
+    
+    print(f"Flask web uygulaması başlatılıyor... (Port: {port})")
     with db_read_lock:
         print(f"Veritabanı boyutu: {get_db().get_database_size():.2f} MB")
-    app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
+    
+    try:
+        app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
+    except OSError as e:
+        if "Address already in use" in str(e):
+            print(f"❌ Port {port} zaten kullanımda!")
+            print(f"💡 Farklı port deneyin: python web_app.py {port + 1}")
+            print(f"💡 Veya mevcut uygulamayı durdurun: sudo lsof -i :{port}")
+        else:
+            print(f"❌ Hata: {e}")

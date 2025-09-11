@@ -4,6 +4,7 @@ class App {
         // localStorage'dan son sayfayı oku, yoksa summary
         this.currentPage = localStorage.getItem('lastPage') || 'summary';
         this.currentLanguage = 'tr';
+        this.alarmCountInterval = null; // Interval referansı
         
         // F5 ile yenileme kontrolü
         window.addEventListener('pageshow', function(e) {
@@ -348,13 +349,21 @@ class App {
     }
 
     startAlarmCountRefresh() {
+        // Önceki interval'ı temizle
+        if (this.alarmCountInterval) {
+            clearInterval(this.alarmCountInterval);
+            console.log('🧹 Önceki alarm count interval temizlendi');
+        }
+        
         // İlk yükleme
         this.updateAlarmCount();
         
         // Her 30 saniyede bir güncelle
-        setInterval(() => {
+        this.alarmCountInterval = setInterval(() => {
             this.updateAlarmCount();
         }, 30000);
+        
+        console.log('⏰ Yeni alarm count interval başlatıldı (30s)');
     }
 }
 

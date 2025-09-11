@@ -323,9 +323,11 @@ function initArmLogsPage() {
         console.log('🆕 Yeni ArmLogsPage instance oluşturuluyor');
         window.armLogsPage = new window.ArmLogsPage();
     } else {
-        // Mevcut instance'ı yeniden başlat
-        console.log('🔄 Mevcut ArmLogsPage instance yeniden başlatılıyor');
-        window.armLogsPage.init();
+        // Mevcut instance varsa sadece veri yükle, init() çağırma
+        console.log('🔄 Mevcut ArmLogsPage instance kullanılıyor, sadece veri yükleniyor');
+        if (window.armLogsPage.isPageActive && !window.armLogsPage.isLoading) {
+            window.armLogsPage.loadLogs();
+        }
     }
 }
 

@@ -10,6 +10,7 @@ if (typeof window.AlarmsPage === 'undefined') {
         this.totalPages = 1;
         this.isLoading = false; // Yükleme durumu flag'i
         this.eventsBound = false; // Event listener'ların bağlanıp bağlanmadığını kontrol et
+        this.autoRefreshInterval = null; // Interval referansı
         this.init();
     }
 
@@ -524,8 +525,14 @@ if (typeof window.AlarmsPage === 'undefined') {
     }
 
     startAutoRefresh() {
+        // Önceki interval'ı temizle
+        if (this.autoRefreshInterval) {
+            clearInterval(this.autoRefreshInterval);
+            console.log('🧹 Önceki auto refresh interval temizlendi');
+        }
+        
         // Her 30 saniyede bir otomatik yenile
-        setInterval(() => {
+        this.autoRefreshInterval = setInterval(() => {
             if (this.isPageActive() && !this.isLoading) {
                 console.log('🔄 Otomatik yenileme çalışıyor...');
                 
@@ -537,6 +544,8 @@ if (typeof window.AlarmsPage === 'undefined') {
                 }
             }
         }, 30000); // 30 saniyede bir yenile
+        
+        console.log('⏰ Yeni auto refresh interval başlatıldı (30s)');
     }
 
     isPageActive() {
@@ -574,18 +583,13 @@ if (typeof window.AlarmsPage === 'undefined') {
 function initAlarmsPage() {
     console.log('🔧 initAlarmsPage() çağrıldı');
     if (!window.alarmsPage) {
-     
         console.log('🆕 Yeni AlarmsPage instance oluşturuluyor');
         window.alarmsPage = new window.AlarmsPage();
     } else {
-        console.log('🔄 Mevcut AlarmsPage instance yeniden başlatılıyor');
-        window.alarmsPage.showResolved = false; // ← BUNU EKLE
-        window.alarmsPage.eventsBound = false; // ← BUNU EKLE
-        // Sadece sayfa aktifse yeniden başlat
-        if (window.alarmsPage.isPageActive()) {
-            window.alarmsPage.init();
-        } else {
-            console.log('⚠️ Sayfa aktif değil, yeniden başlatma atlanıyor');
+        // Mevcut instance varsa sadece veri yükle, init() çağırma
+        console.log('🔄 Mevcut AlarmsPage instance kullanılıyor, sadece veri yükleniyor');
+        if (window.alarmsPage.isPageActive() && !window.alarmsPage.isLoading) {
+            window.alarmsPage.loadAlarms();
         }
     }
 }

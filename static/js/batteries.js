@@ -9,6 +9,7 @@ if (typeof window.BatteriesPage === 'undefined') {
         this.batteriesData = [];
         this.selectedArm = parseInt(localStorage.getItem('selectedArm')) || 3; // localStorage'dan al, yoksa varsayılan: Kol 3
         this.isLoading = false; // Yükleme durumu flag'i
+        this.autoRefreshInterval = null; // Interval referansı
         
         this.init();
     }
@@ -52,22 +53,7 @@ if (typeof window.BatteriesPage === 'undefined') {
             });
         });
         
-        // Dil değişikliği dinleyicisi - global olarak ekle
-        window.addEventListener('languageChanged', (e) => {
-            console.log('=== DIL DEGISIKLIGI EVENT\'I ALINDI (GLOBAL) ===');
-            console.log('Event detail:', e.detail);
-            console.log('Dil:', e.detail.language);
-            console.log('BatteriesPage instance:', this);
-            
-            if (this && typeof this.onLanguageChanged === 'function') {
-                console.log('onLanguageChanged cagriliyor...');
-                this.onLanguageChanged(e.detail.language);
-                console.log('onLanguageChanged cagrildi');
-            } else {
-                console.log('BatteriesPage instance bulunamadı veya onLanguageChanged fonksiyonu yok!');
-            }
-        });
-        console.log('Global language listener eklendi');
+        // Dil değişikliği dinleyicisi kaldırıldı - şu anda gerekli değil
 
     }
 
@@ -222,16 +208,12 @@ if (typeof window.BatteriesPage === 'undefined') {
         try {
             this.showLoading(true);
             
-            // Mevcut dili al
-            const currentLanguage = localStorage.getItem('language') || 'tr';
-            console.log(`🌐 [${timestamp}] Kullanılan dil: ${currentLanguage}`);
-            
             // API endpoint'den batarya verilerini çek
             const response = await fetch('/api/batteries', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Language': currentLanguage
+                    'X-Language': 'tr'
                 },
                 body: JSON.stringify({
                     page: this.currentPage,
@@ -253,8 +235,7 @@ if (typeof window.BatteriesPage === 'undefined') {
                 this.renderBatteries();
                 
                 // Kartlar oluşturulduktan sonra çeviri yap
-                const currentLanguage = localStorage.getItem('language') || 'tr';
-                this.updateCardTexts(currentLanguage);
+                this.updateCardTexts('tr');
             } else {
                 throw new Error(data.message || 'Veri yüklenemedi');
             }
@@ -566,19 +547,24 @@ if (typeof window.BatteriesPage === 'undefined') {
     }
     
     startAutoRefresh() {
+        // Önceki interval'ı temizle
+        if (this.autoRefreshInterval) {
+            clearInterval(this.autoRefreshInterval);
+            console.log('🧹 Önceki auto refresh interval temizlendi');
+        }
+        
         // Her 30 saniyede bir otomatik yenile
-        setInterval(() => {
+        this.autoRefreshInterval = setInterval(() => {
             // Sadece sayfa aktifse ve manuel işlem yoksa yenile
             if (this.isPageActive() && !this.isLoading) {
                 console.log('🔄 Otomatik yenileme çalışıyor...');
-                // Mevcut dili al ve otomatik güncellemede de kullan
-                const currentLanguage = localStorage.getItem('language') || 'tr';
-                console.log('🌐 Otomatik güncelleme dili:', currentLanguage);
                 this.loadBatteries();
             } else if (this.isLoading) {
                 console.log('⏳ Manuel yükleme devam ediyor, otomatik yenileme atlanıyor...');
             }
         }, 30000);
+        
+        console.log('⏰ Yeni auto refresh interval başlatıldı (30s)');
     }
     };
 }
@@ -595,10 +581,13 @@ function initBatteriesPage() {
     console.log('🔧 initBatteriesPage() çağrıldı');
     if (!window.batteriesPage) {
         window.batteriesPage = new BatteriesPage();
+        console.log('✅ Yeni BatteriesPage instance oluşturuldu');
     } else {
-        // Mevcut instance'ı yeniden başlat
-        console.log('🔄 Mevcut BatteriesPage instance yeniden başlatılıyor');
-        window.batteriesPage.init();
+        // Mevcut instance varsa sadece veri yükle, init() çağırma
+        console.log('🔄 Mevcut BatteriesPage instance kullanılıyor, sadece veri yükleniyor');
+        if (window.batteriesPage.isPageActive() && !window.batteriesPage.isLoading) {
+            window.batteriesPage.loadBatteries();
+        }
     }
 }
 

@@ -1199,7 +1199,7 @@ class BatteryDatabase:
                     
                     for dtype, data, name, unit in arm_data:
                         print(f"  dtype={dtype}, data={data}, name={name}, unit={unit}")
-                        if dtype == 13:  # Nem
+                        if dtype == 11 and data is not None:  # Nem (dtype=11, k=2)
                             humidity = data
                             print(f"    Nem bulundu: {humidity}")
                         elif dtype == 12:  # Sıcaklık
