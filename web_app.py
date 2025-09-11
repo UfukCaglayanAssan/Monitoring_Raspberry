@@ -1079,7 +1079,13 @@ def send_manual_set_command():
     try:
         data = request.get_json()
         arm = data.get('arm')
-        slave = data.get('slave', 0)  # Varsayılan 0
+        slave_str = data.get('slave', '0')  # String olarak al
+        
+        # String'i hex olarak parse et (14 -> 0x14)
+        try:
+            slave = int(slave_str, 16) if slave_str.startswith('0x') else int(slave_str)
+        except ValueError:
+            slave = 0
         
         if not arm or arm < 1 or arm > 4:
             return jsonify({
