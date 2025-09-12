@@ -1163,15 +1163,15 @@ class BatteryDatabase:
                     if dtype == 10:  # Gerilim
                         battery_data['voltage'] = data
                         battery_data['voltage_name'] = translated_name or name
-                    elif dtype == 11:  # Şarj durumu
-                        battery_data['charge'] = data
-                        battery_data['charge_name'] = translated_name or name
+                    elif dtype == 11:  # Sağlık durumu (SOH)
+                        battery_data['health'] = data
+                        battery_data['health_name'] = translated_name or name
                     elif dtype == 12:  # Sıcaklık
                         battery_data['temperature'] = data
                         battery_data['temperature_name'] = translated_name or name
-                    elif dtype == 126:  # Sağlık durumu
-                        battery_data['health'] = data
-                        battery_data['health_name'] = translated_name or name
+                    elif dtype == 126:  # Şarj durumu (SOC)
+                        battery_data['charge'] = data
+                        battery_data['charge_name'] = translated_name or name
                 
                 return battery_data
         except Exception as e:

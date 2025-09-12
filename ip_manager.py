@@ -95,12 +95,48 @@ class IPManager:
         """Ağ servisini yeniden başlat"""
         try:
             print("🔄 Ağ servisi yeniden başlatılıyor...")
-            subprocess.run(['sudo', 'systemctl', 'restart', 'dhcpcd'], check=True)
-            time.sleep(5)  # Servisin başlaması için bekle
-            print("✅ Ağ servisi yeniden başlatıldı")
+            
+            # Farklı servis isimlerini dene
+            services_to_try = [
+                'dhcpcd',
+                'dhcpcd5', 
+                'networking',
+                'NetworkManager',
+                'systemd-networkd'
+            ]
+            
+            success = False
+            for service in services_to_try:
+                try:
+                    print(f"🔄 {service} servisi deneniyor...")
+                    result = subprocess.run(['sudo', 'systemctl', 'restart', service], 
+                                          capture_output=True, text=True, timeout=10)
+                    if result.returncode == 0:
+                        print(f"✅ {service} servisi başarıyla yeniden başlatıldı")
+                        success = True
+                        break
+                    else:
+                        print(f"❌ {service} servisi bulunamadı veya başlatılamadı")
+                except subprocess.TimeoutExpired:
+                    print(f"⏰ {service} servisi zaman aşımına uğradı")
+                except Exception as e:
+                    print(f"❌ {service} servisi hatası: {e}")
+            
+            if not success:
+                print("⚠️ Hiçbir ağ servisi yeniden başlatılamadı, manuel kontrol gerekebilir")
+                print("💡 Manuel olarak şu komutları deneyin:")
+                print("   sudo systemctl restart dhcpcd")
+                print("   sudo systemctl restart networking")
+                print("   sudo reboot")
+            else:
+                time.sleep(5)  # Servisin başlaması için bekle
+                print("✅ Ağ servisi yeniden başlatma tamamlandı")
+                
         except Exception as e:
             print(f"❌ Ağ servisi yeniden başlatma hatası: {e}")
-            raise
+            print("💡 Manuel olarak şu komutları deneyin:")
+            print("   sudo systemctl restart dhcpcd")
+            print("   sudo reboot")
     
     def check_ip_assignment(self):
         """IP ataması yapılıp yapılmadığını kontrol et"""

@@ -1014,16 +1014,18 @@ def save_ip_config():
         if success:
             # IP ataması yap
             try:
-                import subprocess
-                result = subprocess.run([
-                    'python', 'ip_manager.py', 'update',
-                    data['ip_address'],
-                    data.get('subnet_mask', '255.255.255.0'),
-                    data.get('gateway', ''),
-                    data.get('dns_servers', '8.8.8.8,8.8.4.4')
-                ], capture_output=True, text=True, timeout=30)
+                from ip_manager import IPManager
+                ip_manager = IPManager()
                 
-                if result.returncode == 0:
+                # IP konfigürasyonunu güncelle
+                update_success = ip_manager.update_ip_config(
+                    ip_address=data['ip_address'],
+                    subnet_mask=data.get('subnet_mask', '255.255.255.0'),
+                    gateway=data.get('gateway', ''),
+                    dns_servers=data.get('dns_servers', '8.8.8.8,8.8.4.4')
+                )
+                
+                if update_success:
                     return jsonify({
                         'success': True,
                         'message': 'IP konfigürasyonu başarıyla kaydedildi ve uygulandı'
@@ -1031,12 +1033,14 @@ def save_ip_config():
                 else:
                     return jsonify({
                         'success': False,
-                        'message': f'IP ataması başarısız: {result.stderr}'
+                        'message': 'IP ataması başarısız. Manuel olarak yeniden başlatma gerekebilir.'
                     }), 500
+                    
             except Exception as e:
+                print(f"IP ataması hatası: {e}")
                 return jsonify({
                     'success': False,
-                    'message': f'IP ataması hatası: {str(e)}'
+                    'message': f'IP ataması hatası: {str(e)}. Manuel olarak yeniden başlatma gerekebilir.'
                 }), 500
         else:
             return jsonify({
@@ -1081,9 +1085,9 @@ def send_manual_set_command():
         arm = data.get('arm')
         slave_str = data.get('slave', '0')  # String olarak al
         
-        # String'i hex olarak parse et (14 -> 0x14)
+        # String'i decimal olarak parse et (14 -> 14)
         try:
-            slave = int(slave_str, 16) if slave_str.startswith('0x') else int(slave_str)
+            slave = int(slave_str)
         except ValueError:
             slave = 0
         
