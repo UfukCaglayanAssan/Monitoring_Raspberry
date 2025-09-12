@@ -16,11 +16,13 @@ class InterfaceIPSettingsPage {
     }
 
     bindEvents() {
-        // Form submit
-        this.form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.saveConfig();
-        });
+        // Save IP config button
+        const saveButton = document.getElementById('saveIpConfig');
+        if (saveButton) {
+            saveButton.addEventListener('click', () => {
+                this.saveConfig();
+            });
+        }
 
         // Test connection
         this.testButton.addEventListener('click', () => {

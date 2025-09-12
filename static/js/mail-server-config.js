@@ -13,11 +13,13 @@ class MailServerConfigPage {
     }
 
     bindEvents() {
-        // Form submit
-        this.form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.saveConfig();
-        });
+        // Save mail config button
+        const saveButton = document.getElementById('saveMailConfig');
+        if (saveButton) {
+            saveButton.addEventListener('click', () => {
+                this.saveConfig();
+            });
+        }
 
         // Test connection
         this.testButton.addEventListener('click', () => {
