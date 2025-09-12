@@ -236,6 +236,5 @@ class InterfaceIPSettingsPage {
 }
 
 // Sayfa yüklendiğinde başlat
-document.addEventListener('DOMContentLoaded', () => {
-    new InterfaceIPSettingsPage();
-});
+console.log('🔧 InterfaceIPSettingsPage.js yüklendi, otomatik init başlatılıyor...');
+new InterfaceIPSettingsPage();

@@ -189,6 +189,5 @@ class MailServerConfigPage {
 }
 
 // Sayfa yüklendiğinde başlat
-document.addEventListener('DOMContentLoaded', () => {
-    new MailServerConfigPage();
-});
+console.log('🔧 MailServerConfigPage.js yüklendi, otomatik init başlatılıyor...');
+new MailServerConfigPage();
