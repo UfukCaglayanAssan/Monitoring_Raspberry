@@ -986,12 +986,14 @@ def get_ip_config():
 def save_ip_config():
     """IP konfigürasyonunu kaydet"""
     try:
+        print(f"🔄 IP konfigürasyonu kaydediliyor... {request.get_json()}")
         data = request.get_json()
         
         # Gerekli alanları kontrol et
         required_fields = ['ip_address']
         for field in required_fields:
             if field not in data or not data[field]:
+                print(f"❌ Eksik alan: {field}")
                 return jsonify({
                     'success': False,
                     'message': f'{field} alanı zorunludur'
@@ -1009,14 +1011,18 @@ def save_ip_config():
                     is_active=True
                 )
         
+        print("💾 Veritabanına kaydediliyor...")
         success = db_operation_with_retry(save_config)
+        print(f"✅ Veritabanı kayıt sonucu: {success}")
         
         if success:
             # IP ataması yap
             try:
+                print("🌐 IP Manager başlatılıyor...")
                 from ip_manager import IPManager
                 ip_manager = IPManager()
                 
+                print("🔄 IP konfigürasyonu güncelleniyor...")
                 # IP konfigürasyonunu güncelle
                 update_success = ip_manager.update_ip_config(
                     ip_address=data['ip_address'],
@@ -1024,6 +1030,7 @@ def save_ip_config():
                     gateway=data.get('gateway', ''),
                     dns_servers=data.get('dns_servers', '8.8.8.8,8.8.4.4')
                 )
+                print(f"✅ IP güncelleme sonucu: {update_success}")
                 
                 if update_success:
                     return jsonify({
@@ -1049,9 +1056,12 @@ def save_ip_config():
             }), 500
             
     except Exception as e:
+        print(f"❌ IP konfigürasyonu kaydedilirken hata: {e}")
+        import traceback
+        print(f"❌ Detaylı hata: {traceback.format_exc()}")
         return jsonify({
             'success': False,
-            'message': str(e)
+            'message': f'IP konfigürasyonu kaydedilirken hata: {str(e)}'
         }), 500
 
 @app.route('/api/current-ip', methods=['GET'])
