@@ -207,10 +207,12 @@ class InterfaceIPSettingsPage {
 
     validateForm() {
         const ipAddress = document.getElementById('ipAddress').value;
-        const submitButton = this.form.querySelector('button[type="submit"]');
+        const saveButton = document.getElementById('saveIpConfig');
         
         const isValid = ipAddress.trim() !== '' && this.isValidIP(ipAddress);
-        submitButton.disabled = !isValid;
+        if (saveButton) {
+            saveButton.disabled = !isValid;
+        }
     }
 
     updateStatus(type, text) {

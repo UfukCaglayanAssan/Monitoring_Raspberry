@@ -160,10 +160,12 @@ class MailServerConfigPage {
     validateForm() {
         const smtpServer = document.getElementById('smtpServer').value;
         const smtpPort = document.getElementById('smtpPort').value;
-        const submitButton = this.form.querySelector('button[type="submit"]');
+        const saveButton = document.getElementById('saveMailConfig');
         
         const isValid = smtpServer.trim() !== '' && smtpPort.trim() !== '';
-        submitButton.disabled = !isValid;
+        if (saveButton) {
+            saveButton.disabled = !isValid;
+        }
     }
 
     updateStatus(type, text) {
