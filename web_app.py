@@ -932,7 +932,7 @@ def save_mail_server_config():
         
         def save_config():
             db_instance = get_db()
-            with db_write_lock:
+            with db_lock:
                 return db_instance.save_mail_server_config(
                     smtp_server=data['smtp_server'],
                     smtp_port=int(data['smtp_port']),
@@ -1001,7 +1001,7 @@ def save_ip_config():
         
         def save_config():
             db_instance = get_db()
-            with db_write_lock:
+            with db_lock:
                 return db_instance.save_ip_config(
                     ip_address=data['ip_address'],
                     subnet_mask=data.get('subnet_mask', '255.255.255.0'),
