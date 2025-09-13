@@ -593,6 +593,9 @@ def db_worker():
                                 'value': soc_value,
                                 'timestamp': get_period_timestamp()
                             }
+                        print(f"RAM'e kaydedildi: Arm={arm_value}, k={k_value}, dtype={dtype}, value={salt_data}")
+                        if k_value != 2:
+                            print(f"RAM'e kaydedildi: Arm={arm_value}, k={k_value}, dtype=11, value={soc_value}")
                     
                     # Alarm kontrolü
                     battery_num = k_value - 2 if k_value > 2 else 0  # k=2 -> 0 (kol), k=3+ -> batarya numarası
@@ -2124,35 +2127,67 @@ def snmp_server():
                 elif oid == "1.3.6.5.10.0":  # arm4SlaveCount
                     return self.getSyntax().clone(str(arm_slave_counts_ram.get(4, 0)))
                 else:
-                    # Batarya verileri - 1.3.6.5.10.arm.k.dtype.0
-                    if oid.startswith("1.3.6.5.10."):
+                    # Kol verileri - 1.3.6.1.4.1.1001.arm.dtype veya 1.3.6.1.4.1.1001.arm.dtype.0
+                    if oid.startswith("1.3.6.1.4.1.1001."):
                         parts = oid.split('.')
-                        if len(parts) >= 8:
-                            arm = int(parts[5])
-                            k = int(parts[6])
-                            dtype = int(parts[7])
+                        if len(parts) >= 8:  # En az 8 parça olmalı
+                            arm = int(parts[7])
+                            dtype = int(parts[8])
                             
                             with data_lock:
-                                if arm in battery_data_ram and k in battery_data_ram[arm]:
-                                    value = battery_data_ram[arm][k].get(dtype, 0)
+                                if arm in battery_data_ram and 2 in battery_data_ram[arm]:
+                                    value = battery_data_ram[arm][2].get(dtype, 0)
                                     return self.getSyntax().clone(str(value))
                                 else:
                                     return self.getSyntax().clone("0")
                     
-                    # Alarm verileri - 1.3.6.5.7.arm.battery.alarm_type
-                    elif oid.startswith("1.3.6.5.7."):
+                    # Batarya verileri - 1.3.6.1.4.1.1001.arm.5.battery.dtype veya 1.3.6.1.4.1.1001.arm.5.battery.dtype.0
+                    elif oid.startswith("1.3.6.1.4.1.1001."):
                         parts = oid.split('.')
-                        if len(parts) >= 6:
-                            arm = int(parts[5])
-                            battery = int(parts[6])
-                            alarm_type = int(parts[7])
-                            
-                            with data_lock:
-                                if arm in alarm_ram and battery in alarm_ram[arm]:
-                                    alarm_status = alarm_ram[arm][battery].get(alarm_type, False)
-                                    return self.getSyntax().clone("1" if alarm_status else "0")
-                                else:
-                                    return self.getSyntax().clone("0")
+                        if len(parts) >= 10:  # En az 10 parça olmalı
+                            arm = int(parts[7])
+                            if parts[8] == "5":  # Batarya verileri
+                                battery = int(parts[9])
+                                dtype = int(parts[10])
+                                
+                                with data_lock:
+                                    if arm in battery_data_ram and battery in battery_data_ram[arm]:
+                                        value = battery_data_ram[arm][battery].get(dtype, 0)
+                                        return self.getSyntax().clone(str(value))
+                                    else:
+                                        return self.getSyntax().clone("0")
+                    
+                    # Status verileri - 1.3.6.1.4.1.1001.arm.6.battery veya 1.3.6.1.4.1.1001.arm.6.battery.0
+                    elif oid.startswith("1.3.6.1.4.1.1001."):
+                        parts = oid.split('.')
+                        if len(parts) >= 9:  # En az 9 parça olmalı
+                            arm = int(parts[7])
+                            if parts[8] == "6":  # Status verileri
+                                battery = int(parts[9])
+                                
+                                with data_lock:
+                                    if arm in battery_data_ram and battery in battery_data_ram[arm]:
+                                        # Status: veri varsa 1, yoksa 0
+                                        has_data = len(battery_data_ram[arm][battery]) > 0
+                                        return self.getSyntax().clone("1" if has_data else "0")
+                                    else:
+                                        return self.getSyntax().clone("0")
+                    
+                    # Alarm verileri - 1.3.6.1.4.1.1001.arm.7.battery.alarm_type veya 1.3.6.1.4.1.1001.arm.7.battery.alarm_type.0
+                    elif oid.startswith("1.3.6.1.4.1.1001."):
+                        parts = oid.split('.')
+                        if len(parts) >= 10:  # En az 10 parça olmalı
+                            arm = int(parts[7])
+                            if parts[8] == "7":  # Alarm verileri
+                                battery = int(parts[9])
+                                alarm_type = int(parts[10])
+                                
+                                with data_lock:
+                                    if arm in alarm_ram and battery in alarm_ram[arm]:
+                                        alarm_status = alarm_ram[arm][battery].get(alarm_type, False)
+                                        return self.getSyntax().clone("1" if alarm_status else "0")
+                                    else:
+                                        return self.getSyntax().clone("0")
                     
                     return self.getSyntax().clone("0")
         
@@ -2249,22 +2284,37 @@ def snmp_server():
         print("1.3.6.5.9.0  - Kol 3 batarya sayısı")
         print("1.3.6.5.10.0 - Kol 4 batarya sayısı")
         print("")
+        print("Kol verileri:")
+        print("1.3.6.1.4.1.1001.1.1 - Kol 1 Akım")
+        print("1.3.6.1.4.1.1001.1.2 - Kol 1 Nem")
+        print("1.3.6.1.4.1.1001.3.3 - Kol 3 RIMT")
+        print("")
         print("Batarya verileri:")
-        print("1.3.6.5.10.3.2.10.0 - Kol 3 Batarya 2 Gerilim")
-        print("1.3.6.5.10.3.2.11.0 - Kol 3 Batarya 2 SOC")
-        print("1.3.6.5.10.3.2.126.0 - Kol 3 Batarya 2 SOH")
+        print("1.3.6.1.4.1.1001.1.5.1.10 - Kol 1 Batarya 1 Gerilim")
+        print("1.3.6.1.4.1.1001.1.5.1.11 - Kol 1 Batarya 1 SOC")
+        print("1.3.6.1.4.1.1001.3.5.2.126 - Kol 3 Batarya 2 SOH")
+        print("")
+        print("Status verileri:")
+        print("1.3.6.1.4.1.1001.1.6.0 - Kol 1 Status")
+        print("1.3.6.1.4.1.1001.1.6.1 - Kol 1 Batarya 1 Status")
+        print("1.3.6.1.4.1.1001.3.6.2 - Kol 3 Batarya 2 Status")
         print("")
         print("Alarm verileri:")
-        print("1.3.6.5.7.3.0.1 - Kol 3 Akım alarmı")
-        print("1.3.6.5.7.3.2.1 - Kol 3 Batarya 2 VoltageWarn alarmı")
-        print("1.3.6.5.7.3.2.2 - Kol 3 Batarya 2 LVoltageAlarm alarmı")
+        print("1.3.6.1.4.1.1001.1.7.0.1 - Kol 1 Akım alarmı")
+        print("1.3.6.1.4.1.1001.1.7.0.2 - Kol 1 Nem alarmı")
+        print("1.3.6.1.4.1.1001.1.7.1.1 - Kol 1 Batarya 1 VoltageWarn alarmı")
+        print("1.3.6.1.4.1.1001.1.7.1.2 - Kol 1 Batarya 1 LVoltageAlarm alarmı")
+        print("1.3.6.1.4.1.1001.3.7.2.1 - Kol 3 Batarya 2 VoltageWarn alarmı")
         print("=" * 50)
         print("SNMP Test komutları:")
         print("snmpget -v2c -c public localhost:161 1.3.6.5.2.0")
         print("snmpget -v2c -c public localhost:161 1.3.6.5.7.0")
-        print("snmpget -v2c -c public localhost:161 1.3.6.5.10.3.2.10.0")
-        print("snmpget -v2c -c public localhost:161 1.3.6.5.7.3.0.1")
-        print("snmpwalk -v2c -c public localhost:161 1.3.6.5")
+        print("snmpget -v2c -c public localhost:161 1.3.6.1.4.1.1001.1.1")
+        print("snmpget -v2c -c public localhost:161 1.3.6.1.4.1.1001.1.5.1.10")
+        print("snmpget -v2c -c public localhost:161 1.3.6.1.4.1.1001.1.6.1")
+        print("snmpget -v2c -c public localhost:161 1.3.6.1.4.1.1001.1.7.0.1")
+        print("snmpget -v2c -c public localhost:161 1.3.6.1.4.1.1001.1.7.1.1")
+        print("snmpwalk -v2c -c public localhost:161 1.3.6.1.4.1.1001")
         print("=" * 50)
         
         # SNMP sunucu çalıştır
