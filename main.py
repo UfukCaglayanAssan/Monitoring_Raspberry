@@ -500,10 +500,10 @@ def db_worker():
                         alarm_processor.process_period_end()
                         # Reset system sinyali gönder (1 saat aralık kontrolü ile)
                         if send_reset_system_signal():
-                        # Yeni periyot başlat
-                        reset_period()
-                        get_period_timestamp()
-                else:
+                            # Yeni periyot başlat
+                            reset_period()
+                            get_period_timestamp()
+                        else:
                             print("⏰ Reset system gönderilemedi, periyot devam ediyor")
                         
                 elif status_value == 1:
