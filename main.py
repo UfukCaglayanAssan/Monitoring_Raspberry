@@ -1762,17 +1762,20 @@ def snmp_server():
         config.add_transport(
             snmp_engine,
             udp.DOMAIN_NAME,
-            udp.UdpTransport().openServerMode(('0.0.0.0', 161))
+            udp.UdpTransport().open_server_mode(('0.0.0.0', 161))
         )
         
         # SNMPv2c community
-        config.addV1System(snmp_engine, 'my-area', 'public')
+        config.add_v1_system(snmp_engine, 'my-area', 'public')
         
-        # Context
-        config.addContext(snmp_engine, '')
+        # VACM ayarları
+        config.add_vacm_user(snmp_engine, 2, 'my-area', 'noAuthNoPriv', (1, 3, 6, 5))
+        
+        # SNMP Context
+        snmp_context = context.SnmpContext(snmp_engine)
         
         # SNMP Agent
-        snmp_agent = cmdrsp.GetCommandResponder(snmp_engine, context.SnmpContext(snmp_engine))
+        snmp_agent = cmdrsp.GetCommandResponder(snmp_engine, snmp_context)
         
         print("✅ SNMP sunucu başlatıldı - Port: 161")
         
