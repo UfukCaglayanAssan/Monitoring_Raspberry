@@ -1749,13 +1749,19 @@ def snmp_server():
     print("SNMP sunucu başlatılıyor...")
     
     try:
+        import asyncio
+        
+        # Yeni event loop oluştur
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
         # SNMP Engine oluştur
         snmp_engine = engine.SnmpEngine()
         
         # UDP transport
-        config.addTransport(
+        config.add_transport(
             snmp_engine,
-            udp.domainName,
+            udp.DOMAIN_NAME,
             udp.UdpTransport().openServerMode(('0.0.0.0', 161))
         )
         

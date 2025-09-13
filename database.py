@@ -692,6 +692,30 @@ class BatteryDatabase:
                     print("✅ reset_system_log tablosu oluşturuldu")
                 else:
                     print("✅ reset_system_log tablosu mevcut")
+                
+                # trap_targets tablosu var mı kontrol et
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='trap_targets'
+                """)
+                
+                if not cursor.fetchone():
+                    print("🔄 trap_targets tablosu eksik, oluşturuluyor...")
+                    cursor.execute('''
+                        CREATE TABLE IF NOT EXISTS trap_targets (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            name TEXT NOT NULL,
+                            ip_address TEXT NOT NULL,
+                            port INTEGER DEFAULT 162,
+                            is_active BOOLEAN DEFAULT 1,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )
+                    ''')
+                    conn.commit()
+                    print("✅ trap_targets tablosu oluşturuldu")
+                else:
+                    print("✅ trap_targets tablosu mevcut")
                     
         except Exception as e:
             print(f"⚠️ Eksik tablo kontrol hatası: {e}")
