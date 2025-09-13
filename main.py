@@ -650,7 +650,7 @@ def db_worker():
                         
                         # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                     else:  # RIMT verisi
-                    record = {
+                        record = {
                         "Arm": arm_value,
                         "k": k_value,
                             "Dtype": 12,  # RIMT=12
@@ -658,9 +658,9 @@ def db_worker():
                         "timestamp": get_period_timestamp()
                     }
                     batch.append(record)
-                
-                        # RAM'e yaz (Modbus/SNMP için)
-                        with data_lock:
+                    
+                    # RAM'e yaz (Modbus/SNMP için)
+                    with data_lock:
                             if arm_value not in battery_data_ram:
                                 battery_data_ram[arm_value] = {}
                             if k_value not in battery_data_ram[arm_value]:
