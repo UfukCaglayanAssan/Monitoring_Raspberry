@@ -1636,9 +1636,17 @@ def modbus_tcp_server():
     """Modbus TCP sunucu thread'i"""
     print("Modbus TCP sunucu başlatılıyor...")
     
-    # Modbus TCP sunucu kodu buraya gelecek
-    # (snmp/modbus-tcp-server.py'den kopyalanacak)
-    pass
+    try:
+        # Modbus TCP sunucu kodu buraya gelecek
+        # (snmp/modbus-tcp-server.py'den kopyalanacak)
+        print("Modbus TCP sunucu hazır, bağlantı bekleniyor...")
+        
+        # Placeholder - gerçek Modbus TCP server kodu eklenecek
+        while True:
+            time.sleep(1)
+            
+    except Exception as e:
+        print(f"Modbus TCP sunucu hatası: {e}")
 
 def get_snmp_data(oid):
     """SNMP OID'ine göre veri döndür"""
