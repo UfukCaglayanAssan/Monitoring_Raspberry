@@ -603,7 +603,7 @@ def db_worker():
                 
                 elif dtype == 11:  # RIMT veya Nem
                     if k_value == 2:  # Nem verisi
-                        print(f"*** VERİ ALGILANDI - Arm: {arm_value}, Nem: {salt_data}% ***")
+                        print(f"*** VERİ ALGILANDI - Arm: {arm_value}, Data: {salt_data}% ***")
                         record = {
                             "Arm": arm_value,
                             "k": k_value,
@@ -653,7 +653,7 @@ def db_worker():
                 
                 elif dtype == 12:  # SOH
                     if k_value == 2:  # Nem verisi (eski sistem)
-                        print(f"*** VERİ ALGILANDI - Arm: {arm_value}, Nem: {salt_data}% ***")
+                        print(f"*** VERİ ALGILANDI - Arm: {arm_value}, Data: {salt_data}% ***")
                         record = {
                             "Arm": arm_value,
                             "k": k_value,
@@ -1815,37 +1815,81 @@ def handle_read_input_registers(transaction_id, unit_id, start_address, quantity
 
 def get_dynamic_data_by_index(start_index, quantity):
     """Dinamik veri indeksine göre veri döndür"""
-    try:
-        print(f"DEBUG: get_dynamic_data_by_index start_index={start_index}, quantity={quantity}")
-        
+    with data_lock:
         result = []
-        current_index = start_index
+        current_index = start_index  # start_index'ten başla
         
-        # Armslavecounts'a göre sıralı veri oluştur
+        print(f"DEBUG: get_dynamic_data_by_index start={start_index}, quantity={quantity}")
+        print(f"DEBUG: arm_slave_counts_ram = {arm_slave_counts_ram}")
+        
+        # Aralık kontrolü
+        if start_index < 1001 or start_index > 4994:
+            print(f"DEBUG: Geçersiz aralık! start_index={start_index} (1001-4994 arası olmalı)")
+            return [0.0] * quantity
+        
+        # Hangi kol aralığında olduğunu belirle
+        if 1001 <= start_index <= 1994:
+            target_arm = 1
+            arm_start = 1001
+        elif 2001 <= start_index <= 2994:
+            target_arm = 2
+            arm_start = 2001
+        elif 3001 <= start_index <= 3994:
+            target_arm = 3
+            arm_start = 3001
+        elif 4001 <= start_index <= 4994:
+            target_arm = 4
+            arm_start = 4001
+        else:
+            print(f"DEBUG: Geçersiz aralık! start_index={start_index}")
+            return [0.0] * quantity
+        
+        print(f"DEBUG: Hedef kol: {target_arm}, aralık: {arm_start}-{arm_start+993}")
+        
+        # Sadece hedef kolu işle
         for arm in range(1, 5):  # Kol 1-4
-            if arm_slave_counts_ram.get(arm, 0) == 0:
-                continue  # Bu kolda batarya yok, atla
+            if arm != target_arm:
+                continue  # Sadece hedef kolu işle
                 
+            print(f"DEBUG: Kol {arm} işleniyor...")
+            print(f"DEBUG: battery_data_ram[{arm}] = {battery_data_ram.get(arm, 'YOK')}")
+            
             # Kol verileri (akım, nem, sıcaklık, sıcaklık2)
             for data_type in range(1, 5):
+                print(f"DEBUG: current_index={current_index}, start_index={start_index}, len(result)={len(result)}, quantity={quantity}")
                 if current_index >= start_index and len(result) < quantity:
-                    with data_lock:
-                        if arm in battery_data_ram:
-                            # Kol verilerini al
-                            if data_type == 1:  # Akım
-                                value = battery_data_ram[arm].get(1, 0)
-                            elif data_type == 2:  # Nem
-                                value = battery_data_ram[arm].get(2, 0)
-                            elif data_type == 3:  # Sıcaklık
-                                value = battery_data_ram[arm].get(3, 0)
-                            elif data_type == 4:  # Sıcaklık2
-                                value = battery_data_ram[arm].get(4, 0)
-                            else:
-                                value = 0
-                            
-                            result.append(float(value) if value else 0.0)
+                    print(f"DEBUG: IF BLOĞU GİRİLDİ!")
+                    print(f"DEBUG: get_battery_data_ram({arm}) çağrılıyor...")
+                    try:
+                        # data_lock zaten alınmış, direkt erişim
+                        arm_data = dict(battery_data_ram.get(arm, {}))
+                        print(f"DEBUG: arm_data = {arm_data}")
+                        print(f"DEBUG: arm_data type = {type(arm_data)}")
+                    except Exception as e:
+                        print(f"DEBUG: HATA! arm_data okuma hatası: {e}")
+                        arm_data = None
+                    if arm_data and 2 in arm_data:  # k=2 (kol verisi)
+                        print(f"DEBUG: k=2 verisi bulundu!")
+                        if data_type == 1:  # Akım
+                            value = arm_data[2].get(10, {}).get('value', 0)  # dtype=10 (A)
+                        elif data_type == 2:  # Nem
+                            value = arm_data[2].get(11, {}).get('value', 0)  # dtype=11 (B)
+                        elif data_type == 3:  # Sıcaklık
+                            value = arm_data[2].get(12, {}).get('value', 0)  # dtype=12 (C)
+                        elif data_type == 4:  # Sıcaklık2
+                            value = arm_data[2].get(13, {}).get('value', 0)  # dtype=13 (D)
                         else:
-                            result.append(0.0)
+                            value = 0
+                        result.append(float(value) if value else 0.0)
+                        print(f"DEBUG: current_index={current_index}, data_type={data_type}, value={value}")
+                    else:
+                        print(f"DEBUG: k=2 verisi bulunamadı!")
+                        result.append(0.0)
+                        print(f"DEBUG: current_index={current_index}, data_type={data_type}, value=0.0 (veri yok)")
+                else:
+                    print(f"DEBUG: IF BLOĞU GİRİLMEDİ!")
+                    result.append(0.0)
+                    print(f"DEBUG: current_index={current_index}, data_type={data_type}, value=0.0 (IF girmedi)")
                 current_index += 1
                 
                 if len(result) >= quantity:
@@ -1856,38 +1900,48 @@ def get_dynamic_data_by_index(start_index, quantity):
                 
             # Batarya verileri
             battery_count = arm_slave_counts_ram.get(arm, 0)
+            print(f"DEBUG: Kol {arm} batarya sayısı: {battery_count}")
             for battery_num in range(1, battery_count + 1):
-                # Her batarya için 7 veri tipi
-                for data_type in range(5, 12):  # 5-11 (gerilim, soc, rint, soh, ntc1, ntc2, ntc3)
-                    if current_index >= start_index and len(result) < quantity:
-                        with data_lock:
-                            if arm in battery_data_ram and battery_num in battery_data_ram[arm]:
-                                # Batarya verilerini al
-                                if data_type == 5:  # Gerilim
-                                    value = battery_data_ram[arm][battery_num].get(10, 0)
-                                elif data_type == 6:  # SOC
-                                    value = battery_data_ram[arm][battery_num].get(11, 0)
-                                elif data_type == 7:  # Rint
-                                    value = battery_data_ram[arm][battery_num].get(12, 0)
-                                elif data_type == 8:  # SOH
-                                    value = battery_data_ram[arm][battery_num].get(126, 0)
-                                elif data_type == 9:  # NTC1
-                                    value = battery_data_ram[arm][battery_num].get(13, 0)
-                                elif data_type == 10:  # NTC2
-                                    value = battery_data_ram[arm][battery_num].get(14, 0)
-                                elif data_type == 11:  # NTC3
-                                    value = battery_data_ram[arm][battery_num].get(15, 0)
-                                else:
-                                    value = 0
-                                
-                                result.append(float(value) if value else 0.0)
+                print(f"DEBUG: Batarya {battery_num} işleniyor...")
+                k_value = battery_num + 2  # k=3,4,5,6...
+                print(f"DEBUG: k_value = {k_value}")
+                # data_lock zaten alınmış, direkt erişim
+                arm_data = dict(battery_data_ram.get(arm, {}))
+                print(f"DEBUG: arm_data = {arm_data}")
+                if arm_data and k_value in arm_data:
+                    print(f"DEBUG: k={k_value} verisi bulundu!")
+                    # Her batarya için 7 veri tipi
+                    for data_type in range(5, 12):  # 5-11 (gerilim, soc, rint, soh, ntc1, ntc2, ntc3)
+                        print(f"DEBUG: current_index={current_index}, start_index={start_index}, len(result)={len(result)}, quantity={quantity}")
+                        if current_index >= start_index and len(result) < quantity:
+                            print(f"DEBUG: BATARYA IF BLOĞU GİRİLDİ!")
+                            if data_type == 5:  # Gerilim
+                                value = arm_data[k_value].get(10, {}).get('value', 0)  # dtype=10 (A)
+                            elif data_type == 6:  # SOC
+                                value = arm_data[k_value].get(15, {}).get('value', 0)  # dtype=15 (F)
+                            elif data_type == 7:  # Rint
+                                value = arm_data[k_value].get(11, {}).get('value', 0)  # dtype=11 (B)
+                            elif data_type == 8:  # SOH
+                                value = arm_data[k_value].get(126, {}).get('value', 0)  # dtype=126 (SOH)
+                            elif data_type == 9:  # NTC1
+                                value = arm_data[k_value].get(12, {}).get('value', 0)  # dtype=12 (C)
+                            elif data_type == 10:  # NTC2
+                                value = arm_data[k_value].get(13, {}).get('value', 0)  # dtype=13 (D)
+                            elif data_type == 11:  # NTC3
+                                value = arm_data[k_value].get(14, {}).get('value', 0)  # dtype=14 (E)
                             else:
-                                result.append(0.0)
-                    current_index += 1
-                    
-                    if len(result) >= quantity:
-                        break
+                                value = 0
+                            result.append(float(value) if value else 0.0)
+                            print(f"DEBUG: current_index={current_index}, arm={arm}, bat={battery_num}, data_type={data_type}, value={value}")
+                        else:
+                            print(f"DEBUG: BATARYA IF BLOĞU GİRİLMEDİ!")
+                        current_index += 1
                         
+                        if len(result) >= quantity:
+                            break
+                else:
+                    print(f"DEBUG: k={k_value} verisi bulunamadı!")
+                            
                 if len(result) >= quantity:
                     break
                     
@@ -1896,10 +1950,6 @@ def get_dynamic_data_by_index(start_index, quantity):
                 
         print(f"DEBUG: Sonuç: {result}")
         return result
-        
-    except Exception as e:
-        print(f"get_dynamic_data_by_index hatası: {e}")
-        return []
 
 def get_alarm_data_by_index(start_address, quantity):
     """Alarm verilerini indekse göre döndür"""
