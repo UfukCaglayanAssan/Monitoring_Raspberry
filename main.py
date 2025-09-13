@@ -1638,16 +1638,321 @@ def modbus_tcp_server():
     print("Modbus TCP sunucu başlatılıyor...")
     
     try:
-        # Modbus TCP sunucu kodu buraya gelecek
-        # (snmp/modbus-tcp-server.py'den kopyalanacak)
-        print("Modbus TCP sunucu hazır, bağlantı bekleniyor...")
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server_socket.bind(('0.0.0.0', 1502))
+        server_socket.listen(5)
         
-        # Placeholder - gerçek Modbus TCP server kodu eklenecek
+        print(f"Modbus TCP Server başlatıldı: 0.0.0.0:1502")
+        
         while True:
-            time.sleep(1)
+            try:
+                client_socket, client_address = server_socket.accept()
+                print(f"Yeni bağlantı: {client_address}")
+                
+                # Her bağlantı için ayrı thread
+                client_thread = threading.Thread(
+                    target=handle_modbus_client,
+                    args=(client_socket, client_address),
+                    daemon=True
+                )
+                client_thread.start()
+                
+            except Exception as e:
+                print(f"Modbus TCP server hatası: {e}")
+                continue
+                
+    except Exception as e:
+        print(f"Modbus TCP server başlatma hatası: {e}")
+
+def handle_modbus_client(client_socket, client_address):
+    """Modbus TCP client isteklerini işle"""
+    try:
+        while True:
+            # Modbus TCP frame oku
+            data = client_socket.recv(1024)
+            if not data:
+                break
+            
+            if len(data) < 8:  # Minimum Modbus TCP frame boyutu
+                continue
+            
+            # Modbus TCP frame parse et
+            transaction_id = struct.unpack('>H', data[0:2])[0]
+            protocol_id = struct.unpack('>H', data[2:4])[0]
+            length = struct.unpack('>H', data[4:6])[0]
+            unit_id = data[6]
+            function_code = data[7]
+            
+            print(f"Modbus TCP isteği: Transaction={transaction_id}, Function={function_code}, Unit={unit_id}")
+            
+            # Function code 3 (Read Holding Registers) işle
+            if function_code == 3:
+                if len(data) >= 12:
+                    start_address = struct.unpack('>H', data[8:10])[0]
+                    quantity = struct.unpack('>H', data[10:12])[0]
+                    
+                    response = handle_read_holding_registers(transaction_id, unit_id, start_address, quantity)
+                    if response:
+                        client_socket.send(response)
+            
+            # Function code 4 (Read Input Registers) işle
+            elif function_code == 4:
+                if len(data) >= 12:
+                    start_address = struct.unpack('>H', data[8:10])[0]
+                    quantity = struct.unpack('>H', data[10:12])[0]
+                    
+                    response = handle_read_input_registers(transaction_id, unit_id, start_address, quantity)
+                    if response:
+                        client_socket.send(response)
             
     except Exception as e:
-        print(f"Modbus TCP sunucu hatası: {e}")
+        print(f"Client {client_address} işleme hatası: {e}")
+    finally:
+        client_socket.close()
+        print(f"Client {client_address} bağlantısı kapatıldı")
+
+def handle_read_holding_registers(transaction_id, unit_id, start_address, quantity):
+    """Read Holding Registers (Function Code 3) işle"""
+    try:
+        print(f"DEBUG: start_address={start_address}, quantity={quantity}")
+        
+        # Batarya verilerini hazırla
+        registers = []
+        
+        # Start address'e göre veri döndür
+        if start_address == 0:  # Armslavecounts verileri
+            # Register 0'dan başlayarak armslavecounts doldur
+            registers = []
+            with data_lock:
+                for i in range(quantity):
+                    if i < 4:  # İlk 4 register armslavecounts
+                        arm_num = i + 1
+                        registers.append(float(arm_slave_counts_ram.get(arm_num, 0)))
+                    else:
+                        registers.append(0.0)  # Boş register
+            print(f"DEBUG: Armslavecounts verileri: {registers}")
+        elif 5001 <= start_address <= 5844:  # Alarm verileri
+            # Alarm verilerini döndür
+            registers = get_alarm_data_by_index(start_address, quantity)
+        elif start_address >= 1:  # Dinamik veri okuma
+            # Dinamik veri sistemi kullan
+            registers = get_dynamic_data_by_index(start_address, quantity)
+        
+        # Modbus TCP response hazırla
+        if registers:
+            # Response header
+            response = struct.pack('>H', transaction_id)  # Transaction ID
+            response += struct.pack('>H', 0)  # Protocol ID
+            response += struct.pack('>H', 2 + 1 + 2 * len(registers))  # Length
+            response += struct.pack('B', unit_id)  # Unit ID
+            response += struct.pack('B', 3)  # Function Code
+            
+            # Byte count
+            response += struct.pack('B', 2 * len(registers))
+            
+            # Register values
+            for value in registers:
+                # Float'ı 16-bit integer'a çevir (basit scaling)
+                int_value = int(value * 100)  # 2 decimal place precision
+                response += struct.pack('>H', int_value)
+            
+            print(f"DEBUG: Response hazırlandı, {len(registers)} register")
+            return response
+        
+        return None
+        
+    except Exception as e:
+        print(f"Read holding registers hatası: {e}")
+        return None
+
+def handle_read_input_registers(transaction_id, unit_id, start_address, quantity):
+    """Read Input Registers (Function Code 4) işle"""
+    try:
+        print(f"DEBUG: Input registers start_address={start_address}, quantity={quantity}")
+        
+        # Input registers için de aynı mantık
+        registers = []
+        
+        if start_address == 0:  # Armslavecounts verileri
+            with data_lock:
+                for i in range(quantity):
+                    if i < 4:
+                        arm_num = i + 1
+                        registers.append(float(arm_slave_counts_ram.get(arm_num, 0)))
+                    else:
+                        registers.append(0.0)
+        elif 5001 <= start_address <= 5844:  # Alarm verileri
+            registers = get_alarm_data_by_index(start_address, quantity)
+        elif start_address >= 1:
+            registers = get_dynamic_data_by_index(start_address, quantity)
+        
+        # Modbus TCP response hazırla
+        if registers:
+            response = struct.pack('>H', transaction_id)
+            response += struct.pack('>H', 0)
+            response += struct.pack('>H', 2 + 1 + 2 * len(registers))
+            response += struct.pack('B', unit_id)
+            response += struct.pack('B', 4)  # Function Code 4
+            
+            response += struct.pack('B', 2 * len(registers))
+            
+            for value in registers:
+                int_value = int(value * 100)
+                response += struct.pack('>H', int_value)
+            
+            print(f"DEBUG: Input registers response hazırlandı, {len(registers)} register")
+            return response
+        
+        return None
+        
+    except Exception as e:
+        print(f"Read input registers hatası: {e}")
+        return None
+
+def get_dynamic_data_by_index(start_index, quantity):
+    """Dinamik veri indeksine göre veri döndür"""
+    try:
+        print(f"DEBUG: get_dynamic_data_by_index start_index={start_index}, quantity={quantity}")
+        
+        result = []
+        current_index = start_index
+        
+        # Armslavecounts'a göre sıralı veri oluştur
+        for arm in range(1, 5):  # Kol 1-4
+            if arm_slave_counts_ram.get(arm, 0) == 0:
+                continue  # Bu kolda batarya yok, atla
+                
+            # Kol verileri (akım, nem, sıcaklık, sıcaklık2)
+            for data_type in range(1, 5):
+                if current_index >= start_index and len(result) < quantity:
+                    with data_lock:
+                        if arm in battery_data_ram:
+                            # Kol verilerini al
+                            if data_type == 1:  # Akım
+                                value = battery_data_ram[arm].get(1, 0)
+                            elif data_type == 2:  # Nem
+                                value = battery_data_ram[arm].get(2, 0)
+                            elif data_type == 3:  # Sıcaklık
+                                value = battery_data_ram[arm].get(3, 0)
+                            elif data_type == 4:  # Sıcaklık2
+                                value = battery_data_ram[arm].get(4, 0)
+                            else:
+                                value = 0
+                            
+                            result.append(float(value) if value else 0.0)
+                        else:
+                            result.append(0.0)
+                current_index += 1
+                
+                if len(result) >= quantity:
+                    break
+                    
+            if len(result) >= quantity:
+                break
+                
+            # Batarya verileri
+            battery_count = arm_slave_counts_ram.get(arm, 0)
+            for battery_num in range(1, battery_count + 1):
+                # Her batarya için 7 veri tipi
+                for data_type in range(5, 12):  # 5-11 (gerilim, soc, rint, soh, ntc1, ntc2, ntc3)
+                    if current_index >= start_index and len(result) < quantity:
+                        with data_lock:
+                            if arm in battery_data_ram and battery_num in battery_data_ram[arm]:
+                                # Batarya verilerini al
+                                if data_type == 5:  # Gerilim
+                                    value = battery_data_ram[arm][battery_num].get(10, 0)
+                                elif data_type == 6:  # SOC
+                                    value = battery_data_ram[arm][battery_num].get(11, 0)
+                                elif data_type == 7:  # Rint
+                                    value = battery_data_ram[arm][battery_num].get(12, 0)
+                                elif data_type == 8:  # SOH
+                                    value = battery_data_ram[arm][battery_num].get(126, 0)
+                                elif data_type == 9:  # NTC1
+                                    value = battery_data_ram[arm][battery_num].get(13, 0)
+                                elif data_type == 10:  # NTC2
+                                    value = battery_data_ram[arm][battery_num].get(14, 0)
+                                elif data_type == 11:  # NTC3
+                                    value = battery_data_ram[arm][battery_num].get(15, 0)
+                                else:
+                                    value = 0
+                                
+                                result.append(float(value) if value else 0.0)
+                            else:
+                                result.append(0.0)
+                    current_index += 1
+                    
+                    if len(result) >= quantity:
+                        break
+                        
+                if len(result) >= quantity:
+                    break
+                    
+            if len(result) >= quantity:
+                break
+                
+        print(f"DEBUG: Sonuç: {result}")
+        return result
+        
+    except Exception as e:
+        print(f"get_dynamic_data_by_index hatası: {e}")
+        return []
+
+def get_alarm_data_by_index(start_address, quantity):
+    """Alarm verilerini indekse göre döndür"""
+    try:
+        print(f"DEBUG: get_alarm_data_by_index start_address={start_address}, quantity={quantity}")
+        
+        result = []
+        current_address = start_address
+        
+        # Alarm adres aralıkları: 5001-5844
+        # 5001-5004: Kol 1 alarmları (akım, nem, ortam sıcaklığı, kol sıcaklığı)
+        # 5005-5844: Batarya alarmları (7 alarm türü x 120 batarya x 4 kol)
+        
+        for i in range(quantity):
+            if current_address >= 5001 and current_address <= 5844:
+                # Kol alarmları (5001-5004)
+                if 5001 <= current_address <= 5004:
+                    arm = 1
+                    alarm_type = current_address - 5000  # 1, 2, 3, 4
+                    
+                    with data_lock:
+                        if arm in alarm_ram and 0 in alarm_ram[arm]:
+                            alarm_status = alarm_ram[arm][0].get(alarm_type, False)
+                            result.append(1.0 if alarm_status else 0.0)
+                        else:
+                            result.append(0.0)
+                
+                # Batarya alarmları (5005-5844)
+                elif 5005 <= current_address <= 5844:
+                    # Hesaplama: (current_address - 5005) / 7 = batarya numarası
+                    battery_offset = current_address - 5005
+                    battery_num = (battery_offset // 7) + 1
+                    alarm_type = (battery_offset % 7) + 1
+                    
+                    # Hangi kola ait olduğunu hesapla
+                    arm = 1  # Basit hesaplama, gerçekte daha karmaşık olabilir
+                    
+                    with data_lock:
+                        if arm in alarm_ram and battery_num in alarm_ram[arm]:
+                            alarm_status = alarm_ram[arm][battery_num].get(alarm_type, False)
+                            result.append(1.0 if alarm_status else 0.0)
+                        else:
+                            result.append(0.0)
+                else:
+                    result.append(0.0)
+            else:
+                result.append(0.0)
+            
+            current_address += 1
+            
+        print(f"DEBUG: Alarm sonuç: {result}")
+        return result
+        
+    except Exception as e:
+        print(f"get_alarm_data_by_index hatası: {e}")
+        return []
 
 def get_snmp_data(oid):
     """SNMP OID'ine göre veri döndür"""
@@ -1774,16 +2079,205 @@ def snmp_server():
         # SNMP Context
         snmp_context = context.SnmpContext(snmp_engine)
         
+        # MIB Builder
+        mib_builder = snmp_context.get_mib_instrum().get_mib_builder()
+        
+        # MIB Objects oluştur
+        MibScalar, MibScalarInstance = mib_builder.import_symbols(
+            "SNMPv2-SMI", "MibScalar", "MibScalarInstance"
+        )
+        
+        class BatteryMibScalarInstance(MibScalarInstance):
+            """Battery MIB Instance"""
+            def getValue(self, name, **context):
+                oid = '.'.join([str(x) for x in name])
+                print(f"🔍 SNMP OID sorgusu: {oid}")
+                
+                # Sistem bilgileri
+                if oid == "1.3.6.5.1.0":
+                    return self.getSyntax().clone(
+                        f"Python {sys.version} running on a {sys.platform} platform"
+                    )
+                elif oid == "1.3.6.5.2.0":  # totalBatteryCount
+                    total_count = sum(arm_slave_counts_ram.values())
+                    return self.getSyntax().clone(str(total_count))
+                elif oid == "1.3.6.5.3.0":  # totalArmCount
+                    active_arms = sum(1 for count in arm_slave_counts_ram.values() if count > 0)
+                    return self.getSyntax().clone(str(active_arms))
+                elif oid == "1.3.6.5.4.0":  # systemStatus
+                    return self.getSyntax().clone("1")
+                elif oid == "1.3.6.5.5.0":  # lastUpdateTime
+                    return self.getSyntax().clone(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                elif oid == "1.3.6.5.6.0":  # dataCount
+                    total_data = 0
+                    with data_lock:
+                        for arm_data in battery_data_ram.values():
+                            for battery_data in arm_data.values():
+                                total_data += len(battery_data)
+                    return self.getSyntax().clone(str(total_data))
+                elif oid == "1.3.6.5.7.0":  # arm1SlaveCount
+                    return self.getSyntax().clone(str(arm_slave_counts_ram.get(1, 0)))
+                elif oid == "1.3.6.5.8.0":  # arm2SlaveCount
+                    return self.getSyntax().clone(str(arm_slave_counts_ram.get(2, 0)))
+                elif oid == "1.3.6.5.9.0":  # arm3SlaveCount
+                    return self.getSyntax().clone(str(arm_slave_counts_ram.get(3, 0)))
+                elif oid == "1.3.6.5.10.0":  # arm4SlaveCount
+                    return self.getSyntax().clone(str(arm_slave_counts_ram.get(4, 0)))
+                else:
+                    # Batarya verileri - 1.3.6.5.10.arm.k.dtype.0
+                    if oid.startswith("1.3.6.5.10."):
+                        parts = oid.split('.')
+                        if len(parts) >= 8:
+                            arm = int(parts[5])
+                            k = int(parts[6])
+                            dtype = int(parts[7])
+                            
+                            with data_lock:
+                                if arm in battery_data_ram and k in battery_data_ram[arm]:
+                                    value = battery_data_ram[arm][k].get(dtype, 0)
+                                    return self.getSyntax().clone(str(value))
+                                else:
+                                    return self.getSyntax().clone("0")
+                    
+                    # Alarm verileri - 1.3.6.5.7.arm.battery.alarm_type
+                    elif oid.startswith("1.3.6.5.7."):
+                        parts = oid.split('.')
+                        if len(parts) >= 6:
+                            arm = int(parts[5])
+                            battery = int(parts[6])
+                            alarm_type = int(parts[7])
+                            
+                            with data_lock:
+                                if arm in alarm_ram and battery in alarm_ram[arm]:
+                                    alarm_status = alarm_ram[arm][battery].get(alarm_type, False)
+                                    return self.getSyntax().clone("1" if alarm_status else "0")
+                                else:
+                                    return self.getSyntax().clone("0")
+                    
+                    return self.getSyntax().clone("0")
+        
+        # MIB Objects oluştur
+        mib_builder.export_symbols(
+            "__BATTERY_MIB_SYSTEM",
+            MibScalar((1, 3, 6, 5, 1), v2c.OctetString()),
+            BatteryMibScalarInstance((1, 3, 6, 5, 1), (0,), v2c.OctetString()),
+            
+            MibScalar((1, 3, 6, 5, 2), v2c.OctetString()),
+            BatteryMibScalarInstance((1, 3, 6, 5, 2), (0,), v2c.OctetString()),
+            
+            MibScalar((1, 3, 6, 5, 3), v2c.OctetString()),
+            BatteryMibScalarInstance((1, 3, 6, 5, 3), (0,), v2c.OctetString()),
+            
+            MibScalar((1, 3, 6, 5, 4), v2c.OctetString()),
+            BatteryMibScalarInstance((1, 3, 6, 5, 4), (0,), v2c.OctetString()),
+            
+            MibScalar((1, 3, 6, 5, 5), v2c.OctetString()),
+            BatteryMibScalarInstance((1, 3, 6, 5, 5), (0,), v2c.OctetString()),
+            
+            MibScalar((1, 3, 6, 5, 6), v2c.OctetString()),
+            BatteryMibScalarInstance((1, 3, 6, 5, 6), (0,), v2c.OctetString()),
+            
+            # Armslavecounts OID'leri
+            MibScalar((1, 3, 6, 5, 7), v2c.OctetString()),
+            BatteryMibScalarInstance((1, 3, 6, 5, 7), (0,), v2c.OctetString()),
+            
+            MibScalar((1, 3, 6, 5, 8), v2c.OctetString()),
+            BatteryMibScalarInstance((1, 3, 6, 5, 8), (0,), v2c.OctetString()),
+            
+            MibScalar((1, 3, 6, 5, 9), v2c.OctetString()),
+            BatteryMibScalarInstance((1, 3, 6, 5, 9), (0,), v2c.OctetString()),
+            
+            MibScalar((1, 3, 6, 5, 10), v2c.OctetString()),
+            BatteryMibScalarInstance((1, 3, 6, 5, 10), (0,), v2c.OctetString()),
+        )
+        
+        # Batarya verileri için OID'ler oluştur
+        for arm in range(1, 5):
+            for k in range(2, 8):  # 2-7 arası batarya numaraları
+                for dtype in range(10, 15):  # 10-14 arası dtype'lar
+                    oid = (1, 3, 6, 5, 10, arm, k, dtype)
+                    mib_builder.export_symbols(
+                        f"__BATTERY_MIB_{arm}_{k}_{dtype}",
+                        MibScalar(oid, v2c.OctetString()),
+                        BatteryMibScalarInstance(oid, (0,), v2c.OctetString()),
+                    )
+                
+                # SOC verisi için dtype=126
+                oid = (1, 3, 6, 5, 10, arm, k, 126)
+                mib_builder.export_symbols(
+                    f"__BATTERY_MIB_{arm}_{k}_126",
+                    MibScalar(oid, v2c.OctetString()),
+                    BatteryMibScalarInstance(oid, (0,), v2c.OctetString()),
+                )
+        
+        # Alarm verileri için OID'ler oluştur
+        for arm in range(1, 5):
+            # Kol alarmları (0 = kol alarmı)
+            for alarm_type in range(1, 5):  # 1-4 arası alarm türleri
+                oid = (1, 3, 6, 5, 7, arm, 0, alarm_type)
+                mib_builder.export_symbols(
+                    f"__ALARM_MIB_{arm}_0_{alarm_type}",
+                    MibScalar(oid, v2c.OctetString()),
+                    BatteryMibScalarInstance(oid, (0,), v2c.OctetString()),
+                )
+            
+            # Batarya alarmları
+            for battery in range(1, 8):  # 1-7 arası batarya numaraları
+                for alarm_type in range(1, 8):  # 1-7 arası alarm türleri
+                    oid = (1, 3, 6, 5, 7, arm, battery, alarm_type)
+                    mib_builder.export_symbols(
+                        f"__ALARM_MIB_{arm}_{battery}_{alarm_type}",
+                        MibScalar(oid, v2c.OctetString()),
+                        BatteryMibScalarInstance(oid, (0,), v2c.OctetString()),
+                    )
+        
         # SNMP Agent
         snmp_agent = cmdrsp.GetCommandResponder(snmp_engine, snmp_context)
         
         print("✅ SNMP sunucu başlatıldı - Port: 161")
+        print("📡 Port 161'de dinleniyor...")
+        print("=" * 50)
+        print("SNMP Test OID'leri:")
+        print("1.3.6.5.1.0  - Python bilgisi")
+        print("1.3.6.5.2.0  - Batarya sayısı")
+        print("1.3.6.5.3.0  - Kol sayısı")
+        print("1.3.6.5.4.0  - Sistem durumu")
+        print("1.3.6.5.5.0  - Son güncelleme zamanı")
+        print("1.3.6.5.6.0  - Veri sayısı")
+        print("1.3.6.5.7.0  - Kol 1 batarya sayısı")
+        print("1.3.6.5.8.0  - Kol 2 batarya sayısı")
+        print("1.3.6.5.9.0  - Kol 3 batarya sayısı")
+        print("1.3.6.5.10.0 - Kol 4 batarya sayısı")
+        print("")
+        print("Batarya verileri:")
+        print("1.3.6.5.10.3.2.10.0 - Kol 3 Batarya 2 Gerilim")
+        print("1.3.6.5.10.3.2.11.0 - Kol 3 Batarya 2 SOC")
+        print("1.3.6.5.10.3.2.126.0 - Kol 3 Batarya 2 SOH")
+        print("")
+        print("Alarm verileri:")
+        print("1.3.6.5.7.3.0.1 - Kol 3 Akım alarmı")
+        print("1.3.6.5.7.3.2.1 - Kol 3 Batarya 2 VoltageWarn alarmı")
+        print("1.3.6.5.7.3.2.2 - Kol 3 Batarya 2 LVoltageAlarm alarmı")
+        print("=" * 50)
+        print("SNMP Test komutları:")
+        print("snmpget -v2c -c public localhost:161 1.3.6.5.2.0")
+        print("snmpget -v2c -c public localhost:161 1.3.6.5.7.0")
+        print("snmpget -v2c -c public localhost:161 1.3.6.5.10.3.2.10.0")
+        print("snmpget -v2c -c public localhost:161 1.3.6.5.7.3.0.1")
+        print("snmpwalk -v2c -c public localhost:161 1.3.6.5")
+        print("=" * 50)
         
         # SNMP sunucu çalıştır
-        snmp_engine.transportDispatcher.runDispatcher()
+        try:
+            snmp_engine.open_dispatcher()
+        except:
+            snmp_engine.close_dispatcher()
+            raise
         
     except Exception as e:
         print(f"❌ SNMP sunucu hatası: {e}")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == '__main__':
     print("Program başlatıldı ==>")
