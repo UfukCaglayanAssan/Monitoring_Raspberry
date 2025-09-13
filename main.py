@@ -485,7 +485,7 @@ def db_worker():
                 # Status 0 = Veri gelmiyor, Status 1 = Veri geliyor (düzeltme)
                 if status_value == 0:
                     # Veri gelmiyor - missing data ekle
-                    add_missing_data(arm_value, slave_value)
+                add_missing_data(arm_value, slave_value)
                     print(f"🆕 VERİ GELMİYOR: Kol {arm_value}, Batarya {slave_value}")
                     
                     # Status güncelle (veri yok)
@@ -500,10 +500,10 @@ def db_worker():
                         alarm_processor.process_period_end()
                         # Reset system sinyali gönder (1 saat aralık kontrolü ile)
                         if send_reset_system_signal():
-                            # Yeni periyot başlat
-                            reset_period()
-                            get_period_timestamp()
-                        else:
+                        # Yeni periyot başlat
+                        reset_period()
+                        get_period_timestamp()
+                else:
                             print("⏰ Reset system gönderilemedi, periyot devam ediyor")
                         
                 elif status_value == 1:
@@ -623,9 +623,7 @@ def db_worker():
                     # Normal veri geldiğinde status güncelleme yapmıyoruz
                     # Status sadece missing data (0) veya düzeldi (1) durumunda güncellenir
                     
-                    # Alarm kontrolü
-                    battery_num = k_value - 2 if k_value > 2 else 0  # k=2 -> 0 (kol), k=3+ -> batarya numarası
-                    check_alarm_conditions(arm_value, battery_num, battery_data_ram[arm_value][k_value])
+                    # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
                 elif dtype == 11:  # RIMT veya Nem
                     if k_value == 2:  # Nem verisi
@@ -638,7 +636,7 @@ def db_worker():
                             "timestamp": get_period_timestamp()
                         }
                         batch.append(record)
-                        
+                    
                         # RAM'e yaz (Modbus/SNMP için)
                         with data_lock:
                             if arm_value not in battery_data_ram:
@@ -650,18 +648,17 @@ def db_worker():
                                 'timestamp': get_period_timestamp()
                             }
                         
-                        # Alarm kontrolü (kol verisi)
-                        check_alarm_conditions(arm_value, 0, battery_data_ram[arm_value][k_value])
+                        # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                     else:  # RIMT verisi
-                        record = {
-                            "Arm": arm_value,
-                            "k": k_value,
+                    record = {
+                        "Arm": arm_value,
+                        "k": k_value,
                             "Dtype": 12,  # RIMT=12
-                            "data": salt_data,
-                            "timestamp": get_period_timestamp()
-                        }
-                        batch.append(record)
-                        
+                        "data": salt_data,
+                        "timestamp": get_period_timestamp()
+                    }
+                    batch.append(record)
+                
                         # RAM'e yaz (Modbus/SNMP için)
                         with data_lock:
                             if arm_value not in battery_data_ram:
@@ -673,9 +670,7 @@ def db_worker():
                                 'timestamp': get_period_timestamp()
                             }
                         
-                        # Alarm kontrolü (batarya verisi)
-                        battery_num = k_value - 2
-                        check_alarm_conditions(arm_value, battery_num, battery_data_ram[arm_value][k_value])
+                        # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
                 elif dtype == 12:  # SOH
                     if k_value == 2:  # Nem verisi (eski sistem)
@@ -723,18 +718,16 @@ def db_worker():
                                 'timestamp': get_period_timestamp()
                             }
                         
-                        # Alarm kontrolü
-                        battery_num = k_value - 2 if k_value > 2 else 0
-                        check_alarm_conditions(arm_value, battery_num, battery_data_ram[arm_value][k_value])
+                        # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
                 elif dtype == 13:  # NTC1
                     record = {
-                        "Arm": arm_value,
-                        "k": k_value,
+                            "Arm": arm_value,
+                            "k": k_value,
                         "Dtype": 13,
                         "data": salt_data,
-                        "timestamp": get_period_timestamp()
-                    }
+                            "timestamp": get_period_timestamp()
+                        }
                     batch.append(record)
                     
                     # RAM'e yaz (Modbus/SNMP için)
@@ -748,9 +741,7 @@ def db_worker():
                             'timestamp': get_period_timestamp()
                         }
                     
-                    # Alarm kontrolü
-                    battery_num = k_value - 2 if k_value > 2 else 0
-                    check_alarm_conditions(arm_value, battery_num, battery_data_ram[arm_value][k_value])
+                    # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
                 elif dtype == 14:  # NTC2
                     record = {
@@ -773,9 +764,7 @@ def db_worker():
                             'timestamp': get_period_timestamp()
                         }
                     
-                    # Alarm kontrolü
-                    battery_num = k_value - 2 if k_value > 2 else 0
-                    check_alarm_conditions(arm_value, battery_num, battery_data_ram[arm_value][k_value])
+                    # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
                 elif dtype == 15:  # NTC3
                     record = {
@@ -798,9 +787,7 @@ def db_worker():
                             'timestamp': get_period_timestamp()
                         }
                     
-                    # Alarm kontrolü
-                    battery_num = k_value - 2 if k_value > 2 else 0
-                    check_alarm_conditions(arm_value, battery_num, battery_data_ram[arm_value][k_value])
+                    # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
                 else:  # Diğer Dtype değerleri için
                     record = {
@@ -823,9 +810,7 @@ def db_worker():
                             'timestamp': get_period_timestamp()
                         }
                     
-                    # Alarm kontrolü
-                    battery_num = k_value - 2 if k_value > 2 else 0
-                    check_alarm_conditions(arm_value, battery_num, battery_data_ram[arm_value][k_value])
+                    # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
 
             # 6 byte'lık balans komutu veya armslavecounts kontrolü
             elif len(data) == 6:
@@ -1607,76 +1592,8 @@ def update_alarm_ram(arm, battery, alarm_type, status):
                 send_snmp_trap(arm, battery, alarm_type, status)
 
 def check_alarm_conditions(arm, battery, data):
-    """Alarm koşullarını kontrol et ve RAM'e yaz"""
-    # Kol alarmları (battery=0)
-    if battery == 0:
-        # Akım alarmı (data_type=10, value > threshold)
-        if 10 in data and data[10].get('value', 0) > 50:  # 50A threshold
-            update_alarm_ram(arm, 0, 1, True)
-        else:
-            update_alarm_ram(arm, 0, 1, False)
-        
-        # Nem alarmı (data_type=11, value > threshold)
-        if 11 in data and data[11].get('value', 0) > 80:  # 80% threshold
-            update_alarm_ram(arm, 0, 2, True)
-        else:
-            update_alarm_ram(arm, 0, 2, False)
-        
-        # Ortam sıcaklığı alarmı (data_type=12, value > threshold)
-        if 12 in data and data[12].get('value', 0) > 40:  # 40°C threshold
-            update_alarm_ram(arm, 0, 3, True)
-        else:
-            update_alarm_ram(arm, 0, 3, False)
-        
-        # Kol sıcaklığı alarmı (data_type=13, value > threshold)
-        if 13 in data and data[13].get('value', 0) > 45:  # 45°C threshold
-            update_alarm_ram(arm, 0, 4, True)
-        else:
-            update_alarm_ram(arm, 0, 4, False)
-    
-    # Batarya alarmları (battery > 0)
-    else:
-        # voltagewarn (1<<2 = 4) - data_type=10, value < threshold
-        if 10 in data and data[10].get('value', 0) < 11.5:  # 11.5V threshold
-            update_alarm_ram(arm, battery, 1, True)
-        else:
-            update_alarm_ram(arm, battery, 1, False)
-        
-        # Lvoltagealarm (1<<3 = 8) - data_type=10, value < threshold
-        if 10 in data and data[10].get('value', 0) < 11.0:  # 11.0V threshold
-            update_alarm_ram(arm, battery, 2, True)
-        else:
-            update_alarm_ram(arm, battery, 2, False)
-        
-        # Ovoltagewarn (1<<4 = 16) - data_type=10, value > threshold
-        if 10 in data and data[10].get('value', 0) > 14.5:  # 14.5V threshold
-            update_alarm_ram(arm, battery, 3, True)
-        else:
-            update_alarm_ram(arm, battery, 3, False)
-        
-        # Ovoltagealarm (1<<5 = 32) - data_type=10, value > threshold
-        if 10 in data and data[10].get('value', 0) > 15.0:  # 15.0V threshold
-            update_alarm_ram(arm, battery, 4, True)
-        else:
-            update_alarm_ram(arm, battery, 4, False)
-        
-        # OvertempD (1<<6 = 64) - data_type=12, value > threshold
-        if 12 in data and data[12].get('value', 0) > 50:  # 50°C threshold
-            update_alarm_ram(arm, battery, 5, True)
-        else:
-            update_alarm_ram(arm, battery, 5, False)
-        
-        # OvertempP (1<<7 = 128) - data_type=13, value > threshold
-        if 13 in data and data[13].get('value', 0) > 55:  # 55°C threshold
-            update_alarm_ram(arm, battery, 6, True)
-        else:
-            update_alarm_ram(arm, battery, 6, False)
-        
-        # OvertempN (1<<8 = 256) - data_type=14, value > threshold
-        if 14 in data and data[14].get('value', 0) > 60:  # 60°C threshold
-            update_alarm_ram(arm, battery, 7, True)
-        else:
-            update_alarm_ram(arm, battery, 7, False)
+    """Bu fonksiyon kaldırıldı - alarmlar error_msb/error_lsb değerlerine göre işleniyor"""
+    pass
 
 def modbus_tcp_server():
     """Modbus TCP sunucu thread'i"""
