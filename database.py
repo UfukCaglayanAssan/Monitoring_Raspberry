@@ -186,6 +186,17 @@ class BatteryDatabase:
                 ''')
                 print("✓ mail_server_config tablosu oluşturuldu")
                 
+                # Reset system tarihi tablosu
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS reset_system_log (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        reset_timestamp INTEGER,
+                        reason TEXT,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+                print("✓ reset_system_log tablosu oluşturuldu")
+                
                 # IP konfigürasyon tablosu
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS ip_config (
@@ -277,6 +288,20 @@ class BatteryDatabase:
                     )
                 ''')
                 print("✓ arm_slave_counts tablosu oluşturuldu")
+                
+                # Trap hedefleri tablosu
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS trap_targets (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        ip_address TEXT NOT NULL,
+                        port INTEGER DEFAULT 162,
+                        is_active BOOLEAN DEFAULT 1,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+                print("✓ trap_targets tablosu oluşturuldu")
                 
                 # Default arm_slave_counts değerlerini ekle
                 cursor.execute('''
@@ -646,6 +671,27 @@ class BatteryDatabase:
                     print("✅ ip_config tablosu oluşturuldu")
                 else:
                     print("✅ ip_config tablosu mevcut")
+                
+                # reset_system_log tablosu var mı kontrol et
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='reset_system_log'
+                """)
+                
+                if not cursor.fetchone():
+                    print("🔄 reset_system_log tablosu eksik, oluşturuluyor...")
+                    cursor.execute('''
+                        CREATE TABLE IF NOT EXISTS reset_system_log (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            reset_timestamp INTEGER,
+                            reason TEXT,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )
+                    ''')
+                    conn.commit()
+                    print("✅ reset_system_log tablosu oluşturuldu")
+                else:
+                    print("✅ reset_system_log tablosu mevcut")
                     
         except Exception as e:
             print(f"⚠️ Eksik tablo kontrol hatası: {e}")
@@ -2086,3 +2132,272 @@ class BatteryDatabase:
         except Exception as e:
             print(f"IP konfigürasyonu kaydedilirken hata: {e}")
             return False
+    
+    # ==============================================
+    # RESET SYSTEM LOG FUNCTIONS
+    # ==============================================
+    
+    def log_reset_system(self, reason="Missing data period completed"):
+        """Reset system gönderimini logla - ilk reset'te insert, sonraki işlemlerde update"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                current_timestamp = int(time.time() * 1000)
+                
+                # Tablo boş mu kontrol et
+                cursor.execute("SELECT COUNT(*) FROM reset_system_log")
+                count = cursor.fetchone()[0]
+                
+                if count == 0:
+                    # İlk reset - insert yap
+                    cursor.execute("""
+                        INSERT INTO reset_system_log (reset_timestamp, reason)
+                        VALUES (?, ?)
+                    """, (current_timestamp, reason))
+                    print("📝 İlk reset system log kaydedildi")
+                else:
+                    # Sonraki resetler - update yap (en son kaydı güncelle)
+                    cursor.execute("""
+                        UPDATE reset_system_log 
+                        SET reset_timestamp = ?, reason = ?, created_at = CURRENT_TIMESTAMP
+                        WHERE id = (SELECT id FROM reset_system_log ORDER BY id DESC LIMIT 1)
+                    """, (current_timestamp, reason))
+                    print("📝 Reset system log güncellendi")
+                
+                conn.commit()
+                return current_timestamp
+        except Exception as e:
+            print(f"Reset system log kaydedilirken hata: {e}")
+            return None
+    
+    def get_last_reset_timestamp(self):
+        """Son reset system tarihini getir"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT reset_timestamp FROM reset_system_log 
+                    ORDER BY reset_timestamp DESC LIMIT 1
+                """)
+                result = cursor.fetchone()
+                return result[0] if result else None
+        except Exception as e:
+            print(f"Son reset timestamp getirilirken hata: {e}")
+            return None
+    
+    def can_send_reset_system(self, min_interval_hours=1):
+        """Reset system gönderilebilir mi kontrol et (minimum 1 saat aralık)"""
+        try:
+            last_reset = self.get_last_reset_timestamp()
+            if last_reset is None:
+                # Tablo boş - ilk reset gönderilebilir
+                print("🆕 İlk reset system - tablo boş, reset gönderilebilir")
+                return True
+            
+            current_time = int(time.time() * 1000)
+            time_diff_ms = current_time - last_reset
+            time_diff_hours = time_diff_ms / (1000 * 60 * 60)  # Milisaniyeyi saate çevir
+            
+            if time_diff_hours >= min_interval_hours:
+                print(f"✅ Reset system gönderilebilir - Son reset'ten {time_diff_hours:.2f} saat geçti")
+                return True
+            else:
+                print(f"⏰ Reset system gönderilemez - Son reset'ten sadece {time_diff_hours:.2f} saat geçti (minimum {min_interval_hours} saat gerekli)")
+                return False
+                
+        except Exception as e:
+            print(f"Reset system kontrolü yapılırken hata: {e}")
+            return False
+    
+    # ==============================================
+    # BATTERY DETAIL CHARTS FUNCTIONS
+    # ==============================================
+    
+    def get_battery_detail_charts(self, arm, battery, hours=7):
+        """Batarya detay grafikleri için veri getir (1 saat aralıklarla, en son 7 saat)"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Son 7 saatlik veri için timestamp hesapla
+                current_time = int(time.time() * 1000)
+                start_time = current_time - (hours * 60 * 60 * 1000)  # 7 saat öncesi
+                
+                # Dtype'lar ve anlamları
+                dtype_mapping = {
+                    10: 'gerilim',      # Gerilim (V)
+                    11: 'soc',          # SOC (Şarj Durumu) 0-100%
+                    12: 'rimt',         # RIMT (Sağlık Durumu) 0-100%
+                    126: 'soh',         # SOH (Sağlık Durumu) 0-100%
+                    13: 'modul_sicaklik',    # Modül Sıcaklığı (°C)
+                    14: 'pozitif_kutup',     # Pozitif Kutup Sıcaklığı (°C)
+                    15: 'negatif_kutup'      # Negatif Kutup Sıcaklığı (°C)
+                }
+                
+                charts_data = {}
+                
+                # Her dtype için veri getir
+                for dtype, chart_name in dtype_mapping.items():
+                    cursor.execute("""
+                        SELECT 
+                            data,
+                            timestamp,
+                            created_at
+                        FROM battery_data 
+                        WHERE arm = ? AND k = ? AND dtype = ? 
+                        AND timestamp >= ?
+                        ORDER BY timestamp ASC
+                    """, (arm, battery, dtype, start_time))
+                    
+                    raw_data = cursor.fetchall()
+                    
+                    if raw_data:
+                        # 1 saat aralıklarla veri grupla
+                        hourly_data = self._group_data_by_hour(raw_data, hours)
+                        charts_data[chart_name] = hourly_data
+                    else:
+                        # Veri yoksa boş array
+                        charts_data[chart_name] = []
+                
+                return charts_data
+                
+        except Exception as e:
+            print(f"Batarya detay grafik verisi getirilirken hata: {e}")
+            return {}
+    
+    def _group_data_by_hour(self, raw_data, hours):
+        """Veriyi 1 saat aralıklarla grupla (maksimum 7 nokta)"""
+        if not raw_data:
+            return []
+        
+        # Saatlik gruplar oluştur
+        hourly_groups = {}
+        current_time = int(time.time() * 1000)
+        
+        for i in range(hours):
+            hour_start = current_time - ((hours - i) * 60 * 60 * 1000)
+            hour_end = current_time - ((hours - i - 1) * 60 * 60 * 1000)
+            hourly_groups[i] = {
+                'timestamp': hour_start,
+                'data': None,
+                'count': 0
+            }
+        
+        # Verileri saatlik gruplara dağıt
+        for data_point in raw_data:
+            data_value, timestamp, created_at = data_point
+            
+            # Hangi saate ait olduğunu bul
+            for hour_key, hour_info in hourly_groups.items():
+                if hour_info['timestamp'] <= timestamp < hour_info['timestamp'] + (60 * 60 * 1000):
+                    if hour_info['data'] is None:
+                        hour_info['data'] = data_value
+                    else:
+                        # Aynı saatte birden fazla veri varsa ortalama al
+                        hour_info['data'] = (hour_info['data'] + data_value) / 2
+                    hour_info['count'] += 1
+                    break
+        
+        # Sonuç formatına çevir
+        result = []
+        for hour_key in sorted(hourly_groups.keys()):
+            hour_info = hourly_groups[hour_key]
+            if hour_info['data'] is not None:
+                result.append({
+                    'timestamp': hour_info['timestamp'],
+                    'value': round(hour_info['data'], 2),
+                    'count': hour_info['count'],
+                    'time_label': datetime.fromtimestamp(hour_info['timestamp'] / 1000).strftime('%d/%m %H:%M')
+                })
+        
+        return result
+
+    # ==============================================
+    # TRAP TARGETS (Trap Hedefleri) FUNCTIONS
+    # ==============================================
+    
+    def get_trap_targets(self):
+        """Tüm trap hedeflerini getir"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT id, name, ip_address, port, is_active, created_at, updated_at
+                    FROM trap_targets 
+                    ORDER BY created_at ASC
+                """)
+                results = cursor.fetchall()
+                targets = []
+                for row in results:
+                    targets.append({
+                        'id': row[0],
+                        'name': row[1],
+                        'ip_address': row[2],
+                        'port': row[3],
+                        'is_active': bool(row[4]),
+                        'created_at': row[5],
+                        'updated_at': row[6]
+                    })
+                return targets
+        except Exception as e:
+            print(f"Trap hedefleri getirilirken hata: {e}")
+            return []
+    
+    def add_trap_target(self, name, ip_address, port=162):
+        """Yeni trap hedefi ekle"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO trap_targets (name, ip_address, port, is_active)
+                    VALUES (?, ?, ?, 1)
+                """, (name, ip_address, port))
+                conn.commit()
+                return {'success': True, 'message': 'Trap hedefi başarıyla eklendi'}
+        except Exception as e:
+            print(f"Trap hedefi eklenirken hata: {e}")
+            return {'success': False, 'message': str(e)}
+    
+    def update_trap_target(self, target_id, name, ip_address, port=162):
+        """Trap hedefini güncelle"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    UPDATE trap_targets 
+                    SET name = ?, ip_address = ?, port = ?, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                """, (name, ip_address, port, target_id))
+                conn.commit()
+                return {'success': True, 'message': 'Trap hedefi başarıyla güncellendi'}
+        except Exception as e:
+            print(f"Trap hedefi güncellenirken hata: {e}")
+            return {'success': False, 'message': str(e)}
+    
+    def delete_trap_target(self, target_id):
+        """Trap hedefini sil"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM trap_targets WHERE id = ?", (target_id,))
+                conn.commit()
+                return {'success': True, 'message': 'Trap hedefi başarıyla silindi'}
+        except Exception as e:
+            print(f"Trap hedefi silinirken hata: {e}")
+            return {'success': False, 'message': str(e)}
+    
+    def toggle_trap_target(self, target_id):
+        """Trap hedefini aktif/pasif yap"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    UPDATE trap_targets 
+                    SET is_active = NOT is_active, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                """, (target_id,))
+                conn.commit()
+                return {'success': True, 'message': 'Trap hedefi durumu değiştirildi'}
+        except Exception as e:
+            print(f"Trap hedefi durumu değiştirilirken hata: {e}")
+            return {'success': False, 'message': str(e)}

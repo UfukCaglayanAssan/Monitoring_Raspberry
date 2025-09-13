@@ -212,6 +212,36 @@ def get_battery_logs():
             'message': str(e)
         }), 500
 
+@app.route('/api/battery-detail-charts', methods=['POST'])
+def get_battery_detail_charts():
+    """Batarya detay grafikleri için veri getir (1 saat aralıklarla, en son 7 saat)"""
+    data = request.get_json()
+    arm = data.get('arm')
+    battery = data.get('battery')
+    
+    if not arm or not battery:
+        return jsonify({
+            'success': False,
+            'message': 'Arm ve battery parametreleri gerekli'
+        }), 400
+    
+    try:
+        db_instance = get_db()
+        with db_read_lock:
+            # 1 saat aralıklarla en son 7 saatlik veri getir
+            charts_data = db_instance.get_battery_detail_charts(arm, battery)
+        
+        return jsonify({
+            'success': True,
+            'data': charts_data
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
 @app.route('/api/arm-logs', methods=['POST'])
 def get_arm_logs():
     """Gruplandırılmış kol log verilerini getir"""
@@ -961,6 +991,29 @@ def save_mail_server_config():
             'message': str(e)
         }), 500
 
+@app.route('/api/current-ip', methods=['GET'])
+def get_current_ip():
+    """Mevcut IP adresini getir"""
+    try:
+        import subprocess
+        result = subprocess.run(['hostname', '-I'], capture_output=True, text=True)
+        if result.returncode == 0:
+            ips = result.stdout.strip().split()
+            current_ip = ips[0] if ips else 'Bilinmiyor'
+        else:
+            current_ip = 'Bilinmiyor'
+        
+        return jsonify({
+            'success': True,
+            'ip': current_ip
+        })
+    except Exception as e:
+        print(f"❌ Mevcut IP alınırken hata: {e}")
+        return jsonify({
+            'success': False,
+            'ip': 'Hata'
+        }), 500
+
 @app.route('/api/ip-config', methods=['GET'])
 def get_ip_config():
     """IP konfigürasyonunu getir"""
@@ -1147,6 +1200,109 @@ def send_manual_set_command():
                 'message': f'Manuel set komutu gönderilirken hata: {str(e)}'
             }), 500
             
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+# ==============================================
+# TRAP SETTINGS ROUTES
+# ==============================================
+
+@app.route('/trap-settings')
+def trap_settings():
+    """Trap ayarları sayfası"""
+    return render_template('pages/trap-settings.html')
+
+@app.route('/api/trap-targets', methods=['GET'])
+def get_trap_targets():
+    """Trap hedeflerini getir"""
+    try:
+        db = get_db()
+        targets = db_operation_with_retry(lambda: db.get_trap_targets())
+        return jsonify({
+            'success': True,
+            'data': targets
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/trap-targets', methods=['POST'])
+def add_trap_target():
+    """Yeni trap hedefi ekle"""
+    try:
+        data = request.get_json()
+        name = data.get('name')
+        ip_address = data.get('ip_address')
+        port = data.get('port', 162)
+        
+        if not name or not ip_address:
+            return jsonify({
+                'success': False,
+                'message': 'Name ve IP address gerekli'
+            }), 400
+        
+        db = get_db()
+        result = db_operation_with_retry(lambda: db.add_trap_target(name, ip_address, port))
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/trap-targets/<int:target_id>', methods=['PUT'])
+def update_trap_target(target_id):
+    """Trap hedefini güncelle"""
+    try:
+        data = request.get_json()
+        name = data.get('name')
+        ip_address = data.get('ip_address')
+        port = data.get('port', 162)
+        
+        if not name or not ip_address:
+            return jsonify({
+                'success': False,
+                'message': 'Name ve IP address gerekli'
+            }), 400
+        
+        db = get_db()
+        result = db_operation_with_retry(lambda: db.update_trap_target(target_id, name, ip_address, port))
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/trap-targets/<int:target_id>', methods=['DELETE'])
+def delete_trap_target(target_id):
+    """Trap hedefini sil"""
+    try:
+        db = get_db()
+        result = db_operation_with_retry(lambda: db.delete_trap_target(target_id))
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/trap-targets/<int:target_id>/toggle', methods=['POST'])
+def toggle_trap_target(target_id):
+    """Trap hedefini aktif/pasif yap"""
+    try:
+        db = get_db()
+        result = db_operation_with_retry(lambda: db.toggle_trap_target(target_id))
+        
+        return jsonify(result)
     except Exception as e:
         return jsonify({
             'success': False,

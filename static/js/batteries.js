@@ -331,18 +331,19 @@ if (typeof window.BatteriesPage === 'undefined') {
         // Batarya kartlarının alarm durumunu güncelle
         document.querySelectorAll('.battery-card').forEach(card => {
             const arm = this.selectedArm;
-            const batteryAddress = card.dataset.batteryAddress;
+            const batteryAddress = parseInt(card.dataset.batteryAddress);
             
             if (!batteryAddress) return;
             
             // Alarm sınıflarını temizle
             card.classList.remove('battery-alarm');
             
-            // Bu bataryada alarm var mı kontrol et
-            const alarmKey = `arm-${arm}-battery-${batteryAddress}`;
+            // Bu bataryada alarm var mı kontrol et (slave numarası - 2)
+            const actualBatteryNumber = batteryAddress - 2;
+            const alarmKey = `arm-${arm}-battery-${actualBatteryNumber}`;
             if (this.activeAlarms.has(alarmKey)) {
                 card.classList.add('battery-alarm');
-                console.log(`🚨 Batarya ${batteryAddress} alarm durumu: ALARM VAR`);
+                console.log(`🚨 Batarya ${actualBatteryNumber} (slave ${batteryAddress}) alarm durumu: ALARM VAR`);
             }
         });
     }
@@ -421,6 +422,16 @@ if (typeof window.BatteriesPage === 'undefined') {
         // Debug: Çeviri verilerini yazdır
         console.log('Battery data:', battery);
         console.log('Voltage name:', battery.voltage_name);
+        
+        // Tıklama eventi ekle
+        cardElement.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log(`🖱️ Batarya kartı tıklandı: Kol ${battery.arm}, Batarya ${battery.batteryAddress}`);
+            this.openBatteryDetailModal(battery.arm, battery.batteryAddress);
+        });
+        
+        // Hover efekti için CSS class ekle
+        cardElement.style.cursor = 'pointer';
         console.log('Temperature name:', battery.temperature_name);
         console.log('Health name:', battery.health_name);
         console.log('Charge name:', battery.charge_name);
@@ -667,6 +678,159 @@ if (typeof window.BatteriesPage === 'undefined') {
         }, 30000);
         
         console.log('⏰ Yeni auto refresh interval başlatıldı (30s)');
+    }
+
+    // Batarya detay popup'ını aç
+    openBatteryDetailModal(arm, battery) {
+        console.log(`🔍 Batarya detay popup açılıyor: Kol ${arm}, Batarya ${battery}`);
+        
+        // Modal başlığını güncelle
+        const modalTitle = document.getElementById('batteryDetailTitle');
+        modalTitle.textContent = `Kol ${arm} - Batarya ${battery}`;
+        
+        // Loading göster, charts'ı gizle
+        document.getElementById('batteryDetailLoading').style.display = 'block';
+        document.getElementById('batteryChartsContainer').style.display = 'none';
+        document.getElementById('batteryDetailNoData').style.display = 'none';
+        
+        // Modal'ı aç
+        const modal = new bootstrap.Modal(document.getElementById('batteryDetailModal'));
+        modal.show();
+        
+        // Grafik verilerini yükle
+        this.loadBatteryDetailCharts(arm, battery);
+        
+        // Refresh butonu event listener'ı ekle
+        const refreshBtn = document.getElementById('refreshBatteryCharts');
+        if (refreshBtn) {
+            refreshBtn.onclick = () => {
+                console.log(`🔄 Batarya grafikleri yenileniyor: Kol ${arm}, Batarya ${battery}`);
+                this.loadBatteryDetailCharts(arm, battery);
+            };
+        }
+    }
+
+    // Batarya detay grafiklerini yükle
+    async loadBatteryDetailCharts(arm, battery) {
+        try {
+            console.log(`📊 Batarya detay grafikleri yükleniyor: Kol ${arm}, Batarya ${battery}`);
+            
+            const response = await fetch('/api/battery-detail-charts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Language': 'tr'
+                },
+                body: JSON.stringify({
+                    arm: arm,
+                    battery: battery
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                console.log('✅ Batarya detay grafik verileri yüklendi:', result.data);
+                this.renderBatteryDetailCharts(result.data);
+            } else {
+                throw new Error(result.message || 'Grafik verileri yüklenemedi');
+            }
+            
+        } catch (error) {
+            console.error('❌ Batarya detay grafikleri yüklenirken hata:', error);
+            this.showBatteryDetailNoData();
+        }
+    }
+
+    // Batarya detay grafiklerini render et
+    renderBatteryDetailCharts(data) {
+        // Loading'i gizle
+        document.getElementById('batteryDetailLoading').style.display = 'none';
+        
+        // Veri var mı kontrol et
+        const hasData = Object.values(data).some(chartData => chartData && chartData.length > 0);
+        
+        if (!hasData) {
+            this.showBatteryDetailNoData();
+            return;
+        }
+        
+        // Charts container'ı göster
+        document.getElementById('batteryChartsContainer').style.display = 'block';
+        
+        // Her grafik için Chart.js oluştur
+        this.createChart('voltageChart', data.gerilim || [], 'Gerilim (V)', '#ffc107');
+        this.createChart('socChart', data.soc || [], 'Şarj Durumu (%)', '#28a745');
+        this.createChart('rimtChart', data.rimt || [], 'Sağlık Durumu (%)', '#dc3545');
+        this.createChart('sohChart', data.soh || [], 'Sağlık Durumu (%)', '#17a2b8');
+        this.createChart('modulSicaklikChart', data.modul_sicaklik || [], 'Modül Sıcaklığı (°C)', '#ffc107');
+        this.createChart('pozitifKutupChart', data.pozitif_kutup || [], 'Pozitif Kutup Sıcaklığı (°C)', '#28a745');
+        this.createChart('negatifKutupChart', data.negatif_kutup || [], 'Negatif Kutup Sıcaklığı (°C)', '#dc3545');
+    }
+
+    // Chart.js grafiği oluştur
+    createChart(canvasId, data, label, color) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        
+        // Önceki chart'ı temizle
+        const existingChart = Chart.getChart(canvas);
+        if (existingChart) {
+            existingChart.destroy();
+        }
+        
+        // Veri formatını hazırla
+        const labels = data.map(item => item.time_label);
+        const values = data.map(item => item.value);
+        
+        new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: label,
+                    data: values,
+                    borderColor: color,
+                    backgroundColor: color + '20',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Veri yok mesajını göster
+    showBatteryDetailNoData() {
+        document.getElementById('batteryDetailLoading').style.display = 'none';
+        document.getElementById('batteryChartsContainer').style.display = 'none';
+        document.getElementById('batteryDetailNoData').style.display = 'block';
     }
     };
 }

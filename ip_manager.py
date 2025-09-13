@@ -27,18 +27,12 @@ class IPManager:
             return None
     
     def assign_static_ip(self, ip_address, subnet_mask, gateway, dns_servers):
-        """Statik IP ataması yap"""
+        """Statik IP ataması yap - NetworkManager kullanarak"""
         try:
             print(f"🔄 Statik IP ataması yapılıyor: {ip_address}")
             
-            # dhcpcd.conf dosyasını yedekle
-            self.backup_dhcpcd_conf()
-            
-            # dhcpcd.conf dosyasını güncelle
-            self.update_dhcpcd_conf(ip_address, subnet_mask, gateway, dns_servers)
-            
-            # Ağ servisini yeniden başlat
-            self.restart_network_service()
+            # NetworkManager ile statik IP ata
+            self.assign_static_ip_nm(ip_address, subnet_mask, gateway, dns_servers)
             
             print(f"✅ Statik IP ataması tamamlandı: {ip_address}")
             return True
@@ -46,6 +40,51 @@ class IPManager:
         except Exception as e:
             print(f"❌ Statik IP ataması hatası: {e}")
             return False
+    
+    def assign_static_ip_nm(self, ip_address, subnet_mask, gateway, dns_servers):
+        """NetworkManager ile statik IP ata - Direkt çalışan yöntem"""
+        try:
+            # eth0'ı yönetilebilir yap
+            subprocess.run(['nmcli', 'device', 'set', 'eth0', 'managed', 'yes'], check=True)
+            print("✓ eth0 yönetilebilir yapıldı")
+            
+            # Mevcut ethernet bağlantılarını kontrol et
+            result = subprocess.run(['nmcli', 'connection', 'show'], capture_output=True, text=True)
+            ethernet_connection = None
+            
+            if result.returncode == 0:
+                for line in result.stdout.split('\n'):
+                    if 'ethernet' in line.lower() and 'eth0' in line:
+                        ethernet_connection = line.split()[0]
+                        break
+            
+            if not ethernet_connection:
+                # Yeni ethernet bağlantısı oluştur
+                subprocess.run(['nmcli', 'connection', 'add', 'type', 'ethernet', 'con-name', 'Static-Eth0', 'ifname', 'eth0'], check=True)
+                ethernet_connection = 'Static-Eth0'
+                print(f"✓ Yeni ethernet bağlantısı oluşturuldu: {ethernet_connection}")
+            
+            # Statik IP ayarla
+            subprocess.run(['nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.addresses', f'{ip_address}/{self.get_cidr(subnet_mask)}'], check=True)
+            subprocess.run(['nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.gateway', gateway], check=True)
+            subprocess.run(['nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.dns', dns_servers], check=True)
+            subprocess.run(['nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.method', 'manual'], check=True)
+            subprocess.run(['nmcli', 'connection', 'modify', ethernet_connection, 'connection.autoconnect', 'yes'], check=True)
+            print(f"✓ Statik IP ayarlandı: {ip_address}")
+            
+            # eth0'ı aktif et
+            subprocess.run(['ip', 'link', 'set', 'eth0', 'up'], check=True)
+            print("✓ eth0 aktif edildi")
+            
+            # Bağlantıyı aktif et
+            subprocess.run(['nmcli', 'connection', 'up', ethernet_connection], check=True)
+            print(f"✓ Bağlantı aktif edildi: {ethernet_connection}")
+            
+            print(f"✅ NetworkManager ile statik IP atama tamamlandı: {ip_address}")
+            
+        except Exception as e:
+            print(f"❌ NetworkManager IP atama hatası: {e}")
+            raise
     
     def backup_dhcpcd_conf(self):
         """dhcpcd.conf dosyasını yedekle"""
@@ -58,25 +97,38 @@ class IPManager:
             print(f"⚠️ Yedekleme hatası: {e}")
     
     def update_dhcpcd_conf(self, ip_address, subnet_mask, gateway, dns_servers):
-        """dhcpcd.conf dosyasını güncelle"""
+        """dhcpcd.conf dosyasını güncelle - sadece eth0 kısmını değiştir"""
         try:
-            # Geçici dosya oluştur
-            temp_file = "/tmp/dhcpcd_temp.conf"
+            # Mevcut dosyayı oku
+            with open('/etc/dhcpcd.conf', 'r') as f:
+                lines = f.readlines()
             
-            with open(temp_file, 'w') as f:
-                f.write("# Static IP configuration\n")
-                f.write("interface eth0\n")
-                f.write(f"static ip_address={ip_address}/{self.get_cidr(subnet_mask)}\n")
-                f.write(f"static routers={gateway}\n")
-                f.write(f"static domain_name_servers={dns_servers}\n")
-                f.write("\n")
-                f.write("# Fallback to DHCP if static fails\n")
-                f.write("fallback static_eth0\n")
+            # eth0 ile ilgili satırları bul ve kaldır
+            new_lines = []
+            skip_until_empty = False
+            
+            for line in lines:
+                if line.strip().startswith('interface eth0'):
+                    skip_until_empty = True
+                    # Yeni eth0 konfigürasyonunu ekle
+                    new_lines.append(f"interface eth0\n")
+                    new_lines.append(f"static ip_address={ip_address}/{self.get_cidr(subnet_mask)}\n")
+                    new_lines.append(f"static routers={gateway}\n")
+                    new_lines.append(f"static domain_name_servers={dns_servers}\n")
+                elif skip_until_empty and line.strip() == '':
+                    skip_until_empty = False
+                    new_lines.append(line)
+                elif not skip_until_empty:
+                    new_lines.append(line)
+            
+            # Dosyayı yaz
+            with open('/tmp/dhcpcd_temp.conf', 'w') as f:
+                f.writelines(new_lines)
             
             # Dosyayı kopyala
-            subprocess.run(['sudo', 'cp', temp_file, '/etc/dhcpcd.conf'], check=True)
-            os.remove(temp_file)
-            print("✓ dhcpcd.conf güncellendi")
+            subprocess.run(['sudo', 'cp', '/tmp/dhcpcd_temp.conf', '/etc/dhcpcd.conf'], check=True)
+            os.remove('/tmp/dhcpcd_temp.conf')
+            print("✓ dhcpcd.conf güncellendi (sadece eth0 kısmı)")
             
         except Exception as e:
             print(f"❌ dhcpcd.conf güncelleme hatası: {e}")

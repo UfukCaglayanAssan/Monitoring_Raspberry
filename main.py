@@ -8,8 +8,18 @@ import math
 import pigpio
 import json
 import os
+import socket
+import struct
+import sys
+from collections import defaultdict
 from database import BatteryDatabase
 from alarm_processor import alarm_processor
+
+# SNMP imports
+from pysnmp.entity import engine, config
+from pysnmp.entity.rfc3413 import cmdrsp, context
+from pysnmp.carrier.asyncio.dgram import udp
+from pysnmp.proto.api import v2c
 
 # Global variables
 buffer = bytearray()
@@ -20,12 +30,29 @@ BAUD_RATE = 9600
 BIT_TIME = int(1e6 / BAUD_RATE)
 
 # Armslavecount verilerini tutmak için
-arm_slave_counts = {1: 0, 2: 0, 3: 0, 4: 0}  # Her kol için batarya sayısı
+arm_slave_counts = {1: 0, 2: 0, 3: 7, 4: 0}  # Her kol için batarya sayısı (default değerler)
 arm_slave_counts_lock = threading.Lock()  # Thread-safe erişim için
+
+# RAM'de veri tutma sistemi (Modbus/SNMP için)
+battery_data_ram = defaultdict(dict)  # {arm: {k: {dtype: value}}}
+arm_slave_counts_ram = {1: 0, 2: 0, 3: 0, 4: 0}  # Her kol için batarya sayısı
+data_lock = threading.Lock()  # Thread-safe erişim için
+
+# Alarm verileri için RAM yapısı
+alarm_ram = {}  # {arm: {battery: {alarm_type: bool}}}
+alarm_lock = threading.Lock()  # Thread-safe erişim için
+
+# Trap hedefleri için RAM yapısı
+trap_targets_ram = []  # [{'id': int, 'name': str, 'ip_address': str, 'port': int, 'is_active': bool}]
+trap_targets_lock = threading.Lock()  # Thread-safe erişim için
 
 # Missing data takibi için
 missing_data_tracker = set()  # (arm, battery) tuple'ları
 missing_data_lock = threading.Lock()  # Thread-safe erişim için
+
+# Reset system öncesi missing data'ları tutma
+missing_data_before_reset = set()  # Reset öncesi missing data'lar
+missing_data_before_reset_lock = threading.Lock()  # Thread-safe erişim için
 
 # Periyot sistemi için global değişkenler
 current_period_timestamp = None
@@ -176,13 +203,33 @@ def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False
     return False
 
 def send_reset_system_signal():
-    """Reset system sinyali gönder (0x55 0x55 0x55)"""
+    """Reset system sinyali gönder (0x55 0x55 0x55) - 1 saat aralık kontrolü ile"""
     try:
+        # Reset system gönderilebilir mi kontrol et (minimum 1 saat aralık)
+        if not db.can_send_reset_system(min_interval_hours=1):
+            print("⏰ Reset system gönderilemiyor: Son reset'ten bu yana 1 saat geçmedi")
+            return False
+        
+        # Reset öncesi missing data'ları kaydet
+        save_missing_data_before_reset()
+        
         signal_data = [0x55, 0x55, 0x55]
         wave_uart_send(pi, TX_PIN, signal_data, int(1e6 / BAUD_RATE))
         print("🔄 Reset system sinyali gönderildi: 0x55 0x55 0x55")
+        
+        # Reset system gönderimini logla
+        log_timestamp = db.log_reset_system("Missing data period completed")
+        if log_timestamp:
+            print(f"📝 Reset system log kaydedildi: {log_timestamp}")
+        
+        # Missing data listesini temizle
+        clear_missing_data()
+        
+        return True
+        
     except Exception as e:
         print(f"❌ Reset system sinyali gönderilirken hata: {e}")
+        return False
 
 def add_missing_data(arm_value, battery_value):
     """Missing data ekle"""
@@ -190,16 +237,41 @@ def add_missing_data(arm_value, battery_value):
         missing_data_tracker.add((arm_value, battery_value))
         print(f"📝 Missing data eklendi: Kol {arm_value}, Batarya {battery_value}")
 
-def is_new_missing_data(arm_value, battery_value):
-    """Yeni missing data mı kontrol et"""
-    with missing_data_lock:
-        return (arm_value, battery_value) not in missing_data_tracker
 
 def clear_missing_data():
     """Missing data listesini temizle"""
     with missing_data_lock:
         missing_data_tracker.clear()
         print("🧹 Missing data listesi temizlendi")
+
+def resolve_missing_data(arm_value, battery_value):
+    """Missing data'yı düzelt (veri geldiğinde)"""
+    with missing_data_lock:
+        if (arm_value, battery_value) in missing_data_tracker:
+            missing_data_tracker.remove((arm_value, battery_value))
+            print(f"✅ Missing data düzeltildi: Kol {arm_value}, Batarya {battery_value}")
+            return True
+        return False
+
+def save_missing_data_before_reset():
+    """Reset system öncesi missing data'ları kaydet"""
+    with missing_data_lock:
+        with missing_data_before_reset_lock:
+            missing_data_before_reset.clear()
+            missing_data_before_reset.update(missing_data_tracker)
+            print(f"📝 Reset öncesi missing data'lar kaydedildi: {len(missing_data_before_reset)} adet")
+
+def check_missing_data_after_reset(arm_value, battery_value):
+    """Reset sonrası missing data kontrolü - status 0 gelirse alarm oluştur"""
+    with missing_data_before_reset_lock:
+        if (arm_value, battery_value) in missing_data_before_reset:
+            # Bu batarya reset öncesi missing data'daydı, şimdi tekrar status 0 gelirse alarm
+            print(f"🚨 VERİ GELMİYOR ALARMI: Kol {arm_value}, Batarya {battery_value} - Reset sonrası hala veri gelmiyor")
+            # "Veri gelmiyor" alarmı oluştur
+            alarm_processor.add_alarm(arm_value, battery_value, 0, 0, int(time.time() * 1000))  # error_msb=0, error_lsb=0 = veri gelmiyor
+            print(f"📝 Veri gelmiyor alarmı eklendi - Arm: {arm_value}, Battery: {battery_value}")
+            return True
+        return False
 
 def Calc_SOH(x):
     if x is None:
@@ -392,26 +464,38 @@ def db_worker():
                 status_value = raw_bytes[4]
                 missing_timestamp = int(time.time() * 1000)
                 
-                # Missing data ekle
-                add_missing_data(arm_value, slave_value)
+                print(f"Missing data: Kol {arm_value}, Batarya {slave_value}, Status: {status_value}")
                 
-                # Yeni missing data mı kontrol et
-                if is_new_missing_data(arm_value, slave_value):
-                    print(f"🆕 YENİ MISSING DATA: Kol {arm_value}, Batarya {slave_value}")
+                # Status 0 = Veri gelmiyor, Status 1 = Veri geliyor (düzeltme)
+                if status_value == 0:
+                    # Veri gelmiyor - missing data ekle
+                    add_missing_data(arm_value, slave_value)
+                    print(f"🆕 VERİ GELMİYOR: Kol {arm_value}, Batarya {slave_value}")
+                    
+                    # Reset sonrası kontrol - eğer bu batarya reset öncesi missing data'daydı ve hala status 0 geliyorsa alarm
+                    check_missing_data_after_reset(arm_value, slave_value)
                     
                     # Periyot tamamlandı mı kontrol et
                     if is_period_complete(arm_value, slave_value, is_missing_data=True):
                         # Periyot bitti, alarmları işle
                         alarm_processor.process_period_end()
-                        # Reset system sinyali gönder
-                        send_reset_system_signal()
-                        # Missing data listesini temizle
-                        clear_missing_data()
-                        # Yeni periyot başlat
-                        reset_period()
-                        get_period_timestamp()
-                else:
-                    print(f"🔄 TEKRAR MISSING DATA: Kol {arm_value}, Batarya {slave_value} - Reset sinyali gönderilmedi")
+                        # Reset system sinyali gönder (1 saat aralık kontrolü ile)
+                        if send_reset_system_signal():
+                            # Yeni periyot başlat
+                            reset_period()
+                            get_period_timestamp()
+                        else:
+                            print("⏰ Reset system gönderilemedi, periyot devam ediyor")
+                        
+                elif status_value == 1:
+                    # Veri geliyor - missing data düzelt
+                    if resolve_missing_data(arm_value, slave_value):
+                        print(f"✅ VERİ GELDİ: Kol {arm_value}, Batarya {slave_value} - Missing data düzeltildi")
+                        # Alarm düzeltme işlemi
+                        alarm_processor.add_resolve(arm_value, slave_value)
+                        print(f"📝 Missing data alarm düzeltme eklendi - Arm: {arm_value}, Battery: {slave_value}")
+                    else:
+                        print(f"ℹ️ VERİ GELDİ: Kol {arm_value}, Batarya {slave_value} - Missing data zaten yoktu")
                 
                 # SQLite'ye kaydet
                 with db_lock:
@@ -442,6 +526,11 @@ def db_worker():
                 # Veri doğrulama: Sadece aktif kollar ve bataryalar işlenir
                 if not is_valid_arm_data(arm_value, k_value):
                     continue
+                
+                # Missing data düzeltme (veri geldiğinde)
+                if k_value > 2:  # Batarya verisi
+                    battery_num = k_value - 2
+                    resolve_missing_data(arm_value, battery_num)
                 
                 # Normal batarya verisi geldiğinde reset sinyali gönderilmez
                 # Sadece missing data geldiğinde reset sinyali gönderilir
@@ -476,25 +565,95 @@ def db_worker():
                     }
                     batch.append(record)
                     
-                    # SOC hesapla ve dtype=126'ya kaydet (sadece batarya verisi için)
+                    # SOC hesapla ve dtype=11'e kaydet (sadece batarya verisi için)
                     if k_value != 2:  # k_value 2 değilse SOC hesapla
                         soc_value = Calc_SOC(salt_data)
                         soc_record = {
                             "Arm": arm_value,
                             "k": k_value,
-                            "Dtype": 126,
+                            "Dtype": 11,
                             "data": soc_value,
                             "timestamp": get_period_timestamp()
                         }
                         batch.append(soc_record)
+                    
+                    # RAM'e yaz (Modbus/SNMP için)
+                    with data_lock:
+                        if arm_value not in battery_data_ram:
+                            battery_data_ram[arm_value] = {}
+                        if k_value not in battery_data_ram[arm_value]:
+                            battery_data_ram[arm_value][k_value] = {}
+                        battery_data_ram[arm_value][k_value][dtype] = {
+                            'value': salt_data,
+                            'timestamp': get_period_timestamp()
+                        }
+                        if k_value != 2:  # SOC değerini de ekle
+                            battery_data_ram[arm_value][k_value][11] = {
+                                'value': soc_value,
+                                'timestamp': get_period_timestamp()
+                            }
+                    
+                    # Alarm kontrolü
+                    battery_num = k_value - 2 if k_value > 2 else 0  # k=2 -> 0 (kol), k=3+ -> batarya numarası
+                    check_alarm_conditions(arm_value, battery_num, battery_data_ram[arm_value][k_value])
                 
-                elif dtype == 11:  # SOH veya Nem
+                elif dtype == 11:  # RIMT veya Nem
                     if k_value == 2:  # Nem verisi
                         print(f"*** VERİ ALGILANDI - Arm: {arm_value}, Nem: {salt_data}% ***")
                         record = {
                             "Arm": arm_value,
                             "k": k_value,
-                            "Dtype": 11,
+                            "Dtype": 12,  # RIMT=12
+                            "data": salt_data,
+                            "timestamp": get_period_timestamp()
+                        }
+                        batch.append(record)
+                        
+                        # RAM'e yaz (Modbus/SNMP için)
+                        with data_lock:
+                            if arm_value not in battery_data_ram:
+                                battery_data_ram[arm_value] = {}
+                            if k_value not in battery_data_ram[arm_value]:
+                                battery_data_ram[arm_value][k_value] = {}
+                            battery_data_ram[arm_value][k_value][dtype] = {
+                                'value': salt_data,
+                                'timestamp': get_period_timestamp()
+                            }
+                        
+                        # Alarm kontrolü (kol verisi)
+                        check_alarm_conditions(arm_value, 0, battery_data_ram[arm_value][k_value])
+                    else:  # RIMT verisi
+                        record = {
+                            "Arm": arm_value,
+                            "k": k_value,
+                            "Dtype": 12,  # RIMT=12
+                            "data": salt_data,
+                            "timestamp": get_period_timestamp()
+                        }
+                        batch.append(record)
+                        
+                        # RAM'e yaz (Modbus/SNMP için)
+                        with data_lock:
+                            if arm_value not in battery_data_ram:
+                                battery_data_ram[arm_value] = {}
+                            if k_value not in battery_data_ram[arm_value]:
+                                battery_data_ram[arm_value][k_value] = {}
+                            battery_data_ram[arm_value][k_value][dtype] = {
+                                'value': salt_data,
+                                'timestamp': get_period_timestamp()
+                            }
+                        
+                        # Alarm kontrolü (batarya verisi)
+                        battery_num = k_value - 2
+                        check_alarm_conditions(arm_value, battery_num, battery_data_ram[arm_value][k_value])
+                
+                elif dtype == 12:  # SOH
+                    if k_value == 2:  # Nem verisi (eski sistem)
+                        print(f"*** VERİ ALGILANDI - Arm: {arm_value}, Nem: {salt_data}% ***")
+                        record = {
+                            "Arm": arm_value,
+                            "k": k_value,
+                            "Dtype": 12,  # RIMT=12
                             "data": salt_data,
                             "timestamp": get_period_timestamp()
                         }
@@ -513,15 +672,105 @@ def db_worker():
                             soh_value = tam_kisim + kusurat_kisim
                             soh_value = round(soh_value, 4)
                         
-                        # SOH verisini dtype=11'e kaydet (çift kayıt kaldırıldı)
+                        # SOH verisini dtype=126'ya kaydet
                         record = {
                             "Arm": arm_value,
                             "k": k_value,
-                            "Dtype": 11,
+                            "Dtype": 126,
                             "data": soh_value,
                             "timestamp": get_period_timestamp()
                         }
                         batch.append(record)
+                        
+                        # RAM'e yaz (Modbus/SNMP için)
+                        with data_lock:
+                            if arm_value not in battery_data_ram:
+                                battery_data_ram[arm_value] = {}
+                            if k_value not in battery_data_ram[arm_value]:
+                                battery_data_ram[arm_value][k_value] = {}
+                            battery_data_ram[arm_value][k_value][126] = {
+                                'value': soh_value,
+                                'timestamp': get_period_timestamp()
+                            }
+                        
+                        # Alarm kontrolü
+                        battery_num = k_value - 2 if k_value > 2 else 0
+                        check_alarm_conditions(arm_value, battery_num, battery_data_ram[arm_value][k_value])
+                
+                elif dtype == 13:  # NTC1
+                    record = {
+                        "Arm": arm_value,
+                        "k": k_value,
+                        "Dtype": 13,
+                        "data": salt_data,
+                        "timestamp": get_period_timestamp()
+                    }
+                    batch.append(record)
+                    
+                    # RAM'e yaz (Modbus/SNMP için)
+                    with data_lock:
+                        if arm_value not in battery_data_ram:
+                            battery_data_ram[arm_value] = {}
+                        if k_value not in battery_data_ram[arm_value]:
+                            battery_data_ram[arm_value][k_value] = {}
+                        battery_data_ram[arm_value][k_value][dtype] = {
+                            'value': salt_data,
+                            'timestamp': get_period_timestamp()
+                        }
+                    
+                    # Alarm kontrolü
+                    battery_num = k_value - 2 if k_value > 2 else 0
+                    check_alarm_conditions(arm_value, battery_num, battery_data_ram[arm_value][k_value])
+                
+                elif dtype == 14:  # NTC2
+                    record = {
+                        "Arm": arm_value,
+                        "k": k_value,
+                        "Dtype": 14,
+                        "data": salt_data,
+                        "timestamp": get_period_timestamp()
+                    }
+                    batch.append(record)
+                    
+                    # RAM'e yaz (Modbus/SNMP için)
+                    with data_lock:
+                        if arm_value not in battery_data_ram:
+                            battery_data_ram[arm_value] = {}
+                        if k_value not in battery_data_ram[arm_value]:
+                            battery_data_ram[arm_value][k_value] = {}
+                        battery_data_ram[arm_value][k_value][dtype] = {
+                            'value': salt_data,
+                            'timestamp': get_period_timestamp()
+                        }
+                    
+                    # Alarm kontrolü
+                    battery_num = k_value - 2 if k_value > 2 else 0
+                    check_alarm_conditions(arm_value, battery_num, battery_data_ram[arm_value][k_value])
+                
+                elif dtype == 15:  # NTC3
+                    record = {
+                        "Arm": arm_value,
+                        "k": k_value,
+                        "Dtype": 15,
+                        "data": salt_data,
+                        "timestamp": get_period_timestamp()
+                    }
+                    batch.append(record)
+                    
+                    # RAM'e yaz (Modbus/SNMP için)
+                    with data_lock:
+                        if arm_value not in battery_data_ram:
+                            battery_data_ram[arm_value] = {}
+                        if k_value not in battery_data_ram[arm_value]:
+                            battery_data_ram[arm_value][k_value] = {}
+                        battery_data_ram[arm_value][k_value][dtype] = {
+                            'value': salt_data,
+                            'timestamp': get_period_timestamp()
+                        }
+                    
+                    # Alarm kontrolü
+                    battery_num = k_value - 2 if k_value > 2 else 0
+                    check_alarm_conditions(arm_value, battery_num, battery_data_ram[arm_value][k_value])
                 
                 else:  # Diğer Dtype değerleri için
                     record = {
@@ -532,6 +781,21 @@ def db_worker():
                         "timestamp": get_period_timestamp()
                     }
                     batch.append(record)
+                    
+                    # RAM'e yaz (Modbus/SNMP için)
+                    with data_lock:
+                        if arm_value not in battery_data_ram:
+                            battery_data_ram[arm_value] = {}
+                        if k_value not in battery_data_ram[arm_value]:
+                            battery_data_ram[arm_value][k_value] = {}
+                        battery_data_ram[arm_value][k_value][dtype] = {
+                            'value': salt_data,
+                            'timestamp': get_period_timestamp()
+                        }
+                    
+                    # Alarm kontrolü
+                    battery_num = k_value - 2 if k_value > 2 else 0
+                    check_alarm_conditions(arm_value, battery_num, battery_data_ram[arm_value][k_value])
 
             # 6 byte'lık balans komutu veya armslavecounts kontrolü
             elif len(data) == 6:
@@ -549,7 +813,18 @@ def db_worker():
                         arm_slave_counts[3] = arm3
                         arm_slave_counts[4] = arm4
                     
+                    # Modbus/SNMP için RAM'e de kaydet
+                    with data_lock:
+                        arm_slave_counts_ram[1] = arm1
+                        arm_slave_counts_ram[2] = arm2
+                        arm_slave_counts_ram[3] = arm3
+                        arm_slave_counts_ram[4] = arm4
+                    
+                    # Alarm RAM yapısını güncelle
+                    initialize_alarm_ram()
+                    
                     print(f"✓ Armslavecounts RAM'e kaydedildi: {arm_slave_counts}")
+                    print(f"✓ Modbus/SNMP RAM'e kaydedildi: {arm_slave_counts_ram}")
                     
                 # Hatkon (kol) alarm verisi: 2. byte (index 1) 0x8E ise
                 elif raw_bytes[1] == 0x8E:
@@ -952,6 +1227,9 @@ def main():
         # Veritabanından en son armslavecount değerlerini çek
         load_arm_slave_counts_from_db()
         
+        # Trap hedeflerini RAM'e yükle
+        load_trap_targets_to_ram()
+        
         if not pi.connected:
             print("pigpio bağlantısı sağlanamadı!")
             return
@@ -977,6 +1255,16 @@ def main():
         config_thread.start()
         print("Config worker thread'i başlatıldı.")
 
+        # Modbus TCP sunucu
+        modbus_thread = threading.Thread(target=modbus_tcp_server, daemon=True)
+        modbus_thread.start()
+        print("Modbus TCP sunucu thread'i başlatıldı.")
+
+        # SNMP sunucu
+        snmp_thread = threading.Thread(target=snmp_server, daemon=True)
+        snmp_thread.start()
+        print("SNMP sunucu thread'i başlatıldı.")
+
         print(f"\nSistem başlatıldı.")
         print("Program çalışıyor... (Ctrl+C ile durdurun)")
 
@@ -994,6 +1282,492 @@ def main():
             except pigpio.error:
                 print("Bit-bang UART zaten kapalı.")
             pi.stop()
+
+# ==============================================
+# MODBUS TCP SERVER FUNCTIONS
+# ==============================================
+
+def get_dynamic_data_index(arm, battery_num, data_type):
+    """Dinamik veri indeksi hesapla"""
+    # Veri tipleri:
+    # 1: Kol akım, 2: Kol nem, 3: Kol sıcaklık, 4: Kol sıcaklık2
+    # 5: Batarya gerilim, 6: SOC, 7: Rint, 8: SOH, 9: NTC1, 10: NTC2, 11: NTC3
+    
+    if data_type == 1:  # Kol akım
+        return 1
+    elif data_type == 2:  # Kol nem
+        return 2
+    elif data_type == 3:  # Kol sıcaklık
+        return 3
+    elif data_type == 4:  # Kol sıcaklık2
+        return 4
+    elif data_type == 5:  # Batarya gerilim
+        return 5 + (battery_num - 1) * 7  # Her batarya için 7 veri
+    elif data_type == 6:  # SOC
+        return 6 + (battery_num - 1) * 7
+    elif data_type == 7:  # Rint
+        return 7 + (battery_num - 1) * 7
+    elif data_type == 8:  # SOH
+        return 8 + (battery_num - 1) * 7
+    elif data_type == 9:  # NTC1
+        return 9 + (battery_num - 1) * 7
+    elif data_type == 10:  # NTC2
+        return 10 + (battery_num - 1) * 7
+    elif data_type == 11:  # NTC3
+        return 11 + (battery_num - 1) * 7
+    else:
+        return 0
+
+def get_dynamic_data_by_index(start_index, quantity):
+    """Dinamik veri indeksine göre veri döndür"""
+    with data_lock:
+        result = []
+        current_index = start_index  # start_index'ten başla
+        
+        print(f"DEBUG: get_dynamic_data_by_index start={start_index}, quantity={quantity}")
+        print(f"DEBUG: arm_slave_counts_ram = {arm_slave_counts_ram}")
+        
+        # Aralık kontrolü
+        if start_index < 1001 or start_index > 4994:
+            print(f"DEBUG: Geçersiz aralık! start_index={start_index} (1001-4994 arası olmalı)")
+            return [0.0] * quantity
+        
+        # Hangi kol aralığında olduğunu belirle
+        if 1001 <= start_index <= 1994:
+            target_arm = 1
+            arm_start = 1001
+        elif 2001 <= start_index <= 2994:
+            target_arm = 2
+            arm_start = 2001
+        elif 3001 <= start_index <= 3994:
+            target_arm = 3
+            arm_start = 3001
+        elif 4001 <= start_index <= 4994:
+            target_arm = 4
+            arm_start = 4001
+        else:
+            print(f"DEBUG: Geçersiz aralık! start_index={start_index}")
+            return [0.0] * quantity
+        
+        print(f"DEBUG: Hedef kol: {target_arm}, aralık: {arm_start}-{arm_start+993}")
+        
+        # Sadece hedef kolu işle
+        for arm in range(1, 5):  # Kol 1-4
+            if arm != target_arm:
+                continue  # Sadece hedef kolu işle
+                
+            print(f"DEBUG: Kol {arm} işleniyor...")
+            print(f"DEBUG: battery_data_ram[{arm}] = {battery_data_ram.get(arm, 'YOK')}")
+            
+            # Kol verileri (akım, nem, sıcaklık, sıcaklık2)
+            for data_type in range(1, 5):
+                print(f"DEBUG: current_index={current_index}, start_index={start_index}, len(result)={len(result)}, quantity={quantity}")
+                if current_index >= start_index and len(result) < quantity:
+                    print(f"DEBUG: IF BLOĞU GİRİLDİ!")
+                    print(f"DEBUG: get_battery_data_ram({arm}) çağrılıyor...")
+                    try:
+                        # data_lock zaten alınmış, direkt erişim
+                        arm_data = dict(battery_data_ram.get(arm, {}))
+                        print(f"DEBUG: arm_data = {arm_data}")
+                        print(f"DEBUG: arm_data type = {type(arm_data)}")
+                    except Exception as e:
+                        print(f"DEBUG: HATA! arm_data okuma hatası: {e}")
+                        arm_data = None
+                    if arm_data and 2 in arm_data:  # k=2 (kol verisi)
+                        print(f"DEBUG: k=2 verisi bulundu!")
+                        if data_type == 1:  # Akım
+                            value = arm_data[2].get(10, {}).get('value', 0)  # dtype=10 (A)
+                        elif data_type == 2:  # Nem
+                            value = arm_data[2].get(11, {}).get('value', 0)  # dtype=11 (B)
+                        elif data_type == 3:  # Sıcaklık
+                            value = arm_data[2].get(12, {}).get('value', 0)  # dtype=12 (C)
+                        elif data_type == 4:  # Sıcaklık2
+                            value = arm_data[2].get(13, {}).get('value', 0)  # dtype=13 (D)
+                        else:
+                            value = 0
+                        result.append(float(value) if value else 0.0)
+                        print(f"DEBUG: current_index={current_index}, data_type={data_type}, value={value}")
+                    else:
+                        print(f"DEBUG: k=2 verisi bulunamadı!")
+                        result.append(0.0)
+                        print(f"DEBUG: current_index={current_index}, data_type={data_type}, value=0.0 (veri yok)")
+                else:
+                    print(f"DEBUG: IF BLOĞU GİRİLMEDİ!")
+                    result.append(0.0)
+                    print(f"DEBUG: current_index={current_index}, data_type={data_type}, value=0.0 (IF girmedi)")
+                current_index += 1
+                
+                if len(result) >= quantity:
+                    break
+                    
+            if len(result) >= quantity:
+                break
+                
+            # Batarya verileri
+            battery_count = arm_slave_counts_ram.get(arm, 0)
+            print(f"DEBUG: Kol {arm} batarya sayısı: {battery_count}")
+            for battery_num in range(1, battery_count + 1):
+                print(f"DEBUG: Batarya {battery_num} işleniyor...")
+                k_value = battery_num + 2  # k=3,4,5,6...
+                print(f"DEBUG: k_value = {k_value}")
+                # data_lock zaten alınmış, direkt erişim
+                arm_data = dict(battery_data_ram.get(arm, {}))
+                print(f"DEBUG: arm_data = {arm_data}")
+                if arm_data and k_value in arm_data:
+                    print(f"DEBUG: k={k_value} verisi bulundu!")
+                    # Her batarya için 7 veri tipi
+                    for data_type in range(5, 12):  # 5-11 (gerilim, soc, rint, soh, ntc1, ntc2, ntc3)
+                        print(f"DEBUG: current_index={current_index}, start_index={start_index}, len(result)={len(result)}, quantity={quantity}")
+                        if current_index >= start_index and len(result) < quantity:
+                            print(f"DEBUG: BATARYA IF BLOĞU GİRİLDİ!")
+                            if data_type == 5:  # Gerilim
+                                value = arm_data[k_value].get(10, {}).get('value', 0)  # dtype=10 (A)
+                            elif data_type == 6:  # SOC
+                                value = arm_data[k_value].get(15, {}).get('value', 0)  # dtype=15 (F)
+                            elif data_type == 7:  # Rint
+                                value = arm_data[k_value].get(11, {}).get('value', 0)  # dtype=11 (B)
+                            elif data_type == 8:  # SOH
+                                value = arm_data[k_value].get(126, {}).get('value', 0)  # dtype=126 (SOH)
+                            elif data_type == 9:  # NTC1
+                                value = arm_data[k_value].get(12, {}).get('value', 0)  # dtype=12 (C)
+                            elif data_type == 10:  # NTC2
+                                value = arm_data[k_value].get(13, {}).get('value', 0)  # dtype=13 (D)
+                            elif data_type == 11:  # NTC3
+                                value = arm_data[k_value].get(14, {}).get('value', 0)  # dtype=14 (E)
+                            else:
+                                value = 0
+                            result.append(float(value) if value else 0.0)
+                            print(f"DEBUG: current_index={current_index}, arm={arm}, bat={battery_num}, data_type={data_type}, value={value}")
+                        else:
+                            print(f"DEBUG: BATARYA IF BLOĞU GİRİLMEDİ!")
+                        current_index += 1
+                        
+                        if len(result) >= quantity:
+                            break
+                else:
+                    print(f"DEBUG: k={k_value} verisi bulunamadı!")
+                            
+                if len(result) >= quantity:
+                    break
+                    
+            if len(result) >= quantity:
+                break
+                
+        print(f"DEBUG: Sonuç: {result}")
+        return result
+
+def get_alarm_data_by_index(start_index, quantity):
+    """Alarm verilerini indeksine göre döndür"""
+    with alarm_lock:
+        result = []
+        current_index = start_index
+        
+        print(f"DEBUG: get_alarm_data_by_index start={start_index}, quantity={quantity}")
+        
+        # Aralık kontrolü (5001-8376)
+        if start_index < 5001 or start_index > 8376:
+            print(f"DEBUG: Geçersiz alarm aralığı! start_index={start_index} (5001-8376 arası olmalı)")
+            return [0] * quantity
+        
+        # Hangi kol aralığında olduğunu belirle
+        if 5001 <= start_index <= 5844:
+            target_arm = 1
+            arm_start = 5001
+        elif 5845 <= start_index <= 6688:
+            target_arm = 2
+            arm_start = 5845
+        elif 6689 <= start_index <= 7532:
+            target_arm = 3
+            arm_start = 6689
+        elif 7533 <= start_index <= 8376:
+            target_arm = 4
+            arm_start = 7533
+        else:
+            print(f"DEBUG: Geçersiz alarm aralığı! start_index={start_index}")
+            return [0] * quantity
+        
+        print(f"DEBUG: Hedef kol: {target_arm}, aralık: {arm_start}-{arm_start+843}")
+        
+        # Kol alarmları (4 adet)
+        for alarm_type in range(1, 5):  # 1-4
+            if current_index >= start_index and len(result) < quantity:
+                alarm_value = alarm_ram.get(target_arm, {}).get(0, {}).get(alarm_type, False)
+                result.append(1 if alarm_value else 0)
+                print(f"DEBUG: Kol {target_arm} alarm {alarm_type}: {alarm_value}")
+            current_index += 1
+            
+            if len(result) >= quantity:
+                break
+        
+        # Batarya alarmları (120 × 7 = 840 adet)
+        battery_count = arm_slave_counts_ram.get(target_arm, 0)
+        for battery_num in range(1, battery_count + 1):
+            for alarm_type in range(1, 8):  # 1-7
+                if current_index >= start_index and len(result) < quantity:
+                    alarm_value = alarm_ram.get(target_arm, {}).get(battery_num, {}).get(alarm_type, False)
+                    result.append(1 if alarm_value else 0)
+                    print(f"DEBUG: Kol {target_arm} Batarya {battery_num} alarm {alarm_type}: {alarm_value}")
+                current_index += 1
+                
+                if len(result) >= quantity:
+                    break
+            
+            if len(result) >= quantity:
+                break
+        
+        # Eksik veriler için 0 ekle
+        while len(result) < quantity:
+            result.append(0)
+        
+        print(f"DEBUG: Alarm sonuç: {result}")
+        return result
+
+def initialize_alarm_ram():
+    """Alarm RAM yapısını başlat"""
+    with alarm_lock:
+        for arm in range(1, 5):
+            alarm_ram[arm] = {}
+            # Kol alarmları (0 = kol)
+            alarm_ram[arm][0] = {1: False, 2: False, 3: False, 4: False}
+            # Batarya alarmları (sadece mevcut batarya sayısı kadar)
+            battery_count = arm_slave_counts_ram.get(arm, 0)
+            for battery in range(1, battery_count + 1):
+                alarm_ram[arm][battery] = {1: False, 2: False, 3: False, 4: False, 5: False, 6: False, 7: False}
+        print(f"DEBUG: Alarm RAM yapısı başlatıldı - Kol 1: {arm_slave_counts_ram[1]}, Kol 2: {arm_slave_counts_ram[2]}, Kol 3: {arm_slave_counts_ram[3]}, Kol 4: {arm_slave_counts_ram[4]} batarya")
+
+def load_trap_targets_to_ram():
+    """Trap hedeflerini veritabanından RAM'e yükle"""
+    try:
+        with db_lock:
+            targets = db.get_trap_targets()
+            with trap_targets_lock:
+                trap_targets_ram.clear()
+                trap_targets_ram.extend(targets)
+            print(f"✓ {len(targets)} trap hedefi RAM'e yüklendi")
+    except Exception as e:
+        print(f"❌ Trap hedefleri yüklenirken hata: {e}")
+
+def update_alarm_ram(arm, battery, alarm_type, status):
+    """Alarm RAM'ini güncelle"""
+    with alarm_lock:
+        if arm in alarm_ram and battery in alarm_ram[arm] and alarm_type in alarm_ram[arm][battery]:
+            # Önceki durumu kontrol et
+            previous_status = alarm_ram[arm][battery][alarm_type]
+            alarm_ram[arm][battery][alarm_type] = status
+            print(f"DEBUG: Alarm güncellendi - Kol {arm}, Batarya {battery}, Alarm {alarm_type}: {status}")
+            
+            # Durum değiştiyse trap gönder
+            if previous_status != status:
+                send_snmp_trap(arm, battery, alarm_type, status)
+
+def check_alarm_conditions(arm, battery, data):
+    """Alarm koşullarını kontrol et ve RAM'e yaz"""
+    # Kol alarmları (battery=0)
+    if battery == 0:
+        # Akım alarmı (data_type=10, value > threshold)
+        if 10 in data and data[10].get('value', 0) > 50:  # 50A threshold
+            update_alarm_ram(arm, 0, 1, True)
+        else:
+            update_alarm_ram(arm, 0, 1, False)
+        
+        # Nem alarmı (data_type=11, value > threshold)
+        if 11 in data and data[11].get('value', 0) > 80:  # 80% threshold
+            update_alarm_ram(arm, 0, 2, True)
+        else:
+            update_alarm_ram(arm, 0, 2, False)
+        
+        # Ortam sıcaklığı alarmı (data_type=12, value > threshold)
+        if 12 in data and data[12].get('value', 0) > 40:  # 40°C threshold
+            update_alarm_ram(arm, 0, 3, True)
+        else:
+            update_alarm_ram(arm, 0, 3, False)
+        
+        # Kol sıcaklığı alarmı (data_type=13, value > threshold)
+        if 13 in data and data[13].get('value', 0) > 45:  # 45°C threshold
+            update_alarm_ram(arm, 0, 4, True)
+        else:
+            update_alarm_ram(arm, 0, 4, False)
+    
+    # Batarya alarmları (battery > 0)
+    else:
+        # voltagewarn (1<<2 = 4) - data_type=10, value < threshold
+        if 10 in data and data[10].get('value', 0) < 11.5:  # 11.5V threshold
+            update_alarm_ram(arm, battery, 1, True)
+        else:
+            update_alarm_ram(arm, battery, 1, False)
+        
+        # Lvoltagealarm (1<<3 = 8) - data_type=10, value < threshold
+        if 10 in data and data[10].get('value', 0) < 11.0:  # 11.0V threshold
+            update_alarm_ram(arm, battery, 2, True)
+        else:
+            update_alarm_ram(arm, battery, 2, False)
+        
+        # Ovoltagewarn (1<<4 = 16) - data_type=10, value > threshold
+        if 10 in data and data[10].get('value', 0) > 14.5:  # 14.5V threshold
+            update_alarm_ram(arm, battery, 3, True)
+        else:
+            update_alarm_ram(arm, battery, 3, False)
+        
+        # Ovoltagealarm (1<<5 = 32) - data_type=10, value > threshold
+        if 10 in data and data[10].get('value', 0) > 15.0:  # 15.0V threshold
+            update_alarm_ram(arm, battery, 4, True)
+        else:
+            update_alarm_ram(arm, battery, 4, False)
+        
+        # OvertempD (1<<6 = 64) - data_type=12, value > threshold
+        if 12 in data and data[12].get('value', 0) > 50:  # 50°C threshold
+            update_alarm_ram(arm, battery, 5, True)
+        else:
+            update_alarm_ram(arm, battery, 5, False)
+        
+        # OvertempP (1<<7 = 128) - data_type=13, value > threshold
+        if 13 in data and data[13].get('value', 0) > 55:  # 55°C threshold
+            update_alarm_ram(arm, battery, 6, True)
+        else:
+            update_alarm_ram(arm, battery, 6, False)
+        
+        # OvertempN (1<<8 = 256) - data_type=14, value > threshold
+        if 14 in data and data[14].get('value', 0) > 60:  # 60°C threshold
+            update_alarm_ram(arm, battery, 7, True)
+        else:
+            update_alarm_ram(arm, battery, 7, False)
+
+def modbus_tcp_server():
+    """Modbus TCP sunucu thread'i"""
+    print("Modbus TCP sunucu başlatılıyor...")
+    
+    # Modbus TCP sunucu kodu buraya gelecek
+    # (snmp/modbus-tcp-server.py'den kopyalanacak)
+    pass
+
+def get_snmp_data(oid):
+    """SNMP OID'ine göre veri döndür"""
+    try:
+        # OID'yi parse et
+        oid_parts = oid.split('.')
+        
+        # Kol alarmları: .7.0.1-.7.0.4
+        if len(oid_parts) >= 4 and oid_parts[-3] == '7' and oid_parts[-2] == '0':
+            arm_num = int(oid_parts[-4])
+            alarm_type = int(oid_parts[-1])
+            
+            if 1 <= arm_num <= 4 and 1 <= alarm_type <= 4:
+                with alarm_lock:
+                    alarm_value = alarm_ram.get(arm_num, {}).get(0, {}).get(alarm_type, False)
+                    return 1 if alarm_value else 0
+        
+        # Batarya alarmları: .7.{BATTERY}.1-.7.{BATTERY}.7
+        elif len(oid_parts) >= 4 and oid_parts[-3] == '7':
+            arm_num = int(oid_parts[-4])
+            battery_num = int(oid_parts[-2])
+            alarm_type = int(oid_parts[-1])
+            
+            if 1 <= arm_num <= 4 and 1 <= battery_num <= 120 and 1 <= alarm_type <= 7:
+                with alarm_lock:
+                    alarm_value = alarm_ram.get(arm_num, {}).get(battery_num, {}).get(alarm_type, False)
+                    return 1 if alarm_value else 0
+        
+        # Diğer OID'ler için 0 döndür
+        return 0
+        
+    except Exception as e:
+        print(f"❌ SNMP veri alma hatası: {e}")
+        return 0
+
+def send_snmp_trap(arm, battery, alarm_type, status):
+    """SNMP trap gönder"""
+    try:
+        with trap_targets_lock:
+            active_targets = [target for target in trap_targets_ram if target['is_active']]
+        
+        if not active_targets:
+            print("⚠️ Aktif trap hedefi yok, trap gönderilmedi")
+            return
+        
+        # Trap OID'ini oluştur
+        if battery == 0:  # Kol alarmı
+            trap_oid = f'1.3.6.1.4.1.1001.{arm}.7.0.{alarm_type}'
+            trap_name = f"Kol {arm} Alarm {alarm_type}"
+        else:  # Batarya alarmı
+            trap_oid = f'1.3.6.1.4.1.1001.{arm}.7.{battery}.{alarm_type}'
+            trap_name = f"Kol {arm} Batarya {battery} Alarm {alarm_type}"
+        
+        # Trap mesajı
+        status_text = "AKTIF" if status else "ÇÖZÜLDÜ"
+        trap_message = f"{trap_name}: {status_text}"
+        
+        print(f"📤 Trap gönderiliyor: {trap_message}")
+        
+        # Her aktif hedefe trap gönder
+        for target in active_targets:
+            try:
+                send_single_trap(target['ip_address'], target['port'], trap_oid, trap_message)
+                print(f"✅ Trap gönderildi: {target['name']} ({target['ip_address']}:{target['port']})")
+            except Exception as e:
+                print(f"❌ Trap gönderme hatası {target['name']}: {e}")
+                
+    except Exception as e:
+        print(f"❌ Trap gönderme genel hatası: {e}")
+
+def send_single_trap(target_ip, target_port, trap_oid, message):
+    """Tek bir trap gönder"""
+    try:
+        from pysnmp.hlapi import *
+        
+        # SNMP Trap gönder
+        errorIndication, errorStatus, errorIndex, varBinds = next(
+            sendNotification(
+                SnmpEngine(),
+                CommunityData('public'),
+                UdpTransportTarget((target_ip, target_port)),
+                ContextData(),
+                'trap',
+                NotificationType(
+                    ObjectIdentity(trap_oid),
+                    [ObjectType(ObjectIdentity('1.3.6.1.4.1.1001.999.1.1'), OctetString(message))]
+                )
+            )
+        )
+        
+        if errorIndication:
+            print(f"❌ Trap hatası: {errorIndication}")
+        else:
+            print(f"✅ Trap başarılı: {target_ip}")
+            
+    except Exception as e:
+        print(f"❌ Trap gönderme hatası: {e}")
+
+def snmp_server():
+    """SNMP sunucu thread'i"""
+    print("SNMP sunucu başlatılıyor...")
+    
+    try:
+        # SNMP Engine oluştur
+        snmp_engine = engine.SnmpEngine()
+        
+        # UDP transport
+        config.addTransport(
+            snmp_engine,
+            udp.domainName,
+            udp.UdpTransport().openServerMode(('0.0.0.0', 161))
+        )
+        
+        # SNMPv2c community
+        config.addV1System(snmp_engine, 'my-area', 'public')
+        
+        # Context
+        config.addContext(snmp_engine, '')
+        
+        # SNMP Agent
+        snmp_agent = cmdrsp.GetCommandResponder(snmp_engine, context.SnmpContext(snmp_engine))
+        
+        print("✅ SNMP sunucu başlatıldı - Port: 161")
+        
+        # SNMP sunucu çalıştır
+        snmp_engine.transportDispatcher.runDispatcher()
+        
+    except Exception as e:
+        print(f"❌ SNMP sunucu hatası: {e}")
 
 if __name__ == '__main__':
     print("Program başlatıldı ==>")
