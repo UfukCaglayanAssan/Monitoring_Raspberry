@@ -105,224 +105,114 @@
     </div>
 </template>
 
-<!-- Batarya Detay Popup Modal -->
-<div class="modal fade" id="batteryDetailModal" tabindex="-1" aria-labelledby="batteryDetailModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="batteryDetailModalLabel">
-                    <i class="fas fa-battery-full"></i>
-                    <span data-tr="Batarya Detayları" data-en="Battery Details">Batarya Detayları</span>
-                    <span id="batteryDetailTitle">-</span>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+
+
+<!-- Batteries sayfası script'i batteries.js tarafından yüklenecek -->
+<!-- Batteries Sayfası İçeriği -->
+<div class="batteries-page">
+
+
+
+    <!-- Kol Seçimi -->
+    <div class="arm-selector">
+        <div class="arm-buttons">
+            <button class="arm-btn" data-arm="1">
+                <i class="fas fa-industry"></i> Kol 1
+            </button>
+            <button class="arm-btn" data-arm="2">
+                <i class="fas fa-industry"></i> Kol 2
+            </button>
+            <button class="arm-btn active" data-arm="3">
+                <i class="fas fa-industry"></i> Kol 3
+            </button>
+            <button class="arm-btn" data-arm="4">
+                <i class="fas fa-industry"></i> Kol 4
+            </button>
+        </div>
+    </div>
+
+    <!-- Batarya Kartları Grid -->
+    <div class="batteries-container">
+        <div class="batteries-grid" id="batteriesGrid">
+            <!-- Batarya kartları JavaScript ile doldurulacak -->
+        </div>
+        
+        <!-- Loading Spinner -->
+        <div class="loading-spinner" id="loadingSpinner">
+            <div class="spinner"></div>
+            <p>Batarya verileri yükleniyor...</p>
+        </div>
+        
+        <!-- Veri Yok Mesajı -->
+        <div class="no-data-message" id="noDataMessage" style="display: none;">
+            <i class="fas fa-battery-empty"></i>
+            <h3>Veri Bulunamadı</h3>
+            <p>Seçilen filtrelere uygun batarya verisi bulunamadı.</p>
+        </div>
+    </div>
+
+
+</div>
+
+<!-- Batarya kartı template'i -->
+<template id="batteryCardTemplate">
+    <div class="battery-card" data-arm="" data-battery="" data-timestamp="">
+        <!-- Ön Yüz -->
+        <div class="card-front">
+            <div class="battery-icon">
+                <i class="fas fa-battery-full"></i>
             </div>
-            <div class="modal-body">
-                <!-- Loading Spinner -->
-                <div class="text-center" id="batteryDetailLoading">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Yükleniyor...</span>
-                    </div>
-                    <p class="mt-2">Grafik verileri yükleniyor...</p>
+            <div class="card-info">
+                <h3 class="card-title" data-tr="Batarya Ünitesi" data-en="Battery Unit">Batarya Ünitesi</h3>
+                <div class="battery-address">
+                    <i class="fas fa-hashtag"></i>
+                    <span data-tr="Adres: " data-en="Address: ">Adres: <span class="battery-value"></span></span>
                 </div>
-                
-                <!-- Charts Container -->
-                <div class="battery-charts-container" id="batteryChartsContainer" style="display: none;">
-                    <div class="row">
-                        <!-- Gerilim Grafiği -->
-                        <div class="col-md-6 mb-4">
-                            <div class="chart-card">
-                                <div class="chart-header">
-                                    <h6><i class="fas fa-bolt text-warning"></i> <span data-tr="Gerilim (V)" data-en="Voltage (V)">Gerilim (V)</span></h6>
-                                </div>
-                                <div class="chart-body">
-                                    <canvas id="voltageChart" width="400" height="200"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- SOC Grafiği -->
-                        <div class="col-md-6 mb-4">
-                            <div class="chart-card">
-                                <div class="chart-header">
-                                    <h6><i class="fas fa-battery-full text-success"></i> <span data-tr="Şarj Durumu (%)" data-en="Charge Status (%)">Şarj Durumu (%)</span></h6>
-                                </div>
-                                <div class="chart-body">
-                                    <canvas id="socChart" width="400" height="200"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- RIMT Grafiği -->
-                        <div class="col-md-6 mb-4">
-                            <div class="chart-card">
-                                <div class="chart-header">
-                                    <h6><i class="fas fa-heartbeat text-danger"></i> <span data-tr="Sağlık Durumu (%)" data-en="Health Status (%)">Sağlık Durumu (%)</span></h6>
-                                </div>
-                                <div class="chart-body">
-                                    <canvas id="rimtChart" width="400" height="200"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- SOH Grafiği -->
-                        <div class="col-md-6 mb-4">
-                            <div class="chart-card">
-                                <div class="chart-header">
-                                    <h6><i class="fas fa-shield-alt text-info"></i> <span data-tr="Sağlık Durumu (%)" data-en="Health Status (%)">Sağlık Durumu (%)</span></h6>
-                                </div>
-                                <div class="chart-body">
-                                    <canvas id="sohChart" width="400" height="200"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Modül Sıcaklığı Grafiği -->
-                        <div class="col-md-6 mb-4">
-                            <div class="chart-card">
-                                <div class="chart-header">
-                                    <h6><i class="fas fa-thermometer-half text-warning"></i> <span data-tr="Modül Sıcaklığı (°C)" data-en="Module Temperature (°C)">Modül Sıcaklığı (°C)</span></h6>
-                                </div>
-                                <div class="chart-body">
-                                    <canvas id="modulSicaklikChart" width="400" height="200"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Pozitif Kutup Sıcaklığı Grafiği -->
-                        <div class="col-md-6 mb-4">
-                            <div class="chart-card">
-                                <div class="chart-header">
-                                    <h6><i class="fas fa-thermometer-half text-success"></i> <span data-tr="Pozitif Kutup Sıcaklığı (°C)" data-en="Positive Terminal Temperature (°C)">Pozitif Kutup Sıcaklığı (°C)</span></h6>
-                                </div>
-                                <div class="chart-body">
-                                    <canvas id="pozitifKutupChart" width="400" height="200"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Negatif Kutup Sıcaklığı Grafiği -->
-                        <div class="col-md-6 mb-4">
-                            <div class="chart-card">
-                                <div class="chart-header">
-                                    <h6><i class="fas fa-thermometer-half text-danger"></i> <span data-tr="Negatif Kutup Sıcaklığı (°C)" data-en="Negative Terminal Temperature (°C)">Negatif Kutup Sıcaklığı (°C)</span></h6>
-                                </div>
-                                <div class="chart-body">
-                                    <canvas id="negatifKutupChart" width="400" height="200"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- No Data Message -->
-                <div class="text-center" id="batteryDetailNoData" style="display: none;">
-                    <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
-                    <h5 data-tr="Veri Bulunamadı" data-en="No Data Found">Veri Bulunamadı</h5>
-                    <p data-tr="Bu batarya için grafik verisi bulunamadı." data-en="No chart data found for this battery.">Bu batarya için grafik verisi bulunamadı.</p>
+                <div class="last-update">
+                    <span data-tr="Son güncelleme:" data-en="Last update:">Son güncelleme:</span> <br>
+                    <span class="timestamp-value">--</span>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times"></i> <span data-tr="Kapat" data-en="Close">Kapat</span>
-                </button>
-                <button type="button" class="btn btn-primary" id="refreshBatteryCharts">
-                    <i class="fas fa-sync-alt"></i> <span data-tr="Yenile" data-en="Refresh">Yenile</span>
-                </button>
+        </div>
+        
+        <!-- Arka Yüz -->
+        <div class="card-back">
+            <h3 class="back-title" data-tr="Batarya Detayları" data-en="Battery Details">Batarya Detayları</h3>
+            <div class="data-grid">
+                <div class="data-item">
+                    <div class="data-header">
+                        <i class="fas fa-bolt voltage-icon"></i>
+                        <span class="voltage-label" data-tr="Gerilim:" data-en="Voltage:">Gerilim:</span>
+                    </div>
+                    <span class="data-value voltage-value">--</span>
+                </div>
+                
+                <div class="data-item">
+                    <div class="data-header">
+                        <i class="fas fa-thermometer-half temperature-icon"></i>
+                        <span class="temperature-label" data-tr="Sıcaklık:" data-en="Temperature:">Sıcaklık:</span>
+                    </div>
+                    <span class="data-value temperature-value">--</span>
+                </div>
+                
+                <div class="data-item">
+                    <div class="data-header">
+                        <i class="fas fa-battery-full health-icon"></i>
+                        <span class="health-label" data-tr="Sağlık:" data-en="Health:">Sağlık:</span>
+                    </div>
+                    <span class="data-value health-value">--</span>
+                </div>
+                
+                <div class="data-item">
+                    <div class="data-header">
+                        <i class="fas fa-hashtag charge-icon"></i>
+                        <span class="charge-label" data-tr="Şarj:" data-en="Charge:">Şarj:</span>
+                    </div>
+                    <span class="data-value charge-value">--</span>
+                </div>
             </div>
         </div>
     </div>
-</div>
-
-<!-- Batarya Detay Popup CSS -->
-<style>
-.chart-card {
-    background: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 15px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    transition: box-shadow 0.3s ease;
-}
-
-.chart-card:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
-
-.chart-header {
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #f0f0f0;
-}
-
-.chart-header h6 {
-    margin: 0;
-    font-weight: 600;
-    color: #333;
-}
-
-.chart-body {
-    position: relative;
-    height: 200px;
-}
-
-.modal-xl {
-    max-width: 95%;
-}
-
-/* Batarya kartı dönme animasyonu */
-.battery-card {
-    perspective: 1000px;
-    cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.battery-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.battery-card .card-front,
-.battery-card .card-back {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    backface-visibility: hidden;
-    transition: transform 0.6s;
-    border-radius: 8px;
-    padding: 20px;
-    box-sizing: border-box;
-}
-
-.battery-card .card-front {
-    background: linear-gradient(135deg, #4CAF50, #45a049);
-    color: white;
-    transform: rotateY(0deg);
-}
-
-.battery-card .card-back {
-    background: linear-gradient(135deg, #2196F3, #1976D2);
-    color: white;
-    transform: rotateY(180deg);
-}
-
-.battery-card.flipped .card-front {
-    transform: rotateY(-180deg);
-}
-
-.battery-card.flipped .card-back {
-    transform: rotateY(0deg);
-}
-
-@media (max-width: 768px) {
-    .modal-xl {
-        max-width: 100%;
-    }
-    
-    .chart-body {
-        height: 150px;
-    }
-}
-</style>
+</template>
 
 <!-- Batteries sayfası script'i batteries.js tarafından yüklenecek -->
