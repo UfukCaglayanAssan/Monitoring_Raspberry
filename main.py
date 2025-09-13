@@ -2139,7 +2139,7 @@ def snmp_server():
                     # Kol verileri - 1.3.6.1.4.1.1001.arm.dtype veya 1.3.6.1.4.1.1001.arm.dtype.0
                     if oid.startswith("1.3.6.1.4.1.1001."):
                         parts = oid.split('.')
-                        if len(parts) >= 8:  # En az 8 parça olmalı
+                        if len(parts) >= 9:  # En az 9 parça olmalı (1.3.6.1.4.1.1001.arm.dtype)
                             arm = int(parts[7])
                             dtype = int(parts[8])
                             
@@ -2153,7 +2153,7 @@ def snmp_server():
                     # Batarya verileri - 1.3.6.1.4.1.1001.arm.5.battery.dtype veya 1.3.6.1.4.1.1001.arm.5.battery.dtype.0
                     elif oid.startswith("1.3.6.1.4.1.1001."):
                         parts = oid.split('.')
-                        if len(parts) >= 10:  # En az 10 parça olmalı
+                        if len(parts) >= 11:  # En az 11 parça olmalı (1.3.6.1.4.1.1001.arm.5.battery.dtype)
                             arm = int(parts[7])
                             if parts[8] == "5":  # Batarya verileri
                                 battery = int(parts[9])
@@ -2169,7 +2169,7 @@ def snmp_server():
                     # Status verileri - 1.3.6.1.4.1.1001.arm.6.battery veya 1.3.6.1.4.1.1001.arm.6.battery.0
                     elif oid.startswith("1.3.6.1.4.1.1001."):
                         parts = oid.split('.')
-                        if len(parts) >= 9:  # En az 9 parça olmalı
+                        if len(parts) >= 10:  # En az 10 parça olmalı (1.3.6.1.4.1.1001.arm.6.battery)
                             arm = int(parts[7])
                             if parts[8] == "6":  # Status verileri
                                 battery = int(parts[9])
@@ -2185,7 +2185,7 @@ def snmp_server():
                     # Alarm verileri - 1.3.6.1.4.1.1001.arm.7.battery.alarm_type veya 1.3.6.1.4.1.1001.arm.7.battery.alarm_type.0
                     elif oid.startswith("1.3.6.1.4.1.1001."):
                         parts = oid.split('.')
-                        if len(parts) >= 10:  # En az 10 parça olmalı
+                        if len(parts) >= 11:  # En az 11 parça olmalı (1.3.6.1.4.1.1001.arm.7.battery.alarm_type)
                             arm = int(parts[7])
                             if parts[8] == "7":  # Alarm verileri
                                 battery = int(parts[9])
