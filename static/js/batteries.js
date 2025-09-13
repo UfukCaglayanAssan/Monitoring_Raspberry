@@ -423,11 +423,18 @@ if (typeof window.BatteriesPage === 'undefined') {
         console.log('Battery data:', battery);
         console.log('Voltage name:', battery.voltage_name);
         
-        // Tıklama eventi ekle
+        // Kart dönme eventi ekle
         cardElement.addEventListener('click', (e) => {
             e.preventDefault();
             console.log(`🖱️ Batarya kartı tıklandı: Kol ${battery.arm}, Batarya ${battery.batteryAddress}`);
-            this.openBatteryDetailModal(battery.arm, battery.batteryAddress);
+            
+            // Kart döndür
+            cardElement.classList.toggle('flipped');
+            
+            // 3 saniye sonra popup'ı aç
+            setTimeout(() => {
+                this.openBatteryDetailModal(battery.arm, battery.batteryAddress);
+            }, 300);
         });
         
         // Hover efekti için CSS class ekle

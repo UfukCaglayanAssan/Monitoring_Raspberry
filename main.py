@@ -588,13 +588,13 @@ def db_worker():
                     }
                     batch.append(record)
                     
-                    # SOC hesapla ve dtype=11'e kaydet (sadece batarya verisi için)
+                    # SOC hesapla ve dtype=6'ya kaydet (sadece batarya verisi için)
                     if k_value != 2:  # k_value 2 değilse SOC hesapla
                         soc_value = Calc_SOC(salt_data)
                         soc_record = {
                             "Arm": arm_value,
                             "k": k_value,
-                            "Dtype": 11,
+                            "Dtype": 6,  # SOC = dtype 6
                             "data": soc_value,
                             "timestamp": get_period_timestamp()
                         }
@@ -611,13 +611,13 @@ def db_worker():
                             'timestamp': get_period_timestamp()
                         }
                         if k_value != 2:  # SOC değerini de ekle
-                            battery_data_ram[arm_value][k_value][11] = {
+                            battery_data_ram[arm_value][k_value][6] = {
                                 'value': soc_value,
                                 'timestamp': get_period_timestamp()
                             }
                         print(f"RAM'e kaydedildi: Arm={arm_value}, k={k_value}, dtype={dtype}, value={salt_data}")
                         if k_value != 2:
-                            print(f"RAM'e kaydedildi: Arm={arm_value}, k={k_value}, dtype=11, value={soc_value}")
+                            print(f"RAM'e kaydedildi: Arm={arm_value}, k={k_value}, dtype=6, value={soc_value}")
                     
                     # Status güncelle (sadece missing data durumunda)
                     # Normal veri geldiğinde status güncelleme yapmıyoruz
@@ -2079,7 +2079,7 @@ def snmp_server():
         config.add_transport(
             snmp_engine,
             udp.DOMAIN_NAME,
-            udp.UdpTransport().open_server_mode(('0.0.0.0', 161))
+            udp.UdpTransport().open_server_mode(('0.0.0.0', 1161))
         )
         
         # SNMPv2c community
@@ -2278,8 +2278,8 @@ def snmp_server():
         # SNMP Agent
         snmp_agent = cmdrsp.GetCommandResponder(snmp_engine, snmp_context)
         
-        print("✅ SNMP sunucu başlatıldı - Port: 161")
-        print("📡 Port 161'de dinleniyor...")
+        print("✅ SNMP sunucu başlatıldı - Port: 1161")
+        print("📡 Port 1161'de dinleniyor...")
         print("=" * 50)
         print("SNMP Test OID'leri:")
         print("1.3.6.5.1.0  - Python bilgisi")
@@ -2324,14 +2324,14 @@ def snmp_server():
         print("1.3.6.1.4.1.1001.3.7.2.1 - Kol 3 Batarya 2 VoltageWarn alarmı")
         print("=" * 50)
         print("SNMP Test komutları:")
-        print("snmpget -v2c -c public localhost:161 1.3.6.5.2.0")
-        print("snmpget -v2c -c public localhost:161 1.3.6.5.7.0")
-        print("snmpget -v2c -c public localhost:161 1.3.6.1.4.1.1001.1.1")
-        print("snmpget -v2c -c public localhost:161 1.3.6.1.4.1.1001.1.5.1.10")
-        print("snmpget -v2c -c public localhost:161 1.3.6.1.4.1.1001.1.6.1")
-        print("snmpget -v2c -c public localhost:161 1.3.6.1.4.1.1001.1.7.0.1")
-        print("snmpget -v2c -c public localhost:161 1.3.6.1.4.1.1001.1.7.1.1")
-        print("snmpwalk -v2c -c public localhost:161 1.3.6.1.4.1.1001")
+        print("snmpget -v2c -c public localhost:1161 1.3.6.5.2.0")
+        print("snmpget -v2c -c public localhost:1161 1.3.6.5.7.0")
+        print("snmpget -v2c -c public localhost:1161 1.3.6.1.4.1.1001.1.1")
+        print("snmpget -v2c -c public localhost:1161 1.3.6.1.4.1.1001.1.5.1.10")
+        print("snmpget -v2c -c public localhost:1161 1.3.6.1.4.1.1001.1.6.1")
+        print("snmpget -v2c -c public localhost:1161 1.3.6.1.4.1.1001.1.7.0.1")
+        print("snmpget -v2c -c public localhost:1161 1.3.6.1.4.1.1001.1.7.1.1")
+        print("snmpwalk -v2c -c public localhost:1161 1.3.6.1.4.1.1001")
         print("=" * 50)
         
         # SNMP sunucu çalıştır

@@ -266,7 +266,14 @@
     height: 200px;
 }
 
+.modal-xl {
+    max-width: 95%;
+}
+
+/* Batarya kartı dönme animasyonu */
 .battery-card {
+    perspective: 1000px;
+    cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -275,8 +282,36 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
-.modal-xl {
-    max-width: 95%;
+.battery-card .card-front,
+.battery-card .card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    transition: transform 0.6s;
+    border-radius: 8px;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.battery-card .card-front {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+    transform: rotateY(0deg);
+}
+
+.battery-card .card-back {
+    background: linear-gradient(135deg, #2196F3, #1976D2);
+    color: white;
+    transform: rotateY(180deg);
+}
+
+.battery-card.flipped .card-front {
+    transform: rotateY(-180deg);
+}
+
+.battery-card.flipped .card-back {
+    transform: rotateY(0deg);
 }
 
 @media (max-width: 768px) {
