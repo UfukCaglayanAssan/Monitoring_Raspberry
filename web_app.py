@@ -1117,29 +1117,6 @@ def save_ip_config():
             'message': f'IP konfigürasyonu kaydedilirken hata: {str(e)}'
         }), 500
 
-@app.route('/api/current-ip', methods=['GET'])
-def get_current_ip():
-    """Mevcut IP adresini getir"""
-    try:
-        import subprocess
-        result = subprocess.run(['hostname', '-I'], capture_output=True, text=True)
-        if result.returncode == 0:
-            ips = result.stdout.strip().split()
-            current_ip = ips[0] if ips else 'Bilinmiyor'
-        else:
-            current_ip = 'Alınamadı'
-        
-        return jsonify({
-            'success': True,
-            'ip': current_ip
-        })
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e),
-            'ip': 'Hata'
-        }), 500
-
 @app.route('/api/send-manual-set-command', methods=['POST'])
 def send_manual_set_command():
     """Manuel kol set komutu gönder (0x81 0xkol_no 0x78)"""
