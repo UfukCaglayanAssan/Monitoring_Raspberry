@@ -488,6 +488,9 @@ def db_worker():
                     add_missing_data(arm_value, slave_value)
                     print(f"🆕 VERİ GELMİYOR: Kol {arm_value}, Batarya {slave_value}")
                     
+                    # Status güncelle (veri yok)
+                    update_status(arm_value, slave_value, False)
+                    
                     # Reset sonrası kontrol - eğer bu batarya reset öncesi missing data'daydı ve hala status 0 geliyorsa alarm
                     check_missing_data_after_reset(arm_value, slave_value)
                     
@@ -507,11 +510,15 @@ def db_worker():
                     # Veri geliyor - missing data düzelt
                     if resolve_missing_data(arm_value, slave_value):
                         print(f"✅ VERİ GELDİ: Kol {arm_value}, Batarya {slave_value} - Missing data düzeltildi")
+                        # Status güncelle (veri var)
+                        update_status(arm_value, slave_value, True)
                         # Alarm düzeltme işlemi
                         alarm_processor.add_resolve(arm_value, slave_value)
                         print(f"📝 Missing data alarm düzeltme eklendi - Arm: {arm_value}, Battery: {slave_value}")
                     else:
                         print(f"ℹ️ VERİ GELDİ: Kol {arm_value}, Batarya {slave_value} - Missing data zaten yoktu")
+                        # Status güncelle (veri var)
+                        update_status(arm_value, slave_value, True)
                 
                 # SQLite'ye kaydet
                 with db_lock:
@@ -612,12 +619,9 @@ def db_worker():
                         if k_value != 2:
                             print(f"RAM'e kaydedildi: Arm={arm_value}, k={k_value}, dtype=11, value={soc_value}")
                     
-                    # Status güncelle (veri geldi)
-                    if k_value > 2:  # Batarya verisi
-                        battery_num = k_value - 2
-                        update_status(arm_value, battery_num, True)
-                    else:  # Kol verisi
-                        update_status(arm_value, 0, True)
+                    # Status güncelle (sadece missing data durumunda)
+                    # Normal veri geldiğinde status güncelleme yapmıyoruz
+                    # Status sadece missing data (0) veya düzeldi (1) durumunda güncellenir
                     
                     # Alarm kontrolü
                     battery_num = k_value - 2 if k_value > 2 else 0  # k=2 -> 0 (kol), k=3+ -> batarya numarası
@@ -1575,7 +1579,7 @@ def initialize_status_ram():
             battery_count = arm_slave_counts_ram.get(arm, 0)
             for battery in range(1, battery_count + 1):
                 status_ram[arm][battery] = True  # Başlangıçta veri var
-        print(f"DEBUG: Status RAM yapısı başlatıldı - Kol 1: {arm_slave_counts_ram[1]}, Kol 2: {arm_slave_counts_ram[2]}, Kol 3: {arm_slave_counts_ram[3]}, Kol 4: {arm_slave_counts_ram[4]} batarya")
+        print(f"DEBUG: Status RAM yapısı başlatıldı - Kol 1: {arm_slave_counts_ram.get(1, 0)}, Kol 2: {arm_slave_counts_ram.get(2, 0)}, Kol 3: {arm_slave_counts_ram.get(3, 0)}, Kol 4: {arm_slave_counts_ram.get(4, 0)} batarya")
 
 def load_trap_targets_to_ram():
     """Trap hedeflerini veritabanından RAM'e yükle"""
