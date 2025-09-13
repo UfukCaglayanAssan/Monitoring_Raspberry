@@ -18,6 +18,7 @@ from alarm_processor import alarm_processor
 # SNMP imports
 from pysnmp.entity import engine, config
 from pysnmp.entity.rfc3413 import cmdrsp, context
+from pysnmp.hlapi import *
 from pysnmp.carrier.asyncio.dgram import udp
 from pysnmp.proto.api import v2c
 
@@ -1720,8 +1721,6 @@ def send_snmp_trap(arm, battery, alarm_type, status):
 def send_single_trap(target_ip, target_port, trap_oid, message):
     """Tek bir trap gönder"""
     try:
-        from pysnmp.hlapi import *
-        
         # SNMP Trap gönder
         errorIndication, errorStatus, errorIndex, varBinds = next(
             sendNotification(
