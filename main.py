@@ -43,6 +43,10 @@ data_lock = threading.Lock()  # Thread-safe erişim için
 alarm_ram = {}  # {arm: {battery: {alarm_type: bool}}}
 alarm_lock = threading.Lock()  # Thread-safe erişim için
 
+# Status verileri için RAM yapısı
+status_ram = {}  # {arm: {battery: bool}} - True=veri var, False=veri yok
+status_lock = threading.RLock()  # Thread-safe erişim için
+
 # Trap hedefleri için RAM yapısı
 trap_targets_ram = []  # [{'id': int, 'name': str, 'ip_address': str, 'port': int, 'is_active': bool}]
 trap_targets_lock = threading.Lock()  # Thread-safe erişim için
@@ -271,8 +275,19 @@ def check_missing_data_after_reset(arm_value, battery_value):
             # "Veri gelmiyor" alarmı oluştur
             alarm_processor.add_alarm(arm_value, battery_value, 0, 0, int(time.time() * 1000))  # error_msb=0, error_lsb=0 = veri gelmiyor
             print(f"📝 Veri gelmiyor alarmı eklendi - Arm: {arm_value}, Battery: {battery_value}")
+            # Status'u 0 yap (veri yok)
+            update_status(arm_value, battery_value, False)
             return True
-        return False
+    return False
+
+def update_status(arm_value, battery_value, has_data):
+    """Status güncelle - True=veri var, False=veri yok"""
+    with status_lock:
+        if arm_value in status_ram and battery_value in status_ram[arm_value]:
+            status_ram[arm_value][battery_value] = has_data
+            print(f"📊 Status güncellendi - Kol {arm_value}, Batarya {battery_value}: {'Veri var' if has_data else 'Veri yok'}")
+        else:
+            print(f"⚠️ Status güncellenemedi - Kol {arm_value}, Batarya {battery_value} bulunamadı")
 
 def Calc_SOH(x):
     if x is None:
@@ -597,6 +612,13 @@ def db_worker():
                         if k_value != 2:
                             print(f"RAM'e kaydedildi: Arm={arm_value}, k={k_value}, dtype=11, value={soc_value}")
                     
+                    # Status güncelle (veri geldi)
+                    if k_value > 2:  # Batarya verisi
+                        battery_num = k_value - 2
+                        update_status(arm_value, battery_num, True)
+                    else:  # Kol verisi
+                        update_status(arm_value, 0, True)
+                    
                     # Alarm kontrolü
                     battery_num = k_value - 2 if k_value > 2 else 0  # k=2 -> 0 (kol), k=3+ -> batarya numarası
                     check_alarm_conditions(arm_value, battery_num, battery_data_ram[arm_value][k_value])
@@ -826,6 +848,9 @@ def db_worker():
                     
                     # Alarm RAM yapısını güncelle
                     initialize_alarm_ram()
+                    
+                    # Status RAM yapısını başlat
+                    initialize_status_ram()
                     
                     print(f"✓ Armslavecounts RAM'e kaydedildi: {arm_slave_counts}")
                     print(f"✓ Modbus/SNMP RAM'e kaydedildi: {arm_slave_counts_ram}")
@@ -1539,6 +1564,19 @@ def initialize_alarm_ram():
                 alarm_ram[arm][battery] = {1: False, 2: False, 3: False, 4: False, 5: False, 6: False, 7: False}
         print(f"DEBUG: Alarm RAM yapısı başlatıldı - Kol 1: {arm_slave_counts_ram[1]}, Kol 2: {arm_slave_counts_ram[2]}, Kol 3: {arm_slave_counts_ram[3]}, Kol 4: {arm_slave_counts_ram[4]} batarya")
 
+def initialize_status_ram():
+    """Status RAM yapısını başlat"""
+    with status_lock:
+        for arm in range(1, 5):
+            status_ram[arm] = {}
+            # Kol statusu (0 = kol)
+            status_ram[arm][0] = True  # Kol varsayılan olarak veri var
+            # Batarya statusları (sadece mevcut batarya sayısı kadar)
+            battery_count = arm_slave_counts_ram.get(arm, 0)
+            for battery in range(1, battery_count + 1):
+                status_ram[arm][battery] = True  # Başlangıçta veri var
+        print(f"DEBUG: Status RAM yapısı başlatıldı - Kol 1: {arm_slave_counts_ram[1]}, Kol 2: {arm_slave_counts_ram[2]}, Kol 3: {arm_slave_counts_ram[3]}, Kol 4: {arm_slave_counts_ram[4]} batarya")
+
 def load_trap_targets_to_ram():
     """Trap hedeflerini veritabanından RAM'e yükle"""
     try:
@@ -2215,10 +2253,10 @@ def snmp_server():
                             if parts[8] == "6":  # Status verileri
                                 battery = int(parts[9])
                                 
-                                with data_lock:
-                                    if arm in battery_data_ram and battery in battery_data_ram[arm]:
-                                        # Status: veri varsa 1, yoksa 0
-                                        has_data = len(battery_data_ram[arm][battery]) > 0
+                                with status_lock:
+                                    if arm in status_ram and battery in status_ram[arm]:
+                                        # Status: True=1, False=0
+                                        has_data = status_ram[arm][battery]
                                         return self.getSyntax().clone("1" if has_data else "0")
                                     else:
                                         return self.getSyntax().clone("0")
