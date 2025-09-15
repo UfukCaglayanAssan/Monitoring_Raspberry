@@ -2398,7 +2398,7 @@ def snmp_server():
         
         # Tüm MIB sembollerini göster
         print("🔍 SNMP MIB yapısı:")
-        for oid, obj in snmp_engine.msgAndPduDsp.mibInstrumController.mibBuilder.mibSymbols.items():
+        for oid, obj in mib_builder.mibSymbols.items():
             print(f"  {oid}: {obj}")
         
         # Batarya OID'lerini kontrol et
