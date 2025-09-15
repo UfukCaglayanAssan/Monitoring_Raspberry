@@ -2396,10 +2396,12 @@ def snmp_server():
         mib_symbols = mib_builder.mibSymbols
         print(f"  Toplam MIB sembolü: {len(mib_symbols)}")
         
-        # Tüm MIB sembollerini göster
-        print("🔍 SNMP MIB yapısı:")
+        # Sadece batarya OID'lerini göster
+        print("🔍 SNMP Batarya OID'leri:")
         for oid, obj in mib_builder.mibSymbols.items():
-            print(f"  {oid}: {obj}")
+            oid_str = '.'.join(map(str, oid))
+            if '1001' in oid_str and '5.' in oid_str:
+                print(f"  {oid_str}: {obj}")
         
         # Batarya OID'lerini kontrol et
         battery_oids = []
