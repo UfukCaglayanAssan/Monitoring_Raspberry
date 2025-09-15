@@ -32,23 +32,6 @@
                         <label for="recipientEmail" data-tr="E-mail Adresi" data-en="Email Address">E-mail Adresi</label>
                         <input type="email" id="recipientEmail" name="email" required>
                     </div>
-                    <div class="form-group">
-                        <label data-tr="Alarm Seviyeleri" data-en="Alarm Levels">Alarm Seviyeleri</label>
-                        <div class="alarm-levels">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="receiveCriticalAlarms" name="receive_critical_alarms" checked>
-                                <span class="checkmark"></span>
-                                <span data-tr="Kritik Alarmlar" data-en="Critical Alarms">Kritik Alarmlar</span>
-                                <small data-tr="(Kol alarmları, batarya alarmları)" data-en="(Arm alarms, battery alarms)">(Kol alarmları, batarya alarmları)</small>
-                            </label>
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="receiveNormalAlarms" name="receive_normal_alarms" checked>
-                                <span class="checkmark"></span>
-                                <span data-tr="Normal Alarmlar" data-en="Normal Alarms">Normal Alarmlar</span>
-                                <small data-tr="(Batarya uyarıları)" data-en="(Battery warnings)">(Batarya uyarıları)</small>
-                            </label>
-                        </div>
-                    </div>
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" id="cancelAdd">
                             <span data-tr="İptal" data-en="Cancel">İptal</span>
@@ -79,23 +62,6 @@
                     <div class="form-group">
                         <label for="editRecipientEmail" data-tr="E-mail Adresi" data-en="Email Address">E-mail Adresi</label>
                         <input type="email" id="editRecipientEmail" name="email" required>
-                    </div>
-                    <div class="form-group">
-                        <label data-tr="Alarm Seviyeleri" data-en="Alarm Levels">Alarm Seviyeleri</label>
-                        <div class="alarm-levels">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="editReceiveCriticalAlarms" name="receive_critical_alarms" checked>
-                                <span class="checkmark"></span>
-                                <span data-tr="Kritik Alarmlar" data-en="Critical Alarms">Kritik Alarmlar</span>
-                                <small data-tr="(Kol alarmları, batarya alarmları)" data-en="(Arm alarms, battery alarms)">(Kol alarmları, batarya alarmları)</small>
-                            </label>
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="editReceiveNormalAlarms" name="receive_normal_alarms" checked>
-                                <span class="checkmark"></span>
-                                <span data-tr="Normal Alarmlar" data-en="Normal Alarms">Normal Alarmlar</span>
-                                <small data-tr="(Batarya uyarıları)" data-en="(Battery warnings)">(Batarya uyarıları)</small>
-                            </label>
-                        </div>
                     </div>
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" id="cancelEdit">
@@ -366,108 +332,5 @@
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
-}
-
-.alarm-levels {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    margin-top: 10px;
-}
-
-.checkbox-label {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    cursor: pointer;
-    padding: 12px;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    background: #f8f9fa;
-}
-
-.checkbox-label:hover {
-    background: #e9ecef;
-    border-color: #1e3c72;
-}
-
-.checkbox-label input[type="checkbox"] {
-    display: none;
-}
-
-.checkmark {
-    width: 20px;
-    height: 20px;
-    border: 2px solid #ddd;
-    border-radius: 4px;
-    position: relative;
-    flex-shrink: 0;
-    transition: all 0.3s ease;
-    background: white;
-}
-
-.checkbox-label input[type="checkbox"]:checked + .checkmark {
-    background: #1e3c72;
-    border-color: #1e3c72;
-}
-
-.checkbox-label input[type="checkbox"]:checked + .checkmark::after {
-    content: '';
-    position: absolute;
-    left: 6px;
-    top: 2px;
-    width: 6px;
-    height: 10px;
-    border: solid white;
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
-}
-
-.checkbox-label span {
-    font-weight: 500;
-    color: #2c3e50;
-    flex: 1;
-}
-
-.checkbox-label small {
-    display: block;
-    color: #6c757d;
-    font-size: 12px;
-    margin-top: 2px;
-}
-
-.recipient-alarm-levels {
-    display: flex;
-    gap: 10px;
-    margin: 15px 0;
-    flex-wrap: wrap;
-}
-
-.alarm-level-badge {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-}
-
-.alarm-level-badge.active {
-    background: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-}
-
-.alarm-level-badge.inactive {
-    background: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-}
-
-.alarm-level-badge i {
-    font-size: 10px;
 }
 </style>

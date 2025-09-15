@@ -607,7 +607,7 @@ class BatteryDatabase:
                 else:
                     # Sadece aktif alarmları getir
                     cursor.execute('''
-                        SELECT id, arm, battery, error_code_msb, error_code_lsb, timestamp, status, resolved_at, created_at
+                        SELECT id, arm, battery, error_code_msb, error_code_lsb, timestamp, status, resolved_at, created_at, severity
                         FROM alarms 
                         WHERE status = 'active'
                         ORDER BY timestamp DESC
@@ -642,14 +642,14 @@ class BatteryDatabase:
                 # Sayfalanmış verileri getir
                 if show_resolved:
                     cursor.execute('''
-                        SELECT id, arm, battery, error_code_msb, error_code_lsb, timestamp, status, resolved_at, created_at
+                        SELECT id, arm, battery, error_code_msb, error_code_lsb, timestamp, status, resolved_at, created_at, severity
                         FROM alarms 
                         ORDER BY timestamp DESC
                         LIMIT ? OFFSET ?
                     ''', (page_size, offset))
                 else:
                     cursor.execute('''
-                        SELECT id, arm, battery, error_code_msb, error_code_lsb, timestamp, status, resolved_at, created_at
+                        SELECT id, arm, battery, error_code_msb, error_code_lsb, timestamp, status, resolved_at, created_at, severity
                         FROM alarms 
                         WHERE status = 'active'
                         ORDER BY timestamp DESC
