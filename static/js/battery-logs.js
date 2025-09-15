@@ -191,7 +191,7 @@ if (typeof window.BatteryLogsPage === 'undefined') {
     }
 
     formatValue(value, unit) {
-        if (value === null || value === undefined || value === 0) {
+        if (value === null || value === undefined) {
             return '-';
         }
         return `${parseFloat(value).toFixed(3)} ${unit}`;

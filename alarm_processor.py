@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+ onu# -*- coding: utf-8 -*-
 
 import time
 import threading
@@ -113,34 +113,18 @@ class AlarmProcessor:
             for alarm in alarms:
                 processed_alarm = self.process_alarm_for_email(alarm)
                 if processed_alarm:
-                    # Alarm seviyesini belirle
-                    severity = self.db.determine_alarm_severity(alarm['error_code_msb'], alarm['error_code_lsb'])
-                    processed_alarm['severity'] = severity
-                    
-                    if severity == 'critical':
-                        critical_alarms.append(processed_alarm)
-                    else:
-                        normal_alarms.append(processed_alarm)
+                    # Tüm alarmları normal olarak işle (kritiklik kaldırıldı)
+                    normal_alarms.append(processed_alarm)
             
-            if not critical_alarms and not normal_alarms:
+            if not normal_alarms:
                 print("⚠️ İşlenecek alarm bulunamadı")
                 return
             
-            # Kritik alarmlar için mail gönder
-            if critical_alarms:
-                critical_recipients = [r for r in recipients if r.get('receive_critical_alarms', True)]
-                if critical_recipients:
-                    from mail_sender import send_alarm_notification
-                    send_alarm_notification(critical_recipients, critical_alarms)
-                    print(f"✅ {len(critical_alarms)} kritik alarm için mail gönderildi ({len(critical_recipients)} alıcıya)")
-            
-            # Normal alarmlar için mail gönder
+            # Tüm alarmlar için mail gönder
             if normal_alarms:
-                normal_recipients = [r for r in recipients if r.get('receive_normal_alarms', True)]
-                if normal_recipients:
-                    from mail_sender import send_alarm_notification
-                    send_alarm_notification(normal_recipients, normal_alarms)
-                    print(f"✅ {len(normal_alarms)} normal alarm için mail gönderildi ({len(normal_recipients)} alıcıya)")
+                from mail_sender import send_alarm_notification
+                send_alarm_notification(recipients, normal_alarms)
+                print(f"✅ {len(normal_alarms)} alarm için mail gönderildi ({len(recipients)} alıcıya)")
                 
         except Exception as e:
             print(f"❌ Mail gönderme hatası: {e}")

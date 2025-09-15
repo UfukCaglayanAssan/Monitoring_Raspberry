@@ -1559,6 +1559,67 @@ def get_alarm_data_by_index(start_index, quantity):
         print(f"DEBUG: Alarm sonuç: {result}")
         return result
 
+def get_status_data_by_index(start_index, quantity):
+    """Status verilerini indeksine göre döndür"""
+    with status_lock:
+        result = []
+        current_index = start_index
+        
+        print(f"DEBUG: get_status_data_by_index start={start_index}, quantity={quantity}")
+        
+        # Aralık kontrolü (9001-9484)
+        if start_index < 9001 or start_index > 9484:
+            print(f"DEBUG: Geçersiz status aralığı! start_index={start_index} (9001-9484 arası olmalı)")
+            return [0] * quantity
+        
+        # Hangi kol aralığında olduğunu belirle
+        if 9001 <= start_index <= 9121:
+            target_arm = 1
+            arm_start = 9001
+        elif 9122 <= start_index <= 9242:
+            target_arm = 2
+            arm_start = 9122
+        elif 9243 <= start_index <= 9363:
+            target_arm = 3
+            arm_start = 9243
+        elif 9364 <= start_index <= 9484:
+            target_arm = 4
+            arm_start = 9364
+        else:
+            print(f"DEBUG: Geçersiz status aralığı! start_index={start_index}")
+            return [0] * quantity
+        
+        print(f"DEBUG: Hedef kol: {target_arm}, aralık: {arm_start}-{arm_start+120}")
+        
+        # Kol statusu (1 adet)
+        if current_index >= start_index and len(result) < quantity:
+            status_value = status_ram.get(target_arm, {}).get(0, True)  # Kol statusu
+            result.append(1 if status_value else 0)
+            print(f"DEBUG: Kol {target_arm} status: {status_value}")
+        current_index += 1
+        
+        if len(result) >= quantity:
+            return result
+        
+        # Batarya statusları (120 adet)
+        battery_count = arm_slave_counts_ram.get(target_arm, 0)
+        for battery_num in range(1, battery_count + 1):
+            if current_index >= start_index and len(result) < quantity:
+                status_value = status_ram.get(target_arm, {}).get(battery_num, True)
+                result.append(1 if status_value else 0)
+                print(f"DEBUG: Kol {target_arm} Batarya {battery_num} status: {status_value}")
+            current_index += 1
+            
+            if len(result) >= quantity:
+                break
+        
+        # Eksik alanları 0 ile doldur
+        while len(result) < quantity:
+            result.append(0)
+        
+        print(f"DEBUG: Status sonuç: {result}")
+        return result
+
 def initialize_alarm_ram():
     """Alarm RAM yapısını başlat"""
     with alarm_lock:
@@ -1770,9 +1831,12 @@ def handle_read_holding_registers(transaction_id, unit_id, start_address, quanti
                     else:
                         registers.append(0.0)  # Boş register
             print(f"DEBUG: Armslavecounts verileri: {registers}")
-        elif 5001 <= start_address <= 5844:  # Alarm verileri
+        elif 5001 <= start_address <= 8376:  # Alarm verileri
             # Alarm verilerini döndür
             registers = get_alarm_data_by_index(start_address, quantity)
+        elif 9001 <= start_address <= 9484:  # Status verileri
+            # Status verilerini döndür
+            registers = get_status_data_by_index(start_address, quantity)
         elif start_address >= 1:  # Dinamik veri okuma
             # Dinamik veri sistemi kullan
             registers = get_dynamic_data_by_index(start_address, quantity)
@@ -1820,8 +1884,10 @@ def handle_read_input_registers(transaction_id, unit_id, start_address, quantity
                         registers.append(float(arm_slave_counts_ram.get(arm_num, 0)))
                     else:
                         registers.append(0.0)
-        elif 5001 <= start_address <= 5844:  # Alarm verileri
+        elif 5001 <= start_address <= 8376:  # Alarm verileri
             registers = get_alarm_data_by_index(start_address, quantity)
+        elif 9001 <= start_address <= 9484:  # Status verileri
+            registers = get_status_data_by_index(start_address, quantity)
         elif start_address >= 1:
             registers = get_dynamic_data_by_index(start_address, quantity)
         

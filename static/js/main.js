@@ -3,7 +3,6 @@ class App {
     constructor() {
         // localStorage'dan son sayfayı oku, yoksa summary
         this.currentPage = localStorage.getItem('lastPage') || 'summary';
-        this.currentLanguage = 'tr';
         this.alarmCountInterval = null; // Interval referansı
         
         // F5 ile yenileme kontrolü
@@ -36,7 +35,6 @@ class App {
     init() {
         this.bindEvents();
         this.loadPage(this.currentPage); // localStorage'dan gelen sayfa veya summary
-        this.setLanguage(this.currentLanguage);
         this.startAlarmCountRefresh(); // Alarm sayısı güncellemeyi başlat
     }
 
@@ -116,16 +114,6 @@ class App {
             this.eventsBound = true;
         }
 
-        // Dil değiştirme
-        document.querySelectorAll('.language-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const lang = e.target.getAttribute('data-lang');
-                if (lang) {
-                this.setLanguage(lang);
-                }
-            });
-        });
     }
 
     toggleSubmenu(link) {
@@ -282,20 +270,6 @@ class App {
         }
     }
 
-    setLanguage(lang) {
-        this.currentLanguage = lang;
-        
-        // Dil butonlarını güncelle
-        document.querySelectorAll('.language-btn').forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.getAttribute('data-lang') === lang) {
-                btn.classList.add('active');
-            }
-        });
-        
-        // Sayfa içeriğini yeniden yükle
-        this.loadPage(this.currentPage);
-    }
 
     showToast(message, type = 'info') {
         const toast = document.createElement('div');

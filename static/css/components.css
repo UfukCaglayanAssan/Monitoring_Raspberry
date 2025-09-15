@@ -1226,9 +1226,6 @@
         align-items: stretch;
     }
     
-    .language-selector {
-        justify-content: center;
-    }
 }
 
 /* Alarm Geçmişi Toggle Butonu */

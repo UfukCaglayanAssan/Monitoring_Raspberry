@@ -122,34 +122,6 @@ body {
     gap: 1.5rem;
 }
 
-/* Dil Seçimi */
-.language-selector {
-    display: flex;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    padding: 4px;
-    border: 1px solid #e9ecef;
-}
-
-.lang-btn {
-    padding: 0.5rem 1rem;
-    border: none;
-    background: transparent;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.3s ease;
-}
-
-.lang-btn.active {
-    background-color: #1e3c72;
-    color: white;
-}
-
-.lang-btn:hover:not(.active) {
-    background-color: #e9ecef;
-}
-
 /* Kullanıcı Bilgisi */
 .user-info {
     display: flex;

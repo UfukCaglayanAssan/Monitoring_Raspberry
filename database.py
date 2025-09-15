@@ -734,6 +734,228 @@ class BatteryDatabase:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 
+                # Ana veri tablosu (tüm veriler için)
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='battery_data'
+                """)
+                
+                if not cursor.fetchone():
+                    print("🔄 battery_data tablosu eksik, oluşturuluyor...")
+                    cursor.execute('''
+                        CREATE TABLE IF NOT EXISTS battery_data (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            arm INTEGER,
+                            k INTEGER,
+                            dtype INTEGER,
+                            data REAL,
+                            timestamp INTEGER,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )
+                    ''')
+                    conn.commit()
+                    print("✅ battery_data tablosu oluşturuldu")
+                else:
+                    print("✅ battery_data tablosu mevcut")
+                
+                # Periyot verileri tablosu (sadece son periyot verileri)
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='current_period_data'
+                """)
+                
+                if not cursor.fetchone():
+                    print("🔄 current_period_data tablosu eksik, oluşturuluyor...")
+                    cursor.execute('''
+                        CREATE TABLE IF NOT EXISTS current_period_data (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            arm INTEGER,
+                            k INTEGER,
+                            dtype INTEGER,
+                            data REAL,
+                            timestamp INTEGER,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            UNIQUE(arm, k, dtype, timestamp)
+                        )
+                    ''')
+                    conn.commit()
+                    print("✅ current_period_data tablosu oluşturuldu")
+                else:
+                    print("✅ current_period_data tablosu mevcut")
+                
+                # Dil tablosu
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='languages'
+                """)
+                
+                if not cursor.fetchone():
+                    print("🔄 languages tablosu eksik, oluşturuluyor...")
+                    cursor.execute('''
+                        CREATE TABLE IF NOT EXISTS languages (
+                            language_code TEXT PRIMARY KEY,
+                            language_name TEXT,
+                            is_active BOOLEAN DEFAULT TRUE,
+                            is_default BOOLEAN DEFAULT FALSE
+                        )
+                    ''')
+                    conn.commit()
+                    print("✅ languages tablosu oluşturuldu")
+                else:
+                    print("✅ languages tablosu mevcut")
+                
+                # Veri tipi tablosu (sadece dtype ile)
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='data_types'
+                """)
+                
+                if not cursor.fetchone():
+                    print("🔄 data_types tablosu eksik, oluşturuluyor...")
+                    cursor.execute('''
+                        CREATE TABLE IF NOT EXISTS data_types (
+                            dtype INTEGER PRIMARY KEY,
+                            name TEXT,
+                            unit TEXT,
+                            description TEXT
+                        )
+                    ''')
+                    conn.commit()
+                    print("✅ data_types tablosu oluşturuldu")
+                else:
+                    print("✅ data_types tablosu mevcut")
+                
+                # Veri tipi çevirileri
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='data_type_translations'
+                """)
+                
+                if not cursor.fetchone():
+                    print("🔄 data_type_translations tablosu eksik, oluşturuluyor...")
+                    cursor.execute('''
+                        CREATE TABLE IF NOT EXISTS data_type_translations (
+                            dtype INTEGER,
+                            language_code TEXT,
+                            name TEXT,
+                            description TEXT,
+                            PRIMARY KEY (dtype, language_code),
+                            FOREIGN KEY (language_code) REFERENCES languages(language_code)
+                        )
+                    ''')
+                    conn.commit()
+                    print("✅ data_type_translations tablosu oluşturuldu")
+                else:
+                    print("✅ data_type_translations tablosu mevcut")
+                
+                # Alarm tablosu
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='alarms'
+                """)
+                
+                if not cursor.fetchone():
+                    print("🔄 alarms tablosu eksik, oluşturuluyor...")
+                    cursor.execute('''
+                        CREATE TABLE IF NOT EXISTS alarms (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            arm INTEGER,
+                            battery INTEGER,
+                            error_code_msb INTEGER,
+                            error_code_lsb INTEGER,
+                            timestamp INTEGER,
+                            status TEXT DEFAULT 'active',
+                            resolved_at DATETIME,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )
+                    ''')
+                    conn.commit()
+                    print("✅ alarms tablosu oluşturuldu")
+                else:
+                    print("✅ alarms tablosu mevcut")
+                
+                # Mail alıcıları tablosu
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='mail_recipients'
+                """)
+                
+                if not cursor.fetchone():
+                    print("🔄 mail_recipients tablosu eksik, oluşturuluyor...")
+                    cursor.execute('''
+                        CREATE TABLE IF NOT EXISTS mail_recipients (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            name TEXT NOT NULL,
+                            email TEXT NOT NULL UNIQUE,
+                            is_active BOOLEAN DEFAULT 1,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )
+                    ''')
+                    conn.commit()
+                    print("✅ mail_recipients tablosu oluşturuldu")
+                else:
+                    print("✅ mail_recipients tablosu mevcut")
+                
+                # Mail sunucu konfigürasyon tablosu
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='mail_server_config'
+                """)
+                
+                if not cursor.fetchone():
+                    print("🔄 mail_server_config tablosu eksik, oluşturuluyor...")
+                    cursor.execute('''
+                        CREATE TABLE IF NOT EXISTS mail_server_config (
+                            id INTEGER PRIMARY KEY DEFAULT 1,
+                            smtp_server TEXT,
+                            smtp_port INTEGER,
+                            smtp_username TEXT,
+                            smtp_password TEXT,
+                            use_tls BOOLEAN DEFAULT 1,
+                            is_active BOOLEAN DEFAULT 0,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            CONSTRAINT single_config CHECK (id = 1)
+                        )
+                    ''')
+                    conn.commit()
+                    print("✅ mail_server_config tablosu oluşturuldu")
+                else:
+                    print("✅ mail_server_config tablosu mevcut")
+                
+                # Arm slave counts tablosu
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='arm_slave_counts'
+                """)
+                
+                if not cursor.fetchone():
+                    print("🔄 arm_slave_counts tablosu eksik, oluşturuluyor...")
+                    cursor.execute('''
+                        CREATE TABLE IF NOT EXISTS arm_slave_counts (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            arm INTEGER,
+                            slave_count INTEGER,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )
+                    ''')
+                    conn.commit()
+                    print("✅ arm_slave_counts tablosu oluşturuldu")
+                    
+                    # Default değerleri ekle
+                    cursor.execute('''
+                        INSERT INTO arm_slave_counts (arm, slave_count) 
+                        VALUES 
+                            (1, 0),
+                            (2, 0), 
+                            (3, 7),
+                            (4, 0)
+                    ''')
+                    conn.commit()
+                    print("✅ Default arm_slave_counts değerleri eklendi")
+                else:
+                    print("✅ arm_slave_counts tablosu mevcut")
+                
                 # ip_config tablosu var mı kontrol et
                 cursor.execute("""
                     SELECT name FROM sqlite_master 
@@ -805,31 +1027,6 @@ class BatteryDatabase:
                     print("✅ trap_targets tablosu oluşturuldu")
                 else:
                     print("✅ trap_targets tablosu mevcut")
-                
-                # current_period_data tablosu var mı kontrol et
-                cursor.execute("""
-                    SELECT name FROM sqlite_master 
-                    WHERE type='table' AND name='current_period_data'
-                """)
-                
-                if not cursor.fetchone():
-                    print("🔄 current_period_data tablosu eksik, oluşturuluyor...")
-                    cursor.execute('''
-                        CREATE TABLE IF NOT EXISTS current_period_data (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            arm INTEGER,
-                            k INTEGER,
-                            dtype INTEGER,
-                            data REAL,
-                            timestamp INTEGER,
-                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                            UNIQUE(arm, k, dtype, timestamp)
-                        )
-                    ''')
-                    conn.commit()
-                    print("✅ current_period_data tablosu oluşturuldu")
-                else:
-                    print("✅ current_period_data tablosu mevcut")
                     
         except Exception as e:
             print(f"⚠️ Eksik tablo kontrol hatası: {e}")
@@ -1953,15 +2150,15 @@ class BatteryDatabase:
                         arm,
                         COALESCE(
                             MAX(CASE WHEN dtype = 10 THEN data END),
-                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = battery_data.k AND b2.dtype = 10 ORDER BY b2.timestamp DESC LIMIT 1)
+                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = 2 AND b2.dtype = 10 ORDER BY b2.timestamp DESC LIMIT 1)
                         ) as current,
                         COALESCE(
                             MAX(CASE WHEN dtype = 11 THEN data END),
-                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = battery_data.k AND b2.dtype = 11 ORDER BY b2.timestamp DESC LIMIT 1)
+                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = 2 AND b2.dtype = 11 ORDER BY b2.timestamp DESC LIMIT 1)
                         ) as humidity,
                         COALESCE(
                             MAX(CASE WHEN dtype = 12 THEN data END),
-                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = battery_data.k AND b2.dtype = 12 ORDER BY b2.timestamp DESC LIMIT 1)
+                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = 2 AND b2.dtype = 12 ORDER BY b2.timestamp DESC LIMIT 1)
                         ) as ambient_temperature
                     FROM battery_data 
                     WHERE k = 2
