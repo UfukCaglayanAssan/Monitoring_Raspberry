@@ -317,7 +317,7 @@ def get_last_k_value():
 
 def update_battery_data_ram(arm, k, dtype, value):
     """RAM'deki batarya verilerini güncelle"""
-    with data_lock:
+    with db_lock:
         if arm not in battery_data_ram:
             battery_data_ram[arm] = {}
         if k not in battery_data_ram[arm]:
@@ -332,13 +332,13 @@ def update_battery_data_ram(arm, k, dtype, value):
 
 def clear_battery_data_ram():
     """RAM'deki tüm batarya verilerini temizle"""
-    with data_lock:
+    with db_lock:
         battery_data_ram.clear()
         print("RAM tamamen temizlendi.")
 
 def get_battery_data_ram(arm=None, k=None, dtype=None):
     """RAM'den batarya verilerini oku"""
-    with data_lock:
+    with db_lock:
         if arm is None:
             result = dict(battery_data_ram)
             print(f"RAM'den okundu: Tüm veriler, {len(result)} arm")
@@ -597,7 +597,7 @@ def data_processor():
                     print(f"armslavecounts verisi tespit edildi: arm1={arm1}, arm2={arm2}, arm3={arm3}, arm4={arm4}")
                     
                     # RAM'de armslavecounts güncelle
-                    with data_lock:
+                    with db_lock:
                         arm_slave_counts_ram[1] = arm1
                         arm_slave_counts_ram[2] = arm2
                         arm_slave_counts_ram[3] = arm3
@@ -714,7 +714,7 @@ def handle_read_holding_registers(transaction_id, unit_id, start_address, quanti
         if start_address == 0:  # Armslavecounts verileri
             # Register 0'dan başlayarak armslavecounts doldur
             registers = []
-            with data_lock:
+            with db_lock:
                 for i in range(quantity):
                     if i < 4:  # İlk 4 register armslavecounts
                         arm_num = i + 1
@@ -1053,7 +1053,7 @@ def start_snmp_agent():
 
 def set_static_arm_counts():
     """Statik armslavecounts değerlerini ayarla"""
-    with data_lock:
+    with db_lock:
         # Statik armslavecounts değerleri
         arm_slave_counts_ram[1] = 0  # Kol 1'de batarya yok
         arm_slave_counts_ram[2] = 0  # Kol 2'de batarya yok
@@ -1069,7 +1069,7 @@ def set_static_arm_counts():
 def main():
     try:
         # RAM'i temizle
-        with data_lock:
+        with db_lock:
             battery_data_ram.clear()
         print("RAM temizlendi.")
         

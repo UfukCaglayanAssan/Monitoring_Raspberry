@@ -2513,10 +2513,15 @@ def snmp_server():
         # SNMP sunucu çalıştır
         print(f"🔧 SNMP Engine başlatılıyor...")
         try:
+            # Thread için yeni event loop oluştur (modbus_snmp.py gibi)
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            # SNMP engine'i başlat
             snmp_engine.open_dispatcher()
             print(f"✅ SNMP Engine başarıyla başlatıldı!")
-            snmp_engine.transport_dispatcher.job_started(1)
-            print(f"✅ SNMP Engine job başlatıldı!")
+            
         except Exception as e:
             print(f"❌ SNMP Engine başlatma hatası: {e}")
             snmp_engine.close_dispatcher()
