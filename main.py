@@ -123,7 +123,7 @@ def is_valid_arm_data(arm_value, k_value):
     battery_count = arm_slave_counts_ram.get(arm_value, 0)
     if battery_count == 0:
         print(f"⚠️ HATALI VERİ: Kol {arm_value} aktif değil (batarya sayısı: {battery_count})")
-    return False
+        return False
     
     # k=2 ise kol verisi, her zaman geçerli
     if k_value == 2:

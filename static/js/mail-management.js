@@ -130,6 +130,16 @@ if (typeof window.MailManagementPage === 'undefined') {
                         </div>
                     </div>
                     <div class="recipient-email">${recipient.email}</div>
+                    <div class="recipient-alarm-levels">
+                        <div class="alarm-level-badge ${recipient.receive_critical_alarms ? 'active' : 'inactive'}">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>Kritik Alarmlar</span>
+                        </div>
+                        <div class="alarm-level-badge ${recipient.receive_normal_alarms ? 'active' : 'inactive'}">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Normal Alarmlar</span>
+                        </div>
+                    </div>
                     <div class="recipient-date">Eklenme: ${this.formatDate(recipient.created_at)}</div>
                 </div>
             `).join('');
@@ -144,6 +154,8 @@ if (typeof window.MailManagementPage === 'undefined') {
             document.getElementById('editRecipientId').value = recipient.id;
             document.getElementById('editRecipientName').value = recipient.name;
             document.getElementById('editRecipientEmail').value = recipient.email;
+            document.getElementById('editReceiveCriticalAlarms').checked = recipient.receive_critical_alarms;
+            document.getElementById('editReceiveNormalAlarms').checked = recipient.receive_normal_alarms;
             document.getElementById('editRecipientModal').style.display = 'block';
             document.getElementById('editRecipientName').focus();
         }
@@ -178,7 +190,9 @@ if (typeof window.MailManagementPage === 'undefined') {
             const formData = new FormData(document.getElementById('addRecipientForm'));
             const data = {
                 name: formData.get('name'),
-                email: formData.get('email')
+                email: formData.get('email'),
+                receive_critical_alarms: document.getElementById('receiveCriticalAlarms').checked,
+                receive_normal_alarms: document.getElementById('receiveNormalAlarms').checked
             };
 
             // Email tekrar kontrolü
@@ -216,7 +230,9 @@ if (typeof window.MailManagementPage === 'undefined') {
             const data = {
                 id: parseInt(formData.get('id')),
                 name: formData.get('name'),
-                email: formData.get('email')
+                email: formData.get('email'),
+                receive_critical_alarms: document.getElementById('editReceiveCriticalAlarms').checked,
+                receive_normal_alarms: document.getElementById('editReceiveNormalAlarms').checked
             };
 
             // Email tekrar kontrolü (kendi ID'si hariç)

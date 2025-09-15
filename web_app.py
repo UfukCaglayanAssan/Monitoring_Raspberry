@@ -742,6 +742,8 @@ def add_mail_recipient():
         data = request.get_json()
         name = data.get('name', '').strip()
         email = data.get('email', '').strip()
+        receive_critical_alarms = data.get('receive_critical_alarms', True)
+        receive_normal_alarms = data.get('receive_normal_alarms', True)
         
         if not name or not email:
             return jsonify({
@@ -751,7 +753,7 @@ def add_mail_recipient():
         
         db_instance = get_db()
         with db_lock:
-            result = db_instance.add_mail_recipient(name, email)
+            result = db_instance.add_mail_recipient(name, email, receive_critical_alarms, receive_normal_alarms)
         
         return jsonify(result)
     except Exception as e:
@@ -1280,6 +1282,90 @@ def toggle_trap_target(target_id):
         result = db_operation_with_retry(lambda: db.toggle_trap_target(target_id))
         
         return jsonify(result)
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+# Trap Settings API'leri
+@app.route('/api/trap-settings', methods=['GET'])
+def get_trap_settings():
+    """Trap ayarlarını getir"""
+    try:
+        db = get_db()
+        settings = db_operation_with_retry(lambda: db.get_trap_settings())
+        
+        return jsonify({
+            'success': True,
+            'settings': settings
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/trap-settings', methods=['POST'])
+def save_trap_settings():
+    """Trap ayarlarını kaydet"""
+    try:
+        data = request.get_json()
+        db = get_db()
+        result = db_operation_with_retry(lambda: db.save_trap_settings(data))
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/trap-settings/test', methods=['POST'])
+def send_test_trap():
+    """Test trap gönder"""
+    try:
+        db = get_db()
+        result = db_operation_with_retry(lambda: db.send_test_trap())
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/trap-settings/history', methods=['GET'])
+def get_trap_history():
+    """Trap geçmişini getir"""
+    try:
+        page = int(request.args.get('page', 1))
+        page_size = int(request.args.get('pageSize', 50))
+        
+        db = get_db()
+        history = db_operation_with_retry(lambda: db.get_trap_history(page, page_size))
+        
+        return jsonify({
+            'success': True,
+            'history': history
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/trap-settings/stats', methods=['GET'])
+def get_trap_stats():
+    """Trap istatistiklerini getir"""
+    try:
+        db = get_db()
+        stats = db_operation_with_retry(lambda: db.get_trap_stats())
+        
+        return jsonify({
+            'success': True,
+            'stats': stats
+        })
     except Exception as e:
         return jsonify({
             'success': False,

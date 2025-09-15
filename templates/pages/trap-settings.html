@@ -1,0 +1,178 @@
+<!-- Trap Ayarları Sayfası İçeriği -->
+<div class="trap-settings-page">
+    <div class="page-header">
+        <h2 class="page-title" data-tr="Trap Ayarları" data-en="Trap Settings">Trap Ayarları</h2>
+        <p class="page-description" data-tr="SNMP Trap ayarlarını yönetin" data-en="Manage SNMP Trap settings">SNMP Trap ayarlarını yönetin</p>
+    </div>
+
+    <!-- Trap Ayarları Formu -->
+    <div class="settings-container">
+        <div class="settings-card">
+            <div class="card-header">
+                <h3 data-tr="Trap Sunucu Ayarları" data-en="Trap Server Settings">Trap Sunucu Ayarları</h3>
+            </div>
+            <div class="card-content">
+                <form id="trapSettingsForm" class="settings-form">
+                    <div class="form-group">
+                        <label for="trapEnabled" class="form-label">
+                            <i class="fas fa-toggle-on"></i>
+                            <span data-tr="Trap Aktif" data-en="Trap Enabled">Trap Aktif</span>
+                        </label>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="trapEnabled" name="trapEnabled" class="toggle-input">
+                            <label for="trapEnabled" class="toggle-label">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trapServer" class="form-label">
+                            <i class="fas fa-server"></i>
+                            <span data-tr="Trap Sunucu Adresi" data-en="Trap Server Address">Trap Sunucu Adresi</span>
+                        </label>
+                        <input type="text" id="trapServer" name="trapServer" class="form-input" placeholder="192.168.1.100">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trapPort" class="form-label">
+                            <i class="fas fa-network-wired"></i>
+                            <span data-tr="Trap Port" data-en="Trap Port">Trap Port</span>
+                        </label>
+                        <input type="number" id="trapPort" name="trapPort" class="form-input" placeholder="162" min="1" max="65535">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trapCommunity" class="form-label">
+                            <i class="fas fa-key"></i>
+                            <span data-tr="Community String" data-en="Community String">Community String</span>
+                        </label>
+                        <input type="text" id="trapCommunity" name="trapCommunity" class="form-input" placeholder="public">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trapVersion" class="form-label">
+                            <i class="fas fa-code-branch"></i>
+                            <span data-tr="SNMP Versiyonu" data-en="SNMP Version">SNMP Versiyonu</span>
+                        </label>
+                        <select id="trapVersion" name="trapVersion" class="form-select">
+                            <option value="1" data-tr="SNMPv1" data-en="SNMPv1">SNMPv1</option>
+                            <option value="2c" data-tr="SNMPv2c" data-en="SNMPv2c">SNMPv2c</option>
+                            <option value="3" data-tr="SNMPv3" data-en="SNMPv3">SNMPv3</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trapInterval" class="form-label">
+                            <i class="fas fa-clock"></i>
+                            <span data-tr="Trap Gönderim Aralığı (saniye)" data-en="Trap Send Interval (seconds)">Trap Gönderim Aralığı (saniye)</span>
+                        </label>
+                        <input type="number" id="trapInterval" name="trapInterval" class="form-input" placeholder="30" min="1" max="3600">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            <span data-tr="Ayarları Kaydet" data-en="Save Settings">Ayarları Kaydet</span>
+                        </button>
+                        <button type="button" id="testTrapBtn" class="btn btn-secondary">
+                            <i class="fas fa-paper-plane"></i>
+                            <span data-tr="Test Trap Gönder" data-en="Send Test Trap">Test Trap Gönder</span>
+                        </button>
+                        <button type="button" id="resetTrapBtn" class="btn btn-outline">
+                            <i class="fas fa-undo"></i>
+                            <span data-tr="Sıfırla" data-en="Reset">Sıfırla</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Trap Geçmişi -->
+        <div class="settings-card">
+            <div class="card-header">
+                <h3 data-tr="Trap Geçmişi" data-en="Trap History">Trap Geçmişi</h3>
+                <button id="refreshTrapHistory" class="btn btn-sm btn-outline">
+                    <i class="fas fa-sync-alt"></i>
+                    <span data-tr="Yenile" data-en="Refresh">Yenile</span>
+                </button>
+            </div>
+            <div class="card-content">
+                <div class="trap-history-container">
+                    <div class="history-filters">
+                        <select id="trapHistoryFilter" class="form-select">
+                            <option value="all" data-tr="Tümü" data-en="All">Tümü</option>
+                            <option value="sent" data-tr="Gönderilen" data-en="Sent">Gönderilen</option>
+                            <option value="failed" data-tr="Başarısız" data-en="Failed">Başarısız</option>
+                        </select>
+                    </div>
+                    <div class="trap-history-list" id="trapHistoryList">
+                        <!-- Trap geçmişi buraya yüklenecek -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trap İstatistikleri -->
+        <div class="settings-card">
+            <div class="card-header">
+                <h3 data-tr="Trap İstatistikleri" data-en="Trap Statistics">Trap İstatistikleri</h3>
+            </div>
+            <div class="card-content">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-icon">
+                            <i class="fas fa-paper-plane"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="totalTrapsSent">0</div>
+                            <div class="stat-label" data-tr="Toplam Gönderilen" data-en="Total Sent">Toplam Gönderilen</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="successfulTraps">0</div>
+                            <div class="stat-label" data-tr="Başarılı" data-en="Successful">Başarılı</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="failedTraps">0</div>
+                            <div class="stat-label" data-tr="Başarısız" data-en="Failed">Başarısız</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="successRate">0%</div>
+                            <div class="stat-label" data-tr="Başarı Oranı" data-en="Success Rate">Başarı Oranı</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="loading-spinner" id="loadingSpinner" style="display: none;">
+        <div class="spinner"></div>
+        <p data-tr="Yükleniyor..." data-en="Loading...">Yükleniyor...</p>
+    </div>
+
+    <!-- Veri Yok Mesajı -->
+    <div class="no-data-message" id="noDataMessage" style="display: none;">
+        <i class="fas fa-info-circle"></i>
+        <h3 data-tr="Veri Yok" data-en="No Data">Veri Yok</h3>
+        <p data-tr="Trap geçmişi bulunamadı." data-en="No trap history found.">Trap geçmişi bulunamadı.</p>
+    </div>
+</div>
+
+<!-- Trap ayarları sayfası script'i trap-settings.js tarafından yüklenecek -->

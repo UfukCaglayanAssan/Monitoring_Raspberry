@@ -166,6 +166,7 @@ class BatteryDatabase:
                         error_code_lsb INTEGER,
                         timestamp INTEGER,
                         status TEXT DEFAULT 'active',
+                        severity TEXT DEFAULT 'normal',
                         resolved_at DATETIME,
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
@@ -179,6 +180,8 @@ class BatteryDatabase:
                         name TEXT NOT NULL,
                         email TEXT NOT NULL UNIQUE,
                         is_active BOOLEAN DEFAULT 1,
+                        receive_critical_alarms BOOLEAN DEFAULT 1,
+                        receive_normal_alarms BOOLEAN DEFAULT 1,
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
@@ -538,14 +541,42 @@ class BatteryDatabase:
     
     # clear_current_period_data fonksiyonu kaldırıldı - periyot verileri korunuyor
     
+    def determine_alarm_severity(self, error_code_msb, error_code_lsb):
+        """Alarm kritiklik seviyesini belirle"""
+        # Kol alarmları (error_lsb == 9) hepsi kritik
+        if error_code_lsb == 9:
+            return 'critical'
+        
+        # Batarya alarmları - "alarm" kelimesi geçenler kritik
+        if error_code_lsb == 8:  # LVoltageAlarm - "Düşük batarya gerilimi alarmı"
+            return 'critical'
+        elif error_code_lsb == 32:  # OVoltageAlarm - "Yüksek batarya gerilimi alarmı"
+            return 'critical'
+        elif error_code_lsb == 64:  # OvertempD - "Modül sıcaklık alarmı"
+            return 'critical'
+        elif error_code_msb == 1:  # OvertempP - "Pozitif kutup başı alarmı"
+            return 'critical'
+        elif error_code_msb == 2:  # OvertempN - "Negatif kutup başı sıcaklık alarmı"
+            return 'critical'
+        
+        # "Uyarı" kelimesi geçenler normal
+        elif error_code_lsb == 4:  # LVoltageWarn - "Düşük batarya gerilim uyarısı"
+            return 'normal'
+        elif error_code_lsb == 16:  # OVoltageWarn - "Yüksek batarya gerilimi uyarısı"
+            return 'normal'
+        
+        # Diğer durumlar için varsayılan olarak normal
+        return 'normal'
+
     def insert_alarm(self, arm, battery, error_code_msb, error_code_lsb, timestamp):
         """Alarm verisi ekle"""
+        severity = self.determine_alarm_severity(error_code_msb, error_code_lsb)
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO alarms (arm, battery, error_code_msb, error_code_lsb, timestamp)
-                VALUES (?, ?, ?, ?, ?)
-            ''', (arm, battery, error_code_msb, error_code_lsb, timestamp))
+                INSERT INTO alarms (arm, battery, error_code_msb, error_code_lsb, timestamp, severity)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (arm, battery, error_code_msb, error_code_lsb, timestamp, severity))
             conn.commit()
     
     def resolve_alarm(self, arm, battery):
@@ -1510,7 +1541,7 @@ class BatteryDatabase:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute('''
-                    SELECT id, name, email, is_active, created_at
+                    SELECT id, name, email, is_active, receive_critical_alarms, receive_normal_alarms, created_at
                     FROM mail_recipients 
                     WHERE is_active = 1
                     ORDER BY created_at
@@ -1525,7 +1556,9 @@ class BatteryDatabase:
                         'name': row[1],
                         'email': row[2],
                         'is_active': bool(row[3]),
-                        'created_at': row[4]
+                        'receive_critical_alarms': bool(row[4]),
+                        'receive_normal_alarms': bool(row[5]),
+                        'created_at': row[6]
                     })
                 
                 return recipients
@@ -1533,7 +1566,7 @@ class BatteryDatabase:
             print(f"Mail alıcıları getirilirken hata: {e}")
             return []
     
-    def add_mail_recipient(self, name, email):
+    def add_mail_recipient(self, name, email, receive_critical_alarms=True, receive_normal_alarms=True):
         """Yeni mail alıcısı ekle"""
         try:
             with self.get_connection() as conn:
@@ -1552,9 +1585,9 @@ class BatteryDatabase:
                     return {'success': False, 'message': 'Bu email adresi zaten kayıtlı'}
                 
                 cursor.execute('''
-                    INSERT INTO mail_recipients (name, email)
-                    VALUES (?, ?)
-                ''', (name, email))
+                    INSERT INTO mail_recipients (name, email, receive_critical_alarms, receive_normal_alarms)
+                    VALUES (?, ?, ?, ?)
+                ''', (name, email, receive_critical_alarms, receive_normal_alarms))
                 
                 conn.commit()
                 return {'success': True, 'message': 'Mail alıcısı başarıyla eklendi'}
@@ -1562,7 +1595,7 @@ class BatteryDatabase:
             print(f"Mail alıcısı eklenirken hata: {e}")
             return {'success': False, 'message': str(e)}
     
-    def update_mail_recipient(self, recipient_id, name, email):
+    def update_mail_recipient(self, recipient_id, name, email, receive_critical_alarms=True, receive_normal_alarms=True):
         """Mail alıcısını güncelle"""
         try:
             with self.get_connection() as conn:
@@ -1575,9 +1608,9 @@ class BatteryDatabase:
                 
                 cursor.execute('''
                     UPDATE mail_recipients 
-                    SET name = ?, email = ?
+                    SET name = ?, email = ?, receive_critical_alarms = ?, receive_normal_alarms = ?
                     WHERE id = ?
-                ''', (name, email, recipient_id))
+                ''', (name, email, receive_critical_alarms, receive_normal_alarms, recipient_id))
                 
                 conn.commit()
                 return {'success': True, 'message': 'Mail alıcısı başarıyla güncellendi'}
@@ -1611,18 +1644,20 @@ class BatteryDatabase:
                 # Alarm verilerini hazırla
                 alarm_data = []
                 for alarm in alarms:
+                    severity = self.determine_alarm_severity(alarm['error_code_msb'], alarm['error_code_lsb'])
                     alarm_data.append((
                         alarm['arm'],
                         alarm['battery'],
                         alarm['error_code_msb'],
                         alarm['error_code_lsb'],
-                        alarm['timestamp']
+                        alarm['timestamp'],
+                        severity
                     ))
                 
                 # Toplu insert
                 cursor.executemany('''
-                    INSERT INTO alarms (arm, battery, error_code_msb, error_code_lsb, timestamp)
-                    VALUES (?, ?, ?, ?, ?)
+                    INSERT INTO alarms (arm, battery, error_code_msb, error_code_lsb, timestamp, severity)
+                    VALUES (?, ?, ?, ?, ?, ?)
                 ''', alarm_data)
                 
                 conn.commit()
@@ -2005,10 +2040,29 @@ class BatteryDatabase:
                         name TEXT NOT NULL,
                         email TEXT NOT NULL UNIQUE,
                         is_active BOOLEAN DEFAULT 1,
+                        receive_critical_alarms BOOLEAN DEFAULT 1,
+                        receive_normal_alarms BOOLEAN DEFAULT 1,
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
                 print("✓ mail_recipients tablosu oluşturuldu (migration)")
+                
+                # mail_recipients tablosuna yeni sütunları ekle (eğer yoksa)
+                cursor.execute("PRAGMA table_info(mail_recipients)")
+                columns = [column[1] for column in cursor.fetchall()]
+                if 'receive_critical_alarms' not in columns:
+                    cursor.execute('ALTER TABLE mail_recipients ADD COLUMN receive_critical_alarms BOOLEAN DEFAULT 1')
+                    print("✓ mail_recipients tablosuna receive_critical_alarms sütunu eklendi (migration)")
+                if 'receive_normal_alarms' not in columns:
+                    cursor.execute('ALTER TABLE mail_recipients ADD COLUMN receive_normal_alarms BOOLEAN DEFAULT 1')
+                    print("✓ mail_recipients tablosuna receive_normal_alarms sütunu eklendi (migration)")
+                
+                # alarms tablosuna severity sütunu ekle (eğer yoksa)
+                cursor.execute("PRAGMA table_info(alarms)")
+                columns = [column[1] for column in cursor.fetchall()]
+                if 'severity' not in columns:
+                    cursor.execute('ALTER TABLE alarms ADD COLUMN severity TEXT DEFAULT "normal"')
+                    print("✓ alarms tablosuna severity sütunu eklendi (migration)")
                 
                 conn.commit()
                 print("✅ Eksik tablolar başarıyla oluşturuldu")
