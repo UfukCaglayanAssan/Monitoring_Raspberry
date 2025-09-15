@@ -485,7 +485,7 @@ def db_worker():
                 # Status 0 = Veri gelmiyor, Status 1 = Veri geliyor (düzeltme)
                 if status_value == 0:
                     # Veri gelmiyor - missing data ekle
-                    add_missing_data(arm_value, slave_value)
+                add_missing_data(arm_value, slave_value)
                     print(f"🆕 VERİ GELMİYOR: Kol {arm_value}, Batarya {slave_value}")
                     
                     # Status güncelle (veri yok)
@@ -500,10 +500,10 @@ def db_worker():
                         alarm_processor.process_period_end()
                         # Reset system sinyali gönder (1 saat aralık kontrolü ile)
                         if send_reset_system_signal():
-                            # Yeni periyot başlat
-                            reset_period()
-                            get_period_timestamp()
-                        else:
+                        # Yeni periyot başlat
+                        reset_period()
+                        get_period_timestamp()
+                else:
                             print("⏰ Reset system gönderilemedi, periyot devam ediyor")
                         
                 elif status_value == 1:
@@ -606,18 +606,52 @@ def db_worker():
                             battery_data_ram[arm_value] = {}
                         if k_value not in battery_data_ram[arm_value]:
                             battery_data_ram[arm_value][k_value] = {}
-                        battery_data_ram[arm_value][k_value][dtype] = {
-                            'value': salt_data,
-                            'timestamp': get_period_timestamp()
-                        }
-                        if k_value != 2:  # SOC değerini de ekle
-                            battery_data_ram[arm_value][k_value][11] = {
+                        # 1-7 sıralama mapping: 1=Gerilim, 2=SOC, 3=RIMT, 4=SOH, 5=NTC1, 6=NTC2, 7=NTC3
+                        if dtype == 10:  # Gerilim -> 1
+                            battery_data_ram[arm_value][k_value][1] = {
+                                'value': salt_data,
+                                'timestamp': get_period_timestamp()
+                            }
+                        elif dtype == 11:  # SOC -> 2
+                            battery_data_ram[arm_value][k_value][2] = {
+                                'value': salt_data,
+                                'timestamp': get_period_timestamp()
+                            }
+                        elif dtype == 12:  # RIMT -> 3
+                            battery_data_ram[arm_value][k_value][3] = {
+                                'value': salt_data,
+                                'timestamp': get_period_timestamp()
+                            }
+                        elif dtype == 126:  # SOH -> 4
+                            battery_data_ram[arm_value][k_value][4] = {
+                                'value': salt_data,
+                                'timestamp': get_period_timestamp()
+                            }
+                        elif dtype == 13:  # NTC1 -> 5
+                            battery_data_ram[arm_value][k_value][5] = {
+                                'value': salt_data,
+                                'timestamp': get_period_timestamp()
+                            }
+                        elif dtype == 14:  # NTC2 -> 6
+                            battery_data_ram[arm_value][k_value][6] = {
+                                'value': salt_data,
+                                'timestamp': get_period_timestamp()
+                            }
+                        elif dtype == 15:  # NTC3 -> 7
+                            battery_data_ram[arm_value][k_value][7] = {
+                                'value': salt_data,
+                                'timestamp': get_period_timestamp()
+                            }
+                        
+                        # SOC hesapla ve 2'ye kaydet (sadece batarya verisi için)
+                        if k_value != 2 and dtype == 10:  # Gerilim verisi geldiğinde SOC hesapla
+                            battery_data_ram[arm_value][k_value][2] = {
                                 'value': soc_value,
                                 'timestamp': get_period_timestamp()
                             }
                         print(f"RAM'e kaydedildi: Arm={arm_value}, k={k_value}, dtype={dtype}, value={salt_data}")
-                        if k_value != 2:
-                            print(f"RAM'e kaydedildi: Arm={arm_value}, k={k_value}, dtype=11, value={soc_value}")
+                        if k_value != 2 and dtype == 10:
+                            print(f"RAM'e kaydedildi: Arm={arm_value}, k={k_value}, dtype=2 (SOC), value={soc_value}")
                     
                     # Status güncelle (sadece missing data durumunda)
                     # Normal veri geldiğinde status güncelleme yapmıyoruz
@@ -643,14 +677,46 @@ def db_worker():
                                 battery_data_ram[arm_value] = {}
                             if k_value not in battery_data_ram[arm_value]:
                                 battery_data_ram[arm_value][k_value] = {}
-                            battery_data_ram[arm_value][k_value][dtype] = {
-                                'value': salt_data,
-                                'timestamp': get_period_timestamp()
-                            }
+                            # 1-7 sıralama mapping
+                            if dtype == 10:  # Gerilim -> 1
+                                battery_data_ram[arm_value][k_value][1] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                            elif dtype == 11:  # SOC -> 2
+                                battery_data_ram[arm_value][k_value][2] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                            elif dtype == 12:  # RIMT -> 3
+                                battery_data_ram[arm_value][k_value][3] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                            elif dtype == 126:  # SOH -> 4
+                                battery_data_ram[arm_value][k_value][4] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                            elif dtype == 13:  # NTC1 -> 5
+                                battery_data_ram[arm_value][k_value][5] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                            elif dtype == 14:  # NTC2 -> 6
+                                battery_data_ram[arm_value][k_value][6] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                            elif dtype == 15:  # NTC3 -> 7
+                                battery_data_ram[arm_value][k_value][7] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
                         
                         # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                     else:  # RIMT verisi
-                        record = {
+                    record = {
                         "Arm": arm_value,
                         "k": k_value,
                             "Dtype": 12,  # RIMT=12
@@ -658,17 +724,49 @@ def db_worker():
                         "timestamp": get_period_timestamp()
                     }
                     batch.append(record)
-                    
+                
                     # RAM'e yaz (Modbus/SNMP için)
                     with data_lock:
                             if arm_value not in battery_data_ram:
                                 battery_data_ram[arm_value] = {}
                             if k_value not in battery_data_ram[arm_value]:
                                 battery_data_ram[arm_value][k_value] = {}
-                            battery_data_ram[arm_value][k_value][dtype] = {
-                                'value': salt_data,
-                                'timestamp': get_period_timestamp()
-                            }
+                            # 1-7 sıralama mapping
+                            if dtype == 10:  # Gerilim -> 1
+                                battery_data_ram[arm_value][k_value][1] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                            elif dtype == 11:  # SOC -> 2
+                                battery_data_ram[arm_value][k_value][2] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                            elif dtype == 12:  # RIMT -> 3
+                                battery_data_ram[arm_value][k_value][3] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                            elif dtype == 126:  # SOH -> 4
+                                battery_data_ram[arm_value][k_value][4] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                            elif dtype == 13:  # NTC1 -> 5
+                                battery_data_ram[arm_value][k_value][5] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                            elif dtype == 14:  # NTC2 -> 6
+                                battery_data_ram[arm_value][k_value][6] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                            elif dtype == 15:  # NTC3 -> 7
+                                battery_data_ram[arm_value][k_value][7] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
                         
                         # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
@@ -713,7 +811,8 @@ def db_worker():
                                 battery_data_ram[arm_value] = {}
                             if k_value not in battery_data_ram[arm_value]:
                                 battery_data_ram[arm_value][k_value] = {}
-                            battery_data_ram[arm_value][k_value][126] = {
+                            # SOH verisi -> 4 (1-7 sıralama)
+                            battery_data_ram[arm_value][k_value][4] = {
                                 'value': soh_value,
                                 'timestamp': get_period_timestamp()
                             }
@@ -2150,19 +2249,28 @@ def snmp_server():
                                 else:
                                     return self.getSyntax().clone("0")
                     
-                    # Batarya verileri - 1.3.6.1.4.1.1001.arm.5.battery.dtype veya 1.3.6.1.4.1.1001.arm.5.battery.dtype.0
+                    # Batarya verileri - 1.3.6.1.4.1.1001.arm.5.k.dtype veya 1.3.6.1.4.1.1001.arm.5.k.dtype.0
                     elif oid.startswith("1.3.6.1.4.1.1001."):
                         parts = oid.split('.')
-                        if len(parts) >= 11:  # En az 11 parça olmalı (1.3.6.1.4.1.1001.arm.5.battery.dtype)
+                        # Hem .0'lı hem .0'sız isteklere cevap ver
+                        if len(parts) >= 11:  # En az 11 parça olmalı (1.3.6.1.4.1.1001.arm.5.k.dtype)
                             arm = int(parts[7])
                             if parts[8] == "5":  # Batarya verileri
-                                battery = int(parts[9])
+                                k = int(parts[9])
                                 dtype = int(parts[10])
                                 
                                 with data_lock:
-                                    if arm in battery_data_ram and battery in battery_data_ram[arm]:
-                                        value = battery_data_ram[arm][battery].get(dtype, 0)
-                                        return self.getSyntax().clone(str(value))
+                                    if arm in battery_data_ram and k in battery_data_ram[arm]:
+                                        # 1-7 sıralama: dtype 1-7 arası olmalı
+                                        if 1 <= dtype <= 7:
+                                            value_data = battery_data_ram[arm][k].get(dtype, {})
+                                            if isinstance(value_data, dict):
+                                                value = value_data.get('value', 0)
+                                            else:
+                                                value = value_data
+                                            return self.getSyntax().clone(str(value))
+                                        else:
+                                            return self.getSyntax().clone("0")
                                     else:
                                         return self.getSyntax().clone("0")
                     
@@ -2235,24 +2343,17 @@ def snmp_server():
             BatteryMibScalarInstance((1, 3, 6, 5, 10), (0,), v2c.OctetString()),
         )
         
-        # Batarya verileri için OID'ler oluştur
+        # Batarya verileri için OID'ler oluştur (MIB yapısına uygun)
         for arm in range(1, 5):
             for k in range(2, 8):  # 2-7 arası batarya numaraları
-                for dtype in range(10, 15):  # 10-14 arası dtype'lar
-                    oid = (1, 3, 6, 5, 10, arm, k, dtype)
+                # 1-7 sıralama: 1=Gerilim, 2=SOC, 3=RIMT, 4=SOH, 5=NTC1, 6=NTC2, 7=NTC3
+                for dtype in range(1, 8):  # 1-7 arası dtype'lar
+                    oid = (1, 3, 6, 1, 4, 1, 1001, arm, 5, k, dtype)
                     mib_builder.export_symbols(
                         f"__BATTERY_MIB_{arm}_{k}_{dtype}",
                         MibScalar(oid, v2c.OctetString()),
                         BatteryMibScalarInstance(oid, (0,), v2c.OctetString()),
                     )
-                
-                # SOC verisi için dtype=126
-                oid = (1, 3, 6, 5, 10, arm, k, 126)
-                mib_builder.export_symbols(
-                    f"__BATTERY_MIB_{arm}_{k}_126",
-                    MibScalar(oid, v2c.OctetString()),
-                    BatteryMibScalarInstance(oid, (0,), v2c.OctetString()),
-                )
         
         # Alarm verileri için OID'ler oluştur
         for arm in range(1, 5):
