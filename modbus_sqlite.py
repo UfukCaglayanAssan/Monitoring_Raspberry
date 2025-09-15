@@ -882,101 +882,105 @@ def start_snmp_agent():
         )
         print("✅ MIB Builder oluşturuldu")
 
-        class ModbusRAMMibScalarInstance(MibScalarInstance):
-            """Modbus TCP Server RAM sistemi ile MIB Instance"""
+        class ModbusSQLiteMibScalarInstance(MibScalarInstance):
+            """Modbus TCP Server SQLite sistemi ile MIB Instance"""
             def getValue(self, name, **context):
                 oid = '.'.join([str(x) for x in name])
                 print(f"🔍 SNMP OID sorgusu: {oid}")
                 
-                # Sistem bilgileri
-                if oid == "1.3.6.5.1.0":
-                    return self.getSyntax().clone(
-                        f"Python {sys.version} running on a {sys.platform} platform"
-                    )
-                elif oid == "1.3.6.5.2.0":  # totalBatteryCount
-                    data = get_battery_data_ram()
-                    battery_count = 0
-                    for arm in data.keys():
-                        for k in data[arm].keys():
-                            if k > 2:  # k>2 olanlar batarya verisi
-                                battery_count += 1
-                    return self.getSyntax().clone(str(battery_count if battery_count > 0 else 0))
-                elif oid == "1.3.6.5.3.0":  # totalArmCount
-                    data = get_battery_data_ram()
-                    return self.getSyntax().clone(str(len(data) if data else 0))
-                elif oid == "1.3.6.5.4.0":  # systemStatus
-                    return self.getSyntax().clone("1")
-                elif oid == "1.3.6.5.5.0":  # lastUpdateTime
-                    return self.getSyntax().clone(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-                elif oid == "1.3.6.5.6.0":  # dataCount
-                    data = get_battery_data_ram()
-                    total_data = 0
-                    for arm in data.values():
-                        for k in arm.values():
-                            total_data += len(k)
-                    return self.getSyntax().clone(str(total_data if total_data > 0 else 0))
-                elif oid == "1.3.6.5.7.0":  # arm1SlaveCount
-                    with data_lock:
-                        return self.getSyntax().clone(str(arm_slave_counts_ram.get(1, 0)))
-                elif oid == "1.3.6.5.8.0":  # arm2SlaveCount
-                    with data_lock:
-                        return self.getSyntax().clone(str(arm_slave_counts_ram.get(2, 0)))
-                elif oid == "1.3.6.5.9.0":  # arm3SlaveCount
-                    with data_lock:
-                        return self.getSyntax().clone(str(arm_slave_counts_ram.get(3, 0)))
-                elif oid == "1.3.6.5.10.0":  # arm4SlaveCount
-                    with data_lock:
-                        return self.getSyntax().clone(str(arm_slave_counts_ram.get(4, 0)))
-                else:
-                    # Gerçek batarya verileri - Modbus TCP Server RAM'den oku
-                    if oid.startswith("1.3.6.5.10."):
-                        parts = oid.split('.')
-                        if len(parts) >= 8:  # 1.3.6.5.10.arm.k.dtype.0
-                            arm = int(parts[5])    # 1.3.6.5.10.{arm}
-                            k = int(parts[6])      # 1.3.6.5.10.arm.{k}
-                            dtype = int(parts[7])  # 1.3.6.5.10.arm.k.{dtype}
+                try:
+                    with db_lock:
+                        # Sistem bilgileri
+                        if oid == "1.3.6.5.1.0":
+                            return self.getSyntax().clone(
+                                f"Python {sys.version} running on a {sys.platform} platform"
+                            )
+                        elif oid == "1.3.6.5.2.0":  # totalBatteryCount
+                            arm_counts = db.get_arm_slave_counts_from_period()
+                            total_batteries = sum(arm_counts.values())
+                            return self.getSyntax().clone(str(total_batteries))
+                        elif oid == "1.3.6.5.3.0":  # totalArmCount
+                            arm_counts = db.get_arm_slave_counts_from_period()
+                            active_arms = sum(1 for count in arm_counts.values() if count > 0)
+                            return self.getSyntax().clone(str(active_arms))
+                        elif oid == "1.3.6.5.4.0":  # systemStatus
+                            return self.getSyntax().clone("1")
+                        elif oid == "1.3.6.5.5.0":  # lastUpdateTime
+                            return self.getSyntax().clone(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                        elif oid == "1.3.6.5.6.0":  # dataCount
+                            period_data = db.get_current_period_data()
+                            total_data = 0
+                            for arm_data in period_data.values():
+                                for k_data in arm_data.values():
+                                    total_data += len(k_data)
+                            return self.getSyntax().clone(str(total_data))
+                        elif oid == "1.3.6.5.7.0":  # arm1SlaveCount
+                            arm_counts = db.get_arm_slave_counts_from_period()
+                            return self.getSyntax().clone(str(arm_counts.get(1, 0)))
+                        elif oid == "1.3.6.5.8.0":  # arm2SlaveCount
+                            arm_counts = db.get_arm_slave_counts_from_period()
+                            return self.getSyntax().clone(str(arm_counts.get(2, 0)))
+                        elif oid == "1.3.6.5.9.0":  # arm3SlaveCount
+                            arm_counts = db.get_arm_slave_counts_from_period()
+                            return self.getSyntax().clone(str(arm_counts.get(3, 0)))
+                        elif oid == "1.3.6.5.10.0":  # arm4SlaveCount
+                            arm_counts = db.get_arm_slave_counts_from_period()
+                            return self.getSyntax().clone(str(arm_counts.get(4, 0)))
+                        else:
+                            # Gerçek batarya verileri - SQLite'den oku
+                            if oid.startswith("1.3.6.5.10."):
+                                parts = oid.split('.')
+                                if len(parts) >= 8:  # 1.3.6.5.10.arm.k.dtype.0
+                                    arm = int(parts[5])    # 1.3.6.5.10.{arm}
+                                    k = int(parts[6])      # 1.3.6.5.10.arm.{k}
+                                    dtype = int(parts[7])  # 1.3.6.5.10.arm.k.{dtype}
+                                    
+                                    period_data = db.get_current_period_data(arm=arm, k=k, dtype=dtype)
+                                    if arm in period_data and k in period_data[arm] and dtype in period_data[arm][k]:
+                                        value = period_data[arm][k][dtype]['value']
+                                        return self.getSyntax().clone(str(value))
+                                    return self.getSyntax().clone("0")
                             
-                            data = get_battery_data_ram(arm, k, dtype)
-                            if data:
-                                return self.getSyntax().clone(str(data['value']))
-                            return self.getSyntax().clone("0")
-                    
-                    return self.getSyntax().clone("No Such Object")
+                            return self.getSyntax().clone("No Such Object")
+                            
+                except Exception as e:
+                    print(f"❌ SNMP getValue hatası: {e}")
+                    return self.getSyntax().clone("0")
 
         # MIB Objects oluştur
         mibBuilder.export_symbols(
-            "__MODBUS_RAM_MIB",
+            "__MODBUS_SQLITE_MIB",
             # Sistem bilgileri
             MibScalar((1, 3, 6, 5, 1), v2c.OctetString()),
-            ModbusRAMMibScalarInstance((1, 3, 6, 5, 1), (0,), v2c.OctetString()),
+            ModbusSQLiteMibScalarInstance((1, 3, 6, 5, 1), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 2), v2c.OctetString()),
-            ModbusRAMMibScalarInstance((1, 3, 6, 5, 2), (0,), v2c.OctetString()),
+            ModbusSQLiteMibScalarInstance((1, 3, 6, 5, 2), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 3), v2c.OctetString()),
-            ModbusRAMMibScalarInstance((1, 3, 6, 5, 3), (0,), v2c.OctetString()),
+            ModbusSQLiteMibScalarInstance((1, 3, 6, 5, 3), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 4), v2c.OctetString()),
-            ModbusRAMMibScalarInstance((1, 3, 6, 5, 4), (0,), v2c.OctetString()),
+            ModbusSQLiteMibScalarInstance((1, 3, 6, 5, 4), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 5), v2c.OctetString()),
-            ModbusRAMMibScalarInstance((1, 3, 6, 5, 5), (0,), v2c.OctetString()),
+            ModbusSQLiteMibScalarInstance((1, 3, 6, 5, 5), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 6), v2c.OctetString()),
-            ModbusRAMMibScalarInstance((1, 3, 6, 5, 6), (0,), v2c.OctetString()),
+            ModbusSQLiteMibScalarInstance((1, 3, 6, 5, 6), (0,), v2c.OctetString()),
             
             # Armslavecounts OID'leri
             MibScalar((1, 3, 6, 5, 7), v2c.OctetString()),
-            ModbusRAMMibScalarInstance((1, 3, 6, 5, 7), (0,), v2c.OctetString()),
+            ModbusSQLiteMibScalarInstance((1, 3, 6, 5, 7), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 8), v2c.OctetString()),
-            ModbusRAMMibScalarInstance((1, 3, 6, 5, 8), (0,), v2c.OctetString()),
+            ModbusSQLiteMibScalarInstance((1, 3, 6, 5, 8), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 9), v2c.OctetString()),
-            ModbusRAMMibScalarInstance((1, 3, 6, 5, 9), (0,), v2c.OctetString()),
+            ModbusSQLiteMibScalarInstance((1, 3, 6, 5, 9), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 10), v2c.OctetString()),
-            ModbusRAMMibScalarInstance((1, 3, 6, 5, 10), (0,), v2c.OctetString()),
+            ModbusSQLiteMibScalarInstance((1, 3, 6, 5, 10), (0,), v2c.OctetString()),
         )
         
         # Batarya verileri için MIB Objects - Dinamik olarak oluştur
@@ -987,7 +991,7 @@ def start_snmp_agent():
                     mibBuilder.export_symbols(
                         f"__BATTERY_MIB_{arm}_{k}_{dtype}",
                         MibScalar(oid, v2c.OctetString()),
-                        ModbusRAMMibScalarInstance(oid, (0,), v2c.OctetString()),
+                        ModbusSQLiteMibScalarInstance(oid, (0,), v2c.OctetString()),
                     )
                 
                 # SOC verisi için dtype=126
@@ -995,7 +999,7 @@ def start_snmp_agent():
                 mibBuilder.export_symbols(
                     f"__BATTERY_MIB_{arm}_{k}_126",
                     MibScalar(oid, v2c.OctetString()),
-                    ModbusRAMMibScalarInstance(oid, (0,), v2c.OctetString()),
+                    ModbusSQLiteMibScalarInstance(oid, (0,), v2c.OctetString()),
                 )
         print("✅ MIB Objects oluşturuldu")
 

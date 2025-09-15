@@ -810,6 +810,31 @@ class BatteryDatabase:
                     print("✅ trap_targets tablosu oluşturuldu")
                 else:
                     print("✅ trap_targets tablosu mevcut")
+                
+                # current_period_data tablosu var mı kontrol et
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='current_period_data'
+                """)
+                
+                if not cursor.fetchone():
+                    print("🔄 current_period_data tablosu eksik, oluşturuluyor...")
+                    cursor.execute('''
+                        CREATE TABLE IF NOT EXISTS current_period_data (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            arm INTEGER,
+                            k INTEGER,
+                            dtype INTEGER,
+                            data REAL,
+                            timestamp INTEGER,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            UNIQUE(arm, k, dtype, timestamp)
+                        )
+                    ''')
+                    conn.commit()
+                    print("✅ current_period_data tablosu oluşturuldu")
+                else:
+                    print("✅ current_period_data tablosu mevcut")
                     
         except Exception as e:
             print(f"⚠️ Eksik tablo kontrol hatası: {e}")

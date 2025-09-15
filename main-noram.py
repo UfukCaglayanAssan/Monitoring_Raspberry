@@ -81,6 +81,15 @@ def reset_period():
     global period_active, current_period_timestamp
     period_active = False
     current_period_timestamp = None
+    
+    # Periyot bittiğinde periyot verilerini temizle
+    try:
+        with db_lock:
+            db.clear_current_period_data()
+        print("✓ Periyot verileri temizlendi")
+    except Exception as e:
+        print(f"❌ Periyot verileri temizlenirken hata: {e}")
+    
     # timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     # print(f"[{timestamp}] Periyot sıfırlandı")
 
@@ -1138,8 +1147,7 @@ def main():
         # Veritabanından en son armslavecount değerlerini çek
         load_arm_slave_counts_from_db()
         
-        # Trap hedeflerini RAM'e yükle
-        load_trap_targets_to_ram()
+        # Trap hedefleri artık SQLite'den okunuyor
         
         if not pi.connected:
             print("pigpio bağlantısı sağlanamadı!")
@@ -1432,56 +1440,7 @@ def get_alarm_data_by_index(start_index, quantity):
         print(f"DEBUG: Alarm sonuç: {result}")
         return result
 
-def initialize_alarm_ram():
-    """Alarm RAM yapısını başlat"""
-    with alarm_lock:
-        for arm in range(1, 5):
-            alarm_ram[arm] = {}
-            # Kol alarmları (0 = kol)
-            alarm_ram[arm][0] = {1: False, 2: False, 3: False, 4: False}
-            # Batarya alarmları (sadece mevcut batarya sayısı kadar)
-            battery_count = arm_slave_counts_ram.get(arm, 0)
-            for battery in range(1, battery_count + 1):
-                alarm_ram[arm][battery] = {1: False, 2: False, 3: False, 4: False, 5: False, 6: False, 7: False}
-        print(f"DEBUG: Alarm RAM yapısı başlatıldı - Kol 1: {arm_slave_counts_ram[1]}, Kol 2: {arm_slave_counts_ram[2]}, Kol 3: {arm_slave_counts_ram[3]}, Kol 4: {arm_slave_counts_ram[4]} batarya")
-
-def initialize_status_ram():
-    """Status RAM yapısını başlat"""
-    with status_lock:
-        for arm in range(1, 5):
-            status_ram[arm] = {}
-            # Kol statusu (0 = kol)
-            status_ram[arm][0] = True  # Kol varsayılan olarak veri var
-            # Batarya statusları (sadece mevcut batarya sayısı kadar)
-            battery_count = arm_slave_counts_ram.get(arm, 0)
-            for battery in range(1, battery_count + 1):
-                status_ram[arm][battery] = True  # Başlangıçta veri var
-        print(f"DEBUG: Status RAM yapısı başlatıldı - Kol 1: {arm_slave_counts_ram.get(1, 0)}, Kol 2: {arm_slave_counts_ram.get(2, 0)}, Kol 3: {arm_slave_counts_ram.get(3, 0)}, Kol 4: {arm_slave_counts_ram.get(4, 0)} batarya")
-
-def load_trap_targets_to_ram():
-    """Trap hedeflerini veritabanından RAM'e yükle"""
-    try:
-        with db_lock:
-            targets = db.get_trap_targets()
-            with trap_targets_lock:
-                trap_targets_ram.clear()
-                trap_targets_ram.extend(targets)
-            print(f"✓ {len(targets)} trap hedefi RAM'e yüklendi")
-    except Exception as e:
-        print(f"❌ Trap hedefleri yüklenirken hata: {e}")
-
-def update_alarm_ram(arm, battery, alarm_type, status):
-    """Alarm RAM'ini güncelle"""
-    with alarm_lock:
-        if arm in alarm_ram and battery in alarm_ram[arm] and alarm_type in alarm_ram[arm][battery]:
-            # Önceki durumu kontrol et
-            previous_status = alarm_ram[arm][battery][alarm_type]
-            alarm_ram[arm][battery][alarm_type] = status
-            print(f"DEBUG: Alarm güncellendi - Kol {arm}, Batarya {battery}, Alarm {alarm_type}: {status}")
-            
-            # Durum değiştiyse trap gönder
-            if previous_status != status:
-                send_snmp_trap(arm, battery, alarm_type, status)
+# RAM fonksiyonları kaldırıldı - artık sadece SQLite kullanılıyor
 
 def check_alarm_conditions(arm, battery, data):
     """Bu fonksiyon kaldırıldı - alarmlar error_msb/error_lsb değerlerine göre işleniyor"""
