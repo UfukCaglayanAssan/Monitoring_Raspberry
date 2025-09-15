@@ -2427,14 +2427,14 @@ def snmp_server():
         print("🔍 SNMP Batarya OID'leri:")
         for oid, obj in mib_builder.mibSymbols.items():
             oid_str = '.'.join(map(str, oid))
-            if '1001' in oid_str and '5.' in oid_str:
+            if '1001' in oid_str and '.5.' in oid_str:
                 print(f"  {oid_str}: {obj}")
         
         # Batarya OID'lerini kontrol et
         battery_oids = []
         for oid_tuple, obj in mib_builder.mibSymbols.items():
             oid_str = '.'.join(map(str, oid_tuple))
-            if '1001' in oid_str and '5.' in oid_str:
+            if '1001' in oid_str and '.5.' in oid_str:
                 battery_oids.append(oid_str)
         
         print(f"  Batarya OID'leri ({len(battery_oids)} adet):")
