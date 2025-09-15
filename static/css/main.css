@@ -773,10 +773,15 @@ body {
 
 .config-container {
     display: grid;
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: 1fr;
     gap: 2rem;
     max-width: 1200px;
     margin: 0 auto;
+}
+
+.config-container.full-width {
+    grid-template-columns: 1fr;
+    max-width: 100%;
 }
 
 .config-card {

@@ -1027,6 +1027,64 @@ class BatteryDatabase:
                     print("✅ trap_targets tablosu oluşturuldu")
                 else:
                     print("✅ trap_targets tablosu mevcut")
+                
+                # batconfigs tablosu var mı kontrol et
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='batconfigs'
+                """)
+                
+                if not cursor.fetchone():
+                    print("🔄 batconfigs tablosu eksik, oluşturuluyor...")
+                    cursor.execute('''
+                        CREATE TABLE IF NOT EXISTS batconfigs (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            armValue INTEGER NOT NULL,
+                            Vmin REAL NOT NULL,
+                            Vmax REAL NOT NULL,
+                            Vnom REAL NOT NULL,
+                            Rintnom INTEGER NOT NULL,
+                            Tempmin_D INTEGER NOT NULL,
+                            Tempmax_D INTEGER NOT NULL,
+                            Tempmin_PN INTEGER NOT NULL,
+                            Tempmax_PN INTEGER NOT NULL,
+                            Socmin INTEGER NOT NULL,
+                            Sohmin INTEGER NOT NULL,
+                            time INTEGER NOT NULL,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )
+                    ''')
+                    conn.commit()
+                    print("✅ batconfigs tablosu oluşturuldu")
+                else:
+                    print("✅ batconfigs tablosu mevcut")
+                
+                # armconfigs tablosu var mı kontrol et
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='armconfigs'
+                """)
+                
+                if not cursor.fetchone():
+                    print("🔄 armconfigs tablosu eksik, oluşturuluyor...")
+                    cursor.execute('''
+                        CREATE TABLE IF NOT EXISTS armconfigs (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            armValue INTEGER NOT NULL,
+                            akimKats REAL NOT NULL,
+                            akimMax REAL NOT NULL,
+                            nemMax REAL NOT NULL,
+                            nemMin REAL NOT NULL,
+                            tempMax REAL NOT NULL,
+                            tempMin REAL NOT NULL,
+                            time INTEGER NOT NULL,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )
+                    ''')
+                    conn.commit()
+                    print("✅ armconfigs tablosu oluşturuldu")
+                else:
+                    print("✅ armconfigs tablosu mevcut")
                     
         except Exception as e:
             print(f"⚠️ Eksik tablo kontrol hatası: {e}")
@@ -2347,7 +2405,7 @@ class BatteryDatabase:
                     (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmax_PN, Socmin, Sohmin, time)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
-                    arm, 10.12, 13.95, 11.0, 50,  # Rintnom = 50 mΩ
+                    arm, 10, 14, 11.0, 20,  # Rintnom = 20 mΩ
                     15, 55, 15, 30, 30, 30, 
                     int(time.time() * 1000)
                 ))
@@ -2359,7 +2417,7 @@ class BatteryDatabase:
                     (armValue, akimKats, akimMax, nemMax, nemMin, tempMax, tempMin, time)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
-                    arm, 1.0, 100, 80, 20, 50, 10, 
+                    arm, 1.0, 999, 80, 20, 50, 10, 
                     int(time.time() * 1000)
                 ))
             
@@ -2382,7 +2440,7 @@ class BatteryDatabase:
                         (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, Tempmin_PN, Tempmax_PN, Socmin, Sohmin, time)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
-                        arm, 10.12, 13.95, 11.0, 50,  # Rintnom = 50 mΩ
+                        arm, 10.12, 13.95, 11.0, 20,  # Rintnom = 20 mΩ
                         15, 55, 15, 30, 30, 30, 
                         int(time.time() * 1000)
                     ))

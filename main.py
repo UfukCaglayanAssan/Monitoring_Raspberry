@@ -589,43 +589,65 @@ def db_worker():
                             battery_data_ram[arm_value] = {}
                         if k_value not in battery_data_ram[arm_value]:
                             battery_data_ram[arm_value][k_value] = {}
-                        # 1-7 sıralama mapping: 1=Gerilim, 2=SOC, 3=RIMT, 4=SOH, 5=NTC1, 6=NTC2, 7=NTC3
-                        if dtype == 10:  # Gerilim -> 1
-                            battery_data_ram[arm_value][k_value][1] = {
-                                'value': salt_data,
-                                'timestamp': get_period_timestamp()
-                            }
-                            print(f"📊 RAM Mapping: UART dtype={dtype} -> RAM dtype=1 (Gerilim)")
-                        elif dtype == 11:  # SOH -> 4
-                            battery_data_ram[arm_value][k_value][4] = {
-                                'value': salt_data,
-                                'timestamp': get_period_timestamp()
-                            }
-                        elif dtype == 12:  # RIMT -> 3
-                            battery_data_ram[arm_value][k_value][3] = {
-                                'value': salt_data,
-                                'timestamp': get_period_timestamp()
-                            }
-                        elif dtype == 126:  # SOC -> 2
-                            battery_data_ram[arm_value][k_value][2] = {
-                                'value': salt_data,
-                                'timestamp': get_period_timestamp()
-                            }
-                        elif dtype == 13:  # NTC1 -> 5
-                            battery_data_ram[arm_value][k_value][5] = {
-                                'value': salt_data,
-                                'timestamp': get_period_timestamp()
-                            }
-                        elif dtype == 14:  # NTC2 -> 6
-                            battery_data_ram[arm_value][k_value][6] = {
-                                'value': salt_data,
-                                'timestamp': get_period_timestamp()
-                            }
-                        elif dtype == 15:  # NTC3 -> 7
-                            battery_data_ram[arm_value][k_value][7] = {
-                                'value': salt_data,
-                                'timestamp': get_period_timestamp()
-                            }
+                        
+                        # k=2 (kol verisi) için özel mapping
+                        if k_value == 2:
+                            if dtype == 10:  # Akım -> 1
+                                battery_data_ram[arm_value][k_value][1] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                                print(f"📊 RAM Mapping: Arm k={k_value}, UART dtype={dtype} -> RAM dtype=1 (Akım)")
+                            elif dtype == 11:  # Nem -> 2
+                                battery_data_ram[arm_value][k_value][2] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                                print(f"📊 RAM Mapping: Arm k={k_value}, UART dtype={dtype} -> RAM dtype=2 (Nem)")
+                            elif dtype == 12:  # Sıcaklık -> 3
+                                battery_data_ram[arm_value][k_value][3] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                                print(f"📊 RAM Mapping: Arm k={k_value}, UART dtype={dtype} -> RAM dtype=3 (Sıcaklık)")
+                        else:
+                            # Batarya verisi için normal mapping: 1=Gerilim, 2=SOC, 3=RIMT, 4=SOH, 5=NTC1, 6=NTC2, 7=NTC3
+                            if dtype == 10:  # Gerilim -> 1
+                                battery_data_ram[arm_value][k_value][1] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                                print(f"📊 RAM Mapping: UART dtype={dtype} -> RAM dtype=1 (Gerilim)")
+                            elif dtype == 11:  # SOH -> 4
+                                battery_data_ram[arm_value][k_value][4] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                            elif dtype == 12:  # RIMT -> 3
+                                battery_data_ram[arm_value][k_value][3] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                            elif dtype == 126:  # SOC -> 2
+                                battery_data_ram[arm_value][k_value][2] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                            elif dtype == 13:  # NTC1 -> 5
+                                battery_data_ram[arm_value][k_value][5] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                            elif dtype == 14:  # NTC2 -> 6
+                                battery_data_ram[arm_value][k_value][6] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                            elif dtype == 15:  # NTC3 -> 7
+                                battery_data_ram[arm_value][k_value][7] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
                         
                         # SOC hesapla ve 2'ye kaydet (sadece batarya verisi için)
                         if k_value != 2 and dtype == 10:  # Gerilim verisi geldiğinde SOC hesapla
@@ -1413,13 +1435,13 @@ def get_dynamic_data_by_index(start_index, quantity):
                     if arm_data and 2 in arm_data:  # k=2 (kol verisi)
                         print(f"DEBUG: k=2 verisi bulundu!")
                         if data_type == 1:  # Akım
-                            value = arm_data[2].get(10, {}).get('value', 0)  # dtype=10 (A)
+                            value = arm_data[2].get(1, {}).get('value', 0)  # RAM dtype=1 (Akım)
                         elif data_type == 2:  # Nem
-                            value = arm_data[2].get(11, {}).get('value', 0)  # dtype=11 (B)
+                            value = arm_data[2].get(2, {}).get('value', 0)  # RAM dtype=2 (Nem)
                         elif data_type == 3:  # Sıcaklık
-                            value = arm_data[2].get(12, {}).get('value', 0)  # dtype=12 (C)
+                            value = arm_data[2].get(3, {}).get('value', 0)  # RAM dtype=3 (Sıcaklık)
                         elif data_type == 4:  # Sıcaklık2
-                            value = arm_data[2].get(13, {}).get('value', 0)  # dtype=13 (D)
+                            value = arm_data[2].get(4, {}).get('value', 0)  # RAM dtype=4 (Sıcaklık2)
                         else:
                             value = 0
                         result.append(float(value) if value else 0.0)
@@ -1972,13 +1994,13 @@ def get_dynamic_data_by_index(start_index, quantity):
                     if arm_data and 2 in arm_data:  # k=2 (kol verisi)
                         print(f"DEBUG: k=2 verisi bulundu!")
                         if data_type == 1:  # Akım
-                            value = arm_data[2].get(10, {}).get('value', 0)  # dtype=10 (A)
+                            value = arm_data[2].get(1, {}).get('value', 0)  # RAM dtype=1 (Akım)
                         elif data_type == 2:  # Nem
-                            value = arm_data[2].get(11, {}).get('value', 0)  # dtype=11 (B)
+                            value = arm_data[2].get(2, {}).get('value', 0)  # RAM dtype=2 (Nem)
                         elif data_type == 3:  # Sıcaklık
-                            value = arm_data[2].get(12, {}).get('value', 0)  # dtype=12 (C)
+                            value = arm_data[2].get(3, {}).get('value', 0)  # RAM dtype=3 (Sıcaklık)
                         elif data_type == 4:  # Sıcaklık2
-                            value = arm_data[2].get(13, {}).get('value', 0)  # dtype=13 (D)
+                            value = arm_data[2].get(4, {}).get('value', 0)  # RAM dtype=4 (Sıcaklık2)
                         else:
                             value = 0
                         result.append(float(value) if value else 0.0)
@@ -2349,8 +2371,8 @@ def snmp_server():
                                     # Kol verisi k=2'de saklanıyor
                                     arm_data = battery_data_ram[arm][2]
                                     
-                                    # MIB dtype'ı RAM dtype'ına çevir
-                                    uart_dtype_map = {1: 10, 2: 11, 3: 12, 4: 13}  # MIB -> RAM
+                                    # MIB dtype'ı RAM dtype'ına çevir (k=2 için)
+                                    uart_dtype_map = {1: 1, 2: 2, 3: 3, 4: 4}  # MIB -> RAM (k=2 için)
                                     uart_dtype = uart_dtype_map.get(dtype)
                                     
                                     if uart_dtype and uart_dtype in arm_data:

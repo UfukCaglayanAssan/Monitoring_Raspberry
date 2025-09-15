@@ -26,11 +26,11 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="Vmin">Vmin (V)</label>
-                        <input type="number" id="Vmin" step="0.01" value="10.12" class="form-input">
+                        <input type="number" id="Vmin" step="0.01" value="10" class="form-input">
                     </div>
                     <div class="form-group">
                         <label for="Vmax">Vmax (V)</label>
-                        <input type="number" id="Vmax" step="0.01" value="13.95" class="form-input">
+                        <input type="number" id="Vmax" step="0.01" value="14" class="form-input">
                     </div>
                 </div>
                 
@@ -41,7 +41,15 @@
                     </div>
                     <div class="form-group">
                         <label for="Rintnom">Nominal İç Direnç (mΩ)</label>
-                        <input type="number" id="Rintnom" value="20" class="form-input">
+                        <select id="Rintnom" class="form-select">
+                            <option value="10">10 mΩ</option>
+                            <option value="16">16 mΩ</option>
+                            <option value="20" selected>20 mΩ</option>
+                            <option value="22">22 mΩ</option>
+                            <option value="25">25 mΩ</option>
+                            <option value="33">33 mΩ</option>
+                            <option value="65">65 mΩ</option>
+                        </select>
                     </div>
                 </div>
                 
@@ -111,7 +119,7 @@
                     </div>
                     <div class="form-group">
                         <label for="akimMax">Maksimum Akım (A)</label>
-                        <input type="number" id="akimMax" value="1000" class="form-input">
+                        <input type="number" id="akimMax" value="999" max="999" class="form-input" oninput="validateAkimMax(this)">
                     </div>
                 </div>
                 

@@ -344,8 +344,8 @@ if (typeof window.ConfigurationPage === 'undefined') {
 
     getBatteryDefaults(armValue) {
         return {
-            Vmin: 10.12,
-            Vmax: 13.95,
+            Vmin: 10,
+            Vmax: 14,
             Vnom: 11.00,
             Rintnom: 20,
             Tempmin_D: 15,
@@ -360,7 +360,7 @@ if (typeof window.ConfigurationPage === 'undefined') {
     getArmDefaults(armValue) {
         return {
             akimKats: 150,
-            akimMax: 1000,
+            akimMax: 999,
             nemMin: 0,
             nemMax: 100,
             tempMin: 15,
@@ -426,10 +426,18 @@ if (typeof window.ConfigurationPage === 'undefined') {
         }
 
         try {
+            const akimMax = parseInt(document.getElementById('akimMax').value);
+            
+            // Maksimum akım kontrolü
+            if (akimMax > 999) {
+                this.showToast('Maksimum akım değeri 999\'dan büyük olamaz!', 'warning');
+                return;
+            }
+            
             const configData = {
                 armValue: parseInt(armValue),
                 akimKats: parseInt(document.getElementById('akimKats').value),
-                akimMax: parseInt(document.getElementById('akimMax').value),
+                akimMax: akimMax,
                 nemMin: parseInt(document.getElementById('nemMin').value),
                 nemMax: parseInt(document.getElementById('nemMax').value),
                 tempMin: parseInt(document.getElementById('tempMin').value),
@@ -462,6 +470,14 @@ if (typeof window.ConfigurationPage === 'undefined') {
         }
     }
 
+
+    validateAkimMax(input) {
+        const value = parseInt(input.value);
+        if (value > 999) {
+            input.value = 999;
+            this.showToast('Maksimum akım değeri 999\'dan büyük olamaz!', 'warning');
+        }
+    }
 
     async sendConfigToDevice() {
         try {
@@ -572,6 +588,20 @@ function initConfigurationPage() {
         // Mevcut instance'ı yeniden başlat
         console.log('🔄 Mevcut ConfigurationPage instance yeniden başlatılıyor');
         window.configurationPage.init();
+    }
+}
+
+// Global fonksiyon olarak da tanımla
+function validateAkimMax(input) {
+    const value = parseInt(input.value);
+    if (value > 999) {
+        input.value = 999;
+        // Toast mesajı için configuration instance'ını bul
+        if (window.configuration) {
+            window.configuration.showToast('Maksimum akım değeri 999\'dan büyük olamaz!', 'warning');
+        } else {
+            alert('Maksimum akım değeri 999\'dan büyük olamaz!');
+        }
     }
 }
 

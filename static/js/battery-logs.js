@@ -76,14 +76,12 @@ if (typeof window.BatteryLogsPage === 'undefined') {
     }
 
     setDefaultDates() {
-        const today = new Date();
-        const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+        // Varsayılan tarih filtresi uygulanmaz - tüm veriler gösterilir
+        document.getElementById('startDate').value = '';
+        document.getElementById('endDate').value = '';
         
-        document.getElementById('startDate').value = this.formatDateForInput(lastWeek);
-        document.getElementById('endDate').value = this.formatDateForInput(today);
-        
-        this.filters.startDate = this.formatDateForInput(lastWeek);
-        this.filters.endDate = this.formatDateForInput(today);
+        this.filters.startDate = '';
+        this.filters.endDate = '';
     }
 
     formatDateForInput(date) {

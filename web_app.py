@@ -522,6 +522,13 @@ def save_armconfig():
                     'message': f'Eksik alan: {field}'
                 }), 400
         
+        # Maksimum akım kontrolü
+        if data['akimMax'] > 999:
+            return jsonify({
+                'success': False,
+                'message': 'Maksimum akım değeri 999\'dan büyük olamaz!'
+            }), 400
+        
         # Zaman damgası ekle
         data['time'] = int(time.time() * 1000)
         
