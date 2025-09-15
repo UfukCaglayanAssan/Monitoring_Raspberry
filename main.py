@@ -119,30 +119,30 @@ def get_last_k_value():
 
 def is_valid_arm_data(arm_value, k_value):
     """Veri doğrulama: Sadece aktif kollar ve bataryalar işlenir"""
-    # Kol aktif mi kontrol et
+        # Kol aktif mi kontrol et
     battery_count = arm_slave_counts_ram.get(arm_value, 0)
     if battery_count == 0:
         print(f"⚠️ HATALI VERİ: Kol {arm_value} aktif değil (batarya sayısı: {battery_count})")
-        return False
+            return False
         
-    # k=2 ise kol verisi, her zaman geçerli
-    if k_value == 2:
-        return True
-    
-    # Batarya verisi ise, k değeri = batarya numarası + 2
-    # k=3 -> batarya 1, k=4 -> batarya 2, k=5 -> batarya 3, vs.
-    # Maksimum k değeri = batarya sayısı + 2
+        # k=2 ise kol verisi, her zaman geçerli
+        if k_value == 2:
+            return True
+        
+        # Batarya verisi ise, k değeri = batarya numarası + 2
+        # k=3 -> batarya 1, k=4 -> batarya 2, k=5 -> batarya 3, vs.
+        # Maksimum k değeri = batarya sayısı + 2
     max_k_value = battery_count + 2
-    if k_value > max_k_value:
+        if k_value > max_k_value:
         print(f"⚠️ HATALI VERİ: Kol {arm_value} için k={k_value} > maksimum k değeri={max_k_value} (batarya sayısı: {battery_count})")
-        return False
-    
-    # k değeri 3'ten küçük olamaz (k=2 kol verisi, k=3+ batarya verisi)
-    if k_value < 3:
-        print(f"⚠️ HATALI VERİ: Kol {arm_value} için geçersiz k değeri: {k_value}")
-        return False
-    
-    return True
+            return False
+        
+        # k değeri 3'ten küçük olamaz (k=2 kol verisi, k=3+ batarya verisi)
+        if k_value < 3:
+            print(f"⚠️ HATALI VERİ: Kol {arm_value} için geçersiz k değeri: {k_value}")
+            return False
+        
+        return True
 
 def get_last_battery_info():
     """En son batarya bilgisini döndür (arm, k)"""
@@ -468,7 +468,7 @@ def db_worker():
                 # Status 0 = Veri gelmiyor, Status 1 = Veri geliyor (düzeltme)
                 if status_value == 0:
                     # Veri gelmiyor - missing data ekle
-                    add_missing_data(arm_value, slave_value)
+                add_missing_data(arm_value, slave_value)
                     print(f"🆕 VERİ GELMİYOR: Kol {arm_value}, Batarya {slave_value}")
                     
                     # Status güncelle (veri yok)
@@ -483,10 +483,10 @@ def db_worker():
                         alarm_processor.process_period_end()
                         # Reset system sinyali gönder (1 saat aralık kontrolü ile)
                         if send_reset_system_signal():
-                            # Yeni periyot başlat
-                            reset_period()
-                            get_period_timestamp()
-                        else:
+                        # Yeni periyot başlat
+                        reset_period()
+                        get_period_timestamp()
+                else:
                             print("⏰ Reset system gönderilemedi, periyot devam ediyor")
                         
                 elif status_value == 1:
@@ -643,7 +643,7 @@ def db_worker():
                     
                     # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
-                elif dtype == 11:  # Nem
+                elif dtype == 11:  # SOH veya Nem
                     if k_value == 2:  # Nem verisi
                         print(f"*** VERİ ALGILANDI - Arm: {arm_value}, Data: {salt_data}% ***")
                         record = {
@@ -654,7 +654,7 @@ def db_worker():
                             "timestamp": get_period_timestamp()
                         }
                         batch.append(record)
-                    
+                        
                         # RAM'e yaz (Modbus/SNMP için)
                         with data_lock:
                             if arm_value not in battery_data_ram:
@@ -667,117 +667,6 @@ def db_worker():
                                 'timestamp': get_period_timestamp()
                             }
                             print(f"📊 RAM Mapping: Arm k={k_value}, UART dtype={dtype} -> RAM dtype=2 (Nem)")
-                    
-                        # RAM'e yaz (Modbus/SNMP için)
-                        with data_lock:
-                            if arm_value not in battery_data_ram:
-                                battery_data_ram[arm_value] = {}
-                            if k_value not in battery_data_ram[arm_value]:
-                                battery_data_ram[arm_value][k_value] = {}
-                            # 1-7 sıralama mapping
-                            if dtype == 10:  # Gerilim -> 1
-                                battery_data_ram[arm_value][k_value][1] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 11:  # SOH -> 4
-                                battery_data_ram[arm_value][k_value][4] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 12:  # RIMT -> 3
-                                battery_data_ram[arm_value][k_value][3] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 126:  # SOC -> 2
-                                battery_data_ram[arm_value][k_value][2] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 13:  # NTC1 -> 5
-                                battery_data_ram[arm_value][k_value][5] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 14:  # NTC2 -> 6
-                                battery_data_ram[arm_value][k_value][6] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 15:  # NTC3 -> 7
-                                battery_data_ram[arm_value][k_value][7] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                        
-                        # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
-                    else:  # RIMT verisi
-                        record = {
-                            "Arm": arm_value,
-                            "k": k_value,
-                            "Dtype": 12,  # RIMT=12
-                            "data": salt_data,
-                            "timestamp": get_period_timestamp()
-                        }
-                        batch.append(record)
-                
-                    # RAM'e yaz (Modbus/SNMP için)
-                    with data_lock:
-                            if arm_value not in battery_data_ram:
-                                battery_data_ram[arm_value] = {}
-                            if k_value not in battery_data_ram[arm_value]:
-                                battery_data_ram[arm_value][k_value] = {}
-                            # 1-7 sıralama mapping
-                            if dtype == 10:  # Gerilim -> 1
-                                battery_data_ram[arm_value][k_value][1] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 11:  # SOH -> 4
-                                battery_data_ram[arm_value][k_value][4] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 12:  # RIMT -> 3
-                                battery_data_ram[arm_value][k_value][3] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 126:  # SOC -> 2
-                                battery_data_ram[arm_value][k_value][2] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 13:  # NTC1 -> 5
-                                battery_data_ram[arm_value][k_value][5] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 14:  # NTC2 -> 6
-                                battery_data_ram[arm_value][k_value][6] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 15:  # NTC3 -> 7
-                                battery_data_ram[arm_value][k_value][7] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                        
-                        # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
-                
-                elif dtype == 12:  # SOH
-                    if k_value == 2:  # Nem verisi (eski sistem)
-                        print(f"*** VERİ ALGILANDI - Arm: {arm_value}, Data: {salt_data}% ***")
-                        record = {
-                            "Arm": arm_value,
-                            "k": k_value,
-                            "Dtype": 12,  # RIMT=12
-                            "data": salt_data,
-                            "timestamp": get_period_timestamp()
-                        }
-                        batch.append(record)
                     else:  # SOH verisi
                         if int(data[4], 16) == 1:  # Eğer data[4] 1 ise SOH 100'dür
                             soh_value = 100.0
@@ -813,8 +702,14 @@ def db_worker():
                                 'value': soh_value,
                                 'timestamp': get_period_timestamp()
                             }
-                        
-                        # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
+                            
+                            # RIMT verisini de RAM'e kaydet (DB'ye kaydetme)
+                            # RIMT -> 3 (1-7 sıralama)
+                            battery_data_ram[arm_value][k_value][3] = {
+                                'value': salt_data,  # RIMT değeri
+                                'timestamp': get_period_timestamp()
+                            }
+                
                 
                 elif dtype == 13:  # NTC1
                     record = {
@@ -901,10 +796,34 @@ def db_worker():
                             battery_data_ram[arm_value] = {}
                         if k_value not in battery_data_ram[arm_value]:
                             battery_data_ram[arm_value][k_value] = {}
-                        battery_data_ram[arm_value][k_value][dtype] = {
-                            'value': salt_data,
-                            'timestamp': get_period_timestamp()
-                        }
+                        
+                        # Dtype mapping: 12=NTC1→5, 13=NTC2→6, 14=NTC3→7, 126=SOC→2
+                        if dtype == 12:  # NTC1 -> 5
+                            battery_data_ram[arm_value][k_value][5] = {
+                                'value': salt_data,
+                                'timestamp': get_period_timestamp()
+                            }
+                        elif dtype == 13:  # NTC2 -> 6
+                            battery_data_ram[arm_value][k_value][6] = {
+                                'value': salt_data,
+                                'timestamp': get_period_timestamp()
+                            }
+                        elif dtype == 14:  # NTC3 -> 7
+                            battery_data_ram[arm_value][k_value][7] = {
+                                'value': salt_data,
+                                'timestamp': get_period_timestamp()
+                            }
+                        elif dtype == 126:  # SOC -> 2
+                            battery_data_ram[arm_value][k_value][2] = {
+                                'value': salt_data,
+                                'timestamp': get_period_timestamp()
+                            }
+                        else:
+                            # Diğer dtype'lar için direkt kullan
+                            battery_data_ram[arm_value][k_value][dtype] = {
+                                'value': salt_data,
+                                'timestamp': get_period_timestamp()
+                            }
                     
                     # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
 
@@ -2364,8 +2283,8 @@ def snmp_server():
                                     # Kol verisi k=2'de saklanıyor
                                     arm_data = battery_data_ram[arm][2]
                                     
-                                    # MIB dtype'ı UART dtype'ına çevir
-                                    uart_dtype_map = {1: 10, 2: 11, 3: 13, 4: 14}  # MIB -> UART
+                                    # MIB dtype'ı RAM dtype'ına çevir
+                                    uart_dtype_map = {1: 10, 2: 11, 3: 12, 4: 13}  # MIB -> RAM
                                     uart_dtype = uart_dtype_map.get(dtype)
                                     
                                     if uart_dtype and uart_dtype in arm_data:
