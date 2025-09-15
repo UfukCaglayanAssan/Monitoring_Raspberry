@@ -92,7 +92,7 @@ class BatteryDatabase:
                 
                 print("Yeni veritabanı oluşturuluyor...")
                 
-                # Tek veri tablosu (tüm veriler için)
+                # Ana veri tablosu (tüm veriler için)
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS battery_data (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -105,6 +105,21 @@ class BatteryDatabase:
                     )
                 ''')
                 print("✓ battery_data tablosu oluşturuldu")
+                
+                # Periyot verileri tablosu (sadece son periyot verileri)
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS current_period_data (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        arm INTEGER,
+                        k INTEGER,
+                        dtype INTEGER,
+                        data REAL,
+                        timestamp INTEGER,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(arm, k, dtype, timestamp)
+                    )
+                ''')
+                print("✓ current_period_data tablosu oluşturuldu")
                 
                 # Dil tablosu
                 cursor.execute('''
@@ -434,9 +449,15 @@ class BatteryDatabase:
             cursor.execute("BEGIN IMMEDIATE")
             
             try:
-                # Batch insert
+                # Ana tabloya ekle
                 cursor.executemany('''
                     INSERT INTO battery_data (arm, k, dtype, data, timestamp)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', [(record['Arm'], record['k'], record['Dtype'], record['data'], record['timestamp']) for record in batch])
+                
+                # Periyot tablosuna da ekle (UPSERT)
+                cursor.executemany('''
+                    INSERT OR REPLACE INTO current_period_data (arm, k, dtype, data, timestamp)
                     VALUES (?, ?, ?, ?, ?)
                 ''', [(record['Arm'], record['k'], record['Dtype'], record['data'], record['timestamp']) for record in batch])
                 
@@ -449,6 +470,79 @@ class BatteryDatabase:
                 conn.rollback()
                 print(f"❌ Batch insert hatası: {e}")
                 raise
+    
+    def get_current_period_data(self, arm=None, k=None, dtype=None):
+        """Mevcut periyot verilerini al"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            
+            query = "SELECT arm, k, dtype, data, timestamp FROM current_period_data"
+            params = []
+            conditions = []
+            
+            if arm is not None:
+                conditions.append("arm = ?")
+                params.append(arm)
+            if k is not None:
+                conditions.append("k = ?")
+                params.append(k)
+            if dtype is not None:
+                conditions.append("dtype = ?")
+                params.append(dtype)
+            
+            if conditions:
+                query += " WHERE " + " AND ".join(conditions)
+            
+            query += " ORDER BY arm, k, dtype"
+            
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+            
+            # Veriyi organize et
+            result = {}
+            for arm_val, k_val, dtype_val, data_val, timestamp_val in rows:
+                if arm_val not in result:
+                    result[arm_val] = {}
+                if k_val not in result[arm_val]:
+                    result[arm_val][k_val] = {}
+                result[arm_val][k_val][dtype_val] = {
+                    'value': data_val,
+                    'timestamp': timestamp_val
+                }
+            
+            return result
+    
+    def get_arm_slave_counts_from_period(self):
+        """Periyot verilerinden armslavecounts al"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Her kol için en yüksek k değerini bul (k=2 kol verisi, k>2 batarya verisi)
+            cursor.execute('''
+                SELECT arm, MAX(k) as max_k
+                FROM current_period_data 
+                WHERE k > 2
+                GROUP BY arm
+            ''')
+            
+            rows = cursor.fetchall()
+            arm_counts = {1: 0, 2: 0, 3: 0, 4: 0}
+            
+            for arm, max_k in rows:
+                if max_k > 2:
+                    # k=3 -> batarya 1, k=4 -> batarya 2, vs.
+                    battery_count = max_k - 2
+                    arm_counts[arm] = battery_count
+            
+            return arm_counts
+    
+    def clear_current_period_data(self):
+        """Mevcut periyot verilerini temizle"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM current_period_data")
+            conn.commit()
+            print("✓ Mevcut periyot verileri temizlendi")
     
     def insert_alarm(self, arm, battery, error_code_msb, error_code_lsb, timestamp):
         """Alarm verisi ekle"""

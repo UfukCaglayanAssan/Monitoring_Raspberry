@@ -671,16 +671,7 @@ def db_worker():
                         }
                     batch.append(record)
                     
-                    # RAM'e yaz (Modbus/SNMP için)
-                    with data_lock:
-                        if arm_value not in battery_data_ram:
-                            battery_data_ram[arm_value] = {}
-                        if k_value not in battery_data_ram[arm_value]:
-                            battery_data_ram[arm_value][k_value] = {}
-                        battery_data_ram[arm_value][k_value][dtype] = {
-                            'value': salt_data,
-                            'timestamp': get_period_timestamp()
-                        }
+                    # RAM kullanımı kaldırıldı - veriler sadece SQLite'ye kaydediliyor
                     
                     # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
@@ -694,16 +685,7 @@ def db_worker():
                     }
                     batch.append(record)
                     
-                    # RAM'e yaz (Modbus/SNMP için)
-                    with data_lock:
-                        if arm_value not in battery_data_ram:
-                            battery_data_ram[arm_value] = {}
-                        if k_value not in battery_data_ram[arm_value]:
-                            battery_data_ram[arm_value][k_value] = {}
-                        battery_data_ram[arm_value][k_value][dtype] = {
-                            'value': salt_data,
-                            'timestamp': get_period_timestamp()
-                        }
+                    # RAM kullanımı kaldırıldı - veriler sadece SQLite'ye kaydediliyor
                     
                     # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
@@ -717,16 +699,7 @@ def db_worker():
                     }
                     batch.append(record)
                     
-                    # RAM'e yaz (Modbus/SNMP için)
-                    with data_lock:
-                        if arm_value not in battery_data_ram:
-                            battery_data_ram[arm_value] = {}
-                        if k_value not in battery_data_ram[arm_value]:
-                            battery_data_ram[arm_value][k_value] = {}
-                        battery_data_ram[arm_value][k_value][dtype] = {
-                            'value': salt_data,
-                            'timestamp': get_period_timestamp()
-                        }
+                    # RAM kullanımı kaldırıldı - veriler sadece SQLite'ye kaydediliyor
                     
                     # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
@@ -740,16 +713,7 @@ def db_worker():
                     }
                     batch.append(record)
                     
-                    # RAM'e yaz (Modbus/SNMP için)
-                    with data_lock:
-                        if arm_value not in battery_data_ram:
-                            battery_data_ram[arm_value] = {}
-                        if k_value not in battery_data_ram[arm_value]:
-                            battery_data_ram[arm_value][k_value] = {}
-                        battery_data_ram[arm_value][k_value][dtype] = {
-                            'value': salt_data,
-                            'timestamp': get_period_timestamp()
-                        }
+                    # RAM kullanımı kaldırıldı - veriler sadece SQLite'ye kaydediliyor
                     
                     # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
 
@@ -769,21 +733,9 @@ def db_worker():
                         arm_slave_counts[3] = arm3
                         arm_slave_counts[4] = arm4
                     
-                    # Modbus/SNMP için RAM'e de kaydet
-                    with data_lock:
-                        arm_slave_counts_ram[1] = arm1
-                        arm_slave_counts_ram[2] = arm2
-                        arm_slave_counts_ram[3] = arm3
-                        arm_slave_counts_ram[4] = arm4
+                    # RAM kullanımı kaldırıldı - armslavecounts sadece SQLite'de tutuluyor
                     
-                    # Alarm RAM yapısını güncelle
-                    initialize_alarm_ram()
-                    
-                    # Status RAM yapısını başlat
-                    initialize_status_ram()
-                    
-                    print(f"✓ Armslavecounts RAM'e kaydedildi: {arm_slave_counts}")
-                    print(f"✓ Modbus/SNMP RAM'e kaydedildi: {arm_slave_counts_ram}")
+                    print(f"✓ Armslavecounts güncellendi: {arm_slave_counts}")
                     
                 # Hatkon (kol) alarm verisi: 2. byte (index 1) 0x8E ise
                 elif raw_bytes[1] == 0x8E:

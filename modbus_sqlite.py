@@ -12,6 +12,7 @@ import socket
 import struct
 import sys
 from collections import defaultdict
+from database import BatteryDatabase
 
 # SNMP imports
 from pysnmp.entity import engine, config
@@ -33,10 +34,9 @@ last_data_received = time.time()
 last_k_value = None  # Son gelen verinin k değerini tutar
 last_k_value_lock = threading.Lock()  # Thread-safe erişim için
 
-# RAM'de veri tutma sistemi
-battery_data_ram = defaultdict(dict)  # {arm: {k: {dtype: value}}}
-arm_slave_counts_ram = {1: 0, 2: 0, 3: 0, 4: 0}  # Her kol için batarya sayısı
-data_lock = threading.Lock()  # Thread-safe erişim için
+# Database instance
+db = BatteryDatabase()
+db_lock = threading.Lock()  # Thread-safe erişim için
 
 # Dinamik veri indeksleme sistemi
 def get_dynamic_data_index(arm, battery_num, data_type):
@@ -71,117 +71,116 @@ def get_dynamic_data_index(arm, battery_num, data_type):
         return 0
 
 def get_dynamic_data_by_index(start_index, quantity):
-    """Dinamik veri indeksine göre veri döndür"""
-    with data_lock:
-        result = []
-        current_index = 1  # 1'den başla (Modbus 1-based)
-        
-        print(f"DEBUG: get_dynamic_data_by_index start={start_index}, quantity={quantity}")
-        print(f"DEBUG: arm_slave_counts_ram = {arm_slave_counts_ram}")
-        
-        # Armslavecounts'a göre sıralı veri oluştur - sadece bataryası olan kolları işle
-        for arm in range(1, 5):  # Kol 1-4
-            if arm_slave_counts_ram.get(arm, 0) == 0:
-                print(f"DEBUG: Kol {arm} atlandı (batarya yok)")
-                continue  # Bu kolda batarya yok, atla
-                
-            print(f"DEBUG: Kol {arm} işleniyor...")
-            print(f"DEBUG: battery_data_ram[{arm}] = {battery_data_ram.get(arm, 'YOK')}")
+    """Dinamik veri indeksine göre veri döndür - SQLite'den oku"""
+    try:
+        with db_lock:
+            result = []
+            current_index = 1  # 1'den başla (Modbus 1-based)
             
-            # Kol verileri (akım, nem, sıcaklık, sıcaklık2)
-            for data_type in range(1, 5):
-                print(f"DEBUG: current_index={current_index}, start_index={start_index}, len(result)={len(result)}, quantity={quantity}")
-                if current_index >= start_index and len(result) < quantity:
-                    print(f"DEBUG: IF BLOĞU GİRİLDİ!")
-                    print(f"DEBUG: get_battery_data_ram({arm}) çağrılıyor...")
-                    try:
-                        # data_lock zaten alınmış, direkt erişim
-                        arm_data = dict(battery_data_ram.get(arm, {}))
-                        print(f"DEBUG: arm_data = {arm_data}")
-                        print(f"DEBUG: arm_data type = {type(arm_data)}")
-                    except Exception as e:
-                        print(f"DEBUG: HATA! arm_data okuma hatası: {e}")
-                        arm_data = None
-                    if arm_data and 2 in arm_data:  # k=2 (kol verisi)
-                        print(f"DEBUG: k=2 verisi bulundu!")
-                        if data_type == 1:  # Akım
-                            value = arm_data[2].get(10, {}).get('value', 0)  # dtype=10
-                        elif data_type == 2:  # Nem
-                            value = arm_data[2].get(11, {}).get('value', 0)  # dtype=11
-                        elif data_type == 3:  # Sıcaklık
-                            value = arm_data[2].get(12, {}).get('value', 0)  # dtype=12
-                        elif data_type == 4:  # Sıcaklık2
-                            value = arm_data[2].get(13, {}).get('value', 0)  # dtype=13
-                        else:
-                            value = 0
-                        result.append(float(value) if value else 0.0)
-                        print(f"DEBUG: current_index={current_index}, data_type={data_type}, value={value}")
-                    else:
-                        print(f"DEBUG: k=2 verisi bulunamadı!")
-                        result.append(0.0)
-                        print(f"DEBUG: current_index={current_index}, data_type={data_type}, value=0.0 (veri yok)")
-                else:
-                    print(f"DEBUG: IF BLOĞU GİRİLMEDİ!")
-                current_index += 1
-                
-                if len(result) >= quantity:
-                    break
+            print(f"DEBUG: get_dynamic_data_by_index start={start_index}, quantity={quantity}")
+            
+            # Periyot verilerinden armslavecounts al
+            arm_slave_counts = db.get_arm_slave_counts_from_period()
+            print(f"DEBUG: arm_slave_counts = {arm_slave_counts}")
+            
+            # Periyot verilerini al
+            period_data = db.get_current_period_data()
+            print(f"DEBUG: period_data = {period_data}")
+            
+            # Armslavecounts'a göre sıralı veri oluştur - sadece bataryası olan kolları işle
+            for arm in range(1, 5):  # Kol 1-4
+                if arm_slave_counts.get(arm, 0) == 0:
+                    print(f"DEBUG: Kol {arm} atlandı (batarya yok)")
+                    continue  # Bu kolda batarya yok, atla
                     
-            if len(result) >= quantity:
-                break
+                print(f"DEBUG: Kol {arm} işleniyor...")
                 
-            # Batarya verileri
-            battery_count = arm_slave_counts_ram.get(arm, 0)
-            print(f"DEBUG: Kol {arm} batarya sayısı: {battery_count}")
-            for battery_num in range(1, battery_count + 1):
-                print(f"DEBUG: Batarya {battery_num} işleniyor...")
-                k_value = battery_num + 2  # k=3,4,5,6...
-                print(f"DEBUG: k_value = {k_value}")
-                # data_lock zaten alınmış, direkt erişim
-                arm_data = dict(battery_data_ram.get(arm, {}))
-                print(f"DEBUG: arm_data = {arm_data}")
-                if arm_data and k_value in arm_data:
-                    print(f"DEBUG: k={k_value} verisi bulundu!")
-                    # Her batarya için 7 veri tipi
-                    for data_type in range(5, 12):  # 5-11 (gerilim, soc, rint, soh, ntc1, ntc2, ntc3)
-                        print(f"DEBUG: current_index={current_index}, start_index={start_index}, len(result)={len(result)}, quantity={quantity}")
-                        if current_index >= start_index and len(result) < quantity:
-                            print(f"DEBUG: BATARYA IF BLOĞU GİRİLDİ!")
-                            if data_type == 5:  # Gerilim
-                                value = arm_data[k_value].get(10, {}).get('value', 0)  # dtype=10
-                            elif data_type == 6:  # SOC
-                                value = arm_data[k_value].get(126, {}).get('value', 0)  # dtype=126 (SOC)
-                            elif data_type == 7:  # Rint
-                                value = arm_data[k_value].get(12, {}).get('value', 0)  # dtype=12
-                            elif data_type == 8:  # SOH
-                                value = arm_data[k_value].get(11, {}).get('value', 0)  # dtype=11 (SOH)
-                            elif data_type == 9:  # NTC1
-                                value = arm_data[k_value].get(13, {}).get('value', 0)  # dtype=13
-                            elif data_type == 10:  # NTC2
-                                value = arm_data[k_value].get(14, {}).get('value', 0)  # dtype=14
-                            elif data_type == 11:  # NTC3
-                                value = arm_data[k_value].get(15, {}).get('value', 0)  # dtype=15
+                # Kol verileri (akım, nem, sıcaklık, sıcaklık2)
+                for data_type in range(1, 5):
+                    if current_index >= start_index and len(result) < quantity:
+                        if arm in period_data and 2 in period_data[arm]:
+                            if data_type == 1:  # Akım
+                                value = period_data[arm][2].get(10, {}).get('value', 0)  # dtype=10
+                            elif data_type == 2:  # Nem
+                                value = period_data[arm][2].get(11, {}).get('value', 0)  # dtype=11
+                            elif data_type == 3:  # Sıcaklık
+                                value = period_data[arm][2].get(12, {}).get('value', 0)  # dtype=12
+                            elif data_type == 4:  # Sıcaklık2
+                                value = period_data[arm][2].get(13, {}).get('value', 0)  # dtype=13
                             else:
                                 value = 0
                             result.append(float(value) if value else 0.0)
-                            print(f"DEBUG: current_index={current_index}, arm={arm}, bat={battery_num}, data_type={data_type}, value={value}")
                         else:
-                            print(f"DEBUG: BATARYA IF BLOĞU GİRİLMEDİ!")
-                        current_index += 1
+                            result.append(0.0)
+                    else:
+                        result.append(0.0)
+                    current_index += 1
+                    
+                    if len(result) >= quantity:
+                        break
                         
-                        if len(result) >= quantity:
-                            break
-                else:
-                    print(f"DEBUG: k={k_value} verisi bulunamadı!")
-                            
                 if len(result) >= quantity:
                     break
                     
-            if len(result) >= quantity:
-                break
+                # Batarya verileri
+                battery_count = arm_slave_counts.get(arm, 0)
+                print(f"DEBUG: Kol {arm} batarya sayısı: {battery_count}")
+                for battery_num in range(1, battery_count + 1):
+                    k_value = battery_num + 2  # k=3,4,5,6...
+                    
+                    if arm in period_data and k_value in period_data[arm]:
+                        # Her batarya için 7 veri tipi
+                        for data_type in range(5, 12):  # 5-11 (gerilim, soc, rint, soh, ntc1, ntc2, ntc3)
+                            if current_index >= start_index and len(result) < quantity:
+                                if data_type == 5:  # Gerilim
+                                    value = period_data[arm][k_value].get(10, {}).get('value', 0)  # dtype=10
+                                elif data_type == 6:  # SOC
+                                    value = period_data[arm][k_value].get(11, {}).get('value', 0)  # dtype=11 (SOC)
+                                elif data_type == 7:  # Rint
+                                    value = period_data[arm][k_value].get(12, {}).get('value', 0)  # dtype=12
+                                elif data_type == 8:  # SOH
+                                    value = period_data[arm][k_value].get(126, {}).get('value', 0)  # dtype=126 (SOH)
+                                elif data_type == 9:  # NTC1
+                                    value = period_data[arm][k_value].get(13, {}).get('value', 0)  # dtype=13
+                                elif data_type == 10:  # NTC2
+                                    value = period_data[arm][k_value].get(14, {}).get('value', 0)  # dtype=14
+                                elif data_type == 11:  # NTC3
+                                    value = period_data[arm][k_value].get(15, {}).get('value', 0)  # dtype=15
+                                else:
+                                    value = 0
+                                result.append(float(value) if value else 0.0)
+                            else:
+                                result.append(0.0)
+                            current_index += 1
+                            
+                            if len(result) >= quantity:
+                                break
+                    else:
+                        # Veri yoksa 0'lar ekle
+                        for data_type in range(5, 12):
+                            if current_index >= start_index and len(result) < quantity:
+                                result.append(0.0)
+                            current_index += 1
+                            
+                            if len(result) >= quantity:
+                                break
+                    
+                    if len(result) >= quantity:
+                        break
+                        
+                if len(result) >= quantity:
+                    break
+                    
+            # Eksik veriler için 0 ekle
+            while len(result) < quantity:
+                result.append(0.0)
                 
-        print(f"DEBUG: Sonuç: {result}")
-        return result
+            print(f"DEBUG: Sonuç: {result}")
+            return result
+            
+    except Exception as e:
+        print(f"❌ get_dynamic_data_by_index hatası: {e}")
+        return [0.0] * quantity
 
 def get_dynamic_register_names(start_index, quantity):
     """Dinamik register isimlerini oluştur"""
