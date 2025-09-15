@@ -722,11 +722,11 @@ def db_worker():
                         
                         # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                     else:  # RIMT verisi
-                    record = {
-                        "Arm": arm_value,
-                        "k": k_value,
+                        record = {
+                            "Arm": arm_value,
+                            "k": k_value,
                             "Dtype": 12,  # RIMT=12
-                        "data": salt_data,
+                            "data": salt_data,
                         "timestamp": get_period_timestamp()
                     }
                     batch.append(record)
