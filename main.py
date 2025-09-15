@@ -119,30 +119,30 @@ def get_last_k_value():
 
 def is_valid_arm_data(arm_value, k_value):
     """Veri doğrulama: Sadece aktif kollar ve bataryalar işlenir"""
-    # Kol aktif mi kontrol et
+        # Kol aktif mi kontrol et
     battery_count = arm_slave_counts_ram.get(arm_value, 0)
     if battery_count == 0:
         print(f"⚠️ HATALI VERİ: Kol {arm_value} aktif değil (batarya sayısı: {battery_count})")
-        return False
-    
-    # k=2 ise kol verisi, her zaman geçerli
-    if k_value == 2:
-        return True
-    
-    # Batarya verisi ise, k değeri = batarya numarası + 2
-    # k=3 -> batarya 1, k=4 -> batarya 2, k=5 -> batarya 3, vs.
-    # Maksimum k değeri = batarya sayısı + 2
+            return False
+        
+        # k=2 ise kol verisi, her zaman geçerli
+        if k_value == 2:
+            return True
+        
+        # Batarya verisi ise, k değeri = batarya numarası + 2
+        # k=3 -> batarya 1, k=4 -> batarya 2, k=5 -> batarya 3, vs.
+        # Maksimum k değeri = batarya sayısı + 2
     max_k_value = battery_count + 2
-    if k_value > max_k_value:
+        if k_value > max_k_value:
         print(f"⚠️ HATALI VERİ: Kol {arm_value} için k={k_value} > maksimum k değeri={max_k_value} (batarya sayısı: {battery_count})")
-        return False
-    
-    # k değeri 3'ten küçük olamaz (k=2 kol verisi, k=3+ batarya verisi)
-    if k_value < 3:
-        print(f"⚠️ HATALI VERİ: Kol {arm_value} için geçersiz k değeri: {k_value}")
-        return False
-    
-    return True
+            return False
+        
+        # k değeri 3'ten küçük olamaz (k=2 kol verisi, k=3+ batarya verisi)
+        if k_value < 3:
+            print(f"⚠️ HATALI VERİ: Kol {arm_value} için geçersiz k değeri: {k_value}")
+            return False
+        
+        return True
 
 def get_last_battery_info():
     """En son batarya bilgisini döndür (arm, k)"""
@@ -468,7 +468,7 @@ def db_worker():
                 # Status 0 = Veri gelmiyor, Status 1 = Veri geliyor (düzeltme)
                 if status_value == 0:
                     # Veri gelmiyor - missing data ekle
-                    add_missing_data(arm_value, slave_value)
+                add_missing_data(arm_value, slave_value)
                     print(f"🆕 VERİ GELMİYOR: Kol {arm_value}, Batarya {slave_value}")
                     
                     # Status güncelle (veri yok)
@@ -483,10 +483,10 @@ def db_worker():
                         alarm_processor.process_period_end()
                         # Reset system sinyali gönder (1 saat aralık kontrolü ile)
                         if send_reset_system_signal():
-                            # Yeni periyot başlat
-                            reset_period()
-                            get_period_timestamp()
-                        else:
+                        # Yeni periyot başlat
+                        reset_period()
+                        get_period_timestamp()
+                else:
                             print("⏰ Reset system gönderilemedi, periyot devam ediyor")
                         
                 elif status_value == 1:
@@ -577,7 +577,7 @@ def db_worker():
                         soc_record = {
                             "Arm": arm_value,
                             "k": k_value,
-                            "Dtype": 11,  # SOC = dtype 11 (MIB ile uyumlu)
+                            "Dtype": 126,  # SOC = dtype 126
                             "data": soc_value,
                             "timestamp": get_period_timestamp()
                         }
@@ -596,8 +596,8 @@ def db_worker():
                                 'timestamp': get_period_timestamp()
                             }
                             print(f"📊 RAM Mapping: UART dtype={dtype} -> RAM dtype=1 (Gerilim)")
-                        elif dtype == 11:  # SOC -> 2
-                            battery_data_ram[arm_value][k_value][2] = {
+                        elif dtype == 11:  # SOH -> 4
+                            battery_data_ram[arm_value][k_value][4] = {
                                 'value': salt_data,
                                 'timestamp': get_period_timestamp()
                             }
@@ -606,8 +606,8 @@ def db_worker():
                                 'value': salt_data,
                                 'timestamp': get_period_timestamp()
                             }
-                        elif dtype == 126:  # SOH -> 4
-                            battery_data_ram[arm_value][k_value][4] = {
+                        elif dtype == 126:  # SOC -> 2
+                            battery_data_ram[arm_value][k_value][2] = {
                                 'value': salt_data,
                                 'timestamp': get_period_timestamp()
                             }
@@ -643,17 +643,30 @@ def db_worker():
                     
                     # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
-                elif dtype == 11:  # RIMT veya Nem
+                elif dtype == 11:  # Nem
                     if k_value == 2:  # Nem verisi
                         print(f"*** VERİ ALGILANDI - Arm: {arm_value}, Data: {salt_data}% ***")
                         record = {
                             "Arm": arm_value,
                             "k": k_value,
-                            "Dtype": 12,  # RIMT=12
+                            "Dtype": 11,  # Nem=11
                             "data": salt_data,
                             "timestamp": get_period_timestamp()
                         }
                         batch.append(record)
+                    
+                        # RAM'e yaz (Modbus/SNMP için)
+                        with data_lock:
+                            if arm_value not in battery_data_ram:
+                                battery_data_ram[arm_value] = {}
+                            if k_value not in battery_data_ram[arm_value]:
+                                battery_data_ram[arm_value][k_value] = {}
+                            # Arm verisi için dtype=11 -> RAM dtype=2 (Nem)
+                            battery_data_ram[arm_value][k_value][2] = {
+                                'value': salt_data,
+                                'timestamp': get_period_timestamp()
+                            }
+                            print(f"📊 RAM Mapping: Arm k={k_value}, UART dtype={dtype} -> RAM dtype=2 (Nem)")
                     
                         # RAM'e yaz (Modbus/SNMP için)
                         with data_lock:
@@ -667,8 +680,8 @@ def db_worker():
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
                                 }
-                            elif dtype == 11:  # SOC -> 2
-                                battery_data_ram[arm_value][k_value][2] = {
+                            elif dtype == 11:  # SOH -> 4
+                                battery_data_ram[arm_value][k_value][4] = {
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
                                 }
@@ -677,8 +690,8 @@ def db_worker():
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
                                 }
-                            elif dtype == 126:  # SOH -> 4
-                                battery_data_ram[arm_value][k_value][4] = {
+                            elif dtype == 126:  # SOC -> 2
+                                battery_data_ram[arm_value][k_value][2] = {
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
                                 }
@@ -700,7 +713,7 @@ def db_worker():
                         
                         # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                     else:  # RIMT verisi
-                        record = {
+                    record = {
                         "Arm": arm_value,
                         "k": k_value,
                             "Dtype": 12,  # RIMT=12
@@ -721,8 +734,8 @@ def db_worker():
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
                                 }
-                            elif dtype == 11:  # SOC -> 2
-                                battery_data_ram[arm_value][k_value][2] = {
+                            elif dtype == 11:  # SOH -> 4
+                                battery_data_ram[arm_value][k_value][4] = {
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
                                 }
@@ -731,8 +744,8 @@ def db_worker():
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
                                 }
-                            elif dtype == 126:  # SOH -> 4
-                                battery_data_ram[arm_value][k_value][4] = {
+                            elif dtype == 126:  # SOC -> 2
+                                battery_data_ram[arm_value][k_value][2] = {
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
                                 }
@@ -779,11 +792,11 @@ def db_worker():
                             soh_value = tam_kisim + kusurat_kisim
                             soh_value = round(soh_value, 4)
                         
-                        # SOH verisini dtype=126'ya kaydet
+                        # SOH verisini dtype=11'ya kaydet
                         record = {
                             "Arm": arm_value,
                             "k": k_value,
-                            "Dtype": 126,
+                            "Dtype": 11,
                             "data": soh_value,
                             "timestamp": get_period_timestamp()
                         }
@@ -2320,14 +2333,25 @@ def snmp_server():
                             
                             print(f"🔍 Kol OID parsing: arm={arm}, dtype={dtype}")
                             
-                            # Kol verileri için RAM'den oku (arm_data_ram kullan)
+                            # Kol verileri için RAM'den oku (battery_data_ram kullan)
                             with data_lock:
-                                if arm in arm_data_ram and dtype in arm_data_ram[arm]:
-                                    value = arm_data_ram[arm][dtype].get('value', 0)
-                                    print(f"✅ Kol OID: {oid} - Değer: {value}")
-                                    return self.getSyntax().clone(str(value))
+                                if arm in battery_data_ram and 2 in battery_data_ram[arm]:
+                                    # Kol verisi k=2'de saklanıyor
+                                    arm_data = battery_data_ram[arm][2]
+                                    
+                                    # MIB dtype'ı UART dtype'ına çevir
+                                    uart_dtype_map = {1: 10, 2: 11, 3: 13, 4: 14}  # MIB -> UART
+                                    uart_dtype = uart_dtype_map.get(dtype)
+                                    
+                                    if uart_dtype and uart_dtype in arm_data:
+                                        value = arm_data[uart_dtype].get('value', 0)
+                                        print(f"✅ Kol OID: {oid} - MIB dtype={dtype} -> UART dtype={uart_dtype} - Değer: {value}")
+                                        return self.getSyntax().clone(str(value))
+                                    else:
+                                        print(f"❌ Kol OID: {oid} - MIB dtype={dtype} -> UART dtype={uart_dtype} bulunamadı")
+                                        return self.getSyntax().clone("0")
                                 else:
-                                    print(f"❌ Kol OID: {oid} - Veri bulunamadı")
+                                    print(f"❌ Kol OID: {oid} - Kol {arm} verisi bulunamadı")
                                     return self.getSyntax().clone("0")
                         
                         # Status verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.6.battery)

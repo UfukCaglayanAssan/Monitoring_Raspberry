@@ -1147,11 +1147,11 @@ class BatteryDatabase:
                     arm,
                     k as batteryAddress,
                     MAX(CASE WHEN dtype = 10 THEN data END) as voltage,
-                    MAX(CASE WHEN dtype = 11 THEN data END) as charge_status,
+                    MAX(CASE WHEN dtype = 11 THEN data END) as health_status,
                     MAX(CASE WHEN dtype = 12 THEN data END) as temperature,
                     MAX(CASE WHEN dtype = 13 THEN data END) as positive_pole_temp,
                     MAX(CASE WHEN dtype = 14 THEN data END) as negative_pole_temp,
-                    MAX(CASE WHEN dtype = 126 THEN data END) as health_status
+                    MAX(CASE WHEN dtype = 126 THEN data END) as charge_status
                 FROM battery_data 
                 WHERE k > 2
             '''
@@ -1387,6 +1387,43 @@ class BatteryDatabase:
                         battery_data['charge'] = data
                         battery_data['charge_name'] = translated_name or name
                 
+                # Eksik veri alanları için en son veriyi getir
+                if battery_data['voltage'] is None:
+                    cursor.execute('''
+                        SELECT data FROM battery_data 
+                        WHERE arm = ? AND k = ? AND dtype = 10 
+                        ORDER BY timestamp DESC LIMIT 1
+                    ''', (arm, battery_address))
+                    result = cursor.fetchone()
+                    battery_data['voltage'] = result[0] if result else 0
+                
+                if battery_data['health'] is None:
+                    cursor.execute('''
+                        SELECT data FROM battery_data 
+                        WHERE arm = ? AND k = ? AND dtype = 11 
+                        ORDER BY timestamp DESC LIMIT 1
+                    ''', (arm, battery_address))
+                    result = cursor.fetchone()
+                    battery_data['health'] = result[0] if result else 0
+                
+                if battery_data['temperature'] is None:
+                    cursor.execute('''
+                        SELECT data FROM battery_data 
+                        WHERE arm = ? AND k = ? AND dtype = 12 
+                        ORDER BY timestamp DESC LIMIT 1
+                    ''', (arm, battery_address))
+                    result = cursor.fetchone()
+                    battery_data['temperature'] = result[0] if result else 0
+                
+                if battery_data['charge'] is None:
+                    cursor.execute('''
+                        SELECT data FROM battery_data 
+                        WHERE arm = ? AND k = ? AND dtype = 126 
+                        ORDER BY timestamp DESC LIMIT 1
+                    ''', (arm, battery_address))
+                    result = cursor.fetchone()
+                    battery_data['charge'] = result[0] if result else 0
+                
                 return battery_data
         except Exception as e:
             print(f"get_latest_battery_data hatası (arm: {arm}, battery: {battery_address}): {e}")
@@ -1446,23 +1483,26 @@ class BatteryDatabase:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 
-                # Son 10 dakikada verisi gelen kolları bul
-                ten_minutes_ago = int((datetime.now() - timedelta(minutes=10)).timestamp() * 1000)
-                
-                # Sadece armslavecount tablosunda veri olan kolları getir
+                # Sadece arm_slave_counts tablosunda bataryası olan kolları getir
                 cursor.execute('''
-                    SELECT bd.arm, MAX(bd.timestamp) as latest_timestamp
-                    FROM battery_data bd
-                    INNER JOIN arm_slave_counts asc ON bd.arm = asc.arm
-                    WHERE bd.timestamp >= ? AND asc.slave_count > 0
-                    GROUP BY bd.arm
-                    ORDER BY bd.arm
-                ''', (ten_minutes_ago,))
+                    SELECT asc.arm, asc.slave_count
+                    FROM arm_slave_counts asc
+                    WHERE asc.slave_count > 0
+                    ORDER BY asc.arm
+                ''')
                 
                 active_arms = cursor.fetchall()
                 summary_data = []
                 
-                for arm, latest_timestamp in active_arms:
+                for arm, slave_count in active_arms:
+                    # Bu kol için en son veriyi bul
+                    cursor.execute('''
+                        SELECT MAX(timestamp) as latest_timestamp
+                        FROM battery_data
+                        WHERE arm = ?
+                    ''', (arm,))
+                    
+                    latest_timestamp = cursor.fetchone()[0]
                     if not latest_timestamp:
                         continue
                     
@@ -1492,23 +1532,15 @@ class BatteryDatabase:
                             temperature = data
                             print(f"    Sıcaklık bulundu: {temperature}")
                     
-                    # Bu kol için armslavecounts tablosundan batarya sayısını al
-                    cursor.execute('''
-                        SELECT slave_count FROM arm_slave_counts 
-                        WHERE arm = ?
-                        ORDER BY created_at DESC 
-                        LIMIT 1
-                    ''', (arm,))
-                    
-                    slave_count_result = cursor.fetchone()
-                    battery_count = slave_count_result[0] if slave_count_result else 0
+                    # Batarya sayısı zaten slave_count'tan geldi
+                    battery_count = slave_count
                     
                     # Ortalama değerleri hesapla
                     cursor.execute('''
                         SELECT 
                             AVG(CASE WHEN bd.dtype = 10 THEN bd.data END) as avg_voltage,
-                            AVG(CASE WHEN bd.dtype = 11 THEN bd.data END) as avg_charge,
-                            AVG(CASE WHEN bd.dtype = 126 THEN bd.data END) as avg_health
+                            AVG(CASE WHEN bd.dtype = 11 THEN bd.data END) as avg_health,
+                            AVG(CASE WHEN bd.dtype = 126 THEN bd.data END) as avg_charge
                         FROM battery_data bd
                         WHERE bd.arm = ? AND bd.k != 2 AND bd.timestamp = ?
                     ''', (arm, latest_timestamp))
@@ -1516,7 +1548,53 @@ class BatteryDatabase:
                     battery_stats = cursor.fetchone()
                     
                     if battery_stats:
-                        avg_voltage, avg_charge, avg_health = battery_stats
+                        avg_voltage, avg_health, avg_charge = battery_stats
+                        
+                        # Eksik veri alanları için en son veriyi getir
+                        if humidity is None:
+                            cursor.execute('''
+                                SELECT data FROM battery_data 
+                                WHERE arm = ? AND k = 2 AND dtype = 11 
+                                ORDER BY timestamp DESC LIMIT 1
+                            ''', (arm,))
+                            result = cursor.fetchone()
+                            humidity = result[0] if result else 0
+                        
+                        if temperature is None:
+                            cursor.execute('''
+                                SELECT data FROM battery_data 
+                                WHERE arm = ? AND k = 2 AND dtype = 12 
+                                ORDER BY timestamp DESC LIMIT 1
+                            ''', (arm,))
+                            result = cursor.fetchone()
+                            temperature = result[0] if result else 0
+                        
+                        if avg_voltage is None:
+                            cursor.execute('''
+                                SELECT AVG(data) FROM battery_data 
+                                WHERE arm = ? AND k > 2 AND dtype = 10 
+                                ORDER BY timestamp DESC LIMIT 10
+                            ''', (arm,))
+                            result = cursor.fetchone()
+                            avg_voltage = result[0] if result else 0
+                        
+                        if avg_health is None:
+                            cursor.execute('''
+                                SELECT AVG(data) FROM battery_data 
+                                WHERE arm = ? AND k > 2 AND dtype = 11 
+                                ORDER BY timestamp DESC LIMIT 10
+                            ''', (arm,))
+                            result = cursor.fetchone()
+                            avg_health = result[0] if result else 0
+                        
+                        if avg_charge is None:
+                            cursor.execute('''
+                                SELECT AVG(data) FROM battery_data 
+                                WHERE arm = ? AND k > 2 AND dtype = 126 
+                                ORDER BY timestamp DESC LIMIT 10
+                            ''', (arm,))
+                            result = cursor.fetchone()
+                            avg_charge = result[0] if result else 0
                         
                         summary_data.append({
                             'arm': arm,
@@ -1524,9 +1602,9 @@ class BatteryDatabase:
                             'humidity': humidity,
                             'temperature': temperature,
                             'battery_count': battery_count or 0,
-                            'avg_voltage': round(avg_voltage, 3) if avg_voltage else None,
-                            'avg_charge': round(avg_charge, 3) if avg_charge else None,
-                            'avg_health': round(avg_health, 3) if avg_health else None
+                            'avg_voltage': round(avg_voltage, 3) if avg_voltage else 0,
+                            'avg_health': round(avg_health, 3) if avg_health else 0,
+                            'avg_charge': round(avg_charge, 3) if avg_charge else 0
                         })
                 
                 return summary_data
@@ -1778,11 +1856,11 @@ class BatteryDatabase:
                         arm,
                         k as batteryAddress,
                         MAX(CASE WHEN dtype = 10 THEN data END) as voltage,
-                        MAX(CASE WHEN dtype = 11 THEN data END) as charge_status,
+                        MAX(CASE WHEN dtype = 11 THEN data END) as health_status,
                         MAX(CASE WHEN dtype = 12 THEN data END) as temperature,
                         MAX(CASE WHEN dtype = 13 THEN data END) as positive_pole_temp,
                         MAX(CASE WHEN dtype = 14 THEN data END) as negative_pole_temp,
-                        MAX(CASE WHEN dtype = 126 THEN data END) as health_status
+                        MAX(CASE WHEN dtype = 126 THEN data END) as charge_status
                     FROM battery_data 
                     WHERE k > 2
                 '''
@@ -1824,11 +1902,11 @@ class BatteryDatabase:
                         'arm': row[1],
                         'batteryAddress': row[2] - 2,  # k - 2 olarak göster
                         'voltage': row[3],
-                        'charge_status': row[4],
+                        'health_status': row[4],
                         'temperature': row[5],
                         'positive_pole_temp': row[6],
                         'negative_pole_temp': row[7],
-                        'health_status': row[8]
+                        'charge_status': row[8]
                     })
                 
                 # Toplam sayfa sayısını hesapla
