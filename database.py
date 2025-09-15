@@ -1603,7 +1603,7 @@ class BatteryDatabase:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute('''
-                    SELECT id, name, email, is_active, receive_critical_alarms, receive_normal_alarms, created_at
+                    SELECT id, name, email, is_active, created_at
                     FROM mail_recipients 
                     WHERE is_active = 1
                     ORDER BY created_at
@@ -1618,9 +1618,7 @@ class BatteryDatabase:
                         'name': row[1],
                         'email': row[2],
                         'is_active': bool(row[3]),
-                        'receive_critical_alarms': bool(row[4]),
-                        'receive_normal_alarms': bool(row[5]),
-                        'created_at': row[6]
+                        'created_at': row[4]
                     })
                 
                 return recipients
