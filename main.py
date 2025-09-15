@@ -1646,7 +1646,7 @@ def load_arm_slave_counts_from_db():
         with db_lock:
             with db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT arm, slave_count FROM armslavecounts ORDER BY arm")
+                cursor.execute("SELECT arm, slave_count FROM arm_slave_counts ORDER BY arm")
                 rows = cursor.fetchall()
                 
                 if rows:
