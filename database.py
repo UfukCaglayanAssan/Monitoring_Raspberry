@@ -956,6 +956,29 @@ class BatteryDatabase:
                 else:
                     print("✅ arm_slave_counts tablosu mevcut")
                 
+                # missing_data tablosu var mı kontrol et
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='missing_data'
+                """)
+                
+                if not cursor.fetchone():
+                    print("🔄 missing_data tablosu eksik, oluşturuluyor...")
+                    cursor.execute('''
+                        CREATE TABLE IF NOT EXISTS missing_data (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            arm INTEGER,
+                            slave INTEGER,
+                            status INTEGER,
+                            timestamp INTEGER,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )
+                    ''')
+                    conn.commit()
+                    print("✅ missing_data tablosu oluşturuldu")
+                else:
+                    print("✅ missing_data tablosu mevcut")
+                
                 # ip_config tablosu var mı kontrol et
                 cursor.execute("""
                     SELECT name FROM sqlite_master 
