@@ -742,8 +742,6 @@ def add_mail_recipient():
         data = request.get_json()
         name = data.get('name', '').strip()
         email = data.get('email', '').strip()
-        receive_critical_alarms = data.get('receive_critical_alarms', True)
-        receive_normal_alarms = data.get('receive_normal_alarms', True)
         
         if not name or not email:
             return jsonify({
@@ -753,7 +751,7 @@ def add_mail_recipient():
         
         db_instance = get_db()
         with db_lock:
-            result = db_instance.add_mail_recipient(name, email, receive_critical_alarms, receive_normal_alarms)
+            result = db_instance.add_mail_recipient(name, email)
         
         return jsonify(result)
     except Exception as e:

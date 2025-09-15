@@ -166,7 +166,6 @@ class BatteryDatabase:
                         error_code_lsb INTEGER,
                         timestamp INTEGER,
                         status TEXT DEFAULT 'active',
-                        severity TEXT DEFAULT 'normal',
                         resolved_at DATETIME,
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
@@ -180,8 +179,6 @@ class BatteryDatabase:
                         name TEXT NOT NULL,
                         email TEXT NOT NULL UNIQUE,
                         is_active BOOLEAN DEFAULT 1,
-                        receive_critical_alarms BOOLEAN DEFAULT 1,
-                        receive_normal_alarms BOOLEAN DEFAULT 1,
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
@@ -541,42 +538,15 @@ class BatteryDatabase:
     
     # clear_current_period_data fonksiyonu kaldırıldı - periyot verileri korunuyor
     
-    def determine_alarm_severity(self, error_code_msb, error_code_lsb):
-        """Alarm kritiklik seviyesini belirle"""
-        # Kol alarmları (error_lsb == 9) hepsi kritik
-        if error_code_lsb == 9:
-            return 'critical'
-        
-        # Batarya alarmları - "alarm" kelimesi geçenler kritik
-        if error_code_lsb == 8:  # LVoltageAlarm - "Düşük batarya gerilimi alarmı"
-            return 'critical'
-        elif error_code_lsb == 32:  # OVoltageAlarm - "Yüksek batarya gerilimi alarmı"
-            return 'critical'
-        elif error_code_lsb == 64:  # OvertempD - "Modül sıcaklık alarmı"
-            return 'critical'
-        elif error_code_msb == 1:  # OvertempP - "Pozitif kutup başı alarmı"
-            return 'critical'
-        elif error_code_msb == 2:  # OvertempN - "Negatif kutup başı sıcaklık alarmı"
-            return 'critical'
-        
-        # "Uyarı" kelimesi geçenler normal
-        elif error_code_lsb == 4:  # LVoltageWarn - "Düşük batarya gerilim uyarısı"
-            return 'normal'
-        elif error_code_lsb == 16:  # OVoltageWarn - "Yüksek batarya gerilimi uyarısı"
-            return 'normal'
-        
-        # Diğer durumlar için varsayılan olarak normal
-        return 'normal'
 
     def insert_alarm(self, arm, battery, error_code_msb, error_code_lsb, timestamp):
         """Alarm verisi ekle"""
-        severity = self.determine_alarm_severity(error_code_msb, error_code_lsb)
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO alarms (arm, battery, error_code_msb, error_code_lsb, timestamp, severity)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (arm, battery, error_code_msb, error_code_lsb, timestamp, severity))
+                INSERT INTO alarms (arm, battery, error_code_msb, error_code_lsb, timestamp)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (arm, battery, error_code_msb, error_code_lsb, timestamp))
             conn.commit()
     
     def resolve_alarm(self, arm, battery):
@@ -607,7 +577,7 @@ class BatteryDatabase:
                 else:
                     # Sadece aktif alarmları getir
                     cursor.execute('''
-                        SELECT id, arm, battery, error_code_msb, error_code_lsb, timestamp, status, resolved_at, created_at, severity
+                        SELECT id, arm, battery, error_code_msb, error_code_lsb, timestamp, status, resolved_at, created_at
                         FROM alarms 
                         WHERE status = 'active'
                         ORDER BY timestamp DESC
@@ -642,14 +612,14 @@ class BatteryDatabase:
                 # Sayfalanmış verileri getir
                 if show_resolved:
                     cursor.execute('''
-                        SELECT id, arm, battery, error_code_msb, error_code_lsb, timestamp, status, resolved_at, created_at, severity
+                        SELECT id, arm, battery, error_code_msb, error_code_lsb, timestamp, status, resolved_at, created_at
                         FROM alarms 
                         ORDER BY timestamp DESC
                         LIMIT ? OFFSET ?
                     ''', (page_size, offset))
                 else:
                     cursor.execute('''
-                        SELECT id, arm, battery, error_code_msb, error_code_lsb, timestamp, status, resolved_at, created_at, severity
+                        SELECT id, arm, battery, error_code_msb, error_code_lsb, timestamp, status, resolved_at, created_at
                         FROM alarms 
                         WHERE status = 'active'
                         ORDER BY timestamp DESC
@@ -1658,7 +1628,7 @@ class BatteryDatabase:
             print(f"Mail alıcıları getirilirken hata: {e}")
             return []
     
-    def add_mail_recipient(self, name, email, receive_critical_alarms=True, receive_normal_alarms=True):
+    def add_mail_recipient(self, name, email):
         """Yeni mail alıcısı ekle"""
         try:
             with self.get_connection() as conn:
@@ -1677,9 +1647,9 @@ class BatteryDatabase:
                     return {'success': False, 'message': 'Bu email adresi zaten kayıtlı'}
                 
                 cursor.execute('''
-                    INSERT INTO mail_recipients (name, email, receive_critical_alarms, receive_normal_alarms)
-                    VALUES (?, ?, ?, ?)
-                ''', (name, email, receive_critical_alarms, receive_normal_alarms))
+                    INSERT INTO mail_recipients (name, email)
+                    VALUES (?, ?)
+                ''', (name, email))
                 
                 conn.commit()
                 return {'success': True, 'message': 'Mail alıcısı başarıyla eklendi'}
@@ -1687,7 +1657,7 @@ class BatteryDatabase:
             print(f"Mail alıcısı eklenirken hata: {e}")
             return {'success': False, 'message': str(e)}
     
-    def update_mail_recipient(self, recipient_id, name, email, receive_critical_alarms=True, receive_normal_alarms=True):
+    def update_mail_recipient(self, recipient_id, name, email):
         """Mail alıcısını güncelle"""
         try:
             with self.get_connection() as conn:
@@ -1700,9 +1670,9 @@ class BatteryDatabase:
                 
                 cursor.execute('''
                     UPDATE mail_recipients 
-                    SET name = ?, email = ?, receive_critical_alarms = ?, receive_normal_alarms = ?
+                    SET name = ?, email = ?
                     WHERE id = ?
-                ''', (name, email, receive_critical_alarms, receive_normal_alarms, recipient_id))
+                ''', (name, email, recipient_id))
                 
                 conn.commit()
                 return {'success': True, 'message': 'Mail alıcısı başarıyla güncellendi'}
@@ -1736,20 +1706,18 @@ class BatteryDatabase:
                 # Alarm verilerini hazırla
                 alarm_data = []
                 for alarm in alarms:
-                    severity = self.determine_alarm_severity(alarm['error_code_msb'], alarm['error_code_lsb'])
                     alarm_data.append((
                         alarm['arm'],
                         alarm['battery'],
                         alarm['error_code_msb'],
                         alarm['error_code_lsb'],
-                        alarm['timestamp'],
-                        severity
+                        alarm['timestamp']
                     ))
                 
                 # Toplu insert
                 cursor.executemany('''
-                    INSERT INTO alarms (arm, battery, error_code_msb, error_code_lsb, timestamp, severity)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    INSERT INTO alarms (arm, battery, error_code_msb, error_code_lsb, timestamp)
+                    VALUES (?, ?, ?, ?, ?)
                 ''', alarm_data)
                 
                 conn.commit()
@@ -1863,18 +1831,36 @@ class BatteryDatabase:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 
-                # Basit SQL ile tüm verileri getir
+                # Basit SQL ile tüm verileri getir - eksik veri için son veriyi al
                 query = '''
                     SELECT 
                         timestamp,
                         arm,
                         k as batteryAddress,
-                        MAX(CASE WHEN dtype = 10 THEN data END) as voltage,
-                        MAX(CASE WHEN dtype = 11 THEN data END) as health_status,
-                        MAX(CASE WHEN dtype = 12 THEN data END) as temperature,
-                        MAX(CASE WHEN dtype = 13 THEN data END) as positive_pole_temp,
-                        MAX(CASE WHEN dtype = 14 THEN data END) as negative_pole_temp,
-                        MAX(CASE WHEN dtype = 126 THEN data END) as charge_status
+                        COALESCE(
+                            MAX(CASE WHEN dtype = 10 THEN data END),
+                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = battery_data.k AND b2.dtype = 10 ORDER BY b2.timestamp DESC LIMIT 1)
+                        ) as voltage,
+                        COALESCE(
+                            MAX(CASE WHEN dtype = 11 THEN data END),
+                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = battery_data.k AND b2.dtype = 11 ORDER BY b2.timestamp DESC LIMIT 1)
+                        ) as health_status,
+                        COALESCE(
+                            MAX(CASE WHEN dtype = 12 THEN data END),
+                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = battery_data.k AND b2.dtype = 12 ORDER BY b2.timestamp DESC LIMIT 1)
+                        ) as temperature,
+                        COALESCE(
+                            MAX(CASE WHEN dtype = 13 THEN data END),
+                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = battery_data.k AND b2.dtype = 13 ORDER BY b2.timestamp DESC LIMIT 1)
+                        ) as positive_pole_temp,
+                        COALESCE(
+                            MAX(CASE WHEN dtype = 14 THEN data END),
+                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = battery_data.k AND b2.dtype = 14 ORDER BY b2.timestamp DESC LIMIT 1)
+                        ) as negative_pole_temp,
+                        COALESCE(
+                            MAX(CASE WHEN dtype = 126 THEN data END),
+                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = battery_data.k AND b2.dtype = 126 ORDER BY b2.timestamp DESC LIMIT 1)
+                        ) as charge_status
                     FROM battery_data 
                     WHERE k > 2
                 '''
@@ -1962,14 +1948,23 @@ class BatteryDatabase:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 
-                # Basit SQL ile tüm verileri getir
+                # Basit SQL ile tüm verileri getir - eksik veri için son veriyi al
                 query = '''
                     SELECT 
                         timestamp,
                         arm,
-                        MAX(CASE WHEN dtype = 10 THEN data END) as current,
-                        MAX(CASE WHEN dtype = 11 THEN data END) as humidity,
-                        MAX(CASE WHEN dtype = 12 THEN data END) as ambient_temperature
+                        COALESCE(
+                            MAX(CASE WHEN dtype = 10 THEN data END),
+                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = battery_data.k AND b2.dtype = 10 ORDER BY b2.timestamp DESC LIMIT 1)
+                        ) as current,
+                        COALESCE(
+                            MAX(CASE WHEN dtype = 11 THEN data END),
+                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = battery_data.k AND b2.dtype = 11 ORDER BY b2.timestamp DESC LIMIT 1)
+                        ) as humidity,
+                        COALESCE(
+                            MAX(CASE WHEN dtype = 12 THEN data END),
+                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = battery_data.k AND b2.dtype = 12 ORDER BY b2.timestamp DESC LIMIT 1)
+                        ) as ambient_temperature
                     FROM battery_data 
                     WHERE k = 2
                 '''
@@ -2132,29 +2127,13 @@ class BatteryDatabase:
                         name TEXT NOT NULL,
                         email TEXT NOT NULL UNIQUE,
                         is_active BOOLEAN DEFAULT 1,
-                        receive_critical_alarms BOOLEAN DEFAULT 1,
-                        receive_normal_alarms BOOLEAN DEFAULT 1,
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
                 ''')
                 print("✓ mail_recipients tablosu oluşturuldu (migration)")
                 
                 # mail_recipients tablosuna yeni sütunları ekle (eğer yoksa)
-                cursor.execute("PRAGMA table_info(mail_recipients)")
-                columns = [column[1] for column in cursor.fetchall()]
-                if 'receive_critical_alarms' not in columns:
-                    cursor.execute('ALTER TABLE mail_recipients ADD COLUMN receive_critical_alarms BOOLEAN DEFAULT 1')
-                    print("✓ mail_recipients tablosuna receive_critical_alarms sütunu eklendi (migration)")
-                if 'receive_normal_alarms' not in columns:
-                    cursor.execute('ALTER TABLE mail_recipients ADD COLUMN receive_normal_alarms BOOLEAN DEFAULT 1')
-                    print("✓ mail_recipients tablosuna receive_normal_alarms sütunu eklendi (migration)")
                 
-                # alarms tablosuna severity sütunu ekle (eğer yoksa)
-                cursor.execute("PRAGMA table_info(alarms)")
-                columns = [column[1] for column in cursor.fetchall()]
-                if 'severity' not in columns:
-                    cursor.execute('ALTER TABLE alarms ADD COLUMN severity TEXT DEFAULT "normal"')
-                    print("✓ alarms tablosuna severity sütunu eklendi (migration)")
                 
                 conn.commit()
                 print("✅ Eksik tablolar başarıyla oluşturuldu")
