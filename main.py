@@ -1379,9 +1379,8 @@ def main():
         print("Modbus TCP sunucu thread'i başlatıldı.")
 
         # SNMP sunucu
-        snmp_thread = threading.Thread(target=snmp_server, daemon=True)
-        snmp_thread.start()
-        print("SNMP sunucu thread'i başlatıldı.")
+        # SNMP sunucu - ana thread'de çalıştır
+        snmp_server()
 
         print(f"\nSistem başlatıldı.")
         print("Program çalışıyor... (Ctrl+C ile durdurun)")
