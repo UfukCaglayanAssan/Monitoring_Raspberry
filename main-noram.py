@@ -15,12 +15,7 @@ from collections import defaultdict
 from database import BatteryDatabase
 from alarm_processor import alarm_processor
 
-# SNMP imports
-from pysnmp.entity import engine, config
-from pysnmp.entity.rfc3413 import cmdrsp, context
-from pysnmp.hlapi import *
-from pysnmp.carrier.asyncio.dgram import udp
-from pysnmp.proto.api import v2c
+# SNMP kaldırıldı - sadece modbus_sqlite.py'de kullanılıyor
 
 # Global variables
 buffer = bytearray()
@@ -1179,9 +1174,7 @@ def main():
         modbus_thread.start()
         print("Modbus TCP sunucu thread'i başlatıldı.")
 
-        # SNMP sunucu
-        # SNMP sunucu - ana thread'de çalıştır
-        snmp_server()
+        # SNMP kaldırıldı - sadece modbus_sqlite.py'de çalışıyor
 
         print(f"\nSistem başlatıldı.")
         print("Program çalışıyor... (Ctrl+C ile durdurun)")
@@ -1817,39 +1810,7 @@ def get_alarm_data_by_index(start_address, quantity):
         print(f"get_alarm_data_by_index hatası: {e}")
         return []
 
-def get_snmp_data(oid):
-    """SNMP OID'ine göre veri döndür"""
-    try:
-        # OID'yi parse et
-        oid_parts = oid.split('.')
-        
-        # Kol alarmları: .7.0.1-.7.0.4
-        if len(oid_parts) >= 4 and oid_parts[-3] == '7' and oid_parts[-2] == '0':
-            arm_num = int(oid_parts[-4])
-            alarm_type = int(oid_parts[-1])
-            
-            if 1 <= arm_num <= 4 and 1 <= alarm_type <= 4:
-                with alarm_lock:
-                    alarm_value = alarm_ram.get(arm_num, {}).get(0, {}).get(alarm_type, False)
-                    return 1 if alarm_value else 0
-        
-        # Batarya alarmları: .7.{BATTERY}.1-.7.{BATTERY}.7
-        elif len(oid_parts) >= 4 and oid_parts[-3] == '7':
-            arm_num = int(oid_parts[-4])
-            battery_num = int(oid_parts[-2])
-            alarm_type = int(oid_parts[-1])
-            
-            if 1 <= arm_num <= 4 and 1 <= battery_num <= 120 and 1 <= alarm_type <= 7:
-                with alarm_lock:
-                    alarm_value = alarm_ram.get(arm_num, {}).get(battery_num, {}).get(alarm_type, False)
-                    return 1 if alarm_value else 0
-        
-        # Diğer OID'ler için 0 döndür
-        return 0
-        
-    except Exception as e:
-        print(f"❌ SNMP veri alma hatası: {e}")
-        return 0
+# SNMP fonksiyonları kaldırıldı - sadece modbus_sqlite.py'de kullanılıyor
 
 def send_snmp_trap(arm, battery, alarm_type, status):
     """SNMP trap gönder"""

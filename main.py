@@ -2372,12 +2372,14 @@ def snmp_server():
         
         # Batarya verileri için OID'ler oluştur (MIB yapısına uygun)
         print(f"🔧 SNMP MIB Export başlıyor...")
+        battery_export_count = 0
         for arm in range(1, 5):
             for k in range(3, 8):  # 3-7 arası batarya numaraları (k=2 arm verisi)
                 # 1-7 sıralama: 1=Gerilim, 2=SOC, 3=RIMT, 4=SOH, 5=NTC1, 6=NTC2, 7=NTC3
                 for dtype in range(1, 8):  # 1-7 arası dtype'lar
                     oid = (1, 3, 6, 1, 4, 1, 1001, arm, 5, k, dtype)
                     oid_str = '.'.join(map(str, oid))
+                    print(f"🔧 Batarya OID oluşturuluyor: {oid_str}")
                     try:
                         mib_scalar = MibScalar(oid, v2c.OctetString())
                         mib_instance = ModbusRAMMibScalarInstance(oid, (0,), v2c.OctetString())
@@ -2386,9 +2388,13 @@ def snmp_server():
                             mib_scalar,
                             mib_instance,
                         )
+                        battery_export_count += 1
+                        print(f"✅ Batarya OID export başarılı: {oid_str}")
                     except Exception as e:
                         print(f"❌ Batarya OID hatası: Arm={arm}, k={k}, dtype={dtype} - {e}")
-        print(f"🔧 SNMP MIB Export tamamlandı!")
+                        import traceback
+                        traceback.print_exc()
+        print(f"🔧 SNMP MIB Export tamamlandı! Toplam {battery_export_count} batarya OID export edildi.")
         
         # Alarm verileri için OID'ler oluştur
         for arm in range(1, 5):
