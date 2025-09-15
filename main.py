@@ -2276,7 +2276,24 @@ def snmp_server():
                             
                             print(f"🔍 Batarya OID parsing: arm={arm}, k={k}, dtype={dtype}")
                             
-                            data = get_battery_data_ram(arm, k, dtype)
+                            # UART dtype'ı RAM dtype'ına çevir
+                            ram_dtype = dtype
+                            if dtype == 10:  # UART dtype=10 -> RAM dtype=1 (Gerilim)
+                                ram_dtype = 1
+                            elif dtype == 11:  # UART dtype=11 -> RAM dtype=2 (SOC)
+                                ram_dtype = 2
+                            elif dtype == 12:  # UART dtype=12 -> RAM dtype=3 (RIMT)
+                                ram_dtype = 3
+                            elif dtype == 13:  # UART dtype=13 -> RAM dtype=4 (NTC1)
+                                ram_dtype = 4
+                            elif dtype == 14:  # UART dtype=14 -> RAM dtype=5 (NTC2)
+                                ram_dtype = 5
+                            elif dtype == 126:  # UART dtype=126 -> RAM dtype=6 (SOH)
+                                ram_dtype = 6
+                            
+                            print(f"🔍 UART dtype={dtype} -> RAM dtype={ram_dtype}")
+                            
+                            data = get_battery_data_ram(arm, k, ram_dtype)
                             print(f"🔍 RAM'den gelen data: {data}")
                             
                             if data and 'value' in data:
