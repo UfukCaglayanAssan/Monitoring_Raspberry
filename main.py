@@ -485,7 +485,7 @@ def db_worker():
                 # Status 0 = Veri gelmiyor, Status 1 = Veri geliyor (düzeltme)
                 if status_value == 0:
                     # Veri gelmiyor - missing data ekle
-                    add_missing_data(arm_value, slave_value)
+                add_missing_data(arm_value, slave_value)
                     print(f"🆕 VERİ GELMİYOR: Kol {arm_value}, Batarya {slave_value}")
                     
                     # Status güncelle (veri yok)
@@ -500,10 +500,10 @@ def db_worker():
                         alarm_processor.process_period_end()
                         # Reset system sinyali gönder (1 saat aralık kontrolü ile)
                         if send_reset_system_signal():
-                            # Yeni periyot başlat
-                            reset_period()
-                            get_period_timestamp()
-                        else:
+                        # Yeni periyot başlat
+                        reset_period()
+                        get_period_timestamp()
+                else:
                             print("⏰ Reset system gönderilemedi, periyot devam ediyor")
                         
                 elif status_value == 1:
@@ -717,13 +717,13 @@ def db_worker():
                         
                         # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                     else:  # RIMT verisi
-                        record = {
-                            "Arm": arm_value,
-                            "k": k_value,
+                    record = {
+                        "Arm": arm_value,
+                        "k": k_value,
                             "Dtype": 12,  # RIMT=12
-                            "data": salt_data,
-                            "timestamp": get_period_timestamp()
-                        }
+                        "data": salt_data,
+                        "timestamp": get_period_timestamp()
+                    }
                     batch.append(record)
                 
                     # RAM'e yaz (Modbus/SNMP için)
@@ -2500,23 +2500,16 @@ def snmp_server():
         print("=" * 50)
         
         # SNMP sunucu çalıştır
-        print(f"🔧 SNMP Engine başlatılıyor...")
-        print(f"🔧 MIB Builder: {mib_builder}")
-        print(f"🔧 MIB Symbols: {len(mib_builder.mibSymbols)}")
-        print(f"🔧 SNMP Engine: {snmp_engine}")
-        print(f"🔧 SNMP Context: {snmp_context}")
-        print(f"🔧 SNMP Agent: {snmp_agent}")
-        try:
-            snmp_engine.open_dispatcher()
-            print(f"✅ SNMP Engine başarıyla başlatıldı!")
-            print(f"🔧 SNMP Engine dispatcher açık: {snmp_engine.transport_dispatcher}")
-            print(f"🔧 SNMP Engine job başlatılıyor...")
-            snmp_engine.transport_dispatcher.job_started(1)
-            print(f"✅ SNMP Engine job başlatıldı!")
-        except Exception as e:
-            print(f"❌ SNMP Engine başlatma hatası: {e}")
-            snmp_engine.close_dispatcher()
-            raise
+    print(f"🔧 SNMP Engine başlatılıyor...")
+    try:
+        snmp_engine.open_dispatcher()
+        print(f"✅ SNMP Engine başarıyla başlatıldı!")
+        snmp_engine.transport_dispatcher.job_started(1)
+        print(f"✅ SNMP Engine job başlatıldı!")
+    except Exception as e:
+        print(f"❌ SNMP Engine başlatma hatası: {e}")
+        snmp_engine.close_dispatcher()
+        raise
         
     except Exception as e:
         print(f"❌ SNMP sunucu hatası: {e}")
