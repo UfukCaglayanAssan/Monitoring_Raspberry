@@ -1506,7 +1506,7 @@ class BatteryDatabase:
                     if not latest_timestamp:
                         continue
                     
-                    # Bu kol için nem ve sıcaklık bilgisini al (k=2)
+                    # Bu kol için nem, sıcaklık ve akım bilgisini al (k=2)
                     cursor.execute('''
                         SELECT bd.dtype, bd.data, dt.name, dt.unit
                         FROM battery_data bd
@@ -1519,13 +1519,17 @@ class BatteryDatabase:
                     
                     print(f"Kol {arm} için k=2 verileri: {arm_data}")
                     
-                    # Nem ve sıcaklık değerlerini al
+                    # Nem, sıcaklık ve akım değerlerini al
                     humidity = None
                     temperature = None
+                    current = None
                     
                     for dtype, data, name, unit in arm_data:
                         print(f"  dtype={dtype}, data={data}, name={name}, unit={unit}")
-                        if dtype == 11 and data is not None:  # Nem (dtype=11, k=2)
+                        if dtype == 10 and data is not None:  # Akım (dtype=10, k=2)
+                            current = data
+                            print(f"    Akım bulundu: {current}")
+                        elif dtype == 11 and data is not None:  # Nem (dtype=11, k=2)
                             humidity = data
                             print(f"    Nem bulundu: {humidity}")
                         elif dtype == 12:  # Sıcaklık
@@ -1551,6 +1555,15 @@ class BatteryDatabase:
                         avg_voltage, avg_health, avg_charge = battery_stats
                         
                         # Eksik veri alanları için en son veriyi getir
+                        if current is None:
+                            cursor.execute('''
+                                SELECT data FROM battery_data 
+                                WHERE arm = ? AND k = 2 AND dtype = 10 
+                                ORDER BY timestamp DESC LIMIT 1
+                            ''', (arm,))
+                            result = cursor.fetchone()
+                            current = result[0] if result else 0
+                        
                         if humidity is None:
                             cursor.execute('''
                                 SELECT data FROM battery_data 
@@ -1599,6 +1612,7 @@ class BatteryDatabase:
                         summary_data.append({
                             'arm': arm,
                             'timestamp': latest_timestamp,
+                            'current': current,
                             'humidity': humidity,
                             'temperature': temperature,
                             'battery_count': battery_count or 0,

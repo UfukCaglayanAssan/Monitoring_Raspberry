@@ -119,30 +119,30 @@ def get_last_k_value():
 
 def is_valid_arm_data(arm_value, k_value):
     """Veri doğrulama: Sadece aktif kollar ve bataryalar işlenir"""
-        # Kol aktif mi kontrol et
+    # Kol aktif mi kontrol et
     battery_count = arm_slave_counts_ram.get(arm_value, 0)
     if battery_count == 0:
         print(f"⚠️ HATALI VERİ: Kol {arm_value} aktif değil (batarya sayısı: {battery_count})")
-            return False
+        return False
         
-        # k=2 ise kol verisi, her zaman geçerli
-        if k_value == 2:
-            return True
-        
-        # Batarya verisi ise, k değeri = batarya numarası + 2
-        # k=3 -> batarya 1, k=4 -> batarya 2, k=5 -> batarya 3, vs.
-        # Maksimum k değeri = batarya sayısı + 2
-    max_k_value = battery_count + 2
-        if k_value > max_k_value:
-        print(f"⚠️ HATALI VERİ: Kol {arm_value} için k={k_value} > maksimum k değeri={max_k_value} (batarya sayısı: {battery_count})")
-            return False
-        
-        # k değeri 3'ten küçük olamaz (k=2 kol verisi, k=3+ batarya verisi)
-        if k_value < 3:
-            print(f"⚠️ HATALI VERİ: Kol {arm_value} için geçersiz k değeri: {k_value}")
-            return False
-        
+    # k=2 ise kol verisi, her zaman geçerli
+    if k_value == 2:
         return True
+    
+    # Batarya verisi ise, k değeri = batarya numarası + 2
+    # k=3 -> batarya 1, k=4 -> batarya 2, k=5 -> batarya 3, vs.
+    # Maksimum k değeri = batarya sayısı + 2
+    max_k_value = battery_count + 2
+    if k_value > max_k_value:
+        print(f"⚠️ HATALI VERİ: Kol {arm_value} için k={k_value} > maksimum k değeri={max_k_value} (batarya sayısı: {battery_count})")
+        return False
+    
+    # k değeri 3'ten küçük olamaz (k=2 kol verisi, k=3+ batarya verisi)
+    if k_value < 3:
+        print(f"⚠️ HATALI VERİ: Kol {arm_value} için geçersiz k değeri: {k_value}")
+        return False
+    
+    return True
 
 def get_last_battery_info():
     """En son batarya bilgisini döndür (arm, k)"""
@@ -468,7 +468,7 @@ def db_worker():
                 # Status 0 = Veri gelmiyor, Status 1 = Veri geliyor (düzeltme)
                 if status_value == 0:
                     # Veri gelmiyor - missing data ekle
-                add_missing_data(arm_value, slave_value)
+                    add_missing_data(arm_value, slave_value)
                     print(f"🆕 VERİ GELMİYOR: Kol {arm_value}, Batarya {slave_value}")
                     
                     # Status güncelle (veri yok)

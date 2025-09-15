@@ -155,6 +155,7 @@ if (typeof window.SummaryPage === 'undefined') {
     }
 
     createMainMetric(armData) {
+        const currentValue = armData.current || 0;
         return `
             <div class="arm-main-metric">
                 <div class="metric-icon">
@@ -163,7 +164,7 @@ if (typeof window.SummaryPage === 'undefined') {
                         <line x1="22" x2="22" y1="11" y2="13"></line>
                     </svg>
                 </div>
-                <div class="metric-value">0 <span class="metric-unit">A</span></div>
+                <div class="metric-value">${currentValue} <span class="metric-unit">A</span></div>
                 <div class="metric-label">Deşarj Akımı</div>
             </div>
         `;
