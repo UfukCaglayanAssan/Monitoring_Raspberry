@@ -485,7 +485,7 @@ def db_worker():
                 # Status 0 = Veri gelmiyor, Status 1 = Veri geliyor (düzeltme)
                 if status_value == 0:
                     # Veri gelmiyor - missing data ekle
-                    add_missing_data(arm_value, slave_value)
+                add_missing_data(arm_value, slave_value)
                     print(f"🆕 VERİ GELMİYOR: Kol {arm_value}, Batarya {slave_value}")
                     
                     # Status güncelle (veri yok)
@@ -500,10 +500,10 @@ def db_worker():
                         alarm_processor.process_period_end()
                         # Reset system sinyali gönder (1 saat aralık kontrolü ile)
                         if send_reset_system_signal():
-                            # Yeni periyot başlat
-                            reset_period()
-                            get_period_timestamp()
-                        else:
+                        # Yeni periyot başlat
+                        reset_period()
+                        get_period_timestamp()
+                else:
                             print("⏰ Reset system gönderilemedi, periyot devam ediyor")
                         
                 elif status_value == 1:
@@ -612,6 +612,7 @@ def db_worker():
                                 'value': salt_data,
                                 'timestamp': get_period_timestamp()
                             }
+                            print(f"📊 RAM Mapping: UART dtype={dtype} -> RAM dtype=1 (Gerilim)")
                         elif dtype == 11:  # SOC -> 2
                             battery_data_ram[arm_value][k_value][2] = {
                                 'value': salt_data,
@@ -716,12 +717,12 @@ def db_worker():
                         
                         # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                     else:  # RIMT verisi
-                        record = {
-                            "Arm": arm_value,
-                            "k": k_value,
+                    record = {
+                        "Arm": arm_value,
+                        "k": k_value,
                             "Dtype": 12,  # RIMT=12
-                            "data": salt_data,
-                            "timestamp": get_period_timestamp()
+                        "data": salt_data,
+                        "timestamp": get_period_timestamp()
                     }
                     batch.append(record)
                 
@@ -2252,15 +2253,19 @@ def snmp_server():
                     # Batarya verileri - 1.3.6.1.4.1.1001.arm.5.k.dtype veya 1.3.6.1.4.1.1001.arm.5.k.dtype.0
                     elif oid.startswith("1.3.6.1.4.1.1001."):
                         parts = oid.split('.')
+                        print(f"🔍 SNMP Batarya OID Parsing: {oid} -> parts={parts}")
                         # Hem .0'lı hem .0'sız isteklere cevap ver
                         if len(parts) >= 11:  # En az 11 parça olmalı (1.3.6.1.4.1.1001.arm.5.k.dtype)
                             arm = int(parts[7])
                             if parts[8] == "5":  # Batarya verileri
                                 k = int(parts[9])
                                 dtype = int(parts[10])
+                                print(f"🔍 SNMP Parsed: arm={arm}, k={k}, dtype={dtype}")
                                 
                                 with data_lock:
                                     if arm in battery_data_ram and k in battery_data_ram[arm]:
+                                        print(f"🔍 RAM'de veri var: arm={arm}, k={k}")
+                                        print(f"🔍 RAM verisi: {battery_data_ram[arm][k]}")
                                         # 1-7 sıralama: dtype 1-7 arası olmalı
                                         if 1 <= dtype <= 7:
                                             value_data = battery_data_ram[arm][k].get(dtype, {})
@@ -2268,10 +2273,13 @@ def snmp_server():
                                                 value = value_data.get('value', 0)
                                             else:
                                                 value = value_data
+                                            print(f"🔍 SNMP Dönen değer: {value}")
                                             return self.getSyntax().clone(str(value))
                                         else:
+                                            print(f"🔍 SNMP Hata: dtype={dtype} 1-7 aralığında değil")
                                             return self.getSyntax().clone("0")
                                     else:
+                                        print(f"🔍 SNMP Hata: arm={arm}, k={k} RAM'de bulunamadı")
                                         return self.getSyntax().clone("0")
                     
                     # Status verileri - 1.3.6.1.4.1.1001.arm.6.battery veya 1.3.6.1.4.1.1001.arm.6.battery.0
@@ -2349,6 +2357,8 @@ def snmp_server():
                 # 1-7 sıralama: 1=Gerilim, 2=SOC, 3=RIMT, 4=SOH, 5=NTC1, 6=NTC2, 7=NTC3
                 for dtype in range(1, 8):  # 1-7 arası dtype'lar
                     oid = (1, 3, 6, 1, 4, 1, 1001, arm, 5, k, dtype)
+                    oid_str = '.'.join(map(str, oid))
+                    print(f"🔧 SNMP OID oluşturuluyor: {oid_str} (Arm={arm}, k={k}, dtype={dtype})")
                     mib_builder.export_symbols(
                         f"__BATTERY_MIB_{arm}_{k}_{dtype}",
                         MibScalar(oid, v2c.OctetString()),
