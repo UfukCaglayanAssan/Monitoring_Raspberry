@@ -2250,21 +2250,26 @@ def snmp_server():
                     print(f"✅ Sistem OID: {oid} - Kol 4 batarya sayısı: {count}")
                     return self.getSyntax().clone(str(count))
                 else:
-                    # Kol verileri - 1.3.6.1.4.1.1001.arm.dtype veya 1.3.6.1.4.1.1001.arm.dtype.0
+                    # Batarya verileri - 1.3.6.1.4.1.1001.arm.5.k.dtype veya 1.3.6.1.4.1.1001.arm.5.k.dtype.0
                     if oid.startswith("1.3.6.1.4.1.1001."):
                         parts = oid.split('.')
-                        if len(parts) >= 9:  # En az 9 parça olmalı (1.3.6.1.4.1.1001.arm.dtype)
+                        if len(parts) >= 11:  # En az 11 parça olmalı (1.3.6.1.4.1.1001.arm.5.k.dtype)
                             arm = int(parts[7])
-                            dtype = int(parts[8])
+                            k = int(parts[9])
+                            dtype = int(parts[10])
+                            
+                            print(f"🔍 Batarya OID parsing: arm={arm}, k={k}, dtype={dtype}")
                             
                             with data_lock:
-                                if arm in battery_data_ram and 2 in battery_data_ram[arm]:
-                                    value = battery_data_ram[arm][2].get(dtype, 0)
+                                if arm in battery_data_ram and k in battery_data_ram[arm]:
+                                    value = battery_data_ram[arm][k].get(dtype, 0)
+                                    print(f"✅ Batarya OID: {oid} - Değer: {value}")
                                     return self.getSyntax().clone(str(value))
                                 else:
+                                    print(f"❌ Batarya OID: {oid} - Veri bulunamadı")
                                     return self.getSyntax().clone("0")
                     
-                    # Batarya verileri - 1.3.6.1.4.1.1001.arm.5.k.dtype veya 1.3.6.1.4.1.1001.arm.5.k.dtype.0
+                    # Kol verileri - 1.3.6.1.4.1.1001.arm.dtype veya 1.3.6.1.4.1.1001.arm.dtype.0
                     elif oid.startswith("1.3.6.1.4.1.1001."):
                         parts = oid.split('.')
                         print(f"🔍 SNMP Batarya OID Parsing: {oid} -> parts={parts}")
