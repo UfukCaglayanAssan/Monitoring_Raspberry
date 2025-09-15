@@ -2273,8 +2273,6 @@ def snmp_server():
                                     print(f"❌ Batarya OID: {oid} - Veri bulunamadı")
                                     return self.getSyntax().clone("0")
                     
-                    return self.getSyntax().clone("No Such Object")
-                    
                     # Status verileri - 1.3.6.1.4.1.1001.arm.6.battery veya 1.3.6.1.4.1.1001.arm.6.battery.0
                     elif oid.startswith("1.3.6.1.4.1.1001."):
                         parts = oid.split('.')
