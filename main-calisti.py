@@ -2266,20 +2266,32 @@ def snmp_server():
                     with data_lock:
                         return self.getSyntax().clone(str(arm_slave_counts_ram.get(4, 0)))
                 else:
-                    # Batarya verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.5.k.dtype)
-                    if oid.startswith("1.3.6.1.4.1.1001."):
+                    # Gerçek batarya verileri - Modbus TCP Server RAM'den oku
+                    if oid.startswith("1.3.6.5.10."):
                         parts = oid.split('.')
-                        if len(parts) >= 11:  # 1.3.6.1.4.1.1001.arm.5.k.dtype.0
-                            arm = int(parts[7])    # 1.3.6.1.4.1.1001.{arm}
-                            k = int(parts[9])      # 1.3.6.1.4.1.1001.arm.5.{k}
-                            dtype = int(parts[10])  # 1.3.6.1.4.1.1001.arm.5.k.{dtype}
+                        if len(parts) >= 8:  # 1.3.6.5.10.arm.k.dtype.0
+                            arm = int(parts[5])    # 1.3.6.5.10.{arm}
+                            k = int(parts[6])      # 1.3.6.5.10.arm.{k}
+                            dtype = int(parts[7])  # 1.3.6.5.10.arm.k.{dtype}
                             
                             print(f"🔍 Batarya OID parsing: arm={arm}, k={k}, dtype={dtype}")
                             
-                            # MIB dtype'ı RAM dtype'ına çevir (MIB'de 1-7, RAM'de 1-7)
-                            ram_dtype = dtype  # MIB ve RAM aynı format
+                            # UART dtype'ı RAM dtype'ına çevir
+                            ram_dtype = dtype
+                            if dtype == 10:  # UART dtype=10 -> RAM dtype=1 (Gerilim)
+                                ram_dtype = 1
+                            elif dtype == 11:  # UART dtype=11 -> RAM dtype=2 (SOC)
+                                ram_dtype = 2
+                            elif dtype == 12:  # UART dtype=12 -> RAM dtype=3 (RIMT)
+                                ram_dtype = 3
+                            elif dtype == 13:  # UART dtype=13 -> RAM dtype=4 (NTC1)
+                                ram_dtype = 4
+                            elif dtype == 14:  # UART dtype=14 -> RAM dtype=5 (NTC2)
+                                ram_dtype = 5
+                            elif dtype == 126:  # UART dtype=126 -> RAM dtype=6 (SOH)
+                                ram_dtype = 6
                             
-                            print(f"🔍 MIB dtype={dtype} -> RAM dtype={ram_dtype}")
+                            print(f"🔍 UART dtype={dtype} -> RAM dtype={ram_dtype}")
                             
                             data = get_battery_data_ram(arm, k, ram_dtype)
                             print(f"🔍 RAM'den gelen data: {data}")
@@ -2329,16 +2341,24 @@ def snmp_server():
             ModbusRAMMibScalarInstance((1, 3, 6, 5, 10), (0,), v2c.OctetString()),
         )
         
-        # Batarya verileri için MIB Objects - MIB dosyasına göre (1.3.6.1.4.1.1001.arm.5.k.dtype)
+        # Batarya verileri için MIB Objects - Dinamik olarak oluştur
         for arm in range(1, 5):  # 1, 2, 3, 4
-            for k in range(2, 8):  # 2-7 arası batarya numaraları
-                for dtype in range(1, 8):  # 1-7 arası dtype'lar (1=Gerilim, 2=SOC, 3=RIMT, 4=SOH, 5=NTC1, 6=NTC2, 7=NTC3)
-                    oid = (1, 3, 6, 1, 4, 1, 1001, arm, 5, k, dtype)
+            for k in range(2, 6):  # 2, 3, 4, 5
+                for dtype in range(10, 15):  # 10, 11, 12, 13, 14
+                    oid = (1, 3, 6, 5, 10, arm, k, dtype)
                     mibBuilder.export_symbols(
                         f"__BATTERY_MIB_{arm}_{k}_{dtype}",
                         MibScalar(oid, v2c.OctetString()),
                         ModbusRAMMibScalarInstance(oid, (0,), v2c.OctetString()),
                     )
+                
+                # SOC verisi için dtype=126
+                oid = (1, 3, 6, 5, 10, arm, k, 126)
+                mibBuilder.export_symbols(
+                    f"__BATTERY_MIB_{arm}_{k}_126",
+                    MibScalar(oid, v2c.OctetString()),
+                    ModbusRAMMibScalarInstance(oid, (0,), v2c.OctetString()),
+                )
         print("✅ MIB Objects oluşturuldu")
 
         # --- end of Managed Object Instance initialization ----
@@ -2367,19 +2387,14 @@ def snmp_server():
         print("1.3.6.5.8.0  - Kol 2 batarya sayısı")
         print("1.3.6.5.9.0  - Kol 3 batarya sayısı")
         print("1.3.6.5.10.0 - Kol 4 batarya sayısı")
-        print("")
-        print("Batarya verileri (MIB formatı):")
-        print("1.3.6.1.4.1.1001.3.5.3.1.0 - Kol 3 Batarya 3 Gerilim")
-        print("1.3.6.1.4.1.1001.3.5.3.2.0 - Kol 3 Batarya 3 SOC")
-        print("1.3.6.1.4.1.1001.3.5.4.1.0 - Kol 3 Batarya 4 Gerilim")
-        print("1.3.6.1.4.1.1001.3.5.4.2.0 - Kol 3 Batarya 4 SOC")
         print("=" * 50)
         print("SNMP Test komutları:")
         print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.5.2.0")
+        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.5.7.0")
+        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.5.8.0")
         print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.5.9.0")
-        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.3.5.3.1.0")
-        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.3.5.3.2.0")
-        print(f"snmpwalk -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001")
+        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.5.10.0")
+        print(f"snmpwalk -v2c -c public localhost:{SNMP_PORT} 1.3.6.5")
         print("=" * 50)
 
         # Run I/O dispatcher which would receive queries and send responses
