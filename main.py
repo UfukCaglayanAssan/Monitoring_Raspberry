@@ -726,7 +726,7 @@ def db_worker():
                         
                         # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                     else:  # RIMT verisi
-                    record = {
+                        record = {
                         "Arm": arm_value,
                         "k": k_value,
                             "Dtype": 12,  # RIMT=12
