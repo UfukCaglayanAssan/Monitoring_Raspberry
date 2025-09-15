@@ -2203,25 +2203,27 @@ def snmp_server():
             """Modbus TCP Server RAM sistemi ile MIB Instance"""
             def getValue(self, name, **context):
                 oid = '.'.join([str(x) for x in name])
-                print(f"🔍 SNMP getValue çağrıldı!")
-                print(f"🔍 SNMP OID sorgusu: {oid}")
-                print(f"🔍 SNMP name: {name}")
-                print(f"🔍 SNMP context: {context}")
+                print(f"🔍 SNMP getValue çağrıldı: {oid}")
                 
                 # Sistem bilgileri
                 if oid == "1.3.6.5.1.0":
+                    print(f"✅ Sistem OID: {oid} - Python bilgisi")
                     return self.getSyntax().clone(
                         f"Python {sys.version} running on a {sys.platform} platform"
                     )
                 elif oid == "1.3.6.5.2.0":  # totalBatteryCount
                     total_count = sum(arm_slave_counts_ram.values())
+                    print(f"✅ Sistem OID: {oid} - Batarya sayısı: {total_count}")
                     return self.getSyntax().clone(str(total_count))
                 elif oid == "1.3.6.5.3.0":  # totalArmCount
                     active_arms = sum(1 for count in arm_slave_counts_ram.values() if count > 0)
+                    print(f"✅ Sistem OID: {oid} - Kol sayısı: {active_arms}")
                     return self.getSyntax().clone(str(active_arms))
                 elif oid == "1.3.6.5.4.0":  # systemStatus
+                    print(f"✅ Sistem OID: {oid} - Sistem durumu")
                     return self.getSyntax().clone("1")
                 elif oid == "1.3.6.5.5.0":  # lastUpdateTime
+                    print(f"✅ Sistem OID: {oid} - Son güncelleme")
                     return self.getSyntax().clone(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                 elif oid == "1.3.6.5.6.0":  # dataCount
                     total_data = 0
@@ -2229,15 +2231,24 @@ def snmp_server():
                         for arm_data in battery_data_ram.values():
                             for battery_data in arm_data.values():
                                 total_data += len(battery_data)
+                    print(f"✅ Sistem OID: {oid} - Veri sayısı: {total_data}")
                     return self.getSyntax().clone(str(total_data))
                 elif oid == "1.3.6.5.7.0":  # arm1SlaveCount
-                    return self.getSyntax().clone(str(arm_slave_counts_ram.get(1, 0)))
+                    count = arm_slave_counts_ram.get(1, 0)
+                    print(f"✅ Sistem OID: {oid} - Kol 1 batarya sayısı: {count}")
+                    return self.getSyntax().clone(str(count))
                 elif oid == "1.3.6.5.8.0":  # arm2SlaveCount
-                    return self.getSyntax().clone(str(arm_slave_counts_ram.get(2, 0)))
+                    count = arm_slave_counts_ram.get(2, 0)
+                    print(f"✅ Sistem OID: {oid} - Kol 2 batarya sayısı: {count}")
+                    return self.getSyntax().clone(str(count))
                 elif oid == "1.3.6.5.9.0":  # arm3SlaveCount
-                    return self.getSyntax().clone(str(arm_slave_counts_ram.get(3, 0)))
+                    count = arm_slave_counts_ram.get(3, 0)
+                    print(f"✅ Sistem OID: {oid} - Kol 3 batarya sayısı: {count}")
+                    return self.getSyntax().clone(str(count))
                 elif oid == "1.3.6.5.10.0":  # arm4SlaveCount
-                    return self.getSyntax().clone(str(arm_slave_counts_ram.get(4, 0)))
+                    count = arm_slave_counts_ram.get(4, 0)
+                    print(f"✅ Sistem OID: {oid} - Kol 4 batarya sayısı: {count}")
+                    return self.getSyntax().clone(str(count))
                 else:
                     # Kol verileri - 1.3.6.1.4.1.1001.arm.dtype veya 1.3.6.1.4.1.1001.arm.dtype.0
                     if oid.startswith("1.3.6.1.4.1.1001."):
@@ -2276,10 +2287,10 @@ def snmp_server():
                                                 value = value_data.get('value', 0)
                                             else:
                                                 value = value_data
-                                            print(f"🔍 SNMP Dönen değer: {value}")
+                                            print(f"✅ Batarya OID: {oid} - Arm={arm}, k={k}, dtype={dtype}, value={value}")
                                             return self.getSyntax().clone(str(value))
                                         else:
-                                            print(f"🔍 SNMP Hata: dtype={dtype} 1-7 aralığında değil")
+                                            print(f"❌ Batarya OID: {oid} - dtype={dtype} 1-7 aralığında değil")
                                             return self.getSyntax().clone("0")
                                     else:
                                         print(f"🔍 SNMP Hata: arm={arm}, k={k} RAM'de bulunamadı")
