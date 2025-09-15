@@ -449,6 +449,10 @@ def db_worker():
                 print(f"Ham Veri: {data}")
                 alarm_timestamp = int(time.time() * 1000)
                 
+                # Alarm koşullarını kontrol et ve RAM'e kaydet
+                alarm_data = {'error_msb': error_msb, 'error_lsb': error_lsb}
+                check_alarm_conditions(arm_value, battery, alarm_data)
+                
                 # Eğer errorlsb=1 ve errormsb=1 ise, mevcut alarmı düzelt
                 if error_lsb == 1 and error_msb == 1:
                     # Periyot bitiminde işlenecek şekilde düzeltme ekle
@@ -722,11 +726,11 @@ def db_worker():
                         
                         # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                     else:  # RIMT verisi
-                        record = {
-                            "Arm": arm_value,
-                            "k": k_value,
+                    record = {
+                        "Arm": arm_value,
+                        "k": k_value,
                             "Dtype": 12,  # RIMT=12
-                            "data": salt_data,
+                        "data": salt_data,
                         "timestamp": get_period_timestamp()
                     }
                     batch.append(record)
@@ -1350,6 +1354,10 @@ def main():
         # Veritabanından en son armslavecount değerlerini çek
         load_arm_slave_counts_from_db()
         
+        # Status ve alarm RAM'lerini başlat (arm_slave_counts_ram dolu olduktan sonra)
+        initialize_status_ram()
+        initialize_alarm_ram()
+        
         # Trap hedeflerini RAM'e yükle
         load_trap_targets_to_ram()
         
@@ -1658,6 +1666,31 @@ def initialize_alarm_ram():
                 alarm_ram[arm][battery] = {1: False, 2: False, 3: False, 4: False, 5: False, 6: False, 7: False}
         print(f"DEBUG: Alarm RAM yapısı başlatıldı - Kol 1: {arm_slave_counts_ram[1]}, Kol 2: {arm_slave_counts_ram[2]}, Kol 3: {arm_slave_counts_ram[3]}, Kol 4: {arm_slave_counts_ram[4]} batarya")
 
+def load_arm_slave_counts_from_db():
+    """DB'den arm_slave_counts değerlerini çekip RAM'e aktar"""
+    try:
+        with db_lock:
+            with db.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT arm, slave_count FROM armslavecounts ORDER BY arm")
+                rows = cursor.fetchall()
+                
+                if rows:
+                    for arm, slave_count in rows:
+                        arm_slave_counts_ram[arm] = slave_count
+                        print(f"✓ DB'den yüklendi - Kol {arm}: {slave_count} batarya")
+                else:
+                    # DB'de veri yoksa varsayılan değerler
+                    for arm in range(1, 5):
+                        arm_slave_counts_ram[arm] = 0
+                        print(f"⚠️ DB'de veri yok - Kol {arm}: 0 batarya (varsayılan)")
+                        
+    except Exception as e:
+        print(f"❌ DB'den arm_slave_counts yükleme hatası: {e}")
+        # Hata durumunda varsayılan değerler
+        for arm in range(1, 5):
+            arm_slave_counts_ram[arm] = 0
+
 def initialize_status_ram():
     """Status RAM yapısını başlat"""
     with status_lock:
@@ -1697,8 +1730,40 @@ def update_alarm_ram(arm, battery, alarm_type, status):
                 send_snmp_trap(arm, battery, alarm_type, status)
 
 def check_alarm_conditions(arm, battery, data):
-    """Bu fonksiyon kaldırıldı - alarmlar error_msb/error_lsb değerlerine göre işleniyor"""
-    pass
+    """UART verilerine göre alarm koşullarını kontrol et ve RAM'e kaydet"""
+    try:
+        # Alarm türlerini sıfırla (önce tüm alarmları kapat)
+        alarm_types = [1, 2, 3, 4, 5, 6, 7]  # LVoltageWarn, LVoltageAlarm, OVoltageWarn, OVoltageAlarm, OvertempD, OvertempP, OvertempN
+        for alarm_type in alarm_types:
+            update_alarm_ram(arm, battery, alarm_type, False)
+        
+        # Eğer error_msb ve error_lsb varsa, alarmları işle
+        if 'error_msb' in data and 'error_lsb' in data:
+            error_msb = data['error_msb']
+            error_lsb = data['error_lsb']
+            
+            # MSB kontrolü (bit flag sistemi)
+            if error_msb & 1:  # Bit 0 set - Pozitif kutup başı alarmı
+                update_alarm_ram(arm, battery, 6, True)  # OvertempP
+            if error_msb & 2:  # Bit 1 set - Negatif kutup başı sıcaklık alarmı
+                update_alarm_ram(arm, battery, 7, True)  # OvertempN
+            
+            # LSB kontrolü (bit flag sistemi)
+            if error_lsb & 4:   # Bit 2 set - Düşük batarya gerilim uyarısı
+                update_alarm_ram(arm, battery, 1, True)  # LVoltageWarn
+            if error_lsb & 8:   # Bit 3 set - Düşük batarya gerilimi alarmı
+                update_alarm_ram(arm, battery, 2, True)  # LVoltageAlarm
+            if error_lsb & 16:  # Bit 4 set - Yüksek batarya gerilimi uyarısı
+                update_alarm_ram(arm, battery, 3, True)  # OVoltageWarn
+            if error_lsb & 32:  # Bit 5 set - Yüksek batarya gerilimi alarmı
+                update_alarm_ram(arm, battery, 4, True)  # OVoltageAlarm
+            if error_lsb & 64:  # Bit 6 set - Modül sıcaklık alarmı
+                update_alarm_ram(arm, battery, 5, True)  # OvertempD
+                
+            print(f"🔍 Alarm koşulları kontrol edildi - Kol {arm}, Batarya {battery}, MSB: {error_msb}, LSB: {error_lsb}")
+        
+    except Exception as e:
+        print(f"❌ Alarm koşulları kontrol hatası: {e}")
 
 def modbus_tcp_server():
     """Modbus TCP sunucu thread'i"""
@@ -2267,10 +2332,75 @@ def snmp_server():
                     with data_lock:
                         return self.getSyntax().clone(str(arm_slave_counts_ram.get(4, 0)))
                 else:
-                    # Batarya verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.5.k.dtype)
+                    # Kol verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.dtype)
                     if oid.startswith("1.3.6.1.4.1.1001."):
                         parts = oid.split('.')
-                        if len(parts) >= 11:  # 1.3.6.1.4.1.1001.arm.5.k.dtype.0
+                        if len(parts) >= 9:  # 1.3.6.1.4.1.1001.arm.dtype.0
+                            arm = int(parts[7])    # 1.3.6.1.4.1.1001.{arm}
+                            dtype = int(parts[8])  # 1.3.6.1.4.1.1001.arm.{dtype}
+                            
+                            print(f"🔍 Kol OID parsing: arm={arm}, dtype={dtype}")
+                            
+                            # Kol verileri için RAM'den oku (arm_data_ram kullan)
+                            with data_lock:
+                                if arm in arm_data_ram and dtype in arm_data_ram[arm]:
+                                    value = arm_data_ram[arm][dtype].get('value', 0)
+                                    print(f"✅ Kol OID: {oid} - Değer: {value}")
+                                    return self.getSyntax().clone(str(value))
+                                else:
+                                    print(f"❌ Kol OID: {oid} - Veri bulunamadı")
+                                    return self.getSyntax().clone("0")
+                        
+                        # Status verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.6.battery)
+                        elif len(parts) >= 10:  # 1.3.6.1.4.1.1001.arm.6.battery.0
+                            arm = int(parts[7])    # 1.3.6.1.4.1.1001.{arm}
+                            battery = int(parts[9])  # 1.3.6.1.4.1.1001.arm.6.{battery}
+                            
+                            print(f"🔍 Status OID parsing: arm={arm}, battery={battery}")
+                            
+                            # Status verileri için RAM'den oku
+                            with data_lock:
+                                # Batarya numarası mevcut mu kontrol et
+                                max_battery = arm_slave_counts_ram.get(arm, 0)
+                                if battery > max_battery:
+                                    print(f"❌ Status OID: {oid} - Batarya {battery} mevcut değil (max: {max_battery})")
+                                    return self.getSyntax().clone("0")
+                                
+                                if arm in status_ram and battery in status_ram[arm]:
+                                    status_value = 1 if status_ram[arm][battery] else 0
+                                    print(f"✅ Status OID: {oid} - Değer: {status_value}")
+                                    return self.getSyntax().clone(str(status_value))
+                                else:
+                                    print(f"❌ Status OID: {oid} - Veri bulunamadı")
+                                    return self.getSyntax().clone("0")
+                        
+                        # Alarm verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.7.battery.alarm_type)
+                        elif len(parts) >= 12:  # 1.3.6.1.4.1.1001.arm.7.battery.alarm_type.0
+                            arm = int(parts[7])    # 1.3.6.1.4.1.1001.{arm}
+                            battery = int(parts[9])  # 1.3.6.1.4.1.1001.arm.7.{battery}
+                            alarm_type = int(parts[10])  # 1.3.6.1.4.1.1001.arm.7.battery.{alarm_type}
+                            
+                            print(f"🔍 Alarm OID parsing: arm={arm}, battery={battery}, alarm_type={alarm_type}")
+                            
+                            # Alarm verileri için RAM'den oku
+                            with data_lock:
+                                # Batarya numarası mevcut mu kontrol et (battery=0 ise kol alarmı, kontrol etme)
+                                if battery > 0:
+                                    max_battery = arm_slave_counts_ram.get(arm, 0)
+                                    if battery > max_battery:
+                                        print(f"❌ Alarm OID: {oid} - Batarya {battery} mevcut değil (max: {max_battery})")
+                                        return self.getSyntax().clone("0")
+                                
+                                if arm in alarm_ram and battery in alarm_ram[arm] and alarm_type in alarm_ram[arm][battery]:
+                                    alarm_value = 1 if alarm_ram[arm][battery][alarm_type] else 0
+                                    print(f"✅ Alarm OID: {oid} - Değer: {alarm_value}")
+                                    return self.getSyntax().clone(str(alarm_value))
+                                else:
+                                    print(f"❌ Alarm OID: {oid} - Veri bulunamadı")
+                                    return self.getSyntax().clone("0")
+                        
+                        # Batarya verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.5.k.dtype)
+                        elif len(parts) >= 11:  # 1.3.6.1.4.1.1001.arm.5.k.dtype.0
                             arm = int(parts[7])    # 1.3.6.1.4.1.1001.{arm}
                             k = int(parts[9])      # 1.3.6.1.4.1.1001.arm.5.{k}
                             dtype = int(parts[10])  # 1.3.6.1.4.1.1001.arm.5.k.{dtype}
@@ -2330,6 +2460,56 @@ def snmp_server():
             ModbusRAMMibScalarInstance((1, 3, 6, 5, 10), (0,), v2c.OctetString()),
         )
         
+        # Kol verileri için MIB Objects - MIB dosyasına göre (1.3.6.1.4.1.1001.arm.dtype)
+        for arm in range(1, 5):  # 1, 2, 3, 4
+            for dtype in range(1, 5):  # 1-4 arası dtype'lar (1=Akim, 2=Nem, 3=NTC1, 4=NTC2)
+                oid = (1, 3, 6, 1, 4, 1, 1001, arm, dtype)
+                mibBuilder.export_symbols(
+                    f"__ARM_MIB_{arm}_{dtype}",
+                    MibScalar(oid, v2c.OctetString()),
+                    ModbusRAMMibScalarInstance(oid, (0,), v2c.OctetString()),
+                )
+        
+        # Status verileri için MIB Objects - MIB dosyasına göre (1.3.6.1.4.1.1001.arm.6.battery)
+        for arm in range(1, 5):  # 1, 2, 3, 4
+            # Kol statusu (battery=0)
+            oid = (1, 3, 6, 1, 4, 1, 1001, arm, 6, 0)
+            mibBuilder.export_symbols(
+                f"__STATUS_MIB_{arm}_0",
+                MibScalar(oid, v2c.Integer()),
+                ModbusRAMMibScalarInstance(oid, (0,), v2c.Integer()),
+            )
+            # Batarya statusları (sadece mevcut batarya sayısı kadar)
+            battery_count = arm_slave_counts_ram.get(arm, 0)
+            for battery in range(1, battery_count + 1):
+                oid = (1, 3, 6, 1, 4, 1, 1001, arm, 6, battery)
+                mibBuilder.export_symbols(
+                    f"__STATUS_MIB_{arm}_{battery}",
+                    MibScalar(oid, v2c.Integer()),
+                    ModbusRAMMibScalarInstance(oid, (0,), v2c.Integer()),
+                )
+        
+        # Alarm verileri için MIB Objects - MIB dosyasına göre (1.3.6.1.4.1.1001.arm.7.battery.alarm_type)
+        for arm in range(1, 5):  # 1, 2, 3, 4
+            # Kol alarmları (battery=0, alarm_type=1-4)
+            for alarm_type in range(1, 5):  # 1-4 arası kol alarm türleri
+                oid = (1, 3, 6, 1, 4, 1, 1001, arm, 7, 0, alarm_type)
+                mibBuilder.export_symbols(
+                    f"__ALARM_MIB_{arm}_0_{alarm_type}",
+                    MibScalar(oid, v2c.Integer()),
+                    ModbusRAMMibScalarInstance(oid, (0,), v2c.Integer()),
+                )
+            # Batarya alarmları (battery=1-120, alarm_type=1-7)
+            battery_count = arm_slave_counts_ram.get(arm, 0)
+            for battery in range(1, battery_count + 1):
+                for alarm_type in range(1, 8):  # 1-7 arası batarya alarm türleri
+                    oid = (1, 3, 6, 1, 4, 1, 1001, arm, 7, battery, alarm_type)
+                    mibBuilder.export_symbols(
+                        f"__ALARM_MIB_{arm}_{battery}_{alarm_type}",
+                        MibScalar(oid, v2c.Integer()),
+                        ModbusRAMMibScalarInstance(oid, (0,), v2c.Integer()),
+                    )
+        
         # Batarya verileri için MIB Objects - MIB dosyasına göre (1.3.6.1.4.1.1001.arm.5.k.dtype)
         for arm in range(1, 5):  # 1, 2, 3, 4
             for k in range(2, 8):  # 2-7 arası batarya numaraları
@@ -2368,6 +2548,27 @@ def snmp_server():
         print("1.3.6.5.8.0  - Kol 2 batarya sayısı")
         print("1.3.6.5.9.0  - Kol 3 batarya sayısı")
         print("1.3.6.5.10.0 - Kol 4 batarya sayısı")
+        print("")
+        print("Kol verileri (MIB formatı):")
+        print("1.3.6.1.4.1.1001.3.1.0 - Kol 3 Akım")
+        print("1.3.6.1.4.1.1001.3.2.0 - Kol 3 Nem")
+        print("1.3.6.1.4.1.1001.3.3.0 - Kol 3 NTC1")
+        print("1.3.6.1.4.1.1001.3.4.0 - Kol 3 NTC2")
+        print("")
+        print("Status verileri (MIB formatı):")
+        print("1.3.6.1.4.1.1001.3.6.0.0 - Kol 3 Status")
+        print("1.3.6.1.4.1.1001.3.6.3.0 - Kol 3 Batarya 3 Status")
+        print("1.3.6.1.4.1.1001.3.6.4.0 - Kol 3 Batarya 4 Status")
+        print("")
+        print("Alarm verileri (MIB formatı):")
+        print("1.3.6.1.4.1.1001.3.7.0.1.0 - Kol 3 Akım Alarmı")
+        print("1.3.6.1.4.1.1001.3.7.3.1.0 - Kol 3 Batarya 3 LVoltageWarn")
+        print("1.3.6.1.4.1.1001.3.7.3.2.0 - Kol 3 Batarya 3 LVoltageAlarm")
+        print("1.3.6.1.4.1.1001.3.7.3.3.0 - Kol 3 Batarya 3 OVoltageWarn")
+        print("1.3.6.1.4.1.1001.3.7.3.4.0 - Kol 3 Batarya 3 OVoltageAlarm")
+        print("1.3.6.1.4.1.1001.3.7.3.5.0 - Kol 3 Batarya 3 OvertempD")
+        print("1.3.6.1.4.1.1001.3.7.3.6.0 - Kol 3 Batarya 3 OvertempP")
+        print("1.3.6.1.4.1.1001.3.7.3.7.0 - Kol 3 Batarya 3 OvertempN")
         print("")
         print("Batarya verileri (MIB formatı):")
         print("1.3.6.1.4.1.1001.3.5.3.1.0 - Kol 3 Batarya 3 Gerilim")
