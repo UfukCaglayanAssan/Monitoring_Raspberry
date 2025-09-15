@@ -1757,7 +1757,7 @@ class BatteryDatabase:
                         elif dtype == 11 and data is not None:  # Nem (dtype=11, k=2)
                             humidity = data
                             print(f"    Nem bulundu: {humidity}")
-                        elif dtype == 12:  # Sıcaklık
+                        elif dtype == 12 and data is not None:  # Sıcaklık (dtype=12, k=2)
                             temperature = data
                             print(f"    Sıcaklık bulundu: {temperature}")
                     
