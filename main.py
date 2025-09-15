@@ -598,18 +598,21 @@ def db_worker():
                                     'timestamp': get_period_timestamp()
                                 }
                                 print(f"📊 RAM Mapping: Arm k={k_value}, UART dtype={dtype} -> RAM dtype=1 (Akım)")
+                                print(f"🔋 DEŞARJ AKIMI ALGILANDI - Kol: {arm_value}, Akım: {salt_data} A")
                             elif dtype == 11:  # Nem -> 2
                                 battery_data_ram[arm_value][k_value][2] = {
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
                                 }
                                 print(f"📊 RAM Mapping: Arm k={k_value}, UART dtype={dtype} -> RAM dtype=2 (Nem)")
+                                print(f"💧 NEM VERİSİ ALGILANDI - Kol: {arm_value}, Nem: {salt_data}%")
                             elif dtype == 12:  # Sıcaklık -> 3
                                 battery_data_ram[arm_value][k_value][3] = {
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
                                 }
                                 print(f"📊 RAM Mapping: Arm k={k_value}, UART dtype={dtype} -> RAM dtype=3 (Sıcaklık)")
+                                print(f"🌡️ SICAKLIK VERİSİ ALGILANDI - Kol: {arm_value}, Sıcaklık: {salt_data}°C")
                         else:
                             # Batarya verisi için normal mapping: 1=Gerilim, 2=SOC, 3=RIMT, 4=SOH, 5=NTC1, 6=NTC2, 7=NTC3
                             if dtype == 10:  # Gerilim -> 1
