@@ -2374,7 +2374,7 @@ def snmp_server():
         print(f"🔧 SNMP MIB Export başlıyor...")
         battery_export_count = 0
         for arm in range(1, 5):
-            for k in range(3, 8):  # 3-7 arası batarya numaraları (k=2 arm verisi)
+            for k in range(2, 8):  # 2-7 arası batarya numaraları (k=2 arm verisi, k=3+ batarya verisi)
                 # 1-7 sıralama: 1=Gerilim, 2=SOC, 3=RIMT, 4=SOH, 5=NTC1, 6=NTC2, 7=NTC3
                 for dtype in range(1, 8):  # 1-7 arası dtype'lar
                     oid = (1, 3, 6, 1, 4, 1, 1001, arm, 5, k, dtype)

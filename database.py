@@ -536,13 +536,7 @@ class BatteryDatabase:
             
             return arm_counts
     
-    def clear_current_period_data(self):
-        """Mevcut periyot verilerini temizle"""
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM current_period_data")
-            conn.commit()
-            print("✓ Mevcut periyot verileri temizlendi")
+    # clear_current_period_data fonksiyonu kaldırıldı - periyot verileri korunuyor
     
     def insert_alarm(self, arm, battery, error_code_msb, error_code_lsb, timestamp):
         """Alarm verisi ekle"""
