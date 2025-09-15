@@ -558,30 +558,6 @@ def db_worker():
                     kusurat_kisim = (kusurat1 * 0.1 + kusurat2 * 0.01)
                     salt_data = tam_kisim + kusurat_kisim
                     salt_data = round(salt_data, 4)
-                    
-                    # Nem verisini batch'e kaydet
-                    record = {
-                        "Arm": arm_value,
-                        "k": k_value,
-                        "Dtype": 11,  # Nem=11
-                        "data": salt_data,
-                        "timestamp": get_period_timestamp()
-                    }
-                    batch.append(record)
-                    
-                    # RAM'e yaz (Modbus/SNMP için)
-                    with data_lock:
-                        if arm_value not in battery_data_ram:
-                            battery_data_ram[arm_value] = {}
-                        if k_value not in battery_data_ram[arm_value]:
-                            battery_data_ram[arm_value][k_value] = {}
-                        # Arm verisi için dtype=11 -> RAM dtype=2 (Nem)
-                        battery_data_ram[arm_value][k_value][2] = {
-                            'value': salt_data,
-                            'timestamp': get_period_timestamp()
-                        }
-                        print(f"📊 RAM Mapping: Arm k={k_value}, UART dtype={dtype} -> RAM dtype=2 (Nem)")
-                        print(f"💧 NEM VERİSİ ALGILANDI - Kol: {arm_value}, Nem: {salt_data}%")
                 else:
                     # Normal hesaplama
                     saltData = int(data[4], 16) * 100 + int(data[5], 16) * 10 + int(data[6], 16) + int(data[7], 16) * 0.1 + int(data[8], 16) * 0.01 + int(data[9], 16) * 0.001
