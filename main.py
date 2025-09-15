@@ -2199,8 +2199,8 @@ def snmp_server():
             "SNMPv2-SMI", "MibScalar", "MibScalarInstance"
         )
         
-        class BatteryMibScalarInstance(MibScalarInstance):
-            """Battery MIB Instance"""
+        class ModbusRAMMibScalarInstance(MibScalarInstance):
+            """Modbus TCP Server RAM sistemi ile MIB Instance"""
             def getValue(self, name, **context):
                 oid = '.'.join([str(x) for x in name])
                 print(f"🔍 SNMP getValue çağrıldı!")
@@ -2323,35 +2323,35 @@ def snmp_server():
         mib_builder.export_symbols(
             "__BATTERY_MIB_SYSTEM",
             MibScalar((1, 3, 6, 5, 1), v2c.OctetString()),
-            BatteryMibScalarInstance((1, 3, 6, 5, 1), (0,), v2c.OctetString()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 5, 1), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 2), v2c.OctetString()),
-            BatteryMibScalarInstance((1, 3, 6, 5, 2), (0,), v2c.OctetString()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 5, 2), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 3), v2c.OctetString()),
-            BatteryMibScalarInstance((1, 3, 6, 5, 3), (0,), v2c.OctetString()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 5, 3), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 4), v2c.OctetString()),
-            BatteryMibScalarInstance((1, 3, 6, 5, 4), (0,), v2c.OctetString()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 5, 4), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 5), v2c.OctetString()),
-            BatteryMibScalarInstance((1, 3, 6, 5, 5), (0,), v2c.OctetString()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 5, 5), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 6), v2c.OctetString()),
-            BatteryMibScalarInstance((1, 3, 6, 5, 6), (0,), v2c.OctetString()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 5, 6), (0,), v2c.OctetString()),
             
             # Armslavecounts OID'leri
             MibScalar((1, 3, 6, 5, 7), v2c.OctetString()),
-            BatteryMibScalarInstance((1, 3, 6, 5, 7), (0,), v2c.OctetString()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 5, 7), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 8), v2c.OctetString()),
-            BatteryMibScalarInstance((1, 3, 6, 5, 8), (0,), v2c.OctetString()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 5, 8), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 9), v2c.OctetString()),
-            BatteryMibScalarInstance((1, 3, 6, 5, 9), (0,), v2c.OctetString()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 5, 9), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 10), v2c.OctetString()),
-            BatteryMibScalarInstance((1, 3, 6, 5, 10), (0,), v2c.OctetString()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 5, 10), (0,), v2c.OctetString()),
         )
         
         # Batarya verileri için OID'ler oluştur (MIB yapısına uygun)
@@ -2367,7 +2367,7 @@ def snmp_server():
                         mib_builder.export_symbols(
                             f"__BATTERY_MIB_{arm}_{k}_{dtype}",
                             MibScalar(oid, v2c.OctetString()),
-                            BatteryMibScalarInstance(oid, (0,), v2c.OctetString()),
+                            ModbusRAMMibScalarInstance(oid, (0,), v2c.OctetString()),
                         )
                         print(f"✅ SNMP OID export başarılı: {oid_str}")
                     except Exception as e:
@@ -2382,7 +2382,7 @@ def snmp_server():
                 mib_builder.export_symbols(
                     f"__ALARM_MIB_{arm}_0_{alarm_type}",
                     MibScalar(oid, v2c.OctetString()),
-                    BatteryMibScalarInstance(oid, (0,), v2c.OctetString()),
+                    ModbusRAMMibScalarInstance(oid, (0,), v2c.OctetString()),
                 )
             
             # Batarya alarmları
@@ -2392,7 +2392,7 @@ def snmp_server():
                     mib_builder.export_symbols(
                         f"__ALARM_MIB_{arm}_{battery}_{alarm_type}",
                         MibScalar(oid, v2c.OctetString()),
-                        BatteryMibScalarInstance(oid, (0,), v2c.OctetString()),
+                        ModbusRAMMibScalarInstance(oid, (0,), v2c.OctetString()),
                     )
         
         # SNMP Agent
