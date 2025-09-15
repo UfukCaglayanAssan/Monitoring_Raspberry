@@ -2389,6 +2389,31 @@ def snmp_server():
         # SNMP Agent
         snmp_agent = cmdrsp.GetCommandResponder(snmp_engine, snmp_context)
         
+        # MIB yapısını debug et
+        print("🔍 SNMP MIB yapısı debug:")
+        mib_instrum = snmp_context.get_mib_instrum()
+        mib_builder = mib_instrum.get_mib_builder()
+        mib_symbols = mib_builder.mibSymbols
+        print(f"  Toplam MIB sembolü: {len(mib_symbols)}")
+        
+        # Tüm MIB sembollerini göster
+        print("🔍 SNMP MIB yapısı:")
+        for oid, obj in snmp_engine.msgAndPduDsp.mibInstrumController.mibBuilder.mibSymbols.items():
+            print(f"  {oid}: {obj}")
+        
+        # Batarya OID'lerini kontrol et
+        battery_oids = []
+        for oid_tuple, obj in mib_symbols.items():
+            oid_str = '.'.join(map(str, oid_tuple))
+            if '1001' in oid_str and '5.' in oid_str:
+                battery_oids.append(oid_str)
+        
+        print(f"  Batarya OID'leri ({len(battery_oids)} adet):")
+        for oid in sorted(battery_oids)[:10]:  # İlk 10'unu göster
+            print(f"    {oid}")
+        if len(battery_oids) > 10:
+            print(f"    ... ve {len(battery_oids) - 10} tane daha")
+        
         print("✅ SNMP sunucu başlatıldı - Port: 1161")
         print("📡 Port 1161'de dinleniyor...")
         print("=" * 50)
