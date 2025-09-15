@@ -2203,7 +2203,10 @@ def snmp_server():
             """Battery MIB Instance"""
             def getValue(self, name, **context):
                 oid = '.'.join([str(x) for x in name])
+                print(f"🔍 SNMP getValue çağrıldı!")
                 print(f"🔍 SNMP OID sorgusu: {oid}")
+                print(f"🔍 SNMP name: {name}")
+                print(f"🔍 SNMP context: {context}")
                 
                 # Sistem bilgileri
                 if oid == "1.3.6.5.1.0":
@@ -2352,6 +2355,7 @@ def snmp_server():
         )
         
         # Batarya verileri için OID'ler oluştur (MIB yapısına uygun)
+        print(f"🔧 SNMP MIB Export başlıyor...")
         for arm in range(1, 5):
             for k in range(2, 8):  # 2-7 arası batarya numaraları
                 # 1-7 sıralama: 1=Gerilim, 2=SOC, 3=RIMT, 4=SOH, 5=NTC1, 6=NTC2, 7=NTC3
@@ -2359,11 +2363,16 @@ def snmp_server():
                     oid = (1, 3, 6, 1, 4, 1, 1001, arm, 5, k, dtype)
                     oid_str = '.'.join(map(str, oid))
                     print(f"🔧 SNMP OID oluşturuluyor: {oid_str} (Arm={arm}, k={k}, dtype={dtype})")
-                    mib_builder.export_symbols(
-                        f"__BATTERY_MIB_{arm}_{k}_{dtype}",
-                        MibScalar(oid, v2c.OctetString()),
-                        BatteryMibScalarInstance(oid, (0,), v2c.OctetString()),
-                    )
+                    try:
+                        mib_builder.export_symbols(
+                            f"__BATTERY_MIB_{arm}_{k}_{dtype}",
+                            MibScalar(oid, v2c.OctetString()),
+                            BatteryMibScalarInstance(oid, (0,), v2c.OctetString()),
+                        )
+                        print(f"✅ SNMP OID export başarılı: {oid_str}")
+                    except Exception as e:
+                        print(f"❌ SNMP OID export hatası: {oid_str} - {e}")
+        print(f"🔧 SNMP MIB Export tamamlandı!")
         
         # Alarm verileri için OID'ler oluştur
         for arm in range(1, 5):
@@ -2473,9 +2482,12 @@ def snmp_server():
         print("=" * 50)
         
         # SNMP sunucu çalıştır
+        print(f"🔧 SNMP Engine başlatılıyor...")
         try:
             snmp_engine.open_dispatcher()
-        except:
+            print(f"✅ SNMP Engine başarıyla başlatıldı!")
+        except Exception as e:
+            print(f"❌ SNMP Engine başlatma hatası: {e}")
             snmp_engine.close_dispatcher()
             raise
         
