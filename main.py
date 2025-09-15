@@ -549,15 +549,28 @@ def db_worker():
                     print(f"📊 Veri bytes: {data[4:10]}")
                 
                 if dtype == 11 and k_value == 2:  # Nem hesapla
+                    print(f"💧 NEM VERİSİ PAKETİ ALGILANDI - 11 byte")
+                    print(f"📦 Ham Paket: {' '.join([f'0x{b:02X}' for b in [int(x, 16) for x in data]])}")
+                    print(f"📊 Header: 0x{data[0]}, k: {k_value}, dtype: {dtype}, arm: {arm_value}")
+                    print(f"📊 Veri bytes: {data[5:9]}")
+                    
                     onlar = int(data[5], 16)
                     birler = int(data[6], 16)
                     kusurat1 = int(data[7], 16)
                     kusurat2 = int(data[8], 16)
                     
+                    print(f"🔢 Nem Hesaplama Detayları:")
+                    print(f"   Onlar: {onlar}, Birler: {birler}")
+                    print(f"   Küsürat1: {kusurat1}, Küsürat2: {kusurat2}")
+                    
                     tam_kisim = (onlar * 10 + birler)
                     kusurat_kisim = (kusurat1 * 0.1 + kusurat2 * 0.01)
                     salt_data = tam_kisim + kusurat_kisim
                     salt_data = round(salt_data, 4)
+                    
+                    print(f"   Tam kısım: {onlar}×10 + {birler} = {tam_kisim}")
+                    print(f"   Küsürat: {kusurat1}×0.1 + {kusurat2}×0.01 = {kusurat_kisim}")
+                    print(f"   Sonuç: {tam_kisim} + {kusurat_kisim} = {salt_data}%")
                 else:
                     # Normal hesaplama
                     saltData = int(data[4], 16) * 100 + int(data[5], 16) * 10 + int(data[6], 16) + int(data[7], 16) * 0.1 + int(data[8], 16) * 0.01 + int(data[9], 16) * 0.001
