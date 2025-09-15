@@ -2161,44 +2161,60 @@ def send_single_trap(target_ip, target_port, trap_oid, message):
     except Exception as e:
         print(f"❌ Trap gönderme hatası: {e}")
 
+def get_battery_data_ram(arm=None, k=None, dtype=None):
+    """RAM'den batarya verisi al - modbus_snmp.py'den kopyalandı"""
+    if arm is None and k is None and dtype is None:
+        # Tüm veriyi döndür
+        with data_lock:
+            return battery_data_ram.copy()
+    
+    # Belirli veriyi döndür
+    with data_lock:
+        if arm in battery_data_ram and k in battery_data_ram[arm]:
+            return battery_data_ram[arm][k].get(dtype, {})
+        return {}
+
 def snmp_server():
-    """SNMP sunucu thread'i"""
-    print("SNMP sunucu başlatılıyor...")
+    """SNMP sunucu thread'i - modbus_snmp.py'den kopyalandı"""
+    print("🚀 SNMP Agent Başlatılıyor...")
+    print("📊 Modbus TCP Server RAM Sistemi ile Entegre")
     
     try:
+        # Thread için yeni event loop oluştur
         import asyncio
-        
-        # Yeni event loop oluştur
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         
-        # SNMP Engine oluştur
-        snmp_engine = engine.SnmpEngine()
-        
-        # UDP transport
+        # Create SNMP engine
+        snmpEngine = engine.SnmpEngine()
+        print("✅ SNMP Engine oluşturuldu")
+
+        # Transport setup - UDP over IPv4
         config.add_transport(
-            snmp_engine,
-            udp.DOMAIN_NAME,
-            udp.UdpTransport().open_server_mode(('0.0.0.0', 1161))
+            snmpEngine, udp.DOMAIN_NAME, udp.UdpTransport().open_server_mode((SNMP_HOST, SNMP_PORT))
         )
-        
-        # SNMPv2c community
-        config.add_v1_system(snmp_engine, 'my-area', 'public')
-        
-        # VACM ayarları
-        config.add_vacm_user(snmp_engine, 2, 'my-area', 'noAuthNoPriv', (1, 3, 6, 5))
-        
-        # SNMP Context
-        snmp_context = context.SnmpContext(snmp_engine)
-        
-        # MIB Builder
-        mib_builder = snmp_context.get_mib_instrum().get_mib_builder()
-        
-        # MIB Objects oluştur
-        MibScalar, MibScalarInstance = mib_builder.import_symbols(
+        print("✅ Transport ayarlandı")
+
+        # SNMPv2c setup
+        config.add_v1_system(snmpEngine, "my-area", "public")
+        print("✅ SNMPv2c ayarlandı")
+
+        # Allow read MIB access for this user / securityModels at VACM
+        config.add_vacm_user(snmpEngine, 2, "my-area", "noAuthNoPriv", (1, 3, 6, 5))
+        print("✅ VACM ayarlandı")
+
+        # Create an SNMP context
+        snmpContext = context.SnmpContext(snmpEngine)
+        print("✅ SNMP Context oluşturuldu")
+
+        # --- create custom Managed Object Instance ---
+        mibBuilder = snmpContext.get_mib_instrum().get_mib_builder()
+
+        MibScalar, MibScalarInstance = mibBuilder.import_symbols(
             "SNMPv2-SMI", "MibScalar", "MibScalarInstance"
         )
-        
+        print("✅ MIB Builder oluşturuldu")
+
         class ModbusRAMMibScalarInstance(MibScalarInstance):
             """Modbus TCP Server RAM sistemi ile MIB Instance"""
             def getValue(self, name, **context):
@@ -2207,109 +2223,63 @@ def snmp_server():
                 
                 # Sistem bilgileri
                 if oid == "1.3.6.5.1.0":
-                    print(f"✅ Sistem OID: {oid} - Python bilgisi")
                     return self.getSyntax().clone(
                         f"Python {sys.version} running on a {sys.platform} platform"
                     )
                 elif oid == "1.3.6.5.2.0":  # totalBatteryCount
-                    total_count = sum(arm_slave_counts_ram.values())
-                    print(f"✅ Sistem OID: {oid} - Batarya sayısı: {total_count}")
-                    return self.getSyntax().clone(str(total_count))
+                    data = get_battery_data_ram()
+                    battery_count = 0
+                    for arm in data.keys():
+                        for k in data[arm].keys():
+                            if k > 2:  # k>2 olanlar batarya verisi
+                                battery_count += 1
+                    return self.getSyntax().clone(str(battery_count if battery_count > 0 else 0))
                 elif oid == "1.3.6.5.3.0":  # totalArmCount
-                    active_arms = sum(1 for count in arm_slave_counts_ram.values() if count > 0)
-                    print(f"✅ Sistem OID: {oid} - Kol sayısı: {active_arms}")
-                    return self.getSyntax().clone(str(active_arms))
+                    data = get_battery_data_ram()
+                    return self.getSyntax().clone(str(len(data) if data else 0))
                 elif oid == "1.3.6.5.4.0":  # systemStatus
-                    print(f"✅ Sistem OID: {oid} - Sistem durumu")
                     return self.getSyntax().clone("1")
                 elif oid == "1.3.6.5.5.0":  # lastUpdateTime
-                    print(f"✅ Sistem OID: {oid} - Son güncelleme")
                     return self.getSyntax().clone(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                 elif oid == "1.3.6.5.6.0":  # dataCount
+                    data = get_battery_data_ram()
                     total_data = 0
-                    with data_lock:
-                        for arm_data in battery_data_ram.values():
-                            for battery_data in arm_data.values():
-                                total_data += len(battery_data)
-                    print(f"✅ Sistem OID: {oid} - Veri sayısı: {total_data}")
-                    return self.getSyntax().clone(str(total_data))
+                    for arm in data.values():
+                        for k in arm.values():
+                            total_data += len(k)
+                    return self.getSyntax().clone(str(total_data if total_data > 0 else 0))
                 elif oid == "1.3.6.5.7.0":  # arm1SlaveCount
-                    count = arm_slave_counts_ram.get(1, 0)
-                    print(f"✅ Sistem OID: {oid} - Kol 1 batarya sayısı: {count}")
-                    return self.getSyntax().clone(str(count))
+                    with data_lock:
+                        return self.getSyntax().clone(str(arm_slave_counts_ram.get(1, 0)))
                 elif oid == "1.3.6.5.8.0":  # arm2SlaveCount
-                    count = arm_slave_counts_ram.get(2, 0)
-                    print(f"✅ Sistem OID: {oid} - Kol 2 batarya sayısı: {count}")
-                    return self.getSyntax().clone(str(count))
+                    with data_lock:
+                        return self.getSyntax().clone(str(arm_slave_counts_ram.get(2, 0)))
                 elif oid == "1.3.6.5.9.0":  # arm3SlaveCount
-                    count = arm_slave_counts_ram.get(3, 0)
-                    print(f"✅ Sistem OID: {oid} - Kol 3 batarya sayısı: {count}")
-                    return self.getSyntax().clone(str(count))
+                    with data_lock:
+                        return self.getSyntax().clone(str(arm_slave_counts_ram.get(3, 0)))
                 elif oid == "1.3.6.5.10.0":  # arm4SlaveCount
-                    count = arm_slave_counts_ram.get(4, 0)
-                    print(f"✅ Sistem OID: {oid} - Kol 4 batarya sayısı: {count}")
-                    return self.getSyntax().clone(str(count))
+                    with data_lock:
+                        return self.getSyntax().clone(str(arm_slave_counts_ram.get(4, 0)))
                 else:
-                    # Batarya verileri - 1.3.6.1.4.1.1001.arm.5.k.dtype
-                    if oid.startswith("1.3.6.1.4.1.1001."):
+                    # Gerçek batarya verileri - Modbus TCP Server RAM'den oku
+                    if oid.startswith("1.3.6.5.10."):
                         parts = oid.split('.')
-                        if len(parts) >= 11:  # En az 11 parça olmalı (1.3.6.1.4.1.1001.arm.5.k.dtype)
-                            arm = int(parts[7])
-                            k = int(parts[9])
-                            dtype = int(parts[10])
+                        if len(parts) >= 8:  # 1.3.6.5.10.arm.k.dtype.0
+                            arm = int(parts[5])    # 1.3.6.5.10.{arm}
+                            k = int(parts[6])      # 1.3.6.5.10.arm.{k}
+                            dtype = int(parts[7])  # 1.3.6.5.10.arm.k.{dtype}
                             
-                            print(f"🔍 Batarya OID parsing: arm={arm}, k={k}, dtype={dtype}")
-                            
-                            with data_lock:
-                                if arm in battery_data_ram and k in battery_data_ram[arm]:
-                                    value_data = battery_data_ram[arm][k].get(dtype, {})
-                                    if isinstance(value_data, dict):
-                                        value = value_data.get('value', 0)
-                                    else:
-                                        value = value_data
-                                    print(f"✅ Batarya OID: {oid} - Değer: {value}")
-                                    return self.getSyntax().clone(str(value))
-                                else:
-                                    print(f"❌ Batarya OID: {oid} - Veri bulunamadı")
-                                    return self.getSyntax().clone("0")
+                            data = get_battery_data_ram(arm, k, dtype)
+                            if data:
+                                return self.getSyntax().clone(str(data['value']))
+                            return self.getSyntax().clone("0")
                     
-                    # Status verileri - 1.3.6.1.4.1.1001.arm.6.battery veya 1.3.6.1.4.1.1001.arm.6.battery.0
-                    elif oid.startswith("1.3.6.1.4.1.1001."):
-                        parts = oid.split('.')
-                        if len(parts) >= 10:  # En az 10 parça olmalı (1.3.6.1.4.1.1001.arm.6.battery)
-                            arm = int(parts[7])
-                            if parts[8] == "6":  # Status verileri
-                                battery = int(parts[9])
-                                
-                                with status_lock:
-                                    if arm in status_ram and battery in status_ram[arm]:
-                                        # Status: True=1, False=0
-                                        has_data = status_ram[arm][battery]
-                                        return self.getSyntax().clone("1" if has_data else "0")
-                                    else:
-                                        return self.getSyntax().clone("0")
-                    
-                    # Alarm verileri - 1.3.6.1.4.1.1001.arm.7.battery.alarm_type veya 1.3.6.1.4.1.1001.arm.7.battery.alarm_type.0
-                    elif oid.startswith("1.3.6.1.4.1.1001."):
-                        parts = oid.split('.')
-                        if len(parts) >= 11:  # En az 11 parça olmalı (1.3.6.1.4.1.1001.arm.7.battery.alarm_type)
-                            arm = int(parts[7])
-                            if parts[8] == "7":  # Alarm verileri
-                                battery = int(parts[9])
-                                alarm_type = int(parts[10])
-                                
-                                with data_lock:
-                                    if arm in alarm_ram and battery in alarm_ram[arm]:
-                                        alarm_status = alarm_ram[arm][battery].get(alarm_type, False)
-                                        return self.getSyntax().clone("1" if alarm_status else "0")
-                                    else:
-                                        return self.getSyntax().clone("0")
-                    
-                    return self.getSyntax().clone("0")
-        
+                    return self.getSyntax().clone("No Such Object")
+
         # MIB Objects oluştur
-        mib_builder.export_symbols(
-            "__BATTERY_MIB_SYSTEM",
+        mibBuilder.export_symbols(
+            "__MODBUS_RAM_MIB",
+            # Sistem bilgileri
             MibScalar((1, 3, 6, 5, 1), v2c.OctetString()),
             ModbusRAMMibScalarInstance((1, 3, 6, 5, 1), (0,), v2c.OctetString()),
             
@@ -2342,92 +2312,40 @@ def snmp_server():
             ModbusRAMMibScalarInstance((1, 3, 6, 5, 10), (0,), v2c.OctetString()),
         )
         
-        # Batarya verileri için OID'ler oluştur (MIB yapısına uygun)
-        print(f"🔧 SNMP MIB Export başlıyor...")
-        battery_export_count = 0
-        for arm in range(1, 5):
-            for k in range(2, 8):  # 2-7 arası batarya numaraları (k=2 arm verisi, k=3+ batarya verisi)
-                # 1-7 sıralama: 1=Gerilim, 2=SOC, 3=RIMT, 4=SOH, 5=NTC1, 6=NTC2, 7=NTC3
-                for dtype in range(1, 8):  # 1-7 arası dtype'lar
-                    oid = (1, 3, 6, 1, 4, 1, 1001, arm, 5, k, dtype)
-                    oid_str = '.'.join(map(str, oid))
-                    print(f"🔧 Batarya OID oluşturuluyor: {oid_str}")
-                    try:
-                        mib_scalar = MibScalar(oid, v2c.OctetString())
-                        mib_instance = ModbusRAMMibScalarInstance(oid, (0,), v2c.OctetString())
-                        mib_builder.export_symbols(
-                            f"__BATTERY_MIB_{arm}_{k}_{dtype}",
-                            mib_scalar,
-                            mib_instance,
-                        )
-                        battery_export_count += 1
-                        print(f"✅ Batarya OID export başarılı: {oid_str}")
-                    except Exception as e:
-                        print(f"❌ Batarya OID hatası: Arm={arm}, k={k}, dtype={dtype} - {e}")
-                        import traceback
-                        traceback.print_exc()
-        print(f"🔧 SNMP MIB Export tamamlandı! Toplam {battery_export_count} batarya OID export edildi.")
-        
-        # Alarm verileri için OID'ler oluştur
-        for arm in range(1, 5):
-            # Kol alarmları (0 = kol alarmı)
-            for alarm_type in range(1, 5):  # 1-4 arası alarm türleri
-                oid = (1, 3, 6, 5, 7, arm, 0, alarm_type)
-                mib_builder.export_symbols(
-                    f"__ALARM_MIB_{arm}_0_{alarm_type}",
-                    MibScalar(oid, v2c.OctetString()),
-                    ModbusRAMMibScalarInstance(oid, (0,), v2c.OctetString()),
-                )
-            
-            # Batarya alarmları
-            for battery in range(1, 8):  # 1-7 arası batarya numaraları
-                for alarm_type in range(1, 8):  # 1-7 arası alarm türleri
-                    oid = (1, 3, 6, 5, 7, arm, battery, alarm_type)
-                    mib_builder.export_symbols(
-                        f"__ALARM_MIB_{arm}_{battery}_{alarm_type}",
+        # Batarya verileri için MIB Objects - Dinamik olarak oluştur
+        for arm in range(1, 5):  # 1, 2, 3, 4
+            for k in range(2, 6):  # 2, 3, 4, 5
+                for dtype in range(10, 15):  # 10, 11, 12, 13, 14
+                    oid = (1, 3, 6, 5, 10, arm, k, dtype)
+                    mibBuilder.export_symbols(
+                        f"__BATTERY_MIB_{arm}_{k}_{dtype}",
                         MibScalar(oid, v2c.OctetString()),
                         ModbusRAMMibScalarInstance(oid, (0,), v2c.OctetString()),
                     )
-        
-        # SNMP Agent
-        print(f"🔧 SNMP Agent oluşturuluyor...")
-        try:
-            snmp_agent = cmdrsp.GetCommandResponder(snmp_engine, snmp_context)
-            print(f"✅ SNMP Agent oluşturuldu: {snmp_agent}")
-        except Exception as e:
-            print(f"❌ SNMP Agent oluşturma hatası: {e}")
-            import traceback
-            traceback.print_exc()
-        
-        # MIB yapısını debug et
-        print("🔍 SNMP MIB yapısı debug:")
-        mib_instrum = snmp_context.get_mib_instrum()
-        mib_builder = mib_instrum.get_mib_builder()
-        mib_symbols = mib_builder.mibSymbols
-        print(f"  Toplam MIB sembolü: {len(mib_symbols)}")
-        
-        # Sadece batarya OID'lerini göster
-        print("🔍 SNMP Batarya OID'leri:")
-        for oid, obj in mib_builder.mibSymbols.items():
-            oid_str = '.'.join(map(str, oid))
-            if '1001' in oid_str and len(oid) >= 11 and oid[8] == 5:  # 1.3.6.1.4.1.1001.arm.5.k.dtype
-                print(f"  {oid_str}: {obj}")
-        
-        # Batarya OID'lerini kontrol et
-        battery_oids = []
-        for oid_tuple, obj in mib_builder.mibSymbols.items():
-            oid_str = '.'.join(map(str, oid_tuple))
-            if '1001' in oid_str and len(oid_tuple) >= 11 and oid_tuple[8] == 5:  # 1.3.6.1.4.1.1001.arm.5.k.dtype
-                battery_oids.append(oid_str)
-        
-        print(f"  Batarya OID'leri ({len(battery_oids)} adet):")
-        for oid in sorted(battery_oids)[:10]:  # İlk 10'unu göster
-            print(f"    {oid}")
-        if len(battery_oids) > 10:
-            print(f"    ... ve {len(battery_oids) - 10} tane daha")
-        
-        print("✅ SNMP sunucu başlatıldı - Port: 1161")
-        print("📡 Port 1161'de dinleniyor...")
+                
+                # SOC verisi için dtype=126
+                oid = (1, 3, 6, 5, 10, arm, k, 126)
+                mibBuilder.export_symbols(
+                    f"__BATTERY_MIB_{arm}_{k}_126",
+                    MibScalar(oid, v2c.OctetString()),
+                    ModbusRAMMibScalarInstance(oid, (0,), v2c.OctetString()),
+                )
+        print("✅ MIB Objects oluşturuldu")
+
+        # --- end of Managed Object Instance initialization ----
+
+        # Register SNMP Applications at the SNMP engine for particular SNMP context
+        cmdrsp.GetCommandResponder(snmpEngine, snmpContext)
+        cmdrsp.NextCommandResponder(snmpEngine, snmpContext)
+        cmdrsp.BulkCommandResponder(snmpEngine, snmpContext)
+        print("✅ Command Responder'lar kaydedildi (GET/GETNEXT/GETBULK)")
+
+        # Register an imaginary never-ending job to keep I/O dispatcher running forever
+        snmpEngine.transport_dispatcher.job_started(1)
+        print("✅ Job başlatıldı")
+
+        print(f"🚀 SNMP Agent başlatılıyor...")
+        print(f"📡 Port {SNMP_PORT}'de dinleniyor...")
         print("=" * 50)
         print("SNMP Test OID'leri:")
         print("1.3.6.5.1.0  - Python bilgisi")
@@ -2440,63 +2358,21 @@ def snmp_server():
         print("1.3.6.5.8.0  - Kol 2 batarya sayısı")
         print("1.3.6.5.9.0  - Kol 3 batarya sayısı")
         print("1.3.6.5.10.0 - Kol 4 batarya sayısı")
-        print("")
-        print("Kol verileri:")
-        print("1.3.6.1.4.1.1001.1.1 - Kol 1 Akım")
-        print("1.3.6.1.4.1.1001.1.2 - Kol 1 Nem")
-        print("1.3.6.1.4.1.1001.1.3 - Kol 1 NTC1 (Sıcaklık)")
-        print("1.3.6.1.4.1.1001.1.4 - Kol 1 NTC2 (Sıcaklık2)")
-        print("1.3.6.1.4.1.1001.3.3 - Kol 3 NTC1 (Sıcaklık)")
-        print("1.3.6.1.4.1.1001.3.4 - Kol 3 NTC2 (Sıcaklık2)")
-        print("")
-        print("Batarya verileri:")
-        print("1.3.6.1.4.1.1001.1.5.1.10 - Kol 1 Batarya 1 Gerilim")
-        print("1.3.6.1.4.1.1001.1.5.1.11 - Kol 1 Batarya 1 SOC")
-        print("1.3.6.1.4.1.1001.1.5.1.12 - Kol 1 Batarya 1 RIMT")
-        print("1.3.6.1.4.1.1001.1.5.1.126 - Kol 1 Batarya 1 SOH")
-        print("1.3.6.1.4.1.1001.1.5.1.13 - Kol 1 Batarya 1 NTC1 (Modül Sıcaklığı)")
-        print("1.3.6.1.4.1.1001.1.5.1.14 - Kol 1 Batarya 1 NTC2 (Pozitif Kutup Sıcaklığı)")
-        print("1.3.6.1.4.1.1001.1.5.1.15 - Kol 1 Batarya 1 NTC3 (Negatif Kutup Sıcaklığı)")
-        print("1.3.6.1.4.1.1001.3.5.2.126 - Kol 3 Batarya 2 SOH")
-        print("")
-        print("Status verileri:")
-        print("1.3.6.1.4.1.1001.1.6.0 - Kol 1 Status")
-        print("1.3.6.1.4.1.1001.1.6.1 - Kol 1 Batarya 1 Status")
-        print("1.3.6.1.4.1.1001.3.6.2 - Kol 3 Batarya 2 Status")
-        print("")
-        print("Alarm verileri:")
-        print("1.3.6.1.4.1.1001.1.7.0.1 - Kol 1 Akım alarmı")
-        print("1.3.6.1.4.1.1001.1.7.0.2 - Kol 1 Nem alarmı")
-        print("1.3.6.1.4.1.1001.1.7.1.1 - Kol 1 Batarya 1 VoltageWarn alarmı")
-        print("1.3.6.1.4.1.1001.1.7.1.2 - Kol 1 Batarya 1 LVoltageAlarm alarmı")
-        print("1.3.6.1.4.1.1001.3.7.2.1 - Kol 3 Batarya 2 VoltageWarn alarmı")
         print("=" * 50)
         print("SNMP Test komutları:")
-        print("snmpget -v2c -c public localhost:1161 1.3.6.5.2.0")
-        print("snmpget -v2c -c public localhost:1161 1.3.6.5.7.0")
-        print("snmpget -v2c -c public localhost:1161 1.3.6.1.4.1.1001.1.1")
-        print("snmpget -v2c -c public localhost:1161 1.3.6.1.4.1.1001.1.5.1.10")
-        print("snmpget -v2c -c public localhost:1161 1.3.6.1.4.1.1001.1.6.1")
-        print("snmpget -v2c -c public localhost:1161 1.3.6.1.4.1.1001.1.7.0.1")
-        print("snmpget -v2c -c public localhost:1161 1.3.6.1.4.1.1001.1.7.1.1")
-        print("snmpwalk -v2c -c public localhost:1161 1.3.6.1.4.1.1001")
+        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.5.2.0")
+        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.5.7.0")
+        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.5.8.0")
+        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.5.9.0")
+        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.5.10.0")
+        print(f"snmpwalk -v2c -c public localhost:{SNMP_PORT} 1.3.6.5")
         print("=" * 50)
-        
-        # SNMP sunucu çalıştır (modbus_snmp.py'den kopyalandı)
-        print(f"🔧 SNMP Engine başlatılıyor...")
+
+        # Run I/O dispatcher which would receive queries and send responses
         try:
-            # Thread için yeni event loop oluştur
-            import asyncio
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            
-            # SNMP engine'i başlat
-            snmp_engine.open_dispatcher()
-            print(f"✅ SNMP Engine başarıyla başlatıldı!")
-            
-        except Exception as e:
-            print(f"❌ SNMP Engine başlatma hatası: {e}")
-            snmp_engine.close_dispatcher()
+            snmpEngine.open_dispatcher()
+        except:
+            snmpEngine.close_dispatcher()
             raise
         
     except Exception as e:
