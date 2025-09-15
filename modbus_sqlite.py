@@ -189,7 +189,9 @@ def get_dynamic_register_names(start_index, quantity):
     
     # Armslavecounts'a göre sıralı isim oluştur
     for arm in range(1, 5):  # Kol 1-4
-        if arm_slave_counts_ram.get(arm, 0) == 0:
+        # SQLite'den arm slave count oku
+        arm_counts = db.get_arm_slave_counts_from_period()
+        if arm_counts.get(arm, 0) == 0:
             continue  # Bu kolda batarya yok, atla
             
         # Kol verileri (akım, nem, sıcaklık, sıcaklık2)
@@ -212,7 +214,7 @@ def get_dynamic_register_names(start_index, quantity):
             break
             
         # Batarya verileri
-        battery_count = arm_slave_counts_ram.get(arm, 0)
+        battery_count = arm_counts.get(arm, 0)
         for battery_num in range(1, battery_count + 1):
             # Her batarya için 7 veri tipi
             for data_type in range(5, 12):  # 5-11 (gerilim, soc, rint, soh, ntc1, ntc2, ntc3)
@@ -508,18 +510,18 @@ def data_processor():
                 
                 # Veri işleme ve RAM'e kayıt
                 if dtype == 10:  # Gerilim
-                    # Ham gerilim verisini kaydet
-                    update_battery_data_ram(arm_value, k_value, 10, salt_data)
+                    # Ham gerilim verisini kaydet - artık SQLite'ye yazılıyor
+                    print(f"*** VERİ ALGILANDI - Arm: {arm_value}, Batarya: {k_value}, Gerilim: {salt_data}V ***")
                     
                     # SOC hesapla ve dtype=126'ya kaydet
                     if k_value != 2:  # k_value 2 değilse SOC hesapla
                         soc_value = Calc_SOC(salt_data)
-                        update_battery_data_ram(arm_value, k_value, 126, soc_value)
+                        print(f"*** SOC HESAPLANDI - Arm: {arm_value}, Batarya: {k_value}, SOC: {soc_value}% ***")
                 
                 elif dtype == 11:  # SOH veya Nem
                     if k_value == 2:  # Nem verisi
                         print(f"*** VERİ ALGILANDI - Arm: {arm_value}, Nem: {salt_data}% ***")
-                        update_battery_data_ram(arm_value, k_value, 11, salt_data)
+                        # RAM kullanımı kaldırıldı - artık SQLite'ye yazılıyor
                     else:  # SOH verisi
                         if int(data[4], 16) == 1:  # Eğer data[4] 1 ise SOH 100'dür
                             soh_value = 100.0
@@ -534,19 +536,17 @@ def data_processor():
                             soh_value = tam_kisim + kusurat_kisim
                             soh_value = round(soh_value, 4)
                         
-                        # SOH verisini dtype=11'e kaydet
-                        update_battery_data_ram(arm_value, k_value, 11, soh_value)
+                        # SOH verisini dtype=11'e kaydet - artık SQLite'ye yazılıyor
+                        print(f"*** SOH HESAPLANDI - Arm: {arm_value}, Batarya: {k_value}, SOH: {soh_value}% ***")
                 
                 elif dtype == 12:  # NTC1
-                    update_battery_data_ram(arm_value, k_value, 12, salt_data)
+                    print(f"*** VERİ ALGILANDI - Arm: {arm_value}, Batarya: {k_value}, NTC1: {salt_data}°C ***")
                 
                 elif dtype == 13:  # NTC2
-                    update_battery_data_ram(arm_value, k_value, 13, salt_data)
-                
-
+                    print(f"*** VERİ ALGILANDI - Arm: {arm_value}, Batarya: {k_value}, NTC2: {salt_data}°C ***")
                 
                 else:  # Diğer Dtype değerleri için
-                    update_battery_data_ram(arm_value, k_value, dtype, salt_data)
+                    print(f"*** VERİ ALGILANDI - Arm: {arm_value}, Batarya: {k_value}, Dtype: {dtype}, Veri: {salt_data} ***")
 
             # 6 byte'lık balans komutu veya armslavecounts kontrolü
             elif len(data) == 6:
@@ -679,7 +679,9 @@ def handle_read_holding_registers(transaction_id, unit_id, start_address, quanti
                 for i in range(quantity):
                     if i < 4:  # İlk 4 register armslavecounts
                         arm_num = i + 1
-                        registers.append(float(arm_slave_counts_ram.get(arm_num, 0)))
+                        # SQLite'den arm slave count oku
+                        arm_counts = db.get_arm_slave_counts_from_period()
+                        registers.append(float(arm_counts.get(arm_num, 0)))
                     else:
                         registers.append(0.0)  # Boş register
             print(f"DEBUG: Armslavecounts verileri: {registers}")
@@ -1012,30 +1014,13 @@ def start_snmp_agent():
         import traceback
         traceback.print_exc()
 
-def set_static_arm_counts():
-    """Statik armslavecounts değerlerini ayarla"""
-    with db_lock:
-        # Statik armslavecounts değerleri
-        arm_slave_counts_ram[1] = 0  # Kol 1'de batarya yok
-        arm_slave_counts_ram[2] = 0  # Kol 2'de batarya yok
-        arm_slave_counts_ram[3] = 7  # Kol 3'te 7 batarya
-        arm_slave_counts_ram[4] = 0  # Kol 4'te batarya yok
-        
-        print("✓ Statik armslavecounts ayarlandı")
-        print(f"  Kol 1: {arm_slave_counts_ram[1]} batarya")
-        print(f"  Kol 2: {arm_slave_counts_ram[2]} batarya")
-        print(f"  Kol 3: {arm_slave_counts_ram[3]} batarya")
-        print(f"  Kol 4: {arm_slave_counts_ram[4]} batarya")
+# set_static_arm_counts fonksiyonu kaldırıldı - artık SQLite'den okuyoruz
 
 def main():
     try:
-        # RAM'i temizle
-        with db_lock:
-            battery_data_ram.clear()
-        print("RAM temizlendi.")
+        # RAM kullanımı kaldırıldı - sadece SQLite kullanılıyor
         
-        # Statik armslavecounts ayarla
-        set_static_arm_counts()
+        # Statik armslavecounts ayarı kaldırıldı - artık SQLite'den okuyoruz
         
         if not pi.connected:
             print("pigpio bağlantısı sağlanamadı!")

@@ -2203,9 +2203,7 @@ def snmp_server():
             """Modbus TCP Server RAM sistemi ile MIB Instance"""
             def getValue(self, name, **context):
                 oid = '.'.join([str(x) for x in name])
-                print(f"🔍 SNMP getValue çağrıldı: {oid}")
-                print(f"🔍 SNMP getValue context: {context}")
-                print(f"🔍 SNMP getValue name: {name}")
+                print(f"🔍 SNMP OID sorgusu: {oid}")
                 
                 # Sistem bilgileri
                 if oid == "1.3.6.5.1.0":
@@ -2512,10 +2510,10 @@ def snmp_server():
         print("snmpwalk -v2c -c public localhost:1161 1.3.6.1.4.1.1001")
         print("=" * 50)
         
-        # SNMP sunucu çalıştır
+        # SNMP sunucu çalıştır (modbus_snmp.py'den kopyalandı)
         print(f"🔧 SNMP Engine başlatılıyor...")
         try:
-            # Thread için yeni event loop oluştur (modbus_snmp.py gibi)
+            # Thread için yeni event loop oluştur
             import asyncio
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -2523,11 +2521,6 @@ def snmp_server():
             # SNMP engine'i başlat
             snmp_engine.open_dispatcher()
             print(f"✅ SNMP Engine başarıyla başlatıldı!")
-            
-            # SNMP engine durumunu kontrol et
-            print(f"🔍 SNMP Engine durumu: {snmp_engine}")
-            print(f"🔍 SNMP Engine transport_dispatcher: {snmp_engine.transport_dispatcher}")
-            print(f"🔍 SNMP Engine msg_and_pdu_dispatcher: {snmp_engine.msg_and_pdu_dispatcher}")
             
         except Exception as e:
             print(f"❌ SNMP Engine başlatma hatası: {e}")
