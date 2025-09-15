@@ -119,30 +119,30 @@ def get_last_k_value():
 
 def is_valid_arm_data(arm_value, k_value):
     """Veri doğrulama: Sadece aktif kollar ve bataryalar işlenir"""
-    # Kol aktif mi kontrol et
+        # Kol aktif mi kontrol et
     battery_count = arm_slave_counts_ram.get(arm_value, 0)
     if battery_count == 0:
         print(f"⚠️ HATALI VERİ: Kol {arm_value} aktif değil (batarya sayısı: {battery_count})")
-        return False
-    
-    # k=2 ise kol verisi, her zaman geçerli
-    if k_value == 2:
-        return True
-    
-    # Batarya verisi ise, k değeri = batarya numarası + 2
-    # k=3 -> batarya 1, k=4 -> batarya 2, k=5 -> batarya 3, vs.
-    # Maksimum k değeri = batarya sayısı + 2
+            return False
+        
+        # k=2 ise kol verisi, her zaman geçerli
+        if k_value == 2:
+            return True
+        
+        # Batarya verisi ise, k değeri = batarya numarası + 2
+        # k=3 -> batarya 1, k=4 -> batarya 2, k=5 -> batarya 3, vs.
+        # Maksimum k değeri = batarya sayısı + 2
     max_k_value = battery_count + 2
-    if k_value > max_k_value:
+        if k_value > max_k_value:
         print(f"⚠️ HATALI VERİ: Kol {arm_value} için k={k_value} > maksimum k değeri={max_k_value} (batarya sayısı: {battery_count})")
-        return False
-    
-    # k değeri 3'ten küçük olamaz (k=2 kol verisi, k=3+ batarya verisi)
-    if k_value < 3:
-        print(f"⚠️ HATALI VERİ: Kol {arm_value} için geçersiz k değeri: {k_value}")
-        return False
-    
-    return True
+            return False
+        
+        # k değeri 3'ten küçük olamaz (k=2 kol verisi, k=3+ batarya verisi)
+        if k_value < 3:
+            print(f"⚠️ HATALI VERİ: Kol {arm_value} için geçersiz k değeri: {k_value}")
+            return False
+        
+        return True
 
 def get_last_battery_info():
     """En son batarya bilgisini döndür (arm, k)"""
@@ -468,7 +468,7 @@ def db_worker():
                 # Status 0 = Veri gelmiyor, Status 1 = Veri geliyor (düzeltme)
                 if status_value == 0:
                     # Veri gelmiyor - missing data ekle
-                    add_missing_data(arm_value, slave_value)
+                add_missing_data(arm_value, slave_value)
                     print(f"🆕 VERİ GELMİYOR: Kol {arm_value}, Batarya {slave_value}")
                     
                     # Status güncelle (veri yok)
@@ -483,10 +483,10 @@ def db_worker():
                         alarm_processor.process_period_end()
                         # Reset system sinyali gönder (1 saat aralık kontrolü ile)
                         if send_reset_system_signal():
-                            # Yeni periyot başlat
-                            reset_period()
-                            get_period_timestamp()
-                        else:
+                        # Yeni periyot başlat
+                        reset_period()
+                        get_period_timestamp()
+                else:
                             print("⏰ Reset system gönderilemedi, periyot devam ediyor")
                         
                 elif status_value == 1:
@@ -713,14 +713,14 @@ def db_worker():
                         
                         # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                     else:  # RIMT verisi
-                        record = {
-                            "Arm": arm_value,
-                            "k": k_value,
+                    record = {
+                        "Arm": arm_value,
+                        "k": k_value,
                             "Dtype": 12,  # RIMT=12
-                            "data": salt_data,
-                            "timestamp": get_period_timestamp()
-                        }
-                        batch.append(record)
+                        "data": salt_data,
+                        "timestamp": get_period_timestamp()
+                    }
+                    batch.append(record)
                 
                     # RAM'e yaz (Modbus/SNMP için)
                     with data_lock:
@@ -2324,10 +2324,35 @@ def snmp_server():
                     with data_lock:
                         return self.getSyntax().clone(str(arm_slave_counts_ram.get(4, 0)))
                 else:
-                    # Kol verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.dtype)
+                    # OID parsing - önce batarya verilerini kontrol et
                     if oid.startswith("1.3.6.1.4.1.1001."):
                         parts = oid.split('.')
-                        if len(parts) >= 9:  # 1.3.6.1.4.1.1001.arm.dtype.0
+                        
+                        # Batarya verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.5.k.dtype)
+                        if len(parts) >= 11 and parts[8] == "5":  # 1.3.6.1.4.1.1001.arm.5.k.dtype.0
+                            arm = int(parts[7])    # 1.3.6.1.4.1.1001.{arm}
+                            k = int(parts[9])      # 1.3.6.1.4.1.1001.arm.5.{k}
+                            dtype = int(parts[10])  # 1.3.6.1.4.1.1001.arm.5.k.{dtype}
+                            
+                            print(f"🔍 Batarya OID parsing: arm={arm}, k={k}, dtype={dtype}")
+                            
+                            # MIB dtype'ı RAM dtype'ına çevir (MIB'de 1-7, RAM'de 1-7)
+                            ram_dtype = dtype  # MIB ve RAM aynı format
+                            
+                            print(f"🔍 MIB dtype={dtype} -> RAM dtype={ram_dtype}")
+                            
+                            data = get_battery_data_ram(arm, k, ram_dtype)
+                            print(f"🔍 RAM'den gelen data: {data}")
+                            
+                            if data and 'value' in data:
+                                print(f"✅ Batarya OID: {oid} - Değer: {data['value']}")
+                                return self.getSyntax().clone(str(data['value']))
+                            else:
+                                print(f"❌ Batarya OID: {oid} - Veri bulunamadı veya boş")
+                                return self.getSyntax().clone("0")
+                        
+                        # Kol verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.dtype)
+                        elif len(parts) >= 9:  # 1.3.6.1.4.1.1001.arm.dtype.0
                             arm = int(parts[7])    # 1.3.6.1.4.1.1001.{arm}
                             dtype = int(parts[8])  # 1.3.6.1.4.1.1001.arm.{dtype}
                             
@@ -2402,28 +2427,6 @@ def snmp_server():
                                     print(f"❌ Alarm OID: {oid} - Veri bulunamadı")
                                     return self.getSyntax().clone("0")
                         
-                        # Batarya verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.5.k.dtype)
-                        elif len(parts) >= 11:  # 1.3.6.1.4.1.1001.arm.5.k.dtype.0
-                            arm = int(parts[7])    # 1.3.6.1.4.1.1001.{arm}
-                            k = int(parts[9])      # 1.3.6.1.4.1.1001.arm.5.{k}
-                            dtype = int(parts[10])  # 1.3.6.1.4.1.1001.arm.5.k.{dtype}
-                            
-                            print(f"🔍 Batarya OID parsing: arm={arm}, k={k}, dtype={dtype}")
-                            
-                            # MIB dtype'ı RAM dtype'ına çevir (MIB'de 1-7, RAM'de 1-7)
-                            ram_dtype = dtype  # MIB ve RAM aynı format
-                            
-                            print(f"🔍 MIB dtype={dtype} -> RAM dtype={ram_dtype}")
-                            
-                            data = get_battery_data_ram(arm, k, ram_dtype)
-                            print(f"🔍 RAM'den gelen data: {data}")
-                            
-                            if data and 'value' in data:
-                                print(f"✅ Batarya OID: {oid} - Değer: {data['value']}")
-                                return self.getSyntax().clone(str(data['value']))
-                            else:
-                                print(f"❌ Batarya OID: {oid} - Veri bulunamadı veya boş")
-                                return self.getSyntax().clone("0")
                     
                     return self.getSyntax().clone("No Such Object")
 
