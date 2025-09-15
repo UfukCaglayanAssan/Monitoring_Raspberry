@@ -2364,14 +2364,21 @@ def snmp_server():
                     oid_str = '.'.join(map(str, oid))
                     print(f"🔧 SNMP OID oluşturuluyor: {oid_str} (Arm={arm}, k={k}, dtype={dtype})")
                     try:
+                        print(f"🔧 SNMP OID export denemesi: {oid_str}")
+                        mib_scalar = MibScalar(oid, v2c.OctetString())
+                        print(f"🔧 MibScalar oluşturuldu: {mib_scalar}")
+                        mib_instance = ModbusRAMMibScalarInstance(oid, (0,), v2c.OctetString())
+                        print(f"🔧 ModbusRAMMibScalarInstance oluşturuldu: {mib_instance}")
                         mib_builder.export_symbols(
                             f"__BATTERY_MIB_{arm}_{k}_{dtype}",
-                            MibScalar(oid, v2c.OctetString()),
-                            ModbusRAMMibScalarInstance(oid, (0,), v2c.OctetString()),
+                            mib_scalar,
+                            mib_instance,
                         )
                         print(f"✅ SNMP OID export başarılı: {oid_str}")
                     except Exception as e:
                         print(f"❌ SNMP OID export hatası: {oid_str} - {e}")
+                        import traceback
+                        traceback.print_exc()
         print(f"🔧 SNMP MIB Export tamamlandı!")
         
         # Alarm verileri için OID'ler oluştur
@@ -2396,7 +2403,14 @@ def snmp_server():
                     )
         
         # SNMP Agent
-        snmp_agent = cmdrsp.GetCommandResponder(snmp_engine, snmp_context)
+        print(f"🔧 SNMP Agent oluşturuluyor...")
+        try:
+            snmp_agent = cmdrsp.GetCommandResponder(snmp_engine, snmp_context)
+            print(f"✅ SNMP Agent oluşturuldu: {snmp_agent}")
+        except Exception as e:
+            print(f"❌ SNMP Agent oluşturma hatası: {e}")
+            import traceback
+            traceback.print_exc()
         
         # MIB yapısını debug et
         print("🔍 SNMP MIB yapısı debug:")
@@ -2483,9 +2497,18 @@ def snmp_server():
         
         # SNMP sunucu çalıştır
         print(f"🔧 SNMP Engine başlatılıyor...")
+        print(f"🔧 MIB Builder: {mib_builder}")
+        print(f"🔧 MIB Symbols: {len(mib_builder.mibSymbols)}")
+        print(f"🔧 SNMP Engine: {snmp_engine}")
+        print(f"🔧 SNMP Context: {snmp_context}")
+        print(f"🔧 SNMP Agent: {snmp_agent}")
         try:
             snmp_engine.open_dispatcher()
             print(f"✅ SNMP Engine başarıyla başlatıldı!")
+            print(f"🔧 SNMP Engine dispatcher açık: {snmp_engine.transport_dispatcher}")
+            print(f"🔧 SNMP Engine job başlatılıyor...")
+            snmp_engine.transport_dispatcher.job_started(1)
+            print(f"✅ SNMP Engine job başlatıldı!")
         except Exception as e:
             print(f"❌ SNMP Engine başlatma hatası: {e}")
             snmp_engine.close_dispatcher()
