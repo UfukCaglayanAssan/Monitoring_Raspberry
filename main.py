@@ -2250,7 +2250,7 @@ def snmp_server():
                     print(f"✅ Sistem OID: {oid} - Kol 4 batarya sayısı: {count}")
                     return self.getSyntax().clone(str(count))
                 else:
-                    # Batarya verileri - 1.3.6.1.4.1.1001.arm.5.k.dtype veya 1.3.6.1.4.1.1001.arm.5.k.dtype.0
+                    # Batarya verileri - 1.3.6.1.4.1.1001.arm.5.k.dtype
                     if oid.startswith("1.3.6.1.4.1.1001."):
                         parts = oid.split('.')
                         if len(parts) >= 11:  # En az 11 parça olmalı (1.3.6.1.4.1.1001.arm.5.k.dtype)
@@ -2262,44 +2262,18 @@ def snmp_server():
                             
                             with data_lock:
                                 if arm in battery_data_ram and k in battery_data_ram[arm]:
-                                    value = battery_data_ram[arm][k].get(dtype, 0)
+                                    value_data = battery_data_ram[arm][k].get(dtype, {})
+                                    if isinstance(value_data, dict):
+                                        value = value_data.get('value', 0)
+                                    else:
+                                        value = value_data
                                     print(f"✅ Batarya OID: {oid} - Değer: {value}")
                                     return self.getSyntax().clone(str(value))
                                 else:
                                     print(f"❌ Batarya OID: {oid} - Veri bulunamadı")
                                     return self.getSyntax().clone("0")
                     
-                    # Kol verileri - 1.3.6.1.4.1.1001.arm.dtype veya 1.3.6.1.4.1.1001.arm.dtype.0
-                    elif oid.startswith("1.3.6.1.4.1.1001."):
-                        parts = oid.split('.')
-                        print(f"🔍 SNMP Batarya OID Parsing: {oid} -> parts={parts}")
-                        # Hem .0'lı hem .0'sız isteklere cevap ver
-                        if len(parts) >= 11:  # En az 11 parça olmalı (1.3.6.1.4.1.1001.arm.5.k.dtype)
-                            arm = int(parts[7])
-                            if parts[8] == "5":  # Batarya verileri
-                                k = int(parts[9])
-                                dtype = int(parts[10])
-                                print(f"🔍 SNMP Parsed: arm={arm}, k={k}, dtype={dtype}")
-                                
-                                with data_lock:
-                                    if arm in battery_data_ram and k in battery_data_ram[arm]:
-                                        print(f"🔍 RAM'de veri var: arm={arm}, k={k}")
-                                        print(f"🔍 RAM verisi: {battery_data_ram[arm][k]}")
-                                        # 1-7 sıralama: dtype 1-7 arası olmalı
-                                        if 1 <= dtype <= 7:
-                                            value_data = battery_data_ram[arm][k].get(dtype, {})
-                                            if isinstance(value_data, dict):
-                                                value = value_data.get('value', 0)
-                                            else:
-                                                value = value_data
-                                            print(f"✅ Batarya OID: {oid} - Arm={arm}, k={k}, dtype={dtype}, value={value}")
-                                            return self.getSyntax().clone(str(value))
-                                        else:
-                                            print(f"❌ Batarya OID: {oid} - dtype={dtype} 1-7 aralığında değil")
-                                            return self.getSyntax().clone("0")
-                                    else:
-                                        print(f"🔍 SNMP Hata: arm={arm}, k={k} RAM'de bulunamadı")
-                                        return self.getSyntax().clone("0")
+                    return self.getSyntax().clone("No Such Object")
                     
                     # Status verileri - 1.3.6.1.4.1.1001.arm.6.battery veya 1.3.6.1.4.1.1001.arm.6.battery.0
                     elif oid.startswith("1.3.6.1.4.1.1001."):
