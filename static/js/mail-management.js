@@ -178,9 +178,7 @@ if (typeof window.MailManagementPage === 'undefined') {
             const formData = new FormData(document.getElementById('addRecipientForm'));
             const data = {
                 name: formData.get('name'),
-                email: formData.get('email'),
-                receive_critical_alarms: true,
-                receive_normal_alarms: true
+                email: formData.get('email')
             };
 
             // Email tekrar kontrolü
@@ -218,9 +216,7 @@ if (typeof window.MailManagementPage === 'undefined') {
             const data = {
                 id: parseInt(formData.get('id')),
                 name: formData.get('name'),
-                email: formData.get('email'),
-                receive_critical_alarms: true,
-                receive_normal_alarms: true
+                email: formData.get('email')
             };
 
             // Email tekrar kontrolü (kendi ID'si hariç)
