@@ -315,46 +315,7 @@ def get_last_k_value():
     with last_k_value_lock:
         return last_k_value
 
-def update_battery_data_ram(arm, k, dtype, value):
-    """RAM'deki batarya verilerini güncelle"""
-    with db_lock:
-        if arm not in battery_data_ram:
-            battery_data_ram[arm] = {}
-        if k not in battery_data_ram[arm]:
-            battery_data_ram[arm][k] = {}
-        
-        battery_data_ram[arm][k][dtype] = {
-            'value': value,
-            'timestamp': int(time.time() * 1000)
-        }
-        
-        print(f"RAM'e kaydedildi: Arm={arm}, k={k}, dtype={dtype}, value={value}")
-
-def clear_battery_data_ram():
-    """RAM'deki tüm batarya verilerini temizle"""
-    with db_lock:
-        battery_data_ram.clear()
-        print("RAM tamamen temizlendi.")
-
-def get_battery_data_ram(arm=None, k=None, dtype=None):
-    """RAM'den batarya verilerini oku"""
-    with db_lock:
-        if arm is None:
-            result = dict(battery_data_ram)
-            print(f"RAM'den okundu: Tüm veriler, {len(result)} arm")
-            return result
-        elif k is None:
-            result = dict(battery_data_ram.get(arm, {}))
-            print(f"RAM'den okundu: Arm={arm}, {len(result)} k değeri")
-            return result
-        elif dtype is None:
-            result = dict(battery_data_ram.get(arm, {}).get(k, {}))
-            print(f"RAM'den okundu: Arm={arm}, k={k}, {len(result)} dtype")
-            return result
-        else:
-            result = battery_data_ram.get(arm, {}).get(k, {}).get(dtype, None)
-            print(f"RAM'den okundu: Arm={arm}, k={k}, dtype={dtype}, value={result}")
-            return result
+# RAM fonksiyonları kaldırıldı - sadece SQLite kullanılıyor
 
 def Calc_SOH(x):
     if x is None:

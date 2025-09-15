@@ -2204,6 +2204,8 @@ def snmp_server():
             def getValue(self, name, **context):
                 oid = '.'.join([str(x) for x in name])
                 print(f"🔍 SNMP getValue çağrıldı: {oid}")
+                print(f"🔍 SNMP getValue context: {context}")
+                print(f"🔍 SNMP getValue name: {name}")
                 
                 # Sistem bilgileri
                 if oid == "1.3.6.5.1.0":
@@ -2521,6 +2523,11 @@ def snmp_server():
             # SNMP engine'i başlat
             snmp_engine.open_dispatcher()
             print(f"✅ SNMP Engine başarıyla başlatıldı!")
+            
+            # SNMP engine durumunu kontrol et
+            print(f"🔍 SNMP Engine durumu: {snmp_engine}")
+            print(f"🔍 SNMP Engine transport_dispatcher: {snmp_engine.transport_dispatcher}")
+            print(f"🔍 SNMP Engine msg_and_pdu_dispatcher: {snmp_engine.msg_and_pdu_dispatcher}")
             
         except Exception as e:
             print(f"❌ SNMP Engine başlatma hatası: {e}")
