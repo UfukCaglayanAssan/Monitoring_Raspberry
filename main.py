@@ -490,7 +490,7 @@ def db_worker():
                 # Status 0 = Veri gelmiyor, Status 1 = Veri geliyor (düzeltme)
                 if status_value == 0:
                     # Veri gelmiyor - missing data ekle
-                    add_missing_data(arm_value, slave_value)
+                add_missing_data(arm_value, slave_value)
                     print(f"🆕 VERİ GELMİYOR: Kol {arm_value}, Batarya {slave_value}")
                     
                     # Status güncelle (veri yok)
@@ -505,10 +505,10 @@ def db_worker():
                         alarm_processor.process_period_end()
                         # Reset system sinyali gönder (1 saat aralık kontrolü ile)
                         if send_reset_system_signal():
-                            # Yeni periyot başlat
-                            reset_period()
-                            get_period_timestamp()
-                        else:
+                        # Yeni periyot başlat
+                        reset_period()
+                        get_period_timestamp()
+                else:
                             print("⏰ Reset system gönderilemedi, periyot devam ediyor")
                         
                 elif status_value == 1:
@@ -722,11 +722,11 @@ def db_worker():
                         
                         # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                     else:  # RIMT verisi
-                        record = {
-                            "Arm": arm_value,
-                            "k": k_value,
+                    record = {
+                        "Arm": arm_value,
+                        "k": k_value,
                             "Dtype": 12,  # RIMT=12
-                            "data": salt_data,
+                        "data": salt_data,
                         "timestamp": get_period_timestamp()
                     }
                     batch.append(record)
@@ -2206,6 +2206,7 @@ def snmp_server():
 
         # Allow read MIB access for this user / securityModels at VACM
         config.add_vacm_user(snmpEngine, 2, "my-area", "noAuthNoPriv", (1, 3, 6, 5))
+        config.add_vacm_user(snmpEngine, 2, "my-area", "noAuthNoPriv", (1, 3, 6, 1, 4, 1, 1001))
         print("✅ VACM ayarlandı")
 
         # Create an SNMP context
