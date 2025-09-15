@@ -2403,7 +2403,7 @@ def snmp_server():
         
         # Batarya OID'lerini kontrol et
         battery_oids = []
-        for oid_tuple, obj in mib_symbols.items():
+        for oid_tuple, obj in mib_builder.mibSymbols.items():
             oid_str = '.'.join(map(str, oid_tuple))
             if '1001' in oid_str and '5.' in oid_str:
                 battery_oids.append(oid_str)
