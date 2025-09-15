@@ -2274,10 +2274,17 @@ def snmp_server():
                             k = int(parts[6])      # 1.3.6.5.10.arm.{k}
                             dtype = int(parts[7])  # 1.3.6.5.10.arm.k.{dtype}
                             
+                            print(f"🔍 Batarya OID parsing: arm={arm}, k={k}, dtype={dtype}")
+                            
                             data = get_battery_data_ram(arm, k, dtype)
-                            if data:
+                            print(f"🔍 RAM'den gelen data: {data}")
+                            
+                            if data and 'value' in data:
+                                print(f"✅ Batarya OID: {oid} - Değer: {data['value']}")
                                 return self.getSyntax().clone(str(data['value']))
-                            return self.getSyntax().clone("0")
+                            else:
+                                print(f"❌ Batarya OID: {oid} - Veri bulunamadı veya boş")
+                                return self.getSyntax().clone("0")
                     
                     return self.getSyntax().clone("No Such Object")
 

@@ -14,6 +14,14 @@ import sys
 from database import BatteryDatabase
 from alarm_processor import alarm_processor
 
+# SNMP imports
+from pysnmp.hlapi import *
+from pysnmp.entity import engine, config
+from pysnmp.carrier.udp import udp
+from pysnmp.entity.rfc3413 import cmdrsp, context
+from pysnmp.smi import builder, view
+from pysnmp.proto import rfc1902 as v2c
+
 # Global variables
 buffer = bytearray()
 data_queue = queue.Queue()
@@ -40,6 +48,11 @@ last_k_value_lock = threading.Lock()  # Thread-safe erişim için
 # Database instance
 db = BatteryDatabase()
 db_lock = threading.Lock()  # Veritabanı işlemleri için lock
+
+# RAM veri depolama için global değişkenler
+battery_data_ram = {}  # {arm: {k: {dtype: {value: x, timestamp: y}}}}
+arm_slave_counts_ram = {1: 0, 2: 0, 3: 0, 4: 0}  # RAM'deki armslavecounts
+data_lock = threading.Lock()  # RAM veri erişimi için lock
 
 pi = pigpio.pi()
 pi.set_mode(TX_PIN, pigpio.OUTPUT)
@@ -78,6 +91,30 @@ def get_dynamic_data_index(arm, battery_num, data_type):
         return 11 + (battery_num - 1) * 7
     else:
         return 0
+
+def get_battery_data_ram(arm=None, k=None, dtype=None):
+    """RAM'den batarya verisi oku"""
+    with data_lock:
+        if arm is None:
+            return dict(battery_data_ram)
+        elif k is None:
+            return dict(battery_data_ram.get(arm, {}))
+        elif dtype is None:
+            return dict(battery_data_ram.get(arm, {}).get(k, {}))
+        else:
+            return battery_data_ram.get(arm, {}).get(k, {}).get(dtype, None)
+
+def update_battery_data_ram(arm, k, dtype, value, timestamp):
+    """RAM'e batarya verisi yaz"""
+    with data_lock:
+        if arm not in battery_data_ram:
+            battery_data_ram[arm] = {}
+        if k not in battery_data_ram[arm]:
+            battery_data_ram[arm][k] = {}
+        battery_data_ram[arm][k][dtype] = {
+            'value': value,
+            'timestamp': timestamp
+        }
 
 def get_dynamic_data_by_index(start_index, quantity):
     """Dinamik veri indeksine göre veri döndür"""
@@ -1131,6 +1168,9 @@ def db_worker():
                     }
                     batch.append(record)
                     
+                    # RAM'e de yaz
+                    update_battery_data_ram(arm_value, k_value, 10, salt_data, get_period_timestamp())
+                    
                     # SOC hesapla ve dtype=126'ya kaydet (sadece batarya verisi için)
                     if k_value != 2:  # k_value 2 değilse SOC hesapla
                         soc_value = Calc_SOC(salt_data)
@@ -1142,6 +1182,9 @@ def db_worker():
                             "timestamp": get_period_timestamp()
                         }
                         batch.append(soc_record)
+                        
+                        # SOC'yi RAM'e de yaz
+                        update_battery_data_ram(arm_value, k_value, 126, soc_value, get_period_timestamp())
                 
                 elif dtype == 11:  # SOH veya Nem
                     if k_value == 2:  # Nem verisi
@@ -1154,6 +1197,9 @@ def db_worker():
                             "timestamp": get_period_timestamp()
                         }
                         batch.append(record)
+                        
+                        # Nem verisini RAM'e yaz
+                        update_battery_data_ram(arm_value, k_value, 11, salt_data, get_period_timestamp())
                     else:  # SOH verisi
                         if int(data[4], 16) == 1:  # Eğer data[4] 1 ise SOH 100'dür
                             soh_value = 100.0
@@ -1177,6 +1223,9 @@ def db_worker():
                             "timestamp": get_period_timestamp()
                         }
                         batch.append(record)
+                        
+                        # SOH verisini RAM'e yaz
+                        update_battery_data_ram(arm_value, k_value, 11, soh_value, get_period_timestamp())
                 
                 else:  # Diğer Dtype değerleri için
                     record = {
@@ -1187,6 +1236,9 @@ def db_worker():
                         "timestamp": get_period_timestamp()
                     }
                     batch.append(record)
+                    
+                    # Diğer veri tiplerini RAM'e yaz
+                    update_battery_data_ram(arm_value, k_value, dtype, salt_data, get_period_timestamp())
 
             # 6 byte'lık balans komutu veya armslavecounts kontrolü
             elif len(data) == 6:
@@ -1204,7 +1256,15 @@ def db_worker():
                         arm_slave_counts[3] = arm3
                         arm_slave_counts[4] = arm4
                     
+                    # RAM'deki armslavecounts_ram'i de güncelle
+                    with data_lock:
+                        arm_slave_counts_ram[1] = arm1
+                        arm_slave_counts_ram[2] = arm2
+                        arm_slave_counts_ram[3] = arm3
+                        arm_slave_counts_ram[4] = arm4
+                    
                     print(f"✓ Armslavecounts RAM'e kaydedildi: {arm_slave_counts}")
+                    print(f"✓ Armslavecounts_ram güncellendi: {arm_slave_counts_ram}")
                     
                 # Hatkon (kol) alarm verisi: 2. byte (index 1) 0x8E ise
                 elif raw_bytes[1] == 0x8E:
@@ -1606,6 +1666,9 @@ def main():
         
         # Veritabanından en son armslavecount değerlerini çek
         load_arm_slave_counts_from_db()
+        
+        # Statik armslavecounts değerlerini ayarla (test için)
+        set_static_arm_counts()
         
         if not pi.connected:
             print("pigpio bağlantısı sağlanamadı!")
