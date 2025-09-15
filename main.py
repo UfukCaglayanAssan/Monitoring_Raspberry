@@ -22,6 +22,11 @@ from pysnmp.hlapi import *
 from pysnmp.carrier.asyncio.dgram import udp
 from pysnmp.proto.api import v2c
 
+# SNMP ayarları
+SNMP_HOST = '0.0.0.0'  # Dışarıdan erişim için 0.0.0.0
+SNMP_PORT = 1161
+SNMP_COMMUNITY = 'public'
+
 # Global variables
 buffer = bytearray()
 data_queue = queue.Queue()

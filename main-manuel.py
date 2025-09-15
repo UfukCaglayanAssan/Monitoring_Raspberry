@@ -8,6 +8,9 @@ import math
 import pigpio
 import json
 import os
+import socket
+import struct
+import sys
 from database import BatteryDatabase
 from alarm_processor import alarm_processor
 
@@ -1629,7 +1632,8 @@ def main():
         config_thread.start()
         print("Config worker thread'i başlatıldı.")
 
-                modbus_thread = threading.Thread(target=modbus_tcp_server, daemon=True)
+        # Modbus TCP Server thread'i
+        modbus_thread = threading.Thread(target=modbus_tcp_server, daemon=True)
         modbus_thread.start()
         print("modbus_tcp_server thread'i başlatıldı.")
 
