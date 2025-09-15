@@ -2373,23 +2373,16 @@ def snmp_server():
                 for dtype in range(1, 8):  # 1-7 arası dtype'lar
                     oid = (1, 3, 6, 1, 4, 1, 1001, arm, 5, k, dtype)
                     oid_str = '.'.join(map(str, oid))
-                    print(f"🔧 SNMP OID oluşturuluyor: {oid_str} (Arm={arm}, k={k}, dtype={dtype})")
-                    try:
-                        print(f"🔧 SNMP OID export denemesi: {oid_str}")
-                        mib_scalar = MibScalar(oid, v2c.OctetString())
-                        print(f"🔧 MibScalar oluşturuldu: {mib_scalar}")
-                        mib_instance = ModbusRAMMibScalarInstance(oid, (0,), v2c.OctetString())
-                        print(f"🔧 ModbusRAMMibScalarInstance oluşturuldu: {mib_instance}")
-                        mib_builder.export_symbols(
-                            f"__BATTERY_MIB_{arm}_{k}_{dtype}",
-                            mib_scalar,
-                            mib_instance,
-                        )
-                        print(f"✅ SNMP OID export başarılı: {oid_str}")
-                    except Exception as e:
-                        print(f"❌ SNMP OID export hatası: {oid_str} - {e}")
-                        import traceback
-                        traceback.print_exc()
+                try:
+                    mib_scalar = MibScalar(oid, v2c.OctetString())
+                    mib_instance = ModbusRAMMibScalarInstance(oid, (0,), v2c.OctetString())
+                    mib_builder.export_symbols(
+                        f"__BATTERY_MIB_{arm}_{k}_{dtype}",
+                        mib_scalar,
+                        mib_instance,
+                    )
+                except Exception as e:
+                    print(f"❌ Batarya OID hatası: Arm={arm}, k={k}, dtype={dtype} - {e}")
         print(f"🔧 SNMP MIB Export tamamlandı!")
         
         # Alarm verileri için OID'ler oluştur
