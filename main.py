@@ -116,59 +116,33 @@ def get_last_k_value():
     with last_k_value_lock:
         return last_k_value
 
-def load_arm_slave_counts_from_db():
-    """Veritabanından en son armslavecount değerlerini çek ve RAM'e yükle"""
-    try:
-        with db_lock:
-            # Her kol için en son armslavecount değerini çek
-            for arm in [1, 2, 3, 4]:
-                result = db.execute_query('''
-                    SELECT slave_count FROM arm_slave_counts 
-                    WHERE arm = ? 
-                    ORDER BY created_at DESC 
-                    LIMIT 1
-                ''', (arm,))
-                
-                rows = result.fetchall()
-                if rows and len(rows) > 0:
-                    slave_count = rows[0][0]
-                    with arm_slave_counts_lock:
-                        arm_slave_counts[arm] = slave_count
-                    print(f"✓ Kol {arm} armslavecount veritabanından yüklendi: {slave_count}")
-                else:
-                    print(f"⚠️ Kol {arm} için armslavecount verisi bulunamadı, varsayılan: 0")
-        
-        print(f"✓ RAM armslavecount değerleri güncellendi: {arm_slave_counts}")
-        
-    except Exception as e:
-        print(f"❌ Armslavecount verileri yüklenirken hata: {e}")
 
 def is_valid_arm_data(arm_value, k_value):
     """Veri doğrulama: Sadece aktif kollar ve bataryalar işlenir"""
-    with arm_slave_counts_lock:
-        # Kol aktif mi kontrol et
-        if arm_slave_counts[arm_value] == 0:
-            print(f"⚠️ HATALI VERİ: Kol {arm_value} aktif değil (batarya sayısı: 0)")
-            return False
-        
-        # k=2 ise kol verisi, her zaman geçerli
-        if k_value == 2:
-            return True
-        
-        # Batarya verisi ise, k değeri = batarya numarası + 2
-        # k=3 -> batarya 1, k=4 -> batarya 2, k=5 -> batarya 3, vs.
-        # Maksimum k değeri = batarya sayısı + 2
-        max_k_value = arm_slave_counts[arm_value] + 2
-        if k_value > max_k_value:
-            print(f"⚠️ HATALI VERİ: Kol {arm_value} için k={k_value} > maksimum k değeri={max_k_value} (batarya sayısı: {arm_slave_counts[arm_value]})")
-            return False
-        
-        # k değeri 3'ten küçük olamaz (k=2 kol verisi, k=3+ batarya verisi)
-        if k_value < 3:
-            print(f"⚠️ HATALI VERİ: Kol {arm_value} için geçersiz k değeri: {k_value}")
-            return False
-        
+    # Kol aktif mi kontrol et
+    battery_count = arm_slave_counts_ram.get(arm_value, 0)
+    if battery_count == 0:
+        print(f"⚠️ HATALI VERİ: Kol {arm_value} aktif değil (batarya sayısı: {battery_count})")
+        return False
+    
+    # k=2 ise kol verisi, her zaman geçerli
+    if k_value == 2:
         return True
+    
+    # Batarya verisi ise, k değeri = batarya numarası + 2
+    # k=3 -> batarya 1, k=4 -> batarya 2, k=5 -> batarya 3, vs.
+    # Maksimum k değeri = batarya sayısı + 2
+    max_k_value = battery_count + 2
+    if k_value > max_k_value:
+        print(f"⚠️ HATALI VERİ: Kol {arm_value} için k={k_value} > maksimum k değeri={max_k_value} (batarya sayısı: {battery_count})")
+        return False
+    
+    # k değeri 3'ten küçük olamaz (k=2 kol verisi, k=3+ batarya verisi)
+    if k_value < 3:
+        print(f"⚠️ HATALI VERİ: Kol {arm_value} için geçersiz k değeri: {k_value}")
+        return False
+    
+    return True
 
 def get_last_battery_info():
     """En son batarya bilgisini döndür (arm, k)"""
