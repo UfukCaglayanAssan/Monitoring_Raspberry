@@ -34,22 +34,7 @@ BIT_TIME = int(1e6 / BAUD_RATE)
 arm_slave_counts = {1: 0, 2: 0, 3: 7, 4: 0}  # Her kol için batarya sayısı (default değerler)
 arm_slave_counts_lock = threading.Lock()  # Thread-safe erişim için
 
-# RAM'de veri tutma sistemi (Modbus/SNMP için)
-battery_data_ram = defaultdict(dict)  # {arm: {k: {dtype: value}}}
-arm_slave_counts_ram = {1: 0, 2: 0, 3: 0, 4: 0}  # Her kol için batarya sayısı
-data_lock = threading.Lock()  # Thread-safe erişim için
-
-# Alarm verileri için RAM yapısı
-alarm_ram = {}  # {arm: {battery: {alarm_type: bool}}}
-alarm_lock = threading.Lock()  # Thread-safe erişim için
-
-# Status verileri için RAM yapısı
-status_ram = {}  # {arm: {battery: bool}} - True=veri var, False=veri yok
-status_lock = threading.RLock()  # Thread-safe erişim için
-
-# Trap hedefleri için RAM yapısı
-trap_targets_ram = []  # [{'id': int, 'name': str, 'ip_address': str, 'port': int, 'is_active': bool}]
-trap_targets_lock = threading.Lock()  # Thread-safe erişim için
+# RAM kullanımı kaldırıldı - artık sadece SQLite kullanılıyor
 
 # Missing data takibi için
 missing_data_tracker = set()  # (arm, battery) tuple'ları
@@ -600,59 +585,7 @@ def db_worker():
                         }
                         batch.append(soc_record)
                     
-                    # RAM'e yaz (Modbus/SNMP için)
-                    with data_lock:
-                        if arm_value not in battery_data_ram:
-                            battery_data_ram[arm_value] = {}
-                        if k_value not in battery_data_ram[arm_value]:
-                            battery_data_ram[arm_value][k_value] = {}
-                        # 1-7 sıralama mapping: 1=Gerilim, 2=SOC, 3=RIMT, 4=SOH, 5=NTC1, 6=NTC2, 7=NTC3
-                        if dtype == 10:  # Gerilim -> 1
-                            battery_data_ram[arm_value][k_value][1] = {
-                                'value': salt_data,
-                                'timestamp': get_period_timestamp()
-                            }
-                            print(f"📊 RAM Mapping: UART dtype={dtype} -> RAM dtype=1 (Gerilim)")
-                        elif dtype == 11:  # SOC -> 2
-                            battery_data_ram[arm_value][k_value][2] = {
-                                'value': salt_data,
-                                'timestamp': get_period_timestamp()
-                            }
-                        elif dtype == 12:  # RIMT -> 3
-                            battery_data_ram[arm_value][k_value][3] = {
-                                'value': salt_data,
-                                'timestamp': get_period_timestamp()
-                            }
-                        elif dtype == 126:  # SOH -> 4
-                            battery_data_ram[arm_value][k_value][4] = {
-                                'value': salt_data,
-                                'timestamp': get_period_timestamp()
-                            }
-                        elif dtype == 13:  # NTC1 -> 5
-                            battery_data_ram[arm_value][k_value][5] = {
-                                'value': salt_data,
-                                'timestamp': get_period_timestamp()
-                            }
-                        elif dtype == 14:  # NTC2 -> 6
-                            battery_data_ram[arm_value][k_value][6] = {
-                                'value': salt_data,
-                                'timestamp': get_period_timestamp()
-                            }
-                        elif dtype == 15:  # NTC3 -> 7
-                            battery_data_ram[arm_value][k_value][7] = {
-                                'value': salt_data,
-                                'timestamp': get_period_timestamp()
-                            }
-                        
-                        # SOC hesapla ve 2'ye kaydet (sadece batarya verisi için)
-                        if k_value != 2 and dtype == 10:  # Gerilim verisi geldiğinde SOC hesapla
-                            battery_data_ram[arm_value][k_value][2] = {
-                                'value': soc_value,
-                                'timestamp': get_period_timestamp()
-                            }
-                        print(f"RAM'e kaydedildi: Arm={arm_value}, k={k_value}, dtype={dtype}, value={salt_data}")
-                        if k_value != 2 and dtype == 10:
-                            print(f"RAM'e kaydedildi: Arm={arm_value}, k={k_value}, dtype=2 (SOC), value={soc_value}")
+                    # RAM kullanımı kaldırıldı - veriler sadece SQLite'ye kaydediliyor
                     
                     # Status güncelle (sadece missing data durumunda)
                     # Normal veri geldiğinde status güncelleme yapmıyoruz
@@ -672,48 +605,7 @@ def db_worker():
                         }
                         batch.append(record)
                     
-                        # RAM'e yaz (Modbus/SNMP için)
-                        with data_lock:
-                            if arm_value not in battery_data_ram:
-                                battery_data_ram[arm_value] = {}
-                            if k_value not in battery_data_ram[arm_value]:
-                                battery_data_ram[arm_value][k_value] = {}
-                            # 1-7 sıralama mapping
-                            if dtype == 10:  # Gerilim -> 1
-                                battery_data_ram[arm_value][k_value][1] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 11:  # SOC -> 2
-                                battery_data_ram[arm_value][k_value][2] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 12:  # RIMT -> 3
-                                battery_data_ram[arm_value][k_value][3] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 126:  # SOH -> 4
-                                battery_data_ram[arm_value][k_value][4] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 13:  # NTC1 -> 5
-                                battery_data_ram[arm_value][k_value][5] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 14:  # NTC2 -> 6
-                                battery_data_ram[arm_value][k_value][6] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 15:  # NTC3 -> 7
-                                battery_data_ram[arm_value][k_value][7] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
+                        # RAM kullanımı kaldırıldı - veriler sadece SQLite'ye kaydediliyor
                         
                         # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                     else:  # RIMT verisi
@@ -726,48 +618,7 @@ def db_worker():
                     }
                     batch.append(record)
                 
-                    # RAM'e yaz (Modbus/SNMP için)
-                    with data_lock:
-                            if arm_value not in battery_data_ram:
-                                battery_data_ram[arm_value] = {}
-                            if k_value not in battery_data_ram[arm_value]:
-                                battery_data_ram[arm_value][k_value] = {}
-                            # 1-7 sıralama mapping
-                            if dtype == 10:  # Gerilim -> 1
-                                battery_data_ram[arm_value][k_value][1] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 11:  # SOC -> 2
-                                battery_data_ram[arm_value][k_value][2] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 12:  # RIMT -> 3
-                                battery_data_ram[arm_value][k_value][3] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 126:  # SOH -> 4
-                                battery_data_ram[arm_value][k_value][4] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 13:  # NTC1 -> 5
-                                battery_data_ram[arm_value][k_value][5] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 14:  # NTC2 -> 6
-                                battery_data_ram[arm_value][k_value][6] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 15:  # NTC3 -> 7
-                                battery_data_ram[arm_value][k_value][7] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
+                    # RAM kullanımı kaldırıldı - veriler sadece SQLite'ye kaydediliyor
                         
                         # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
@@ -806,17 +657,7 @@ def db_worker():
                         }
                         batch.append(record)
                         
-                        # RAM'e yaz (Modbus/SNMP için)
-                        with data_lock:
-                            if arm_value not in battery_data_ram:
-                                battery_data_ram[arm_value] = {}
-                            if k_value not in battery_data_ram[arm_value]:
-                                battery_data_ram[arm_value][k_value] = {}
-                            # SOH verisi -> 4 (1-7 sıralama)
-                            battery_data_ram[arm_value][k_value][4] = {
-                                'value': soh_value,
-                                'timestamp': get_period_timestamp()
-                            }
+                        # RAM kullanımı kaldırıldı - veriler sadece SQLite'ye kaydediliyor
                         
                         # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
@@ -1378,10 +1219,9 @@ def main():
         modbus_thread.start()
         print("Modbus TCP sunucu thread'i başlatıldı.")
 
-        # SNMP sunucu thread'i
-        snmp_thread = threading.Thread(target=snmp_server, daemon=True)
-        snmp_thread.start()
-        print("SNMP sunucu thread'i başlatıldı.")
+        # SNMP sunucu
+        # SNMP sunucu - ana thread'de çalıştır
+        snmp_server()
 
         print(f"\nSistem başlatıldı.")
         print("Program çalışıyor... (Ctrl+C ile durdurun)")
