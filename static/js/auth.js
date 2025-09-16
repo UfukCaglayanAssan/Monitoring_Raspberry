@@ -34,6 +34,11 @@ class AuthManager {
     }
 
     async checkAuthStatus() {
+        // Login sayfasındaysa auth check yapma
+        if (window.location.pathname === '/login') {
+            return;
+        }
+        
         try {
             const response = await fetch('/api/user-info');
             if (response.ok) {
@@ -239,7 +244,26 @@ class AuthManager {
         if (window.showToast) {
             window.showToast(message, type);
         } else {
-            alert(message);
+            // Basit toast mesajı oluştur
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'error' ? '#e74c3c' : type === 'success' ? '#27ae60' : '#3498db'};
+                color: white;
+                padding: 12px 20px;
+                border-radius: 4px;
+                z-index: 10000;
+                font-weight: 500;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 3000);
         }
     }
 
