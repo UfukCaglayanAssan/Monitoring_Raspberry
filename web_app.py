@@ -88,7 +88,12 @@ def profile():
 def api_login():
     """Kullanıcı girişi (email ile)"""
     try:
-        data = request.get_json()
+        # Hem JSON hem form data'yı kabul et
+        if request.is_json:
+            data = request.get_json()
+        else:
+            data = request.form
+        
         email = data.get('email')
         password = data.get('password')
         
