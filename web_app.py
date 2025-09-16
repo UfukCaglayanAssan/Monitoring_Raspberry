@@ -111,17 +111,11 @@ def api_login():
             session['user_email'] = user['email']
             session['user_role'] = user['role']
             
-            return jsonify({
-                'success': True,
-                'message': 'Giriş başarılı',
-                'user': {
-                    'username': user['username'],
-                    'email': user['email'],
-                    'role': user['role']
-                }
-            })
+            # Başarılı giriş - ana sayfaya yönlendir
+            return redirect(url_for('index'))
         else:
-            return jsonify({'success': False, 'message': 'Kullanıcı adı veya şifre hatalı'}), 401
+            # Hatalı giriş - login sayfasına geri dön
+            return redirect(url_for('login'))
             
     except Exception as e:
         return jsonify({'success': False, 'message': f'Giriş hatası: {str(e)}'}), 500
