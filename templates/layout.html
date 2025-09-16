@@ -129,13 +129,23 @@
                 
                 <div class="header-right">
                     <!-- Kullanıcı Bilgisi -->
-                    <div class="user-info">
+                    <div class="user-info" id="userInfoDropdown">
                         <div class="user-avatar">
-                            <span>A</span>
+                            <span id="userInitial">A</span>
                         </div>
                         <div class="user-details">
-                            <div class="user-name">Tescom Guest</div>
-                            <div class="user-email">guest@assanelektronik.com.tr</div>
+                            <div class="user-name" id="userName">Tescom Guest</div>
+                            <div class="user-email" id="userEmail">guest@tescombms.com</div>
+                        </div>
+                        <div class="user-dropdown">
+                            <a href="#" class="dropdown-link" data-page="profile">
+                                <i class="fas fa-user"></i>
+                                <span>Profil</span>
+                            </a>
+                            <a href="#" class="dropdown-link" id="logoutBtn">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Çıkış Yap</span>
+                            </a>
                         </div>
                     </div>
                     
@@ -162,6 +172,7 @@
     </div>
 
     <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>

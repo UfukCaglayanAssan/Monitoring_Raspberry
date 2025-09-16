@@ -23,6 +23,9 @@ class BatteryDatabase:
             self.check_and_create_missing_tables()
             # Mevcut veritabanında default değerleri kontrol et
             self.check_default_arm_slave_counts()
+            
+            # Default kullanıcıları kontrol et
+            self.check_default_users()
     
     def _create_connections(self):
         """Connection pool oluştur - thread-safe ve performanslı"""
@@ -979,6 +982,31 @@ class BatteryDatabase:
                 else:
                     print("✅ missing_data tablosu mevcut")
                 
+                # users tablosu var mı kontrol et
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='users'
+                """)
+                
+                if not cursor.fetchone():
+                    print("🔄 users tablosu eksik, oluşturuluyor...")
+                    cursor.execute('''
+                        CREATE TABLE IF NOT EXISTS users (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            username TEXT UNIQUE NOT NULL,
+                            email TEXT UNIQUE NOT NULL,
+                            password_hash TEXT NOT NULL,
+                            role TEXT NOT NULL DEFAULT 'guest',
+                            is_active BOOLEAN DEFAULT 1,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )
+                    ''')
+                    conn.commit()
+                    print("✅ users tablosu oluşturuldu")
+                else:
+                    print("✅ users tablosu mevcut")
+                
                 # ip_config tablosu var mı kontrol et
                 cursor.execute("""
                     SELECT name FROM sqlite_master 
@@ -1166,6 +1194,100 @@ class BatteryDatabase:
                 
         except Exception as e:
             print(f"❌ Default arm_slave_counts kontrolü hatası: {e}")
+    
+    def check_default_users(self):
+        """Default kullanıcıları kontrol et ve oluştur"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Admin kullanıcısı var mı kontrol et
+                cursor.execute('''
+                    SELECT COUNT(*) FROM users WHERE username = 'Tescom Admin'
+                ''')
+                admin_count = cursor.fetchone()[0]
+                
+                if admin_count == 0:
+                    # Admin kullanıcısı oluştur
+                    import bcrypt
+                    admin_password = 'Tesbms*1980'
+                    admin_hash = bcrypt.hashpw(admin_password.encode('utf-8'), bcrypt.gensalt())
+                    
+                    cursor.execute('''
+                        INSERT INTO users (username, email, password_hash, role, is_active)
+                        VALUES (?, ?, ?, ?, ?)
+                    ''', ('Tescom Admin', 'admin@tescombms.com', admin_hash.decode('utf-8'), 'admin', 1))
+                    
+                    print("✅ Admin kullanıcısı oluşturuldu")
+                
+                # Guest kullanıcısı var mı kontrol et
+                cursor.execute('''
+                    SELECT COUNT(*) FROM users WHERE username = 'Tescom Guest'
+                ''')
+                guest_count = cursor.fetchone()[0]
+                
+                if guest_count == 0:
+                    # Guest kullanıcısı oluştur
+                    import bcrypt
+                    guest_password = 'Bmsgst*99'
+                    guest_hash = bcrypt.hashpw(guest_password.encode('utf-8'), bcrypt.gensalt())
+                    
+                    cursor.execute('''
+                        INSERT INTO users (username, email, password_hash, role, is_active)
+                        VALUES (?, ?, ?, ?, ?)
+                    ''', ('Tescom Guest', 'guest@tescombms.com', guest_hash.decode('utf-8'), 'guest', 1))
+                    
+                    print("✅ Guest kullanıcısı oluşturuldu")
+                
+                conn.commit()
+                print("✅ Default kullanıcılar kontrol edildi")
+                
+        except Exception as e:
+            print(f"❌ Default kullanıcılar kontrolü hatası: {e}")
+    
+    def authenticate_user(self, username, password):
+        """Kullanıcı doğrulama"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT id, username, email, password_hash, role, is_active
+                    FROM users WHERE username = ? AND is_active = 1
+                ''', (username,))
+                
+                user = cursor.fetchone()
+                if user:
+                    import bcrypt
+                    if bcrypt.checkpw(password.encode('utf-8'), user[3].encode('utf-8')):
+                        return {
+                            'id': user[0],
+                            'username': user[1],
+                            'email': user[2],
+                            'role': user[4]
+                        }
+                return None
+        except Exception as e:
+            print(f"❌ Kullanıcı doğrulama hatası: {e}")
+            return None
+    
+    def update_user_password(self, user_id, new_password):
+        """Kullanıcı şifresini güncelle"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                import bcrypt
+                password_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
+                
+                cursor.execute('''
+                    UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                ''', (password_hash.decode('utf-8'), user_id))
+                
+                conn.commit()
+                return True
+        except Exception as e:
+            print(f"❌ Şifre güncelleme hatası: {e}")
+            return False
     
     def get_recent_data_with_translations(self, minutes=5, arm=None, battery=None, dtype=None, data_type=None, limit=100, language='tr'):
         """Son verileri çevirilerle birlikte getir"""

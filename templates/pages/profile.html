@@ -1,55 +1,272 @@
-<!-- Profile Sayfası İçeriği -->
+<!-- Profil Sayfası İçeriği -->
 <div class="profile-page">
-    <div class="page-header">
-        <h2>Kullanıcı Profili</h2>
-        <p>Profil bilgilerinizi görüntüleyin ve düzenleyin</p>
-    </div>
-    
-    <div class="profile-content">
-        <div class="profile-card">
-            <div class="profile-avatar">
-                <div class="avatar-large">
-                    <span>A</span>
-                </div>
-                <button class="btn btn-outline" id="changeAvatar">
-                    <i class="fas fa-camera"></i>
-                    Fotoğraf Değiştir
-                </button>
-            </div>
-            
-            <div class="profile-details">
-                <div class="form-group">
-                    <label for="fullName">Ad Soyad</label>
-                    <input type="text" id="fullName" value="Assan Guest" class="form-input">
-                </div>
-                
-                <div class="form-group">
-                    <label for="email">E-posta</label>
-                    <input type="email" id="email" value="guest@assanelektronik.com.tr" class="form-input">
-                </div>
-                
-                <div class="form-group">
-                    <label for="phone">Telefon</label>
-                    <input type="tel" id="phone" value="+90 555 123 45 67" class="form-input">
-                </div>
-                
-                <div class="form-group">
-                    <label for="role">Rol</label>
-                    <input type="text" id="role" value="Sistem Yöneticisi" class="form-input" readonly>
-                </div>
-            </div>
+    <div class="profile-container">
+        <div class="profile-header">
+            <h2>Profil Bilgileri</h2>
+            <p>Kullanıcı bilgilerinizi görüntüleyin ve düzenleyin</p>
         </div>
         
-        <div class="profile-actions">
-            <button class="btn btn-primary" id="saveProfile">
-                <i class="fas fa-save"></i>
-                Değişiklikleri Kaydet
-            </button>
-            <button class="btn btn-secondary" id="changePassword">
-                <i class="fas fa-key"></i>
-                Şifre Değiştir
-            </button>
+        <div class="profile-content">
+            <!-- Kullanıcı Bilgileri -->
+            <div class="profile-section">
+                <h3>Kullanıcı Bilgileri</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Kullanıcı Adı:</label>
+                        <span id="profileUsername">-</span>
+                    </div>
+                    
+                    <div class="info-item">
+                        <label>E-posta:</label>
+                        <span id="profileEmail">-</span>
+                    </div>
+                    
+                    <div class="info-item">
+                        <label>Rol:</label>
+                        <span id="profileRole" class="role-badge">-</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Şifre Değiştirme -->
+            <div class="profile-section">
+                <h3>Şifre Değiştir</h3>
+                <form id="passwordForm" class="password-form">
+                    <div class="form-group">
+                        <label for="currentPassword">Mevcut Şifre</label>
+                        <input type="password" id="currentPassword" name="currentPassword" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="newPassword">Yeni Şifre</label>
+                        <input type="password" id="newPassword" name="newPassword" required minlength="6">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="confirmPassword">Yeni Şifre (Tekrar)</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" required minlength="6">
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="changePasswordBtn">
+                            <i class="fas fa-key"></i>
+                            Şifre Değiştir
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Çıkış Yapma -->
+            <div class="profile-section">
+                <h3>Hesap İşlemleri</h3>
+                <div class="account-actions">
+                    <button class="btn btn-danger" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Çıkış Yap
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
-<!-- Profile sayfası script'i main.js tarafından yüklenecek -->
+
+<style>
+.profile-page {
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.profile-container {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.profile-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    text-align: center;
+}
+
+.profile-header h2 {
+    margin: 0 0 10px 0;
+    font-size: 28px;
+}
+
+.profile-header p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 16px;
+}
+
+.profile-content {
+    padding: 30px;
+}
+
+.profile-section {
+    margin-bottom: 40px;
+    padding-bottom: 30px;
+    border-bottom: 1px solid #e1e5e9;
+}
+
+.profile-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.profile-section h3 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.profile-section h3::before {
+    content: '';
+    width: 4px;
+    height: 20px;
+    background: #667eea;
+    margin-right: 10px;
+    border-radius: 2px;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.info-item label {
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.info-item span {
+    color: #333;
+    font-size: 16px;
+    padding: 8px 0;
+}
+
+.role-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.role-badge.admin {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.role-badge.guest {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.password-form {
+    max-width: 400px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #333;
+    font-weight: 500;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.form-actions {
+    margin-top: 20px;
+}
+
+.account-actions {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: #667eea;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #5a6fd8;
+}
+
+.btn-danger {
+    background: #e74c3c;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #c0392b;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+    .profile-page {
+        padding: 10px;
+    }
+    
+    .profile-header {
+        padding: 20px;
+    }
+    
+    .profile-content {
+        padding: 20px;
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>

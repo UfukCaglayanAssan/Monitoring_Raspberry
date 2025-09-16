@@ -254,6 +254,14 @@ if (typeof window.BatteryLogsPage === 'undefined') {
     }
 
     applyFilters() {
+        // Filtre değerlerini güncelle
+        this.filters.arm = document.getElementById('armFilter').value;
+        this.filters.battery = document.getElementById('batteryFilter').value;
+        this.filters.startDate = document.getElementById('startDate').value;
+        this.filters.endDate = document.getElementById('endDate').value;
+        
+        console.log('🔍 Filtreler uygulandı:', this.filters);
+        
         this.currentPage = 1;
         this.loadLogs();
     }

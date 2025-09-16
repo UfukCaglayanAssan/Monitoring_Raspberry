@@ -1250,6 +1250,73 @@ body {
     justify-content: center;
 }
 
+/* User Dropdown Styles */
+.user-info {
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.user-info:hover .user-dropdown {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.user-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    min-width: 200px;
+    padding: 8px 0;
+    margin-top: 8px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.user-dropdown::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    right: 20px;
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 8px solid white;
+}
+
+.dropdown-link {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    color: #333;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+    gap: 10px;
+}
+
+.dropdown-link:hover {
+    background-color: #f8f9fa;
+    color: #667eea;
+}
+
+.dropdown-link i {
+    width: 16px;
+    text-align: center;
+}
+
+.dropdown-link span {
+    font-size: 14px;
+    font-weight: 500;
+}
+
 .reset-modal-actions .btn {
     min-width: 100px;
 }

@@ -1,12 +1,14 @@
 # interface/web_app.py
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, session, redirect, url_for
 from database import BatteryDatabase
 import time
 import json
 import threading
 from datetime import datetime
+from functools import wraps
 
 app = Flask(__name__)
+app.secret_key = 'tescom_bms_secret_key_2024'  # Session için secret key
 
 # Thread-safe database erişimi için lock'lar
 db_lock = threading.Lock()  # Write işlemleri için
@@ -23,6 +25,27 @@ def get_db():
         # Connection pool zaten WAL mode ve timeout ile yapılandırılmış
         print("✅ Database instance oluşturuldu (WAL mode + timeout enabled)")
     return get_db.instance
+
+# Authentication decorator'ları
+def login_required(f):
+    """Giriş yapmış kullanıcı kontrolü"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def admin_required(f):
+    """Admin yetkisi kontrolü"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+        if session.get('user_role') != 'admin':
+            return jsonify({'success': False, 'message': 'Admin yetkisi gerekli'}), 403
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Database işlemleri için retry wrapper
 def db_operation_with_retry(operation, max_retries=3, delay=0.1):
@@ -43,14 +66,123 @@ db = None
 
 @app.route('/')
 def index():
-    # Ana sayfa olarak logs sayfasını göster
+    # Giriş yapmamışsa login sayfasına yönlendir
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    # Ana sayfa olarak layout'u göster
     return render_template('layout.html')
+
+@app.route('/login')
+def login():
+    # Zaten giriş yapmışsa ana sayfaya yönlendir
+    if 'user_id' in session:
+        return redirect(url_for('index'))
+    return render_template('pages/login.html')
+
+@app.route('/profile')
+@login_required
+def profile():
+    return render_template('pages/profile.html')
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    """Kullanıcı girişi"""
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+        
+        if not username or not password:
+            return jsonify({'success': False, 'message': 'Kullanıcı adı ve şifre gerekli'}), 400
+        
+        # Kullanıcı doğrulama
+        db_instance = get_db()
+        user = db_instance.authenticate_user(username, password)
+        
+        if user:
+            # Session'a kullanıcı bilgilerini kaydet
+            session['user_id'] = user['id']
+            session['username'] = user['username']
+            session['user_email'] = user['email']
+            session['user_role'] = user['role']
+            
+            return jsonify({
+                'success': True,
+                'message': 'Giriş başarılı',
+                'user': {
+                    'username': user['username'],
+                    'email': user['email'],
+                    'role': user['role']
+                }
+            })
+        else:
+            return jsonify({'success': False, 'message': 'Kullanıcı adı veya şifre hatalı'}), 401
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Giriş hatası: {str(e)}'}), 500
+
+@app.route('/api/logout', methods=['POST'])
+def api_logout():
+    """Kullanıcı çıkışı"""
+    session.clear()
+    return jsonify({'success': True, 'message': 'Çıkış başarılı'})
+
+@app.route('/api/change-password', methods=['POST'])
+@login_required
+def api_change_password():
+    """Şifre değiştirme"""
+    try:
+        data = request.get_json()
+        current_password = data.get('currentPassword')
+        new_password = data.get('newPassword')
+        confirm_password = data.get('confirmPassword')
+        
+        if not all([current_password, new_password, confirm_password]):
+            return jsonify({'success': False, 'message': 'Tüm alanlar gerekli'}), 400
+        
+        if new_password != confirm_password:
+            return jsonify({'success': False, 'message': 'Yeni şifreler eşleşmiyor'}), 400
+        
+        if len(new_password) < 6:
+            return jsonify({'success': False, 'message': 'Şifre en az 6 karakter olmalı'}), 400
+        
+        # Mevcut şifreyi doğrula
+        db_instance = get_db()
+        user = db_instance.authenticate_user(session['username'], current_password)
+        
+        if not user:
+            return jsonify({'success': False, 'message': 'Mevcut şifre hatalı'}), 400
+        
+        # Şifreyi güncelle
+        success = db_instance.update_user_password(session['user_id'], new_password)
+        
+        if success:
+            return jsonify({'success': True, 'message': 'Şifre başarıyla değiştirildi'})
+        else:
+            return jsonify({'success': False, 'message': 'Şifre değiştirilemedi'}), 500
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Şifre değiştirme hatası: {str(e)}'}), 500
+
+@app.route('/api/user-info')
+@login_required
+def api_user_info():
+    """Kullanıcı bilgilerini getir"""
+    return jsonify({
+        'success': True,
+        'user': {
+            'username': session.get('username'),
+            'email': session.get('user_email'),
+            'role': session.get('user_role')
+        }
+    })
 
 @app.route('/mail-management')
 def mail_management():
     return render_template('pages/mail-management.html')
 
 @app.route('/mail-server-config')
+@login_required
 def mail_server_config():
     return render_template('pages/mail-server-config.html')
 
@@ -431,6 +563,7 @@ def get_stats():
         }), 500
 
 @app.route('/api/batconfigs', methods=['POST'])
+@admin_required
 def save_batconfig():
     """Batarya konfigürasyonunu kaydet"""
     try:
@@ -504,6 +637,7 @@ def save_batconfig():
         }), 500
 
 @app.route('/api/armconfigs', methods=['POST'])
+@admin_required
 def save_armconfig():
     """Kol konfigürasyonunu kaydet"""
     try:
@@ -895,6 +1029,7 @@ def get_arm_alarm_description(error_msb):
         return None
 
 @app.route('/api/send-config-to-device', methods=['POST'])
+@admin_required
 def send_config_to_device():
     """Konfigürasyonu cihaza gönder"""
     try:
@@ -953,6 +1088,7 @@ def get_mail_server_config():
         }), 500
 
 @app.route('/api/mail-server-config', methods=['POST'])
+@admin_required
 def save_mail_server_config():
     """Mail sunucu konfigürasyonunu kaydet"""
     try:
@@ -1043,6 +1179,7 @@ def get_ip_config():
         }), 500
 
 @app.route('/api/ip-config', methods=['POST'])
+@admin_required
 def save_ip_config():
     """IP konfigürasyonunu kaydet"""
     try:
