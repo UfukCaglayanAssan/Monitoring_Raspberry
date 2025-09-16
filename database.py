@@ -1208,15 +1208,13 @@ class BatteryDatabase:
                 admin_count = cursor.fetchone()[0]
                 
                 if admin_count == 0:
-                    # Admin kullanıcısı oluştur
-                    import bcrypt
+                    # Admin kullanıcısı oluştur (düz şifre)
                     admin_password = 'Tesbms*1980'
-                    admin_hash = bcrypt.hashpw(admin_password.encode('utf-8'), bcrypt.gensalt())
                     
                     cursor.execute('''
                         INSERT INTO users (username, email, password_hash, role, is_active)
                         VALUES (?, ?, ?, ?, ?)
-                    ''', ('Tescom Admin', 'admin@tescombms.com', admin_hash.decode('utf-8'), 'admin', 1))
+                    ''', ('Tescom Admin', 'admin@tescombms.com', admin_password, 'admin', 1))
                     
                     print("✅ Admin kullanıcısı oluşturuldu")
                 
@@ -1227,15 +1225,13 @@ class BatteryDatabase:
                 guest_count = cursor.fetchone()[0]
                 
                 if guest_count == 0:
-                    # Guest kullanıcısı oluştur
-                    import bcrypt
+                    # Guest kullanıcısı oluştur (düz şifre)
                     guest_password = 'Bmsgst*99'
-                    guest_hash = bcrypt.hashpw(guest_password.encode('utf-8'), bcrypt.gensalt())
                     
                     cursor.execute('''
                         INSERT INTO users (username, email, password_hash, role, is_active)
                         VALUES (?, ?, ?, ?, ?)
-                    ''', ('Tescom Guest', 'guest@tescombms.com', guest_hash.decode('utf-8'), 'guest', 1))
+                    ''', ('Tescom Guest', 'guest@tescombms.com', guest_password, 'guest', 1))
                     
                     print("✅ Guest kullanıcısı oluşturuldu")
                 
@@ -1271,7 +1267,7 @@ class BatteryDatabase:
             return None
     
     def authenticate_user_by_email(self, email, password):
-        """Kullanıcı doğrulama (email ile)"""
+        """Kullanıcı doğrulama (email ile) - düz şifre"""
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
@@ -1282,8 +1278,8 @@ class BatteryDatabase:
                 
                 user = cursor.fetchone()
                 if user:
-                    import bcrypt
-                    if bcrypt.checkpw(password.encode('utf-8'), user[3].encode('utf-8')):
+                    # Düz şifre karşılaştırması
+                    if password == user[3]:
                         return {
                             'id': user[0],
                             'username': user[1],
