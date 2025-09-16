@@ -82,10 +82,7 @@ class AuthManager {
             
             if (data.success) {
                 this.currentUser = data.user;
-                this.showToast('Giriş başarılı', 'success');
-                setTimeout(() => {
-                    window.location.href = '/';
-                }, 1000);
+                window.location.href = '/';
             } else {
                 this.showToast(data.message || 'Giriş başarısız', 'error');
             }
