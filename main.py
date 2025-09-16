@@ -145,19 +145,34 @@ def is_valid_arm_data(arm_value, k_value):
     return True
 
 def get_last_battery_info():
-    """En son batarya bilgisini döndür (arm, k)"""
-    with arm_slave_counts_lock:
+    """En son batarya bilgisini döndür (arm, k) - veritabanından oku"""
+    try:
+        # Veritabanından oku
+        with db_lock:
+            db_arm_slave_counts = db.get_arm_slave_counts()
+        
+        if not db_arm_slave_counts:
+            print("⚠️ Veritabanından arm_slave_counts okunamadı")
+            return None, None
+        
         last_arm = None
         last_battery = None
         
         # Aktif kolları bul ve en son bataryayı belirle
         for arm in [1, 2, 3, 4]:
-            if arm_slave_counts[arm] > 0:
+            if arm in db_arm_slave_counts and db_arm_slave_counts[arm] > 0:
                 last_arm = arm
                 # k değerleri 3'ten başlar, son k değeri = armslavecount + 2
-                last_battery = arm_slave_counts[arm] + 2
+                last_battery = db_arm_slave_counts[arm] + 2
+        
+        print(f"📊 Veritabanından okunan arm_slave_counts: {db_arm_slave_counts}")
+        print(f"📊 Hesaplanan last_arm: {last_arm}, last_battery: {last_battery}")
         
         return last_arm, last_battery
+        
+    except Exception as e:
+        print(f"❌ get_last_battery_info hatası: {e}")
+        return None, None
 
 def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False):
     """Periyot tamamlandı mı kontrol et"""
@@ -881,7 +896,7 @@ def db_worker():
                     arm1, arm2, arm3, arm4 = raw_bytes[2], raw_bytes[3], raw_bytes[4], raw_bytes[5]
                     print(f"armslavecounts verisi tespit edildi: arm1={arm1}, arm2={arm2}, arm3={arm3}, arm4={arm4}")
                     
-                    # RAM'de armslavecounts güncelle
+                    # RAM'de armslavecounts güncelle (sadece RAM, veritabanı değil)
                     with arm_slave_counts_lock:
                         arm_slave_counts[1] = arm1
                         arm_slave_counts[2] = arm2
@@ -903,6 +918,7 @@ def db_worker():
                     
                     print(f"✓ Armslavecounts RAM'e kaydedildi: {arm_slave_counts}")
                     print(f"✓ Modbus/SNMP RAM'e kaydedildi: {arm_slave_counts_ram}")
+                    print(f"ℹ️ Not: Periyot kontrolü veritabanından yapılacak")
                     
                 # Hatkon (kol) alarm verisi: 2. byte (index 1) 0x8E ise
                 elif raw_bytes[1] == 0x8E:
