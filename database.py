@@ -1112,6 +1112,27 @@ class BatteryDatabase:
         except Exception as e:
             print(f"⚠️ Eksik tablo kontrol hatası: {e}")
 
+    def get_arm_slave_counts(self):
+        """Arm slave counts verilerini al"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT arm, slave_count FROM arm_slave_counts ORDER BY arm
+                ''')
+                
+                results = cursor.fetchall()
+                arm_slave_counts = {}
+                
+                for arm, slave_count in results:
+                    arm_slave_counts[arm] = slave_count
+                
+                return arm_slave_counts
+                
+        except Exception as e:
+            print(f"❌ get_arm_slave_counts hatası: {e}")
+            return None
+
     def check_default_arm_slave_counts(self):
         """Mevcut veritabanında default arm_slave_counts değerlerini kontrol et"""
         try:
