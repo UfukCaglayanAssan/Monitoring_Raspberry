@@ -104,10 +104,7 @@ class AuthManager {
             
             if (data.success) {
                 this.currentUser = null;
-                this.showToast('Çıkış başarılı', 'success');
-                setTimeout(() => {
-                    window.location.href = '/login';
-                }, 1000);
+                window.location.href = '/login';
             } else {
                 this.showToast('Çıkış hatası', 'error');
             }
