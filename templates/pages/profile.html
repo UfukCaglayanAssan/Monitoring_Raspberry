@@ -2,32 +2,11 @@
 <div class="profile-page">
     <div class="profile-container">
         <div class="profile-header">
-            <h2>Profil Bilgileri</h2>
-            <p>Kullanıcı bilgilerinizi görüntüleyin ve düzenleyin</p>
+            <h2>Şifre Değiştir</h2>
+            <p>Hesap şifrenizi güvenli bir şekilde değiştirin</p>
         </div>
         
         <div class="profile-content">
-            <!-- Kullanıcı Bilgileri -->
-            <div class="profile-section">
-                <h3>Kullanıcı Bilgileri</h3>
-                <div class="info-grid">
-                    <div class="info-item">
-                        <label>Kullanıcı Adı:</label>
-                        <span id="profileUsername">-</span>
-                    </div>
-                    
-                    <div class="info-item">
-                        <label>E-posta:</label>
-                        <span id="profileEmail">-</span>
-                    </div>
-                    
-                    <div class="info-item">
-                        <label>Rol:</label>
-                        <span id="profileRole" class="role-badge">-</span>
-                    </div>
-                </div>
-            </div>
-            
             <!-- Şifre Değiştirme -->
             <div class="profile-section">
                 <h3>Şifre Değiştir</h3>
@@ -54,17 +33,6 @@
                         </button>
                     </div>
                 </form>
-            </div>
-            
-            <!-- Çıkış Yapma -->
-            <div class="profile-section">
-                <h3>Hesap İşlemleri</h3>
-                <div class="account-actions">
-                    <button class="btn btn-danger" id="logoutBtn">
-                        <i class="fas fa-sign-out-alt"></i>
-                        Çıkış Yap
-                    </button>
-                </div>
             </div>
         </div>
     </div>
@@ -134,48 +102,6 @@
     border-radius: 2px;
 }
 
-.info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-}
-
-.info-item {
-    display: flex;
-    flex-direction: column;
-}
-
-.info-item label {
-    font-weight: 600;
-    color: #666;
-    margin-bottom: 5px;
-    font-size: 14px;
-}
-
-.info-item span {
-    color: #333;
-    font-size: 16px;
-    padding: 8px 0;
-}
-
-.role-badge {
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-}
-
-.role-badge.admin {
-    background: #e3f2fd;
-    color: #1976d2;
-}
-
-.role-badge.guest {
-    background: #f3e5f5;
-    color: #7b1fa2;
-}
 
 .password-form {
     max-width: 400px;
@@ -210,11 +136,6 @@
     margin-top: 20px;
 }
 
-.account-actions {
-    display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
-}
 
 .btn {
     padding: 12px 24px;
@@ -265,8 +186,5 @@
         padding: 20px;
     }
     
-    .info-grid {
-        grid-template-columns: 1fr;
-    }
 }
 </style>

@@ -192,8 +192,38 @@ class AuthManager {
             profileRole.className = `role-badge ${this.currentUser.role}`;
         }
 
-        // Admin yetkisi kontrolü
-        this.updateAdminControls();
+        // Admin/Guest yetki kontrolü
+        this.updatePermissions();
+    }
+
+    updatePermissions() {
+        if (!this.currentUser) return;
+
+        const isAdmin = this.currentUser.role === 'admin';
+        
+        // Admin-only elementleri bul ve kontrol et
+        const adminElements = document.querySelectorAll('[data-requires-admin]');
+        adminElements.forEach(element => {
+            if (isAdmin) {
+                element.style.display = '';
+                element.disabled = false;
+            } else {
+                element.style.display = 'none';
+                element.disabled = true;
+            }
+        });
+
+        // Admin-only butonları devre dışı bırak
+        const adminButtons = document.querySelectorAll('.btn[data-requires-admin]');
+        adminButtons.forEach(button => {
+            if (isAdmin) {
+                button.disabled = false;
+                button.style.opacity = '1';
+            } else {
+                button.disabled = true;
+                button.style.opacity = '0.5';
+            }
+        });
     }
 
     updateAdminControls() {
