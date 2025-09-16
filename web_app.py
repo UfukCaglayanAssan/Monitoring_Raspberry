@@ -86,18 +86,18 @@ def profile():
 
 @app.route('/api/login', methods=['POST'])
 def api_login():
-    """Kullanıcı girişi"""
+    """Kullanıcı girişi (email ile)"""
     try:
         data = request.get_json()
-        username = data.get('username')
+        email = data.get('email')
         password = data.get('password')
         
-        if not username or not password:
-            return jsonify({'success': False, 'message': 'Kullanıcı adı ve şifre gerekli'}), 400
+        if not email or not password:
+            return jsonify({'success': False, 'message': 'E-posta ve şifre gerekli'}), 400
         
-        # Kullanıcı doğrulama
+        # Kullanıcı doğrulama (email ile)
         db_instance = get_db()
-        user = db_instance.authenticate_user(username, password)
+        user = db_instance.authenticate_user_by_email(email, password)
         
         if user:
             # Session'a kullanıcı bilgilerini kaydet

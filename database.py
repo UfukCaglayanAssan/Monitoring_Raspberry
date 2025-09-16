@@ -1246,7 +1246,7 @@ class BatteryDatabase:
             print(f"❌ Default kullanıcılar kontrolü hatası: {e}")
     
     def authenticate_user(self, username, password):
-        """Kullanıcı doğrulama"""
+        """Kullanıcı doğrulama (kullanıcı adı ile)"""
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
@@ -1268,6 +1268,31 @@ class BatteryDatabase:
                 return None
         except Exception as e:
             print(f"❌ Kullanıcı doğrulama hatası: {e}")
+            return None
+    
+    def authenticate_user_by_email(self, email, password):
+        """Kullanıcı doğrulama (email ile)"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT id, username, email, password_hash, role, is_active
+                    FROM users WHERE email = ? AND is_active = 1
+                ''', (email,))
+                
+                user = cursor.fetchone()
+                if user:
+                    import bcrypt
+                    if bcrypt.checkpw(password.encode('utf-8'), user[3].encode('utf-8')):
+                        return {
+                            'id': user[0],
+                            'username': user[1],
+                            'email': user[2],
+                            'role': user[4]
+                        }
+                return None
+        except Exception as e:
+            print(f"❌ Email ile kullanıcı doğrulama hatası: {e}")
             return None
     
     def update_user_password(self, user_id, new_password):
