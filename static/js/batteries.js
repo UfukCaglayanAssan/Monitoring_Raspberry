@@ -7,7 +7,7 @@ if (typeof window.BatteriesPage === 'undefined') {
         this.pageSize = 30;
         this.totalPages = 1;
         this.batteriesData = [];
-        this.selectedArm = parseInt(localStorage.getItem('selectedArm')) || 3; // localStorage'dan al, yoksa varsayılan: Kol 3
+        this.selectedArm = parseInt(localStorage.getItem('selectedArm')) || 1; // localStorage'dan al, yoksa varsayılan: Kol 1
         this.isLoading = false; // Yükleme durumu flag'i
         this.autoRefreshInterval = null; // Interval referansı
         this.eventsBound = false; // Event listener flag'i
