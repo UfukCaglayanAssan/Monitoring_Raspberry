@@ -439,7 +439,7 @@ def get_batteries():
         data = request.get_json()
         page = data.get('page', 1)
         page_size = data.get('pageSize', 30)
-        selected_arm = data.get('selectedArm', 1)  # Varsayılan: Kol 1
+        selected_arm = data.get('selectedArm', 3)  # Varsayılan: Kol 3
         
         # Mevcut dili al (localStorage'dan veya varsayılan olarak 'tr')
         language = request.headers.get('X-Language', 'tr')
@@ -1268,7 +1268,7 @@ def send_manual_set_command():
         arm = data.get('arm')
         slave_str = data.get('slave', '0')  # String olarak al
         
-        # String'i decimal olarak parse et (7 -> 7, 13 -> 13)
+        # String'i decimal olarak parse et (14 -> 14)
         try:
             slave = int(slave_str)
         except ValueError:
