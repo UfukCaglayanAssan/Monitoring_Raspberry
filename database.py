@@ -607,29 +607,36 @@ class BatteryDatabase:
                     cursor.execute(count_query)
                 
                 total_count = cursor.fetchone()[0]
+                print(f"🔍 get_paginated_alarms: total_count = {total_count}, show_resolved = {show_resolved}")
                 
                 # Sayfalama hesapla
                 offset = (page - 1) * page_size
                 total_pages = (total_count + page_size - 1) // page_size
+                print(f"🔍 get_paginated_alarms: page = {page}, page_size = {page_size}, offset = {offset}")
                 
                 # Sayfalanmış verileri getir
                 if show_resolved:
-                    cursor.execute('''
+                    query = '''
                         SELECT id, arm, battery, error_code_msb, error_code_lsb, timestamp, status, resolved_at, created_at
                         FROM alarms 
                         ORDER BY timestamp DESC
                         LIMIT ? OFFSET ?
-                    ''', (page_size, offset))
+                    '''
+                    cursor.execute(query, (page_size, offset))
                 else:
-                    cursor.execute('''
+                    query = '''
                         SELECT id, arm, battery, error_code_msb, error_code_lsb, timestamp, status, resolved_at, created_at
                         FROM alarms 
                         WHERE status = 'active'
                         ORDER BY timestamp DESC
                         LIMIT ? OFFSET ?
-                    ''', (page_size, offset))
+                    '''
+                    cursor.execute(query, (page_size, offset))
                 
                 rows = cursor.fetchall()
+                print(f"🔍 get_paginated_alarms: rows count = {len(rows)}")
+                if len(rows) > 0:
+                    print(f"🔍 get_paginated_alarms: first row = {rows[0]}")
                 
                 return {
                     'alarms': rows,
