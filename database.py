@@ -112,20 +112,6 @@ class BatteryDatabase:
                 ''')
                 print("✓ battery_data tablosu oluşturuldu")
                 
-                # Periyot verileri tablosu (sadece son periyot verileri)
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS current_period_data (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        arm INTEGER,
-                        k INTEGER,
-                        dtype INTEGER,
-                        data REAL,
-                        timestamp INTEGER,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        UNIQUE(arm, k, dtype, timestamp)
-                    )
-                ''')
-                print("✓ current_period_data tablosu oluşturuldu")
                 
                 # Dil tablosu
                 cursor.execute('''
@@ -462,11 +448,6 @@ class BatteryDatabase:
                     VALUES (?, ?, ?, ?, ?)
                 ''', [(record['Arm'], record['k'], record['Dtype'], record['data'], record['timestamp']) for record in batch])
                 
-                # Periyot tablosuna da ekle (UPSERT)
-                cursor.executemany('''
-                    INSERT OR REPLACE INTO current_period_data (arm, k, dtype, data, timestamp)
-                    VALUES (?, ?, ?, ?, ?)
-                ''', [(record['Arm'], record['k'], record['Dtype'], record['data'], record['timestamp']) for record in batch])
                 
                 # Commit
                 conn.commit()
@@ -478,72 +459,8 @@ class BatteryDatabase:
                 print(f"❌ Batch insert hatası: {e}")
                 raise
     
-    def get_current_period_data(self, arm=None, k=None, dtype=None):
-        """Mevcut periyot verilerini al"""
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            
-            query = "SELECT arm, k, dtype, data, timestamp FROM current_period_data"
-            params = []
-            conditions = []
-            
-            if arm is not None:
-                conditions.append("arm = ?")
-                params.append(arm)
-            if k is not None:
-                conditions.append("k = ?")
-                params.append(k)
-            if dtype is not None:
-                conditions.append("dtype = ?")
-                params.append(dtype)
-            
-            if conditions:
-                query += " WHERE " + " AND ".join(conditions)
-            
-            query += " ORDER BY arm, k, dtype"
-            
-            cursor.execute(query, params)
-            rows = cursor.fetchall()
-            
-            # Veriyi organize et
-            result = {}
-            for arm_val, k_val, dtype_val, data_val, timestamp_val in rows:
-                if arm_val not in result:
-                    result[arm_val] = {}
-                if k_val not in result[arm_val]:
-                    result[arm_val][k_val] = {}
-                result[arm_val][k_val][dtype_val] = {
-                    'value': data_val,
-                    'timestamp': timestamp_val
-                }
-            
-            return result
     
-    def get_arm_slave_counts_from_period(self):
-        """Periyot verilerinden armslavecounts al"""
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            
-            # Her kol için en yüksek k değerini bul (k=2 kol verisi, k>2 batarya verisi)
-            cursor.execute('''
-                SELECT arm, MAX(k) as max_k
-                FROM current_period_data 
-                WHERE k > 2
-                GROUP BY arm
-            ''')
-            
-            rows = cursor.fetchall()
-            arm_counts = {1: 0, 2: 0, 3: 0, 4: 0}
-            
-            for arm, max_k in rows:
-                if max_k > 2:
-                    # k=3 -> batarya 1, k=4 -> batarya 2, vs.
-                    battery_count = max_k - 2
-                    arm_counts[arm] = battery_count
-            
-            return arm_counts
     
-    # clear_current_period_data fonksiyonu kaldırıldı - periyot verileri korunuyor
     
 
     def insert_alarm(self, arm, battery, error_code_msb, error_code_lsb, timestamp):
@@ -769,33 +686,18 @@ class BatteryDatabase:
                     ''')
                     conn.commit()
                     print("✅ battery_data tablosu oluşturuldu")
+                    
+                    # Index'leri oluştur (battery_data tablosu oluşturulduktan sonra)
+                    print("🔍 Index'ler oluşturuluyor...")
+                    cursor.execute('CREATE INDEX IF NOT EXISTS idx_alarm_timestamp ON alarms(timestamp)')
+                    cursor.execute('CREATE INDEX IF NOT EXISTS idx_k_arm_timestamp ON battery_data(k, arm, timestamp)')
+                    cursor.execute('CREATE INDEX IF NOT EXISTS idx_arm_k_timestamp ON battery_data(arm, k, timestamp)')
+                    cursor.execute('CREATE INDEX IF NOT EXISTS idx_timestamp_arm_k ON battery_data(timestamp, arm, k)')
+                    conn.commit()
+                    print("✅ Index'ler oluşturuldu")
                 else:
                     print("✅ battery_data tablosu mevcut")
                 
-                # Periyot verileri tablosu (sadece son periyot verileri)
-                cursor.execute("""
-                    SELECT name FROM sqlite_master 
-                    WHERE type='table' AND name='current_period_data'
-                """)
-                
-                if not cursor.fetchone():
-                    print("🔄 current_period_data tablosu eksik, oluşturuluyor...")
-                    cursor.execute('''
-                        CREATE TABLE IF NOT EXISTS current_period_data (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            arm INTEGER,
-                            k INTEGER,
-                            dtype INTEGER,
-                            data REAL,
-                            timestamp INTEGER,
-                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                            UNIQUE(arm, k, dtype, timestamp)
-                        )
-                    ''')
-                    conn.commit()
-                    print("✅ current_period_data tablosu oluşturuldu")
-                else:
-                    print("✅ current_period_data tablosu mevcut")
                 
                 # Dil tablosu
                 cursor.execute("""
@@ -1147,6 +1049,20 @@ class BatteryDatabase:
                     print("✅ armconfigs tablosu oluşturuldu")
                 else:
                     print("✅ armconfigs tablosu mevcut")
+                
+                # Index'leri oluştur (sadece battery_data için)
+                print("🔍 Index'ler kontrol ediliyor...")
+                
+                # battery_data tablosu var mı kontrol et
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='battery_data'")
+                if cursor.fetchone():
+                    cursor.execute('CREATE INDEX IF NOT EXISTS idx_k_arm_timestamp ON battery_data(k, arm, timestamp)')
+                    cursor.execute('CREATE INDEX IF NOT EXISTS idx_arm_k_timestamp ON battery_data(arm, k, timestamp)')
+                    cursor.execute('CREATE INDEX IF NOT EXISTS idx_timestamp_arm_k ON battery_data(timestamp, arm, k)')
+                    print("✅ battery_data index'leri oluşturuldu")
+                
+                conn.commit()
+                print("✅ Eksik tablolar ve index'ler başarıyla oluşturuldu")
                     
         except Exception as e:
             print(f"⚠️ Eksik tablo kontrol hatası: {e}")
