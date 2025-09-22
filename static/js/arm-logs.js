@@ -172,6 +172,7 @@ if (typeof window.ArmLogsPage === 'undefined') {
                     <td>${this.formatDate(log.timestamp)}</td>
                     <td>${this.formatValue(log.current, 'A')}</td>
                     <td>${this.formatValue(log.humidity, '%')}</td>
+                    <td>${this.formatValue(log.module_temperature, '°C')}</td>
                     <td>${this.formatValue(log.ambient_temperature, '°C')}</td>
                 </tr>
             `;

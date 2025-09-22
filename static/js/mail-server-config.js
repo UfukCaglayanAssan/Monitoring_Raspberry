@@ -142,11 +142,24 @@ class MailServerConfigPage {
 
             console.log('Mail bağlantısı test ediliyor...', config);
 
-            // Test endpoint'i yoksa simüle et
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Gerçek SMTP test endpoint'i çağır
+            const response = await fetch('/api/test-mail-connection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(config)
+            });
+
+            const result = await response.json();
             
-            this.showToast('Bağlantı testi tamamlandı (simüle edildi)', 'info');
-            console.log('✓ Mail bağlantı testi tamamlandı');
+            if (result.success) {
+                this.showToast('Bağlantı testi başarılı!', 'success');
+                console.log('✓ Mail bağlantı testi başarılı');
+            } else {
+                this.showToast('Bağlantı testi başarısız: ' + result.message, 'error');
+                console.error('❌ Mail bağlantı testi başarısız:', result.message);
+            }
 
         } catch (error) {
             console.error('Mail bağlantı testi hatası:', error);

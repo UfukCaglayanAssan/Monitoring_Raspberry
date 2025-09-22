@@ -1618,8 +1618,8 @@ class BatteryDatabase:
             cursor.execute(query, params)
             rows = cursor.fetchall()
             
-            # CSV formatı - Gruplandırılmış veriler için
-            csv_content = "ZAMAN,KOL,BATARYA ADRESİ,GERİLİM,ŞARJ DURUMU,MODÜL SICAKLIĞI,POZİTİF KUTUP SICAKLIĞI,NEGATİF KUTUP SICAKLIĞI,SAĞLIK DURUMU\n"
+            # CSV formatı - Gruplandırılmış veriler için (UTF-8 BOM ile)
+            csv_content = "\ufeffZAMAN,KOL,BATARYA ADRESİ,GERİLİM,ŞARJ DURUMU,MODÜL SICAKLIĞI,POZİTİF KUTUP SICAKLIĞI,NEGATİF KUTUP SICAKLIĞI,SAĞLIK DURUMU\n"
             
             for row in rows:
                 timestamp = datetime.fromtimestamp(row[0] / 1000).strftime('%Y-%m-%d %H:%M:%S')
@@ -1671,13 +1671,13 @@ class BatteryDatabase:
             cursor.execute(query, params)
             rows = cursor.fetchall()
             
-            # CSV formatı - Sadece gerekli alanlar
-            csv_content = "KOL,ZAMAN,AKIM,NEM,SICAKLIK\n"
+            # CSV formatı - Sadece gerekli alanlar (UTF-8 BOM ile)
+            csv_content = "\ufeffKOL,ZAMAN,AKIM,NEM,MODÜL SICAKLIĞI,ORTAM SICAKLIĞI\n"
             
             for row in rows:
                 timestamp = datetime.fromtimestamp(row[0] / 1000).strftime('%Y-%m-%d %H:%M:%S')
                 
-                csv_content += f"{row[1]},{timestamp},{row[2] or '-'},{row[3] or '-'},{row[4] or '-'}\n"
+                csv_content += f"{row[1]},{timestamp},{row[2] or '-'},{row[3] or '-'},{row[4] or '-'},{row[5] or '-'}\n"
             
             return csv_content
 
@@ -2401,7 +2401,8 @@ class BatteryDatabase:
                         arm,
                         MAX(CASE WHEN dtype = 10 THEN data END) as current,
                         MAX(CASE WHEN dtype = 11 THEN data END) as humidity,
-                        MAX(CASE WHEN dtype = 12 THEN data END) as ambient_temperature
+                        MAX(CASE WHEN dtype = 12 THEN data END) as module_temperature,
+                        MAX(CASE WHEN dtype = 13 THEN data END) as ambient_temperature
                     FROM battery_data 
                     WHERE k = 2
                 '''

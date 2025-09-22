@@ -1155,6 +1155,53 @@ def save_mail_server_config():
             'message': str(e)
         }), 500
 
+@app.route('/api/test-mail-connection', methods=['POST'])
+@admin_required
+def test_mail_connection():
+    """Mail sunucu bağlantısını test et"""
+    try:
+        data = request.get_json()
+        
+        # SMTP bağlantı testi
+        import smtplib
+        from email.mime.text import MIMEText
+        
+        smtp_server = data.get('smtp_server')
+        smtp_port = data.get('smtp_port')
+        smtp_username = data.get('smtp_username')
+        smtp_password = data.get('smtp_password')
+        use_tls = data.get('use_tls', True)
+        
+        if not smtp_server or not smtp_port:
+            return jsonify({'success': False, 'message': 'SMTP sunucu adresi ve port gerekli'})
+        
+        # SMTP bağlantısını test et
+        try:
+            if use_tls:
+                server = smtplib.SMTP(smtp_server, smtp_port)
+                server.starttls()
+            else:
+                server = smtplib.SMTP(smtp_server, smtp_port)
+            
+            if smtp_username and smtp_password:
+                server.login(smtp_username, smtp_password)
+            
+            server.quit()
+            
+            return jsonify({'success': True, 'message': 'SMTP bağlantısı başarılı'})
+            
+        except smtplib.SMTPAuthenticationError:
+            return jsonify({'success': False, 'message': 'Kullanıcı adı veya şifre hatalı'})
+        except smtplib.SMTPConnectError:
+            return jsonify({'success': False, 'message': 'SMTP sunucusuna bağlanılamadı'})
+        except smtplib.SMTPException as e:
+            return jsonify({'success': False, 'message': f'SMTP hatası: {str(e)}'})
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Bağlantı hatası: {str(e)}'})
+    
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Test hatası: {str(e)}'})
+
 @app.route('/api/current-ip', methods=['GET'])
 def get_current_ip():
     """Mevcut IP adresini getir"""
