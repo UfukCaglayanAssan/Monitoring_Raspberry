@@ -111,6 +111,15 @@ class App {
             });
         });
 
+            // Bell icon tıklama eventi
+            document.getElementById('notificationBell').addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                console.log('🔔 Bell icon tıklandı - Alarms sayfasına gidiliyor');
+                this.loadPage('alarms');
+            });
+
             this.eventsBound = true;
         }
 

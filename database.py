@@ -1644,7 +1644,8 @@ class BatteryDatabase:
                     arm,
                     MAX(CASE WHEN dtype = 10 THEN data END) as current,
                     MAX(CASE WHEN dtype = 11 THEN data END) as humidity,
-                    MAX(CASE WHEN dtype = 12 THEN data END) as ambient_temperature
+                    MAX(CASE WHEN dtype = 12 THEN data END) as module_temperature,
+                    MAX(CASE WHEN dtype = 13 THEN data END) as ambient_temperature
                 FROM battery_data 
                 WHERE k = 2
             '''
@@ -2440,7 +2441,8 @@ class BatteryDatabase:
                         'arm': row[1],
                         'current': row[2],
                         'humidity': row[3],
-                        'ambient_temperature': row[4]
+                        'module_temperature': row[4],
+                        'ambient_temperature': row[5]
                     })
                 
                 # Toplam sayfa sayısını hesapla

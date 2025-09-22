@@ -183,7 +183,7 @@ body {
 /* Notification Badge */
 .notification-badge {
     position: absolute !important;
-    top: -3px !important;
+    top: 2px !important;
     right: -3px !important;
     background-color: #dc3545 !important;
     color: white !important;
