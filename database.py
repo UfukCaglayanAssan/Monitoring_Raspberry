@@ -26,6 +26,9 @@ class BatteryDatabase:
             
             # Default kullanıcıları kontrol et
             self.check_default_users()
+            
+            # Mevcut düz şifreleri bcrypt formatına dönüştür
+            self.migrate_existing_passwords_to_bcrypt()
     
     def _create_connections(self):
         """Connection pool oluştur - thread-safe ve performanslı"""
@@ -1205,6 +1208,7 @@ class BatteryDatabase:
     def check_default_users(self):
         """Default kullanıcıları kontrol et ve oluştur"""
         try:
+            print("🔍 Default kullanıcılar kontrol ediliyor...")
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 
@@ -1213,40 +1217,136 @@ class BatteryDatabase:
                     SELECT COUNT(*) FROM users WHERE username = 'Tescom Admin'
                 ''')
                 admin_count = cursor.fetchone()[0]
+                print(f"📊 Admin kullanıcısı sayısı: {admin_count}")
                 
                 if admin_count == 0:
-                    # Admin kullanıcısı oluştur (düz şifre)
-                    admin_password = 'Tesbms*1980'
-                    
-                    cursor.execute('''
-                        INSERT INTO users (username, email, password_hash, role, is_active)
-                        VALUES (?, ?, ?, ?, ?)
-                    ''', ('Tescom Admin', 'admin@tescombms.com', admin_password, 'admin', 1))
-                    
-                    print("✅ Admin kullanıcısı oluşturuldu")
+                    print("🔄 Admin kullanıcısı oluşturuluyor...")
+                    try:
+                        import bcrypt
+                        admin_password = 'Tesbms*1980'
+                        admin_password_hash = bcrypt.hashpw(admin_password.encode('utf-8'), bcrypt.gensalt())
+                        
+                        cursor.execute('''
+                            INSERT INTO users (username, email, password_hash, role, is_active)
+                            VALUES (?, ?, ?, ?, ?)
+                        ''', ('Tescom Admin', 'admin@tescombms.com', admin_password_hash.decode('utf-8'), 'admin', 1))
+                        
+                        print("✅ Admin kullanıcısı oluşturuldu (bcrypt ile şifrelendi)")
+                        print(f"   📧 Email: admin@tescombms.com")
+                        print(f"   🔑 Şifre: Tesbms*1980")
+                        print(f"   👤 Rol: admin")
+                    except ImportError:
+                        print("⚠️  bcrypt kütüphanesi bulunamadı, düz şifre ile oluşturuluyor...")
+                        admin_password = 'Tesbms*1980'
+                        cursor.execute('''
+                            INSERT INTO users (username, email, password_hash, role, is_active)
+                            VALUES (?, ?, ?, ?, ?)
+                        ''', ('Tescom Admin', 'admin@tescombms.com', admin_password, 'admin', 1))
+                        print("✅ Admin kullanıcısı oluşturuldu (düz şifre)")
+                        print(f"   📧 Email: admin@tescombms.com")
+                        print(f"   🔑 Şifre: Tesbms*1980")
+                        print(f"   👤 Rol: admin")
+                else:
+                    print("✅ Admin kullanıcısı zaten mevcut")
                 
                 # Guest kullanıcısı var mı kontrol et
                 cursor.execute('''
                     SELECT COUNT(*) FROM users WHERE username = 'Tescom Guest'
                 ''')
                 guest_count = cursor.fetchone()[0]
+                print(f"📊 Guest kullanıcısı sayısı: {guest_count}")
                 
                 if guest_count == 0:
-                    # Guest kullanıcısı oluştur (düz şifre)
-                    guest_password = 'Bmsgst*99'
-                    
-                    cursor.execute('''
-                        INSERT INTO users (username, email, password_hash, role, is_active)
-                        VALUES (?, ?, ?, ?, ?)
-                    ''', ('Tescom Guest', 'guest@tescombms.com', guest_password, 'guest', 1))
-                    
-                    print("✅ Guest kullanıcısı oluşturuldu")
+                    print("🔄 Guest kullanıcısı oluşturuluyor...")
+                    try:
+                        import bcrypt
+                        guest_password = 'Bmsgst*99'
+                        guest_password_hash = bcrypt.hashpw(guest_password.encode('utf-8'), bcrypt.gensalt())
+                        
+                        cursor.execute('''
+                            INSERT INTO users (username, email, password_hash, role, is_active)
+                            VALUES (?, ?, ?, ?, ?)
+                        ''', ('Tescom Guest', 'guest@tescombms.com', guest_password_hash.decode('utf-8'), 'guest', 1))
+                        
+                        print("✅ Guest kullanıcısı oluşturuldu (bcrypt ile şifrelendi)")
+                        print(f"   📧 Email: guest@tescombms.com")
+                        print(f"   🔑 Şifre: Bmsgst*99")
+                        print(f"   👤 Rol: guest")
+                    except ImportError:
+                        print("⚠️  bcrypt kütüphanesi bulunamadı, düz şifre ile oluşturuluyor...")
+                        guest_password = 'Bmsgst*99'
+                        cursor.execute('''
+                            INSERT INTO users (username, email, password_hash, role, is_active)
+                            VALUES (?, ?, ?, ?, ?)
+                        ''', ('Tescom Guest', 'guest@tescombms.com', guest_password, 'guest', 1))
+                        print("✅ Guest kullanıcısı oluşturuldu (düz şifre)")
+                        print(f"   📧 Email: guest@tescombms.com")
+                        print(f"   🔑 Şifre: Bmsgst*99")
+                        print(f"   👤 Rol: guest")
+                else:
+                    print("✅ Guest kullanıcısı zaten mevcut")
                 
                 conn.commit()
-                print("✅ Default kullanıcılar kontrol edildi")
+                print("✅ Default kullanıcılar kontrolü tamamlandı")
                 
         except Exception as e:
             print(f"❌ Default kullanıcılar kontrolü hatası: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def migrate_existing_passwords_to_bcrypt(self):
+        """Mevcut düz şifreleri bcrypt formatına dönüştür"""
+        try:
+            print("🔄 Mevcut şifreler bcrypt formatına dönüştürülüyor...")
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Tüm kullanıcıları getir
+                cursor.execute('''
+                    SELECT id, username, email, password_hash, role
+                    FROM users WHERE is_active = 1
+                ''')
+                
+                users = cursor.fetchall()
+                print(f"📊 {len(users)} aktif kullanıcı bulundu")
+                
+                migrated_count = 0
+                
+                for user in users:
+                    user_id, username, email, password_hash, role = user
+                    
+                    # Eğer şifre zaten bcrypt formatındaysa (60 karakter ve $ ile başlıyorsa) atla
+                    if len(password_hash) == 60 and password_hash.startswith('$2b$'):
+                        print(f"⏭️  {username} - Şifre zaten bcrypt formatında")
+                        continue
+                    
+                    # Düz şifreyi bcrypt ile hash'le
+                    try:
+                        import bcrypt
+                        new_hash = bcrypt.hashpw(password_hash.encode('utf-8'), bcrypt.gensalt())
+                        
+                        # Veritabanını güncelle
+                        cursor.execute('''
+                            UPDATE users 
+                            SET password_hash = ?, updated_at = CURRENT_TIMESTAMP
+                            WHERE id = ?
+                        ''', (new_hash.decode('utf-8'), user_id))
+                        
+                        print(f"✅ {username} - Şifre bcrypt formatına dönüştürüldü")
+                        migrated_count += 1
+                        
+                    except ImportError:
+                        print(f"❌ {username} - bcrypt kütüphanesi bulunamadı, şifre dönüştürülemedi")
+                    except Exception as e:
+                        print(f"❌ {username} - Şifre dönüştürme hatası: {e}")
+                
+                conn.commit()
+                print(f"🎉 Migration tamamlandı! {migrated_count} kullanıcının şifresi dönüştürüldü.")
+                
+        except Exception as e:
+            print(f"❌ Migration hatası: {e}")
+            import traceback
+            traceback.print_exc()
     
     def authenticate_user(self, username, password):
         """Kullanıcı doğrulama (kullanıcı adı ile)"""
@@ -1274,7 +1374,7 @@ class BatteryDatabase:
             return None
     
     def authenticate_user_by_email(self, email, password):
-        """Kullanıcı doğrulama (email ile) - düz şifre"""
+        """Kullanıcı doğrulama (email ile) - bytescript ile"""
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
@@ -1285,8 +1385,8 @@ class BatteryDatabase:
                 
                 user = cursor.fetchone()
                 if user:
-                    # Düz şifre karşılaştırması
-                    if password == user[3]:
+                    import bcrypt
+                    if bcrypt.checkpw(password.encode('utf-8'), user[3].encode('utf-8')):
                         return {
                             'id': user[0],
                             'username': user[1],

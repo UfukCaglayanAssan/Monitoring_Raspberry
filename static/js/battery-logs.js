@@ -285,6 +285,54 @@ if (typeof window.BatteryLogsPage === 'undefined') {
     exportLogs() {
         // CSV export işlemi
         console.log('Export işlemi başlatıldı');
+        
+        try {
+            // Filtreleri hazırla
+            const exportFilters = {
+                arm: this.filters.arm || '',
+                battery: this.filters.battery || '',
+                start_date: this.filters.startDate || '',
+                end_date: this.filters.endDate || ''
+            };
+            
+            // API'ye export isteği gönder
+            fetch('/api/battery-logs/export', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    filters: exportFilters
+                })
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.blob();
+                }
+                throw new Error('Export hatası: ' + response.status);
+            })
+            .then(blob => {
+                // CSV dosyasını indir
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `battery_logs_export_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                console.log('Export başarılı');
+            })
+            .catch(error => {
+                console.error('Export hatası:', error);
+                alert('Export sırasında hata oluştu: ' + error.message);
+            });
+            
+        } catch (error) {
+            console.error('Export hatası:', error);
+            alert('Export sırasında hata oluştu: ' + error.message);
+        }
     }
     }; // Class kapanış süslü parantezi
 } // if statement kapanış süslü parantezi
@@ -298,9 +346,8 @@ function initBatteryLogsPage() {
     } else {
         // Mevcut instance varsa sadece veri yükle, init() çağırma
         console.log('🔄 Mevcut BatteryLogsPage instance kullanılıyor, sadece veri yükleniyor');
-        if (window.batteryLogsPage.isPageActive && !window.batteryLogsPage.isLoading) {
-            window.batteryLogsPage.loadLogs();
-        }
+        // Her zaman loadLogs() çağır
+        window.batteryLogsPage.loadLogs();
     }
 }
 

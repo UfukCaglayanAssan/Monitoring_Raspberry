@@ -325,9 +325,8 @@ function initArmLogsPage() {
     } else {
         // Mevcut instance varsa sadece veri yükle, init() çağırma
         console.log('🔄 Mevcut ArmLogsPage instance kullanılıyor, sadece veri yükleniyor');
-        if (window.armLogsPage.isPageActive && !window.armLogsPage.isLoading) {
-            window.armLogsPage.loadLogs();
-        }
+        // Her zaman loadLogs() çağır
+        window.armLogsPage.loadLogs();
     }
 }
 

@@ -91,18 +91,19 @@ def get_period_timestamp():
         current_period_timestamp = int(current_time * 1000)
         period_active = True
         last_data_received = current_time
-        # timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        # print(f"[{timestamp}] Yeni periyot başlatıldı: {current_period_timestamp}")
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print(f"🔄 PERİYOT BAŞLADI: {timestamp} - Timestamp: {current_period_timestamp}")
     
     return current_period_timestamp
 
 def reset_period():
     """Periyotu sıfırla"""
     global period_active, current_period_timestamp
+    old_timestamp = current_period_timestamp
     period_active = False
     current_period_timestamp = None
-    # timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    # print(f"[{timestamp}] Periyot sıfırlandı")
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(f"🔄 PERİYOT BİTTİ: {timestamp} - Eski Timestamp: {old_timestamp}")
 
 def update_last_k_value(new_value):
     """Thread-safe olarak last_k_value güncelle"""
@@ -179,6 +180,7 @@ def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False
     last_arm, last_battery = get_last_battery_info()
     
     if not last_arm or not last_battery:
+        print(f"🔍 PERİYOT KONTROL: last_arm={last_arm}, last_battery={last_battery} - Kontrol edilemiyor")
         return False
     
     # Debug: Periyot kontrol bilgilerini yazdır
@@ -199,6 +201,7 @@ def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False
         print(f"✅ PERİYOT TAMAMLANDI: Son batarya alarmı geldi - Kol {arm_value}, Batarya {k_value}")
         return True
     
+    print(f"⏳ PERİYOT DEVAM EDİYOR: Kol {arm_value}, k={k_value} - Beklenen: Kol {last_arm}, k={last_battery}")
     return False
 
 def send_reset_system_signal():
