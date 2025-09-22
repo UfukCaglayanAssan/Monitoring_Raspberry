@@ -40,6 +40,7 @@ if (typeof window.BatteryLogsPage === 'undefined') {
         });
 
         document.getElementById('exportLogs').addEventListener('click', () => {
+            console.log('Export butonu tıklandı!');
             this.exportLogs();
         });
 
@@ -285,6 +286,7 @@ if (typeof window.BatteryLogsPage === 'undefined') {
     exportLogs() {
         // CSV export işlemi
         console.log('Export işlemi başlatıldı');
+        console.log('Filtreler:', this.filters);
         
         try {
             // Filtreleri hazırla

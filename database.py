@@ -2656,20 +2656,13 @@ class BatteryDatabase:
                 # mail_recipients tablosuna yeni sütunları ekle (eğer yoksa)
                 
                 
-                # Index'leri oluştur (eğer yoksa)
-                print("🔍 Index'ler kontrol ediliyor...")
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_alarm_timestamp ON alarms(timestamp)')
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_k_arm_timestamp ON battery_data(k, arm, timestamp)')
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_arm_k_timestamp ON battery_data(arm, k, timestamp)')
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_timestamp_arm_k ON battery_data(timestamp, arm, k)')
-                print("✅ Index'ler oluşturuldu")
-                
                 conn.commit()
-                print("✅ Eksik tablolar ve index'ler başarıyla oluşturuldu")
+                print("✅ Eksik tablolar başarıyla oluşturuldu")
                 
         except Exception as e:
             print(f"❌ Eksik tablolar oluşturulurken hata: {e}")
             raise e
+    
 
     def _initialize_default_configs(self, cursor, arm_count=4):
         """Private: Default konfigürasyon değerlerini kaydet (cursor ile)"""
