@@ -839,6 +839,29 @@ class BatteryDatabase:
                 else:
                     print("✅ mail_server_config tablosu mevcut")
                 
+                # Passive balance tablosu
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='passive_balance'
+                """)
+                
+                if not cursor.fetchone():
+                    print("🔄 passive_balance tablosu eksik, oluşturuluyor...")
+                    cursor.execute('''
+                        CREATE TABLE IF NOT EXISTS passive_balance (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            arm INTEGER,
+                            slave INTEGER,
+                            status INTEGER,
+                            timestamp INTEGER,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )
+                    ''')
+                    conn.commit()
+                    print("✅ passive_balance tablosu oluşturuldu")
+                else:
+                    print("✅ passive_balance tablosu mevcut")
+                
                 # Arm slave counts tablosu
                 cursor.execute("""
                     SELECT name FROM sqlite_master 
