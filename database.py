@@ -1648,7 +1648,15 @@ class BatteryDatabase:
                 timestamp = datetime.fromtimestamp(row[0] / 1000).strftime('%Y-%m-%d %H:%M:%S')
                 battery_address = row[2] - 2  # k - 2 olarak göster
                 
-                csv_content += f"{timestamp},{row[1]},{battery_address},{row[3] or '-'},{row[4] or '-'},{row[5] or '-'},{row[6] or '-'},{row[7] or '-'},{row[8] or '-'}\n"
+                # 0.0 değerlerini de göster, sadece None değerleri için - kullan
+                voltage = row[3] if row[3] is not None else '-'
+                health_status = row[4] if row[4] is not None else '-'
+                temperature = row[5] if row[5] is not None else '-'
+                positive_pole_temp = row[6] if row[6] is not None else '-'
+                negative_pole_temp = row[7] if row[7] is not None else '-'
+                charge_status = row[8] if row[8] is not None else '-'
+                
+                csv_content += f"{timestamp},{row[1]},{battery_address},{voltage},{health_status},{temperature},{positive_pole_temp},{negative_pole_temp},{charge_status}\n"
             
             return csv_content
     
@@ -1701,7 +1709,13 @@ class BatteryDatabase:
             for row in rows:
                 timestamp = datetime.fromtimestamp(row[0] / 1000).strftime('%Y-%m-%d %H:%M:%S')
                 
-                csv_content += f"{row[1]},{timestamp},{row[2] or '-'},{row[3] or '-'},{row[4] or '-'},{row[5] or '-'}\n"
+                # 0.0 değerlerini de göster, sadece None değerleri için - kullan
+                current = row[2] if row[2] is not None else '-'
+                humidity = row[3] if row[3] is not None else '-'
+                module_temp = row[4] if row[4] is not None else '-'
+                ambient_temp = row[5] if row[5] is not None else '-'
+                
+                csv_content += f"{row[1]},{timestamp},{current},{humidity},{module_temp},{ambient_temp}\n"
             
             return csv_content
 

@@ -60,25 +60,25 @@ class IPManager:
             
             if not ethernet_connection:
                 # Yeni ethernet bağlantısı oluştur
-                subprocess.run(['nmcli', 'connection', 'add', 'type', 'ethernet', 'con-name', 'Static-Eth0', 'ifname', 'eth0'], check=True)
-                ethernet_connection = 'Static-Eth0'
+                subprocess.run(['nmcli', 'connection', 'add', 'type', 'ethernet', 'con-name', 'eth0', 'ifname', 'eth0'], check=True)
+                ethernet_connection = 'eth0'
                 print(f"✓ Yeni ethernet bağlantısı oluşturuldu: {ethernet_connection}")
             
             # Statik IP ayarla
             subprocess.run(['nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.addresses', f'{ip_address}/{self.get_cidr(subnet_mask)}'], check=True)
-            subprocess.run(['nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.gateway', gateway], check=True)
-            subprocess.run(['nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.dns', dns_servers], check=True)
+            if gateway:
+                subprocess.run(['nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.gateway', gateway], check=True)
+            if dns_servers:
+                subprocess.run(['nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.dns', dns_servers], check=True)
             subprocess.run(['nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.method', 'manual'], check=True)
             subprocess.run(['nmcli', 'connection', 'modify', ethernet_connection, 'connection.autoconnect', 'yes'], check=True)
             print(f"✓ Statik IP ayarlandı: {ip_address}")
             
-            # eth0'ı aktif et
-            subprocess.run(['ip', 'link', 'set', 'eth0', 'up'], check=True)
-            print("✓ eth0 aktif edildi")
-            
-            # Bağlantıyı aktif et
+            # Bağlantıyı yeniden başlat
+            subprocess.run(['nmcli', 'connection', 'down', ethernet_connection], check=True)
+            time.sleep(2)
             subprocess.run(['nmcli', 'connection', 'up', ethernet_connection], check=True)
-            print(f"✓ Bağlantı aktif edildi: {ethernet_connection}")
+            print(f"✓ Bağlantı yeniden başlatıldı: {ethernet_connection}")
             
             print(f"✅ NetworkManager ile statik IP atama tamamlandı: {ip_address}")
             
@@ -257,8 +257,8 @@ class IPManager:
                 is_active=True
             )
             
-            # Statik IP ataması yap
-            success = self.assign_static_ip(ip_address, subnet_mask, gateway, dns_servers)
+            # Mevcut eth0 bağlantısını güncelle
+            success = self.update_existing_connection(ip_address, subnet_mask, gateway, dns_servers)
             
             if success:
                 print(f"✅ IP konfigürasyonu güncellendi: {ip_address}")
@@ -269,6 +269,42 @@ class IPManager:
                 
         except Exception as e:
             print(f"❌ IP konfigürasyonu güncelleme hatası: {e}")
+            return False
+    
+    def update_existing_connection(self, ip_address, subnet_mask, gateway, dns_servers):
+        """Mevcut eth0 bağlantısını güncelle"""
+        try:
+            print(f"🔄 Mevcut eth0 bağlantısı güncelleniyor: {ip_address}")
+            
+            # IP adresini güncelle
+            subprocess.run(['nmcli', 'connection', 'modify', 'eth0', 'ipv4.addresses', f'{ip_address}/{self.get_cidr(subnet_mask)}'], check=True)
+            print(f"✓ IP adresi güncellendi: {ip_address}")
+            
+            # Gateway güncelle
+            if gateway:
+                subprocess.run(['nmcli', 'connection', 'modify', 'eth0', 'ipv4.gateway', gateway], check=True)
+                print(f"✓ Gateway güncellendi: {gateway}")
+            
+            # DNS güncelle
+            if dns_servers:
+                subprocess.run(['nmcli', 'connection', 'modify', 'eth0', 'ipv4.dns', dns_servers], check=True)
+                print(f"✓ DNS güncellendi: {dns_servers}")
+            
+            # Manuel mod ayarla
+            subprocess.run(['nmcli', 'connection', 'modify', 'eth0', 'ipv4.method', 'manual'], check=True)
+            print("✓ Manuel mod ayarlandı")
+            
+            # Bağlantıyı yeniden başlat
+            subprocess.run(['nmcli', 'connection', 'down', 'eth0'], check=True)
+            time.sleep(2)
+            subprocess.run(['nmcli', 'connection', 'up', 'eth0'], check=True)
+            print("✓ Bağlantı yeniden başlatıldı")
+            
+            print(f"✅ Mevcut bağlantı güncellendi: {ip_address}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Mevcut bağlantı güncelleme hatası: {e}")
             return False
 
 def main():

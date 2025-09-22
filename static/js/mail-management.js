@@ -313,14 +313,30 @@ if (typeof window.MailManagementPage === 'undefined') {
                 border-radius: 8px;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.3);
                 z-index: 10000;
-                animation: slideIn 0.3s ease;
+                font-size: 14px;
+                font-weight: 500;
+                min-width: 200px;
+                text-align: center;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
             `;
             
             document.body.appendChild(toast);
             
+            // Animasyon için kısa gecikme
             setTimeout(() => {
-                toast.remove();
-            }, 3000);
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateX(0)';
+            }, 10);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 4000); // 4 saniye göster
         }
 
         showError(message) {
@@ -338,14 +354,30 @@ if (typeof window.MailManagementPage === 'undefined') {
                 border-radius: 8px;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.3);
                 z-index: 10000;
-                animation: slideIn 0.3s ease;
+                font-size: 14px;
+                font-weight: 500;
+                min-width: 200px;
+                text-align: center;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
             `;
             
             document.body.appendChild(toast);
             
+            // Animasyon için kısa gecikme
             setTimeout(() => {
-                toast.remove();
-            }, 3000);
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateX(0)';
+            }, 10);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 4000); // 4 saniye göster
         }
 
         formatDate(dateString) {
