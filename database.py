@@ -397,13 +397,14 @@ class BatteryDatabase:
                 ''')
                 print("✓ Almanca çeviriler eklendi")
                 
-                # Index'ler oluştur
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_k_timestamp ON battery_data(k, timestamp)')
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_arm_k_dtype ON battery_data(arm, k, dtype)')
+                # Index'ler oluştur - sadece kullanılan filtreler için
                 cursor.execute('CREATE INDEX IF NOT EXISTS idx_alarm_timestamp ON alarms(timestamp)')
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_timestamp ON battery_data(timestamp)')
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_arm ON battery_data(arm)')
-                cursor.execute('CREATE INDEX IF NOT EXISTS idx_dtype ON battery_data(dtype)')
+                # Battery logs için: k > 2, arm, timestamp filtreleri
+                cursor.execute('CREATE INDEX IF NOT EXISTS idx_k_arm_timestamp ON battery_data(k, arm, timestamp)')
+                # Arm logs için: k = 2, arm, timestamp filtreleri  
+                cursor.execute('CREATE INDEX IF NOT EXISTS idx_arm_k_timestamp ON battery_data(arm, k, timestamp)')
+                # GROUP BY timestamp, arm, k için
+                cursor.execute('CREATE INDEX IF NOT EXISTS idx_timestamp_arm_k ON battery_data(timestamp, arm, k)')
                 print("✓ Index'ler oluşturuldu")
                 
                 conn.commit()
@@ -2378,36 +2379,18 @@ class BatteryDatabase:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 
-                # Basit SQL ile tüm verileri getir - eksik veri için son veriyi al
+                # Hızlı SQL - sadece mevcut verileri getir
                 query = '''
                     SELECT 
                         timestamp,
                         arm,
                         k as batteryAddress,
-                        COALESCE(
-                            MAX(CASE WHEN dtype = 10 THEN data END),
-                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = battery_data.k AND b2.dtype = 10 ORDER BY b2.timestamp DESC LIMIT 1)
-                        ) as voltage,
-                        COALESCE(
-                            MAX(CASE WHEN dtype = 11 THEN data END),
-                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = battery_data.k AND b2.dtype = 11 ORDER BY b2.timestamp DESC LIMIT 1)
-                        ) as health_status,
-                        COALESCE(
-                            MAX(CASE WHEN dtype = 12 THEN data END),
-                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = battery_data.k AND b2.dtype = 12 ORDER BY b2.timestamp DESC LIMIT 1)
-                        ) as temperature,
-                        COALESCE(
-                            MAX(CASE WHEN dtype = 13 THEN data END),
-                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = battery_data.k AND b2.dtype = 13 ORDER BY b2.timestamp DESC LIMIT 1)
-                        ) as positive_pole_temp,
-                        COALESCE(
-                            MAX(CASE WHEN dtype = 14 THEN data END),
-                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = battery_data.k AND b2.dtype = 14 ORDER BY b2.timestamp DESC LIMIT 1)
-                        ) as negative_pole_temp,
-                        COALESCE(
-                            MAX(CASE WHEN dtype = 126 THEN data END),
-                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = battery_data.k AND b2.dtype = 126 ORDER BY b2.timestamp DESC LIMIT 1)
-                        ) as charge_status
+                        MAX(CASE WHEN dtype = 10 THEN data END) as voltage,
+                        MAX(CASE WHEN dtype = 11 THEN data END) as health_status,
+                        MAX(CASE WHEN dtype = 12 THEN data END) as temperature,
+                        MAX(CASE WHEN dtype = 13 THEN data END) as positive_pole_temp,
+                        MAX(CASE WHEN dtype = 14 THEN data END) as negative_pole_temp,
+                        MAX(CASE WHEN dtype = 126 THEN data END) as charge_status
                     FROM battery_data 
                     WHERE k > 2
                 '''
@@ -2495,23 +2478,14 @@ class BatteryDatabase:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 
-                # Basit SQL ile tüm verileri getir - eksik veri için son veriyi al
+                # Hızlı SQL - sadece mevcut verileri getir
                 query = '''
                     SELECT 
                         timestamp,
                         arm,
-                        COALESCE(
-                            MAX(CASE WHEN dtype = 10 THEN data END),
-                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = 2 AND b2.dtype = 10 ORDER BY b2.timestamp DESC LIMIT 1)
-                        ) as current,
-                        COALESCE(
-                            MAX(CASE WHEN dtype = 11 THEN data END),
-                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = 2 AND b2.dtype = 11 ORDER BY b2.timestamp DESC LIMIT 1)
-                        ) as humidity,
-                        COALESCE(
-                            MAX(CASE WHEN dtype = 12 THEN data END),
-                            (SELECT data FROM battery_data b2 WHERE b2.arm = battery_data.arm AND b2.k = 2 AND b2.dtype = 12 ORDER BY b2.timestamp DESC LIMIT 1)
-                        ) as ambient_temperature
+                        MAX(CASE WHEN dtype = 10 THEN data END) as current,
+                        MAX(CASE WHEN dtype = 11 THEN data END) as humidity,
+                        MAX(CASE WHEN dtype = 12 THEN data END) as ambient_temperature
                     FROM battery_data 
                     WHERE k = 2
                 '''
@@ -2682,8 +2656,16 @@ class BatteryDatabase:
                 # mail_recipients tablosuna yeni sütunları ekle (eğer yoksa)
                 
                 
+                # Index'leri oluştur (eğer yoksa)
+                print("🔍 Index'ler kontrol ediliyor...")
+                cursor.execute('CREATE INDEX IF NOT EXISTS idx_alarm_timestamp ON alarms(timestamp)')
+                cursor.execute('CREATE INDEX IF NOT EXISTS idx_k_arm_timestamp ON battery_data(k, arm, timestamp)')
+                cursor.execute('CREATE INDEX IF NOT EXISTS idx_arm_k_timestamp ON battery_data(arm, k, timestamp)')
+                cursor.execute('CREATE INDEX IF NOT EXISTS idx_timestamp_arm_k ON battery_data(timestamp, arm, k)')
+                print("✅ Index'ler oluşturuldu")
+                
                 conn.commit()
-                print("✅ Eksik tablolar başarıyla oluşturuldu")
+                print("✅ Eksik tablolar ve index'ler başarıyla oluşturuldu")
                 
         except Exception as e:
             print(f"❌ Eksik tablolar oluşturulurken hata: {e}")
