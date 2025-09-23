@@ -5,6 +5,9 @@ class InterfaceIPSettingsPage {
         this.currentIpElement = document.getElementById('currentIp');
         this.refreshButton = document.getElementById('refreshIp');
         this.testButton = document.getElementById('testConnection');
+        this.staticIpFields = document.querySelectorAll('#staticIpFields');
+        this.ipMethodStatic = document.getElementById('ipMethodStatic');
+        this.ipMethodDhcp = document.getElementById('ipMethodDhcp');
         
         this.init();
     }
@@ -37,6 +40,15 @@ class InterfaceIPSettingsPage {
         // Form validation
         this.form.addEventListener('input', () => {
             this.validateForm();
+        });
+
+        // IP method radio button changes
+        this.ipMethodStatic.addEventListener('change', () => {
+            this.toggleStaticIpFields();
+        });
+
+        this.ipMethodDhcp.addEventListener('change', () => {
+            this.toggleStaticIpFields();
         });
     }
 
@@ -94,36 +106,82 @@ class InterfaceIPSettingsPage {
     }
 
     populateForm(config) {
+        // IP method'u belirle
+        if (config.use_dhcp) {
+            this.ipMethodDhcp.checked = true;
+            this.toggleStaticIpFields();
+        } else {
+            this.ipMethodStatic.checked = true;
+            this.toggleStaticIpFields();
+        }
+
+        // Statik IP alanlarını doldur
         document.getElementById('ipAddress').value = config.ip_address || '';
         document.getElementById('subnetMask').value = config.subnet_mask || '255.255.255.0';
         document.getElementById('gateway').value = config.gateway || '';
         document.getElementById('dnsServers').value = config.dns_servers || '';
     }
 
+    toggleStaticIpFields() {
+        const isStatic = this.ipMethodStatic.checked;
+        
+        this.staticIpFields.forEach(field => {
+            if (isStatic) {
+                field.classList.remove('hidden');
+                // Required attribute'ları ekle
+                const inputs = field.querySelectorAll('input, select');
+                inputs.forEach(input => {
+                    if (input.id === 'ipAddress' || input.id === 'subnetMask') {
+                        input.required = true;
+                    }
+                });
+            } else {
+                field.classList.add('hidden');
+                // Required attribute'ları kaldır
+                const inputs = field.querySelectorAll('input, select');
+                inputs.forEach(input => {
+                    input.required = false;
+                });
+            }
+        });
+        
+        // Form validasyonunu yeniden çalıştır
+        this.validateForm();
+    }
+
     async saveConfig() {
         try {
             const formData = new FormData(this.form);
+            const ipMethod = formData.get('ip_method');
+            const isDhcp = ipMethod === 'dhcp';
+            
             const config = {
-                ip_address: formData.get('ip_address'),
-                subnet_mask: formData.get('subnet_mask'),
-                gateway: formData.get('gateway'),
-                dns_servers: formData.get('dns_servers')
+                ip_method: ipMethod,
+                use_dhcp: isDhcp
             };
 
-            // Validation
-            if (!config.ip_address) {
-                this.showToast('IP adresi zorunludur', 'error');
-                return;
-            }
+            // DHCP seçilmediyse statik IP alanlarını ekle
+            if (!isDhcp) {
+                config.ip_address = formData.get('ip_address');
+                config.subnet_mask = formData.get('subnet_mask');
+                config.gateway = formData.get('gateway');
+                config.dns_servers = formData.get('dns_servers');
 
-            if (!this.isValidIP(config.ip_address)) {
-                this.showToast('Geçersiz IP adresi formatı', 'error');
-                return;
-            }
+                // Statik IP validasyonu
+                if (!config.ip_address) {
+                    this.showToast('IP adresi zorunludur', 'error');
+                    return;
+                }
 
-            if (config.gateway && !this.isValidIP(config.gateway)) {
-                this.showToast('Geçersiz Gateway IP adresi formatı', 'error');
-                return;
+                if (!this.isValidIP(config.ip_address)) {
+                    this.showToast('Geçersiz IP adresi formatı', 'error');
+                    return;
+                }
+
+                if (config.gateway && !this.isValidIP(config.gateway)) {
+                    this.showToast('Geçersiz Gateway IP adresi formatı', 'error');
+                    return;
+                }
             }
 
             console.log('IP konfigürasyonu kaydediliyor...', config);
@@ -166,6 +224,14 @@ class InterfaceIPSettingsPage {
             this.testButton.textContent = '🔄 Test Ediliyor...';
 
             const formData = new FormData(this.form);
+            const ipMethod = formData.get('ip_method');
+            const isDhcp = ipMethod === 'dhcp';
+            
+            if (isDhcp) {
+                this.showToast('DHCP seçildi - test gerekmez', 'info');
+                return;
+            }
+
             const config = {
                 ip_address: formData.get('ip_address'),
                 subnet_mask: formData.get('subnet_mask'),
@@ -206,10 +272,17 @@ class InterfaceIPSettingsPage {
     }
 
     validateForm() {
-        const ipAddress = document.getElementById('ipAddress').value;
         const saveButton = document.getElementById('saveIpConfig');
+        const isDhcp = this.ipMethodDhcp.checked;
         
-        const isValid = ipAddress.trim() !== '' && this.isValidIP(ipAddress);
+        let isValid = true;
+        
+        if (!isDhcp) {
+            // Statik IP validasyonu
+            const ipAddress = document.getElementById('ipAddress').value;
+            isValid = ipAddress.trim() !== '' && this.isValidIP(ipAddress);
+        }
+        
         if (saveButton) {
             saveButton.disabled = !isValid;
         }

@@ -26,14 +26,29 @@
 
             <form id="ipConfigForm" class="config-form">
                 <div class="form-group">
+                    <label>IP Atama Yöntemi *</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" id="ipMethodStatic" name="ip_method" value="static" checked>
+                            <span class="radio-text">Statik IP</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" id="ipMethodDhcp" name="ip_method" value="dhcp">
+                            <span class="radio-text">DHCP (Otomatik)</span>
+                        </label>
+                    </div>
+                    <small class="form-help">IP adresinin nasıl atanacağını seçin</small>
+                </div>
+
+                <div id="staticIpFields" class="form-group">
                     <label for="ipAddress">IP Adresi *</label>
-                    <input type="text" id="ipAddress" name="ip_address" placeholder="192.168.1.100" required>
+                    <input type="text" id="ipAddress" name="ip_address" placeholder="192.168.1.100">
                     <small class="form-help">Raspberry Pi'nin kullanacağı statik IP adresi</small>
                 </div>
 
-                <div class="form-group">
+                <div id="staticIpFields" class="form-group">
                     <label for="subnetMask">Alt Ağ Maskesi *</label>
-                    <select id="subnetMask" name="subnet_mask" required>
+                    <select id="subnetMask" name="subnet_mask">
                         <option value="255.255.255.0">255.255.255.0 (/24)</option>
                         <option value="255.255.0.0">255.255.0.0 (/16)</option>
                         <option value="255.0.0.0">255.0.0.0 (/8)</option>
@@ -41,13 +56,13 @@
                     <small class="form-help">Ağ alt ağ maskesi</small>
                 </div>
 
-                <div class="form-group">
+                <div id="staticIpFields" class="form-group">
                     <label for="gateway">Gateway (Varsayılan Ağ Geçidi)</label>
                     <input type="text" id="gateway" name="gateway" placeholder="192.168.1.1">
                     <small class="form-help">Genellikle router IP adresi</small>
                 </div>
 
-                <div class="form-group">
+                <div id="staticIpFields" class="form-group">
                     <label for="dnsServers">DNS Sunucuları</label>
                     <input type="text" id="dnsServers" name="dns_servers" placeholder="8.8.8.8,8.8.4.4">
                     <small class="form-help">Virgülle ayırın (örn: 8.8.8.8,8.8.4.4)</small>

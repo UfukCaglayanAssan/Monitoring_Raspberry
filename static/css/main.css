@@ -1361,3 +1361,75 @@ body {
         margin-bottom: 1rem;
     }
 }
+
+/* Radio Button Stilleri */
+.radio-group {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    background-color: #fff;
+    transition: all 0.3s ease;
+    user-select: none;
+}
+
+.radio-label:hover {
+    border-color: #667eea;
+    background-color: #f8f9ff;
+}
+
+.radio-label input[type="radio"] {
+    margin: 0;
+    margin-right: 0.5rem;
+    width: 16px;
+    height: 16px;
+    accent-color: #667eea;
+}
+
+.radio-label input[type="radio"]:checked + .radio-text {
+    color: #667eea;
+    font-weight: 600;
+}
+
+.radio-label:has(input[type="radio"]:checked) {
+    border-color: #667eea;
+    background-color: #f0f4ff;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.radio-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: #555;
+    transition: color 0.3s ease;
+}
+
+/* Statik IP Alanları Gizleme/Gösterme */
+#staticIpFields {
+    transition: all 0.3s ease;
+}
+
+#staticIpFields.hidden {
+    display: none;
+}
+
+/* Responsive Radio Buttons */
+@media (max-width: 768px) {
+    .radio-group {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .radio-label {
+        justify-content: center;
+        text-align: center;
+    }
+}

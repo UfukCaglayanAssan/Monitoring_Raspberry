@@ -41,6 +41,21 @@ class IPManager:
             print(f"❌ Statik IP ataması hatası: {e}")
             return False
     
+    def assign_dhcp_ip(self):
+        """DHCP ile IP ataması yap - NetworkManager kullanarak"""
+        try:
+            print("🔄 DHCP IP ataması yapılıyor...")
+            
+            # NetworkManager ile DHCP IP ata
+            self.assign_dhcp_ip_nm()
+            
+            print("✅ DHCP IP ataması tamamlandı")
+            return True
+            
+        except Exception as e:
+            print(f"❌ DHCP IP ataması hatası: {e}")
+            return False
+    
     def assign_static_ip_nm(self, ip_address, subnet_mask, gateway, dns_servers):
         """NetworkManager ile statik IP ata - Direkt çalışan yöntem"""
         try:
@@ -84,6 +99,46 @@ class IPManager:
             
         except Exception as e:
             print(f"❌ NetworkManager IP atama hatası: {e}")
+            raise
+    
+    def assign_dhcp_ip_nm(self):
+        """NetworkManager ile DHCP IP ata"""
+        try:
+            # eth0'ı yönetilebilir yap
+            subprocess.run(['nmcli', 'device', 'set', 'eth0', 'managed', 'yes'], check=True)
+            print("✓ eth0 yönetilebilir yapıldı")
+            
+            # Mevcut ethernet bağlantılarını kontrol et
+            result = subprocess.run(['nmcli', 'connection', 'show'], capture_output=True, text=True)
+            ethernet_connection = None
+            
+            if result.returncode == 0:
+                for line in result.stdout.split('\n'):
+                    if 'ethernet' in line.lower() and 'eth0' in line:
+                        ethernet_connection = line.split()[0]
+                        break
+            
+            if not ethernet_connection:
+                # Yeni ethernet bağlantısı oluştur
+                subprocess.run(['nmcli', 'connection', 'add', 'type', 'ethernet', 'con-name', 'eth0', 'ifname', 'eth0'], check=True)
+                ethernet_connection = 'eth0'
+                print(f"✓ Yeni ethernet bağlantısı oluşturuldu: {ethernet_connection}")
+            
+            # DHCP mod ayarla
+            subprocess.run(['nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.method', 'auto'], check=True)
+            subprocess.run(['nmcli', 'connection', 'modify', ethernet_connection, 'connection.autoconnect', 'yes'], check=True)
+            print("✓ DHCP mod ayarlandı")
+            
+            # Bağlantıyı yeniden başlat
+            subprocess.run(['nmcli', 'connection', 'down', ethernet_connection], check=True)
+            time.sleep(2)
+            subprocess.run(['nmcli', 'connection', 'up', ethernet_connection], check=True)
+            print(f"✓ Bağlantı yeniden başlatıldı: {ethernet_connection}")
+            
+            print("✅ NetworkManager ile DHCP IP atama tamamlandı")
+            
+        except Exception as e:
+            print(f"❌ NetworkManager DHCP IP atama hatası: {e}")
             raise
     
     def backup_dhcpcd_conf(self):
@@ -242,30 +297,55 @@ class IPManager:
             print(f"❌ Varsayılan IP ataması hatası: {e}")
             return False
     
-    def update_ip_config(self, ip_address, subnet_mask, gateway, dns_servers):
+    def update_ip_config(self, ip_address=None, subnet_mask=None, gateway=None, dns_servers=None, use_dhcp=False):
         """IP konfigürasyonunu güncelle"""
         try:
-            print(f"🔄 IP konfigürasyonu güncelleniyor: {ip_address}")
-            
-            # Veritabanını güncelle
-            self.db.save_ip_config(
-                ip_address=ip_address,
-                subnet_mask=subnet_mask,
-                gateway=gateway,
-                dns_servers=dns_servers,
-                is_assigned=True,
-                is_active=True
-            )
-            
-            # Mevcut eth0 bağlantısını güncelle
-            success = self.update_existing_connection(ip_address, subnet_mask, gateway, dns_servers)
-            
-            if success:
-                print(f"✅ IP konfigürasyonu güncellendi: {ip_address}")
-                return True
+            if use_dhcp:
+                print("🔄 DHCP IP konfigürasyonu güncelleniyor...")
+                
+                # Veritabanını güncelle (DHCP için)
+                self.db.save_ip_config(
+                    ip_address="DHCP",
+                    subnet_mask="",
+                    gateway="",
+                    dns_servers="",
+                    is_assigned=True,
+                    is_active=True,
+                    use_dhcp=True
+                )
+                
+                # DHCP IP ataması yap
+                success = self.assign_dhcp_ip()
+                
+                if success:
+                    print("✅ DHCP IP konfigürasyonu güncellendi")
+                    return True
+                else:
+                    print("❌ DHCP IP konfigürasyonu güncelleme başarısız")
+                    return False
             else:
-                print("❌ IP konfigürasyonu güncelleme başarısız")
-                return False
+                print(f"🔄 Statik IP konfigürasyonu güncelleniyor: {ip_address}")
+                
+                # Veritabanını güncelle
+                self.db.save_ip_config(
+                    ip_address=ip_address,
+                    subnet_mask=subnet_mask,
+                    gateway=gateway,
+                    dns_servers=dns_servers,
+                    is_assigned=True,
+                    is_active=True,
+                    use_dhcp=False
+                )
+                
+                # Mevcut eth0 bağlantısını güncelle
+                success = self.update_existing_connection(ip_address, subnet_mask, gateway, dns_servers)
+                
+                if success:
+                    print(f"✅ Statik IP konfigürasyonu güncellendi: {ip_address}")
+                    return True
+                else:
+                    print("❌ Statik IP konfigürasyonu güncelleme başarısız")
+                    return False
                 
         except Exception as e:
             print(f"❌ IP konfigürasyonu güncelleme hatası: {e}")
@@ -310,7 +390,7 @@ class IPManager:
 def main():
     """Ana fonksiyon"""
     if len(sys.argv) < 2:
-        print("Kullanım: python ip_manager.py [init|update] [ip] [subnet] [gateway] [dns]")
+        print("Kullanım: python ip_manager.py [init|update|dhcp] [ip] [subnet] [gateway] [dns]")
         sys.exit(1)
     
     command = sys.argv[1]
@@ -322,7 +402,7 @@ def main():
         sys.exit(0 if success else 1)
         
     elif command == "update":
-        # IP güncelleme
+        # Statik IP güncelleme
         if len(sys.argv) < 6:
             print("Güncelleme için: python ip_manager.py update <ip> <subnet> <gateway> <dns>")
             sys.exit(1)
@@ -332,11 +412,16 @@ def main():
         gateway = sys.argv[4]
         dns_servers = sys.argv[5]
         
-        success = ip_manager.update_ip_config(ip_address, subnet_mask, gateway, dns_servers)
+        success = ip_manager.update_ip_config(ip_address, subnet_mask, gateway, dns_servers, use_dhcp=False)
+        sys.exit(0 if success else 1)
+        
+    elif command == "dhcp":
+        # DHCP IP güncelleme
+        success = ip_manager.update_ip_config(use_dhcp=True)
         sys.exit(0 if success else 1)
         
     else:
-        print("Geçersiz komut. Kullanım: init veya update")
+        print("Geçersiz komut. Kullanım: init, update veya dhcp")
         sys.exit(1)
 
 if __name__ == "__main__":

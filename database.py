@@ -960,6 +960,7 @@ class BatteryDatabase:
                             dns_servers TEXT,
                             is_assigned BOOLEAN DEFAULT 0,
                             is_active BOOLEAN DEFAULT 0,
+                            use_dhcp BOOLEAN DEFAULT 0,
                             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                             CONSTRAINT single_ip_config CHECK (id = 1)
@@ -969,6 +970,14 @@ class BatteryDatabase:
                     print("✅ ip_config tablosu oluşturuldu")
                 else:
                     print("✅ ip_config tablosu mevcut")
+                    # use_dhcp sütunu var mı kontrol et
+                    cursor.execute("PRAGMA table_info(ip_config)")
+                    columns = [column[1] for column in cursor.fetchall()]
+                    if 'use_dhcp' not in columns:
+                        print("🔄 use_dhcp sütunu eksik, ekleniyor...")
+                        cursor.execute("ALTER TABLE ip_config ADD COLUMN use_dhcp BOOLEAN DEFAULT 0")
+                        conn.commit()
+                        print("✅ use_dhcp sütunu eklendi")
                 
                 # reset_system_log tablosu var mı kontrol et
                 cursor.execute("""
@@ -2829,7 +2838,7 @@ class BatteryDatabase:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
-                    SELECT ip_address, subnet_mask, gateway, dns_servers, is_assigned, is_active
+                    SELECT ip_address, subnet_mask, gateway, dns_servers, is_assigned, is_active, use_dhcp
                     FROM ip_config 
                     WHERE id = 1
                 """)
@@ -2841,14 +2850,15 @@ class BatteryDatabase:
                         'gateway': result[2],
                         'dns_servers': result[3],
                         'is_assigned': bool(result[4]),
-                        'is_active': bool(result[5])
+                        'is_active': bool(result[5]),
+                        'use_dhcp': bool(result[6]) if len(result) > 6 else False
                     }
                 return None
         except Exception as e:
             print(f"IP konfigürasyonu getirilirken hata: {e}")
             return None
     
-    def save_ip_config(self, ip_address, subnet_mask, gateway, dns_servers, is_assigned=False, is_active=True):
+    def save_ip_config(self, ip_address, subnet_mask, gateway, dns_servers, is_assigned=False, is_active=True, use_dhcp=False):
         """IP konfigürasyonunu kaydet veya güncelle"""
         try:
             with self.get_connection() as conn:
@@ -2864,16 +2874,16 @@ class BatteryDatabase:
                         UPDATE ip_config 
                         SET ip_address = ?, subnet_mask = ?, gateway = ?, 
                             dns_servers = ?, is_assigned = ?, is_active = ?, 
-                            updated_at = CURRENT_TIMESTAMP
+                            use_dhcp = ?, updated_at = CURRENT_TIMESTAMP
                         WHERE id = 1
-                    """, (ip_address, subnet_mask, gateway, dns_servers, is_assigned, is_active))
+                    """, (ip_address, subnet_mask, gateway, dns_servers, is_assigned, is_active, use_dhcp))
                 else:
                     # Yeni kayıt oluştur
                     cursor.execute("""
                         INSERT INTO ip_config 
-                        (id, ip_address, subnet_mask, gateway, dns_servers, is_assigned, is_active)
-                        VALUES (1, ?, ?, ?, ?, ?, ?)
-                    """, (ip_address, subnet_mask, gateway, dns_servers, is_assigned, is_active))
+                        (id, ip_address, subnet_mask, gateway, dns_servers, is_assigned, is_active, use_dhcp)
+                        VALUES (1, ?, ?, ?, ?, ?, ?, ?)
+                    """, (ip_address, subnet_mask, gateway, dns_servers, is_assigned, is_active, use_dhcp))
                 
                 conn.commit()
                 return True

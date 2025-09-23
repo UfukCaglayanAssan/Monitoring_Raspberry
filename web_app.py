@@ -1254,27 +1254,43 @@ def save_ip_config():
         print(f"🔄 IP konfigürasyonu kaydediliyor... {request.get_json()}")
         data = request.get_json()
         
-        # Gerekli alanları kontrol et
-        required_fields = ['ip_address']
-        for field in required_fields:
-            if field not in data or not data[field]:
-                print(f"❌ Eksik alan: {field}")
-                return jsonify({
-                    'success': False,
-                    'message': f'{field} alanı zorunludur'
-                }), 400
+        # IP method kontrolü
+        use_dhcp = data.get('use_dhcp', False)
+        
+        if not use_dhcp:
+            # Statik IP için gerekli alanları kontrol et
+            required_fields = ['ip_address']
+            for field in required_fields:
+                if field not in data or not data[field]:
+                    print(f"❌ Eksik alan: {field}")
+                    return jsonify({
+                        'success': False,
+                        'message': f'{field} alanı zorunludur'
+                    }), 400
         
         def save_config():
             db_instance = get_db()
             with db_lock:
-                return db_instance.save_ip_config(
-                    ip_address=data['ip_address'],
-                    subnet_mask=data.get('subnet_mask', '255.255.255.0'),
-                    gateway=data.get('gateway', ''),
-                    dns_servers=data.get('dns_servers', '8.8.8.8,8.8.4.4'),
-                    is_assigned=True,
-                    is_active=True
-                )
+                if use_dhcp:
+                    return db_instance.save_ip_config(
+                        ip_address="DHCP",
+                        subnet_mask="",
+                        gateway="",
+                        dns_servers="",
+                        is_assigned=True,
+                        is_active=True,
+                        use_dhcp=True
+                    )
+                else:
+                    return db_instance.save_ip_config(
+                        ip_address=data['ip_address'],
+                        subnet_mask=data.get('subnet_mask', '255.255.255.0'),
+                        gateway=data.get('gateway', ''),
+                        dns_servers=data.get('dns_servers', '8.8.8.8,8.8.4.4'),
+                        is_assigned=True,
+                        is_active=True,
+                        use_dhcp=False
+                    )
         
         print("💾 Veritabanına kaydediliyor...")
         success = db_operation_with_retry(save_config)
@@ -1289,12 +1305,16 @@ def save_ip_config():
                 
                 print("🔄 IP konfigürasyonu güncelleniyor...")
                 # IP konfigürasyonunu güncelle
-                update_success = ip_manager.update_ip_config(
-                    ip_address=data['ip_address'],
-                    subnet_mask=data.get('subnet_mask', '255.255.255.0'),
-                    gateway=data.get('gateway', ''),
-                    dns_servers=data.get('dns_servers', '8.8.8.8,8.8.4.4')
-                )
+                if use_dhcp:
+                    update_success = ip_manager.update_ip_config(use_dhcp=True)
+                else:
+                    update_success = ip_manager.update_ip_config(
+                        ip_address=data['ip_address'],
+                        subnet_mask=data.get('subnet_mask', '255.255.255.0'),
+                        gateway=data.get('gateway', ''),
+                        dns_servers=data.get('dns_servers', '8.8.8.8,8.8.4.4'),
+                        use_dhcp=False
+                    )
                 print(f"✅ IP güncelleme sonucu: {update_success}")
                 
                 if update_success:
