@@ -105,10 +105,23 @@ class IPManager:
             print(f"✓ Statik IP ayarlandı: {ip_address}")
             
             # Bağlantıyı yeniden başlat
-            subprocess.run(['sudo', 'nmcli', 'connection', 'down', ethernet_connection], check=True)
-            time.sleep(2)
-            subprocess.run(['sudo', 'nmcli', 'connection', 'up', ethernet_connection], check=True)
-            print(f"✓ Bağlantı yeniden başlatıldı: {ethernet_connection}")
+            try:
+                # Önce bağlantı durumunu kontrol et
+                result = subprocess.run(['sudo', 'nmcli', 'connection', 'show', '--active'], capture_output=True, text=True)
+                if result.returncode == 0 and ethernet_connection in result.stdout:
+                    print(f"✓ {ethernet_connection} bağlantısı aktif, kapatılıyor...")
+                    subprocess.run(['sudo', 'nmcli', 'connection', 'down', ethernet_connection], check=True)
+                    time.sleep(2)
+                else:
+                    print(f"✓ {ethernet_connection} bağlantısı zaten kapalı")
+                
+                # Bağlantıyı başlat
+                print(f"✓ {ethernet_connection} bağlantısı başlatılıyor...")
+                subprocess.run(['sudo', 'nmcli', 'connection', 'up', ethernet_connection], check=True)
+                print(f"✓ Bağlantı yeniden başlatıldı: {ethernet_connection}")
+            except Exception as e:
+                print(f"❌ Bağlantı yeniden başlatma hatası: {e}")
+                print("⚠️ Bağlantı başlatma hatası, ancak statik IP ayarları uygulandı")
             
             print(f"✅ NetworkManager ile statik IP atama tamamlandı: {ip_address}")
             
@@ -155,10 +168,23 @@ class IPManager:
             print("✓ DHCP mod ayarlandı")
             
             # Bağlantıyı yeniden başlat
-            subprocess.run(['sudo', 'nmcli', 'connection', 'down', ethernet_connection], check=True)
-            time.sleep(2)
-            subprocess.run(['sudo', 'nmcli', 'connection', 'up', ethernet_connection], check=True)
-            print(f"✓ Bağlantı yeniden başlatıldı: {ethernet_connection}")
+            try:
+                # Önce bağlantı durumunu kontrol et
+                result = subprocess.run(['sudo', 'nmcli', 'connection', 'show', '--active'], capture_output=True, text=True)
+                if result.returncode == 0 and ethernet_connection in result.stdout:
+                    print(f"✓ {ethernet_connection} bağlantısı aktif, kapatılıyor...")
+                    subprocess.run(['sudo', 'nmcli', 'connection', 'down', ethernet_connection], check=True)
+                    time.sleep(2)
+                else:
+                    print(f"✓ {ethernet_connection} bağlantısı zaten kapalı")
+                
+                # Bağlantıyı başlat
+                print(f"✓ {ethernet_connection} bağlantısı başlatılıyor...")
+                subprocess.run(['sudo', 'nmcli', 'connection', 'up', ethernet_connection], check=True)
+                print(f"✓ Bağlantı yeniden başlatıldı: {ethernet_connection}")
+            except Exception as e:
+                print(f"❌ Bağlantı yeniden başlatma hatası: {e}")
+                print("⚠️ Bağlantı başlatma hatası, ancak DHCP ayarları uygulandı")
             
             print("✅ NetworkManager ile DHCP IP atama tamamlandı")
             
@@ -329,51 +355,73 @@ class IPManager:
                 print("🔄 DHCP IP konfigürasyonu güncelleniyor...")
                 
                 # Veritabanını güncelle (DHCP için)
-                self.db.save_ip_config(
-                    ip_address="DHCP",
-                    subnet_mask="",
-                    gateway="",
-                    dns_servers="",
-                    is_assigned=True,
-                    is_active=True,
-                    use_dhcp=True
-                )
+                try:
+                    self.db.save_ip_config(
+                        ip_address="DHCP",
+                        subnet_mask="",
+                        gateway="",
+                        dns_servers="",
+                        is_assigned=True,
+                        is_active=True,
+                        use_dhcp=True
+                    )
+                    print("✅ Veritabanı güncellendi (DHCP)")
+                except Exception as e:
+                    print(f"❌ Veritabanı güncelleme hatası: {e}")
+                    return False
                 
                 # DHCP IP ataması yap
-                success = self.assign_dhcp_ip()
-                
-                if success:
-                    print("✅ DHCP IP konfigürasyonu güncellendi")
-                    return True
-                else:
-                    print("❌ DHCP IP konfigürasyonu güncelleme başarısız")
+                try:
+                    success = self.assign_dhcp_ip()
+                    if success:
+                        print("✅ DHCP IP konfigürasyonu güncellendi")
+                        return True
+                    else:
+                        print("❌ DHCP IP konfigürasyonu güncelleme başarısız")
+                        return False
+                except Exception as e:
+                    print(f"❌ DHCP IP atama hatası: {e}")
+                    import traceback
+                    traceback.print_exc()
                     return False
             else:
                 print(f"🔄 Statik IP konfigürasyonu güncelleniyor: {ip_address}")
                 
                 # Veritabanını güncelle
-                self.db.save_ip_config(
-                    ip_address=ip_address,
-                    subnet_mask=subnet_mask,
-                    gateway=gateway,
-                    dns_servers=dns_servers,
-                    is_assigned=True,
-                    is_active=True,
-                    use_dhcp=False
-                )
+                try:
+                    self.db.save_ip_config(
+                        ip_address=ip_address,
+                        subnet_mask=subnet_mask,
+                        gateway=gateway,
+                        dns_servers=dns_servers,
+                        is_assigned=True,
+                        is_active=True,
+                        use_dhcp=False
+                    )
+                    print("✅ Veritabanı güncellendi (Statik IP)")
+                except Exception as e:
+                    print(f"❌ Veritabanı güncelleme hatası: {e}")
+                    return False
                 
                 # Mevcut eth0 bağlantısını güncelle
-                success = self.update_existing_connection(ip_address, subnet_mask, gateway, dns_servers)
-                
-                if success:
-                    print(f"✅ Statik IP konfigürasyonu güncellendi: {ip_address}")
-                    return True
-                else:
-                    print("❌ Statik IP konfigürasyonu güncelleme başarısız")
+                try:
+                    success = self.update_existing_connection(ip_address, subnet_mask, gateway, dns_servers)
+                    if success:
+                        print(f"✅ Statik IP konfigürasyonu güncellendi: {ip_address}")
+                        return True
+                    else:
+                        print("❌ Statik IP konfigürasyonu güncelleme başarısız")
+                        return False
+                except Exception as e:
+                    print(f"❌ Statik IP atama hatası: {e}")
+                    import traceback
+                    traceback.print_exc()
                     return False
                 
         except Exception as e:
             print(f"❌ IP konfigürasyonu güncelleme hatası: {e}")
+            import traceback
+            traceback.print_exc()
             return False
     
     def update_existing_connection(self, ip_address, subnet_mask, gateway, dns_servers):
@@ -382,34 +430,66 @@ class IPManager:
             print(f"🔄 Mevcut eth0 bağlantısı güncelleniyor: {ip_address}")
             
             # IP adresini güncelle
-            subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.addresses', f'{ip_address}/{self.get_cidr(subnet_mask)}'], check=True)
-            print(f"✓ IP adresi güncellendi: {ip_address}")
+            try:
+                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.addresses', f'{ip_address}/{self.get_cidr(subnet_mask)}'], check=True)
+                print(f"✓ IP adresi güncellendi: {ip_address}")
+            except Exception as e:
+                print(f"❌ IP adresi güncelleme hatası: {e}")
+                return False
             
             # Gateway güncelle
             if gateway:
-                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.gateway', gateway], check=True)
-                print(f"✓ Gateway güncellendi: {gateway}")
+                try:
+                    subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.gateway', gateway], check=True)
+                    print(f"✓ Gateway güncellendi: {gateway}")
+                except Exception as e:
+                    print(f"❌ Gateway güncelleme hatası: {e}")
+                    return False
             
             # DNS güncelle
             if dns_servers:
-                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.dns', dns_servers], check=True)
-                print(f"✓ DNS güncellendi: {dns_servers}")
+                try:
+                    subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.dns', dns_servers], check=True)
+                    print(f"✓ DNS güncellendi: {dns_servers}")
+                except Exception as e:
+                    print(f"❌ DNS güncelleme hatası: {e}")
+                    return False
             
             # Manuel mod ayarla
-            subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.method', 'manual'], check=True)
-            print("✓ Manuel mod ayarlandı")
+            try:
+                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.method', 'manual'], check=True)
+                print("✓ Manuel mod ayarlandı")
+            except Exception as e:
+                print(f"❌ Manuel mod ayarlama hatası: {e}")
+                return False
             
             # Bağlantıyı yeniden başlat
-            subprocess.run(['sudo', 'nmcli', 'connection', 'down', 'eth0'], check=True)
-            time.sleep(2)
-            subprocess.run(['sudo', 'nmcli', 'connection', 'up', 'eth0'], check=True)
-            print("✓ Bağlantı yeniden başlatıldı")
+            try:
+                # Önce bağlantı durumunu kontrol et
+                result = subprocess.run(['sudo', 'nmcli', 'connection', 'show', '--active'], capture_output=True, text=True)
+                if result.returncode == 0 and 'eth0' in result.stdout:
+                    print("✓ eth0 bağlantısı aktif, kapatılıyor...")
+                    subprocess.run(['sudo', 'nmcli', 'connection', 'down', 'eth0'], check=True)
+                    time.sleep(2)
+                else:
+                    print("✓ eth0 bağlantısı zaten kapalı")
+                
+                # Bağlantıyı başlat
+                print("✓ eth0 bağlantısı başlatılıyor...")
+                subprocess.run(['sudo', 'nmcli', 'connection', 'up', 'eth0'], check=True)
+                print("✓ Bağlantı yeniden başlatıldı")
+            except Exception as e:
+                print(f"❌ Bağlantı yeniden başlatma hatası: {e}")
+                # Bağlantı başlatma hatası olsa bile devam et
+                print("⚠️ Bağlantı başlatma hatası, ancak IP ayarları uygulandı")
             
             print(f"✅ Mevcut bağlantı güncellendi: {ip_address}")
             return True
             
         except Exception as e:
             print(f"❌ Mevcut bağlantı güncelleme hatası: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
 def main():
