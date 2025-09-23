@@ -16,6 +16,19 @@ class InterfaceIPSettingsPage {
         this.loadCurrentIP();
         this.loadConfig();
         this.bindEvents();
+        this.initializeForm();
+    }
+
+    initializeForm() {
+        // Form alanlarını temizle ve varsayılan değerleri ayarla
+        document.getElementById('ipAddress').value = '';
+        document.getElementById('subnetMask').value = '255.255.255.0';
+        document.getElementById('gateway').value = '';
+        document.getElementById('dnsServers').value = '';
+        
+        // Varsayılan olarak Statik IP seçili olsun
+        this.ipMethodStatic.checked = true;
+        this.toggleStaticIpFields();
     }
 
     bindEvents() {
@@ -88,8 +101,14 @@ class InterfaceIPSettingsPage {
                 const data = await response.json();
                 
                 if (data.success && data.config) {
-                    this.populateForm(data.config);
-                    this.updateStatus('active', 'IP Ataması Yapılmış');
+                    // Sadece durumu güncelle, form alanlarını doldurma
+                    if (data.config.use_dhcp) {
+                        this.updateStatus('active', 'DHCP Aktif');
+                    } else if (data.config.is_assigned) {
+                        this.updateStatus('active', 'Statik IP Aktif');
+                    } else {
+                        this.updateStatus('inactive', 'IP Ataması Yok');
+                    }
                     console.log('✓ IP konfigürasyonu yüklendi:', data.config);
                 } else {
                     this.updateStatus('inactive', 'IP Ataması Yok');
@@ -105,22 +124,6 @@ class InterfaceIPSettingsPage {
         }
     }
 
-    populateForm(config) {
-        // IP method'u belirle
-        if (config.use_dhcp) {
-            this.ipMethodDhcp.checked = true;
-            this.toggleStaticIpFields();
-        } else {
-            this.ipMethodStatic.checked = true;
-            this.toggleStaticIpFields();
-        }
-
-        // Statik IP alanlarını doldur
-        document.getElementById('ipAddress').value = config.ip_address || '';
-        document.getElementById('subnetMask').value = config.subnet_mask || '255.255.255.0';
-        document.getElementById('gateway').value = config.gateway || '';
-        document.getElementById('dnsServers').value = config.dns_servers || '';
-    }
 
     toggleStaticIpFields() {
         const isStatic = this.ipMethodStatic.checked;

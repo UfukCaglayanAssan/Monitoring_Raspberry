@@ -1204,15 +1204,24 @@ def test_mail_connection():
 
 @app.route('/api/current-ip', methods=['GET'])
 def get_current_ip():
-    """Mevcut IP adresini getir"""
+    """Mevcut IP adresini getir - sadece hostname -I komutundan"""
     try:
         import subprocess
         result = subprocess.run(['hostname', '-I'], capture_output=True, text=True)
         if result.returncode == 0:
             ips = result.stdout.strip().split()
-            current_ip = ips[0] if ips else 'Bilinmiyor'
+            # Sadece IPv4 adreslerini al (IPv6'ları filtrele)
+            ipv4_ips = []
+            for ip in ips:
+                if '.' in ip and ':' not in ip:  # IPv4 kontrolü
+                    ipv4_ips.append(ip)
+            
+            if ipv4_ips:
+                current_ip = ipv4_ips[0]  # İlk IPv4 adresini al
+            else:
+                current_ip = 'IP Bulunamadı'
         else:
-            current_ip = 'Bilinmiyor'
+            current_ip = 'Komut Hatası'
         
         return jsonify({
             'success': True,
