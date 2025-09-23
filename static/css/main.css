@@ -192,6 +192,7 @@ body {
     height: 16px !important;
     font-size: 10px !important;
     font-weight: bold !important;
+    padding-top: 2px !important;
     /* display: flex !important; - JavaScript kontrol ediyor */
     align-items: center !important;
     justify-content: center !important;

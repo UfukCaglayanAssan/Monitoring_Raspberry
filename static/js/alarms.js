@@ -46,6 +46,9 @@ if (typeof window.AlarmsPage === 'undefined') {
             toggleButton.disabled = false;
             toggleButton.classList.remove('btn-disabled');
         }
+        
+        // Event listener'ları yeniden bağla
+        this.bindEvents();
     }
 
     // Alarm geçmişini yükle (sadece çözülmüş alarmlar)
@@ -71,31 +74,57 @@ if (typeof window.AlarmsPage === 'undefined') {
     }
 
     bindEvents() {
-        // Event listener'ları sadece bir kez ekle
-        if (this.eventsBound) {
-            console.log('⚠️ Event listener\'lar zaten bağlı, atlanıyor');
-            return;
-        }
+        // Önce mevcut event listener'ları kaldır
+        this.unbindEvents();
         
         // Alarm geçmişi toggle butonu
         const toggleBtn = document.getElementById('toggleAlarmHistory');
         if (toggleBtn) {
-            toggleBtn.addEventListener('click', () => {
+            this.toggleHandler = () => {
                 this.toggleAlarmHistory();
-            });
+            };
+            toggleBtn.addEventListener('click', this.toggleHandler);
         }
 
         // Sayfalama butonları
-        document.getElementById('prevPage')?.addEventListener('click', () => {
-            this.previousPage();
-        });
+        const prevBtn = document.getElementById('prevPage');
+        if (prevBtn) {
+            this.prevHandler = () => {
+                this.previousPage();
+            };
+            prevBtn.addEventListener('click', this.prevHandler);
+        }
 
-        document.getElementById('nextPage')?.addEventListener('click', () => {
-            this.nextPage();
-        });
+        const nextBtn = document.getElementById('nextPage');
+        if (nextBtn) {
+            this.nextHandler = () => {
+                this.nextPage();
+            };
+            nextBtn.addEventListener('click', this.nextHandler);
+        }
         
         this.eventsBound = true;
         console.log('✅ Event listener\'lar bağlandı');
+    }
+
+    unbindEvents() {
+        // Mevcut event listener'ları kaldır
+        const toggleBtn = document.getElementById('toggleAlarmHistory');
+        if (toggleBtn && this.toggleHandler) {
+            toggleBtn.removeEventListener('click', this.toggleHandler);
+        }
+
+        const prevBtn = document.getElementById('prevPage');
+        if (prevBtn && this.prevHandler) {
+            prevBtn.removeEventListener('click', this.prevHandler);
+        }
+
+        const nextBtn = document.getElementById('nextPage');
+        if (nextBtn && this.nextHandler) {
+            nextBtn.removeEventListener('click', this.nextHandler);
+        }
+        
+        this.eventsBound = false;
     }
 
     // Alarm geçmişi toggle fonksiyonu
