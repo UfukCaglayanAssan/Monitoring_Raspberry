@@ -104,6 +104,14 @@ class IPManager:
             subprocess.run(['sudo', 'nmcli', 'connection', 'modify', ethernet_connection, 'connection.autoconnect', 'yes'], check=True)
             print(f"✓ Statik IP ayarlandı: {ip_address}")
             
+            # dhcpcd servisini etkinleştir (statik IP için)
+            try:
+                subprocess.run(['sudo', 'systemctl', 'enable', 'dhcpcd'], check=True)
+                subprocess.run(['sudo', 'systemctl', 'start', 'dhcpcd'], check=True)
+                print("✓ dhcpcd servisi etkinleştirildi")
+            except Exception as e:
+                print(f"⚠️ dhcpcd servisi etkinleştirilemedi: {e}")
+            
             # Bağlantıyı yeniden başlat
             try:
                 # Önce bağlantı durumunu kontrol et
@@ -155,35 +163,64 @@ class IPManager:
             # Statik IP ayarlarını temizle
             print("🔄 Statik IP ayarları temizleniyor...")
             try:
+                # Tüm statik IP ayarlarını temizle
                 subprocess.run(['sudo', 'nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.addresses', ''], check=True)
                 subprocess.run(['sudo', 'nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.gateway', ''], check=True)
                 subprocess.run(['sudo', 'nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.dns', ''], check=True)
+                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.routes', ''], check=True)
+                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.ignore-auto-routes', 'false'], check=True)
+                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.ignore-auto-dns', 'false'], check=True)
                 print("✓ Statik IP ayarları temizlendi")
+                
+                # Bağlantıyı kapat
+                try:
+                    result = subprocess.run(['sudo', 'nmcli', 'connection', 'show', '--active'], capture_output=True, text=True)
+                    if result.returncode == 0 and ethernet_connection in result.stdout:
+                        subprocess.run(['sudo', 'nmcli', 'connection', 'down', ethernet_connection], check=True)
+                        print("✓ Bağlantı kapatıldı")
+                except Exception as e:
+                    print(f"⚠️ Bağlantı kapatma hatası: {e}")
+                
+                # Tüm IP'leri temizle (en etkili yöntem)
+                try:
+                    subprocess.run(['sudo', 'ip', 'addr', 'flush', 'dev', 'eth0'], check=True)
+                    print("✓ Tüm IP adresleri temizlendi (ip addr flush)")
+                except Exception as e:
+                    print(f"⚠️ IP temizleme hatası: {e}")
+                    
             except Exception as e:
                 print(f"⚠️ Statik IP ayarları temizlenirken hata: {e}")
+            
+            # dhcpcd servisini devre dışı bırak (statik IP ayarlarını temizlemek için)
+            try:
+                subprocess.run(['sudo', 'systemctl', 'stop', 'dhcpcd'], check=True)
+                subprocess.run(['sudo', 'systemctl', 'disable', 'dhcpcd'], check=True)
+                print("✓ dhcpcd servisi devre dışı bırakıldı")
+            except Exception as e:
+                print(f"⚠️ dhcpcd servisi devre dışı bırakılamadı: {e}")
             
             # DHCP mod ayarla
             subprocess.run(['sudo', 'nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.method', 'auto'], check=True)
             subprocess.run(['sudo', 'nmcli', 'connection', 'modify', ethernet_connection, 'connection.autoconnect', 'yes'], check=True)
             print("✓ DHCP mod ayarlandı")
             
-            # Bağlantıyı yeniden başlat
+            # Bağlantıyı yeniden başlat (DHCP ile)
             try:
-                # Önce bağlantı durumunu kontrol et
-                result = subprocess.run(['sudo', 'nmcli', 'connection', 'show', '--active'], capture_output=True, text=True)
-                if result.returncode == 0 and ethernet_connection in result.stdout:
-                    print(f"✓ {ethernet_connection} bağlantısı aktif, kapatılıyor...")
-                    subprocess.run(['sudo', 'nmcli', 'connection', 'down', ethernet_connection], check=True)
-                    time.sleep(2)
-                else:
-                    print(f"✓ {ethernet_connection} bağlantısı zaten kapalı")
-                
-                # Bağlantıyı başlat
-                print(f"✓ {ethernet_connection} bağlantısı başlatılıyor...")
+                print(f"✓ {ethernet_connection} bağlantısı DHCP ile başlatılıyor...")
                 subprocess.run(['sudo', 'nmcli', 'connection', 'up', ethernet_connection], check=True)
-                print(f"✓ Bağlantı yeniden başlatıldı: {ethernet_connection}")
+                print(f"✓ Bağlantı DHCP ile başlatıldı: {ethernet_connection}")
+                
+                # Kısa bir bekleme ve IP kontrolü
+                time.sleep(3)
+                result = subprocess.run(['hostname', '-I'], capture_output=True, text=True)
+                if result.returncode == 0:
+                    ips = result.stdout.strip().split()
+                    print(f"✓ Mevcut IP'ler: {ips}")
+                else:
+                    print("⚠️ IP kontrolü yapılamadı")
+                    
             except Exception as e:
-                print(f"❌ Bağlantı yeniden başlatma hatası: {e}")
+                print(f"❌ Bağlantı başlatma hatası: {e}")
                 print("⚠️ Bağlantı başlatma hatası, ancak DHCP ayarları uygulandı")
             
             print("✅ NetworkManager ile DHCP IP atama tamamlandı")
@@ -462,6 +499,14 @@ class IPManager:
             except Exception as e:
                 print(f"❌ Manuel mod ayarlama hatası: {e}")
                 return False
+            
+            # dhcpcd servisini etkinleştir (statik IP için)
+            try:
+                subprocess.run(['sudo', 'systemctl', 'enable', 'dhcpcd'], check=True)
+                subprocess.run(['sudo', 'systemctl', 'start', 'dhcpcd'], check=True)
+                print("✓ dhcpcd servisi etkinleştirildi")
+            except Exception as e:
+                print(f"⚠️ dhcpcd servisi etkinleştirilemedi: {e}")
             
             # Bağlantıyı yeniden başlat
             try:

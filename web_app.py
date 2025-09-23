@@ -1249,6 +1249,46 @@ def get_current_ip():
             'ip': 'Hata'
         }), 500
 
+@app.route('/api/all-ips', methods=['GET'])
+def get_all_ips():
+    """Tüm IP adreslerini getir"""
+    try:
+        import subprocess
+        
+        # hostname -I ile tüm IP'leri al
+        result = subprocess.run(['hostname', '-I'], capture_output=True, text=True)
+        if result.returncode == 0:
+            all_ips = result.stdout.strip().split()
+            # IPv4 ve IPv6'ları ayır
+            ipv4_ips = []
+            ipv6_ips = []
+            
+            for ip in all_ips:
+                if '.' in ip and ':' not in ip:  # IPv4
+                    ipv4_ips.append(ip)
+                elif ':' in ip:  # IPv6
+                    ipv6_ips.append(ip)
+            
+            return jsonify({
+                'success': True,
+                'all_ips': all_ips,
+                'ipv4_ips': ipv4_ips,
+                'ipv6_ips': ipv6_ips,
+                'count': len(all_ips)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'IP adresleri alınamadı'
+            }), 500
+            
+    except Exception as e:
+        print(f"❌ Tüm IP'ler alınırken hata: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Hata: {str(e)}'
+        }), 500
+
 @app.route('/api/ip-config', methods=['GET'])
 def get_ip_config():
     """IP konfigürasyonunu getir"""
