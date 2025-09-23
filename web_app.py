@@ -177,6 +177,7 @@ def api_user_info():
     })
 
 @app.route('/mail-management')
+@login_required
 def mail_management():
     return render_template('pages/mail-management.html')
 
@@ -186,6 +187,7 @@ def mail_server_config():
     return render_template('pages/mail-server-config.html')
 
 @app.route('/interface-ip-settings')
+@login_required
 def interface_ip_settings():
     return render_template('pages/interface-ip-settings.html')
 
@@ -1429,6 +1431,7 @@ def send_manual_set_command():
 # ==============================================
 
 @app.route('/trap-settings')
+@login_required
 def trap_settings():
     """Trap ayarları sayfası"""
     return render_template('pages/trap-settings.html')

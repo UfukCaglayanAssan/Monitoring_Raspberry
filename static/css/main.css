@@ -1433,3 +1433,31 @@ body {
         text-align: center;
     }
 }
+
+/* Disabled Button Stilleri */
+.btn-disabled {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+    color: #fff !important;
+    cursor: not-allowed !important;
+    opacity: 0.6 !important;
+}
+
+.btn-disabled:hover {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Disabled Input Stilleri */
+input:disabled {
+    background-color: #f8f9fa !important;
+    border-color: #e9ecef !important;
+    color: #6c757d !important;
+    cursor: not-allowed !important;
+}
+
+input:disabled::placeholder {
+    color: #adb5bd !important;
+}

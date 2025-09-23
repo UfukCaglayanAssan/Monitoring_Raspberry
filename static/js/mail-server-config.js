@@ -10,6 +10,43 @@ class MailServerConfigPage {
     init() {
         this.loadConfig();
         this.bindEvents();
+        this.checkUserPermissions();
+    }
+
+    checkUserPermissions() {
+        // Kullanıcı rolünü kontrol et
+        fetch('/api/user-info')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.user) {
+                    const userRole = data.user.role;
+                    if (userRole !== 'admin') {
+                        // Guest kullanıcısı için butonları devre dışı bırak
+                        this.disableAdminButtons();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Kullanıcı bilgisi alınırken hata:', error);
+            });
+    }
+
+    disableAdminButtons() {
+        // Admin yetkisi gerektiren butonları devre dışı bırak
+        const saveButton = document.getElementById('saveMailConfig');
+        const testButton = document.getElementById('testConnection');
+        
+        if (saveButton) {
+            saveButton.disabled = true;
+            saveButton.textContent = '🔒 Admin Yetkisi Gerekli';
+            saveButton.classList.add('btn-disabled');
+        }
+        
+        if (testButton) {
+            testButton.disabled = true;
+            testButton.textContent = '🔒 Admin Yetkisi Gerekli';
+            testButton.classList.add('btn-disabled');
+        }
     }
 
     bindEvents() {

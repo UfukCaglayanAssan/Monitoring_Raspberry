@@ -21,6 +21,50 @@ if (typeof window.TrapSettingsPage === 'undefined') {
         this.loadTrapSettings();
         this.loadTrapHistory();
         this.loadTrapStats();
+        this.checkUserPermissions();
+    }
+
+    checkUserPermissions() {
+        // Kullanıcı rolünü kontrol et
+        fetch('/api/user-info')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.user) {
+                    const userRole = data.user.role;
+                    if (userRole !== 'admin') {
+                        // Guest kullanıcısı için butonları devre dışı bırak
+                        this.disableAdminButtons();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Kullanıcı bilgisi alınırken hata:', error);
+            });
+    }
+
+    disableAdminButtons() {
+        // Admin yetkisi gerektiren butonları devre dışı bırak
+        const adminButtons = [
+            'testTrapBtn',
+            'resetTrapBtn',
+            'saveTrapBtn'
+        ];
+        
+        adminButtons.forEach(buttonId => {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                button.disabled = true;
+                button.textContent = '🔒 Admin Yetkisi Gerekli';
+                button.classList.add('btn-disabled');
+            }
+        });
+
+        // Tablo içindeki düzenle/sil butonlarını da devre dışı bırak
+        document.querySelectorAll('.btn-edit, .btn-delete, .btn-toggle').forEach(button => {
+            button.disabled = true;
+            button.textContent = '🔒';
+            button.classList.add('btn-disabled');
+        });
     }
 
     bindEvents() {
