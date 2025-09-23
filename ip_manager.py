@@ -160,26 +160,17 @@ class IPManager:
                 ethernet_connection = 'eth0'
                 print(f"✓ Yeni ethernet bağlantısı oluşturuldu: {ethernet_connection}")
             
-            # Statik IP ayarlarını temizle
+            # Statik IP ayarlarını temizle (manuel komutlar gibi)
             print("🔄 Statik IP ayarları temizleniyor...")
             try:
-                # Tüm statik IP ayarlarını temizle
-                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.addresses', ''], check=True)
-                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.gateway', ''], check=True)
-                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.dns', ''], check=True)
-                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.routes', ''], check=True)
-                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.ignore-auto-routes', 'false'], check=True)
-                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.ignore-auto-dns', 'false'], check=True)
+                # Direkt eth0 kullan (manuel komutlar gibi)
+                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.addresses', ''], check=True)
+                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.gateway', ''], check=True)
+                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.dns', ''], check=True)
+                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.routes', ''], check=True)
+                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.ignore-auto-routes', 'false'], check=True)
+                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.ignore-auto-dns', 'false'], check=True)
                 print("✓ Statik IP ayarları temizlendi")
-                
-                # Bağlantıyı kapat
-                try:
-                    result = subprocess.run(['sudo', 'nmcli', 'connection', 'show', '--active'], capture_output=True, text=True)
-                    if result.returncode == 0 and ethernet_connection in result.stdout:
-                        subprocess.run(['sudo', 'nmcli', 'connection', 'down', ethernet_connection], check=True)
-                        print("✓ Bağlantı kapatıldı")
-                except Exception as e:
-                    print(f"⚠️ Bağlantı kapatma hatası: {e}")
                 
                 # Tüm IP'leri temizle (en etkili yöntem)
                 try:
@@ -199,16 +190,18 @@ class IPManager:
             except Exception as e:
                 print(f"⚠️ dhcpcd servisi devre dışı bırakılamadı: {e}")
             
-            # DHCP mod ayarla
-            subprocess.run(['sudo', 'nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.method', 'auto'], check=True)
-            subprocess.run(['sudo', 'nmcli', 'connection', 'modify', ethernet_connection, 'connection.autoconnect', 'yes'], check=True)
+            # DHCP mod ayarla (manuel komutlar gibi)
+            subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.method', 'auto'], check=True)
+            subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'connection.autoconnect', 'yes'], check=True)
             print("✓ DHCP mod ayarlandı")
             
-            # Bağlantıyı yeniden başlat (DHCP ile)
+            # Bağlantıyı yeniden başlat (manuel komutlar gibi)
             try:
-                print(f"✓ {ethernet_connection} bağlantısı DHCP ile başlatılıyor...")
-                subprocess.run(['sudo', 'nmcli', 'connection', 'up', ethernet_connection], check=True)
-                print(f"✓ Bağlantı DHCP ile başlatıldı: {ethernet_connection}")
+                print("✓ eth0 bağlantısı kapatılıyor...")
+                subprocess.run(['sudo', 'nmcli', 'connection', 'down', 'eth0'], check=True)
+                print("✓ eth0 bağlantısı başlatılıyor...")
+                subprocess.run(['sudo', 'nmcli', 'connection', 'up', 'eth0'], check=True)
+                print("✓ Bağlantı yeniden başlatıldı")
                 
                 # Kısa bir bekleme ve IP kontrolü
                 time.sleep(3)
