@@ -26,7 +26,7 @@ if (typeof window.BatteriesPage === 'undefined') {
         this.bindEvents();
         console.log(`🔗 [${timestamp}] Event listener'lar bağlandı`);
         
-        // Önce aktif kolları yükle, sonra alarmları yükle, sonra bataryaları yükle
+        // Her zaman aktif kolları yükle ve butonları güncelle
         this.loadActiveArms().then(() => {
             console.log(`🔄 [${timestamp}] Aktif kollar yüklendi, alarmlar yükleniyor`);
             return this.loadActiveAlarms();
@@ -685,11 +685,16 @@ function initBatteriesPage() {
         window.batteriesPage = new BatteriesPage();
         console.log('✅ Yeni BatteriesPage instance oluşturuldu');
     } else {
-        // Mevcut instance varsa sadece veri yükle, init() çağırma
-        console.log('🔄 Mevcut BatteriesPage instance kullanılıyor, sadece veri yükleniyor');
-        if (window.batteriesPage.isPageActive() && !window.batteriesPage.isLoading) {
+        // Mevcut instance varsa aktif kolları yükle ve butonları güncelle
+        console.log('🔄 Mevcut BatteriesPage instance kullanılıyor, aktif kollar yükleniyor');
+        // Önce aktif kolları yükle ve butonları güncelle (isPageActive kontrolü kaldırıldı)
+        window.batteriesPage.loadActiveArms().then(() => {
+            console.log('🔄 Aktif kollar yüklendi, alarmlar yükleniyor');
+            return window.batteriesPage.loadActiveAlarms();
+        }).then(() => {
+            console.log('🔄 Alarmlar yüklendi, bataryalar yükleniyor');
             window.batteriesPage.loadBatteries();
-        }
+        });
     }
 }
 

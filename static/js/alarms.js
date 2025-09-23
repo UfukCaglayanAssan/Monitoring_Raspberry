@@ -39,6 +39,13 @@ if (typeof window.AlarmsPage === 'undefined') {
         if (alarmHistoryContainer) {
             alarmHistoryContainer.style.display = 'none';
         }
+        
+        // Buton durumunu sıfırla
+        const toggleButton = document.getElementById('toggleAlarmHistory');
+        if (toggleButton) {
+            toggleButton.disabled = false;
+            toggleButton.classList.remove('btn-disabled');
+        }
     }
 
     // Alarm geçmişini yükle (sadece çözülmüş alarmlar)
@@ -93,12 +100,11 @@ if (typeof window.AlarmsPage === 'undefined') {
 
     // Alarm geçmişi toggle fonksiyonu
     toggleAlarmHistory() {
-        console.log('🔔 Alarm butonuna tıklandı - showResolved:', this.showResolved);
-        console.log('🔍 Buton elementi bulundu mu?', document.getElementById('toggleAlarmHistory'));
-        console.log('🔍 Container elementleri:', {
-            alarmHistoryContainer: document.getElementById('alarmHistoryContainer'),
-            alarmsTable: document.getElementById('alarmsTable')
-        });
+        // Buton disabled ise işlem yapma
+        const toggleButton = document.getElementById('toggleAlarmHistory');
+        if (toggleButton && toggleButton.disabled) {
+            return;
+        }
 
         const alarmHistoryContainer = document.getElementById('alarmHistoryContainer');
         const alarmsTable = document.getElementById('alarmsTable');
@@ -108,7 +114,6 @@ if (typeof window.AlarmsPage === 'undefined') {
         if (alarmHistoryContainer && alarmsTable) {
             if (this.showResolved) {
                 // Aktif alarmları göster
-                console.log('📋 Aktif alarmlar moduna geçiliyor');
                 alarmHistoryContainer.style.display = 'none';
                 alarmsTable.style.display = 'table';
                 if (pagination) pagination.style.display = 'flex';
@@ -116,7 +121,6 @@ if (typeof window.AlarmsPage === 'undefined') {
                 this.loadAlarms(); // Aktif alarmları yeniden yükle
             } else {
                 // Alarm geçmişini göster
-                console.log('📋 Alarm geçmişi moduna geçiliyor');
                 alarmHistoryContainer.style.display = 'block';
                 alarmsTable.style.display = 'none';
                 if (noDataMessage) noDataMessage.style.display = 'none';
@@ -586,11 +590,9 @@ function initAlarmsPage() {
         console.log('🆕 Yeni AlarmsPage instance oluşturuluyor');
         window.alarmsPage = new window.AlarmsPage();
     } else {
-        // Mevcut instance varsa sadece veri yükle, init() çağırma
-        console.log('🔄 Mevcut AlarmsPage instance kullanılıyor, sadece veri yükleniyor');
-        if (window.alarmsPage.isPageActive() && !window.alarmsPage.isLoading) {
-            window.alarmsPage.loadAlarms();
-        }
+        // Mevcut instance varsa durumu sıfırla ve aktif alarmları yükle
+        console.log('🔄 Mevcut AlarmsPage instance kullanılıyor, durum sıfırlanıyor');
+        window.alarmsPage.resetToActiveAlarms();
     }
 }
 
