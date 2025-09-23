@@ -26,7 +26,7 @@ class InterfaceIPSettingsPage {
         document.getElementById('gateway').value = '';
         document.getElementById('dnsServers').value = '';
         
-        // Varsayılan olarak Statik IP seçili olsun
+        // Varsayılan olarak Statik IP seçili olsun (loadConfig'de override edilecek)
         this.ipMethodStatic.checked = true;
         this.toggleStaticIpFields();
     }
@@ -101,17 +101,22 @@ class InterfaceIPSettingsPage {
                 const data = await response.json();
                 
                 if (data.success && data.config) {
-                    // Sadece durumu güncelle, form alanlarını doldurma
                     if (data.config.use_dhcp) {
                         this.updateStatus('active', 'DHCP Aktif');
+                        this.ipMethodDhcp.checked = true; // DHCP radyo butonunu seç
                     } else if (data.config.is_assigned) {
                         this.updateStatus('active', 'Statik IP Aktif');
+                        this.ipMethodStatic.checked = true; // Statik IP radyo butonunu seç
                     } else {
                         this.updateStatus('inactive', 'IP Ataması Yok');
+                        this.ipMethodStatic.checked = true; // Varsayılan olarak Statik IP
                     }
+                    this.toggleStaticIpFields(); // Alanları doğru şekilde göster/gizle
                     console.log('✓ IP konfigürasyonu yüklendi:', data.config);
                 } else {
                     this.updateStatus('inactive', 'IP Ataması Yok');
+                    this.ipMethodStatic.checked = true; // Varsayılan olarak Statik IP
+                    this.toggleStaticIpFields();
                     console.log('⚠ IP konfigürasyonu bulunamadı');
                 }
             } else {
