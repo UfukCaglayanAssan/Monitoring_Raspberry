@@ -1206,9 +1206,22 @@ def test_mail_connection():
 
 @app.route('/api/current-ip', methods=['GET'])
 def get_current_ip():
-    """Mevcut IP adresini getir - sadece hostname -I komutundan"""
+    """Mevcut IP adresini getir - NetworkManager'dan aktif IP'yi al"""
     try:
         import subprocess
+        
+        # Önce NetworkManager'dan aktif IP'yi al
+        result = subprocess.run(['sudo', 'nmcli', 'device', 'show', 'eth0'], capture_output=True, text=True)
+        if result.returncode == 0:
+            for line in result.stdout.split('\n'):
+                if 'IP4.ADDRESS[1]:' in line:
+                    ip = line.split(':')[1].strip().split('/')[0]
+                    return jsonify({
+                        'success': True,
+                        'ip': ip
+                    })
+        
+        # NetworkManager'dan alınamazsa hostname -I kullan
         result = subprocess.run(['hostname', '-I'], capture_output=True, text=True)
         if result.returncode == 0:
             ips = result.stdout.strip().split()

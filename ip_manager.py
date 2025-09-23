@@ -15,12 +15,27 @@ class IPManager:
         self.default_dns = "8.8.8.8,8.8.4.4"
     
     def get_current_ip(self):
-        """Mevcut IP adresini al"""
+        """Mevcut IP adresini al - sadece aktif olan IP'yi döndür"""
         try:
+            # Önce NetworkManager'dan aktif IP'yi al
+            result = subprocess.run(['sudo', 'nmcli', 'device', 'show', 'eth0'], capture_output=True, text=True)
+            if result.returncode == 0:
+                for line in result.stdout.split('\n'):
+                    if 'IP4.ADDRESS[1]:' in line:
+                        ip = line.split(':')[1].strip().split('/')[0]
+                        print(f"✓ NetworkManager'dan IP alındı: {ip}")
+                        return ip
+            
+            # NetworkManager'dan alınamazsa hostname -I kullan
             result = subprocess.run(['hostname', '-I'], capture_output=True, text=True)
             if result.returncode == 0:
                 ips = result.stdout.strip().split()
-                return ips[0] if ips else None
+                if ips:
+                    # IPv4 adreslerini filtrele ve ilkini al
+                    ipv4_ips = [ip for ip in ips if '.' in ip and ':' not in ip]
+                    if ipv4_ips:
+                        print(f"✓ hostname -I'dan IP alındı: {ipv4_ips[0]}")
+                        return ipv4_ips[0]
             return None
         except Exception as e:
             print(f"IP adresi alınırken hata: {e}")
@@ -123,6 +138,16 @@ class IPManager:
                 subprocess.run(['sudo', 'nmcli', 'connection', 'add', 'type', 'ethernet', 'con-name', 'eth0', 'ifname', 'eth0'], check=True)
                 ethernet_connection = 'eth0'
                 print(f"✓ Yeni ethernet bağlantısı oluşturuldu: {ethernet_connection}")
+            
+            # Statik IP ayarlarını temizle
+            print("🔄 Statik IP ayarları temizleniyor...")
+            try:
+                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.addresses', ''], check=True)
+                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.gateway', ''], check=True)
+                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.dns', ''], check=True)
+                print("✓ Statik IP ayarları temizlendi")
+            except Exception as e:
+                print(f"⚠️ Statik IP ayarları temizlenirken hata: {e}")
             
             # DHCP mod ayarla
             subprocess.run(['sudo', 'nmcli', 'connection', 'modify', ethernet_connection, 'ipv4.method', 'auto'], check=True)
