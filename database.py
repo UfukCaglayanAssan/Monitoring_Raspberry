@@ -2366,7 +2366,7 @@ class BatteryDatabase:
                 
                 if filters.get('battery'):
                     query += ' AND k = ?'
-                    params.append(filters['battery'])
+                    params.append(int(filters['battery']) + 2)
                 
                 if filters.get('startDate'):
                     start_timestamp = int(datetime.strptime(filters['startDate'], '%Y-%m-%d').timestamp() * 1000)

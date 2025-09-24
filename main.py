@@ -973,8 +973,8 @@ def db_worker():
                             status_value = raw_bytes[4]
                             balance_timestamp = updated_at
                             
-                            with db_lock:
-                                db.update_or_insert_passive_balance(arm_value, slave_value, status_value, balance_timestamp)
+                            # with db_lock:
+                            #     db.update_or_insert_passive_balance(arm_value, slave_value, status_value, balance_timestamp)
                             print(f"✓ Balans güncellendi: Arm={arm_value}, Slave={slave_value}, Status={status_value}")
                             program_start_time = updated_at
                     except Exception as e:

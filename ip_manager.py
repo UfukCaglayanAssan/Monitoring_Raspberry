@@ -160,17 +160,23 @@ class IPManager:
                 ethernet_connection = 'eth0'
                 print(f"✓ Yeni ethernet bağlantısı oluşturuldu: {ethernet_connection}")
             
-            # Statik IP ayarlarını temizle (manuel komutlar gibi)
+            # Statik IP ayarlarını temizle (doğru sırayla)
             print("🔄 Statik IP ayarları temizleniyor...")
             try:
-                # Direkt eth0 kullan (manuel komutlar gibi)
+                # Önce addresses'i temizle (gateway'den önce)
                 subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.addresses', ''], check=True)
+                print("✓ IP adresleri temizlendi")
+                
+                # Sonra gateway'i temizle
                 subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.gateway', ''], check=True)
+                print("✓ Gateway temizlendi")
+                
+                # Diğer ayarları temizle
                 subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.dns', ''], check=True)
                 subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.routes', ''], check=True)
                 subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.ignore-auto-routes', 'false'], check=True)
                 subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.ignore-auto-dns', 'false'], check=True)
-                print("✓ Statik IP ayarları temizlendi")
+                print("✓ Tüm statik IP ayarları temizlendi")
                 
                 # Tüm IP'leri temizle (en etkili yöntem)
                 try:
