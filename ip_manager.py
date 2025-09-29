@@ -174,15 +174,15 @@ class IPManager:
                 
                 
                 # Diğer ayarları temizle
-                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.dns', ''], check=True)
-                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.routes', ''], check=True)
-                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.ignore-auto-routes', 'false'], check=True)
-                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.ignore-auto-dns', 'false'], check=True)
-                print("✓ Tüm statik IP ayarları temizlendi")
+                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.method', 'auto'], check=True)
+                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.addresses', ''], check=False)
+                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.gateway', ''], check=False)
+                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.dns', ''], check=False)
+                print("✓ Statik IP ayarları temizlendi ve DHCP moda geçirildi")
                 
                 # Tüm IP'leri temizle (en etkili yöntem)
                 try:
-                    subprocess.run(['sudo', 'ip', 'addr', 'flush', 'dev', 'eth0'], check=True)
+                    subprocess.run(['sudo', 'ip', 'addr', 'flush', 'dev', 'eth0'], check=False)
                     print("✓ Tüm IP adresleri temizlendi (ip addr flush)")
                 except Exception as e:
                     print(f"⚠️ IP temizleme hatası: {e}")
