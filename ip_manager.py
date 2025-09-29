@@ -137,98 +137,85 @@ class IPManager:
             print(f"❌ NetworkManager IP atama hatası: {e}")
             raise
     
+
     def assign_dhcp_ip_nm(self):
         """NetworkManager ile DHCP IP ata"""
         try:
             # eth0'ı yönetilebilir yap
-            subprocess.run(['sudo', 'nmcli', 'device', 'set', 'eth0', 'managed', 'yes'], check=True)
+            subprocess.run(
+                ["sudo", "nmcli", "device", "set", "eth0", "managed", "yes"],
+                check=True
+            )
             print("✓ eth0 yönetilebilir yapıldı")
-            
-            # Mevcut ethernet bağlantılarını kontrol et
-            result = subprocess.run(['sudo', 'nmcli', 'connection', 'show'], capture_output=True, text=True)
+
+            # Var olan ethernet bağlantısını bul
+            result = subprocess.run(
+                ["sudo", "nmcli", "connection", "show"],
+                capture_output=True, text=True
+            )
+
             ethernet_connection = None
-            
             if result.returncode == 0:
-                for line in result.stdout.split('\n'):
-                    if 'ethernet' in line.lower() and 'eth0' in line:
+                for line in result.stdout.splitlines():
+                    if "ethernet" in line.lower() and "eth0" in line:
                         ethernet_connection = line.split()[0]
                         break
-            
-            if not ethernet_connection:
-                # Yeni ethernet bağlantısı oluştur
-                subprocess.run(['sudo', 'nmcli', 'connection', 'add', 'type', 'ethernet', 'con-name', 'eth0', 'ifname', 'eth0'], check=True)
-                ethernet_connection = 'eth0'
-                print(f"✓ Yeni ethernet bağlantısı oluşturuldu: {ethernet_connection}")
-            
-            # Statik IP ayarlarını temizle (doğru sırayla)
-            print("🔄 Statik IP ayarları temizleniyor...")
-            try:
-                # Sonra gateway'i temizle
-                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.gateway', ''], check=True)
-                print("✓ Gateway temizlendi")
 
-                # Önce addresses'i temizle (gateway'den önce)
-                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.addresses', ''], check=True)
-                print("✓ IP adresleri temizlendi")
-                
-                
-                
-                # Diğer ayarları temizle
-                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.method', 'auto'], check=True)
-                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.addresses', ''], check=False)
-                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.gateway', ''], check=False)
-                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.dns', ''], check=False)
-                print("✓ Statik IP ayarları temizlendi ve DHCP moda geçirildi")
-                
-                # Tüm IP'leri temizle (en etkili yöntem)
-                try:
-                    subprocess.run(['sudo', 'ip', 'addr', 'flush', 'dev', 'eth0'], check=False)
-                    print("✓ Tüm IP adresleri temizlendi (ip addr flush)")
-                except Exception as e:
-                    print(f"⚠️ IP temizleme hatası: {e}")
-                    
-            except Exception as e:
-                print(f"⚠️ Statik IP ayarları temizlenirken hata: {e}")
-            
-            # dhcpcd servisini devre dışı bırak (statik IP ayarlarını temizlemek için)
-            try:
-                subprocess.run(['sudo', 'systemctl', 'stop', 'dhcpcd'], check=True)
-                subprocess.run(['sudo', 'systemctl', 'disable', 'dhcpcd'], check=True)
-                print("✓ dhcpcd servisi devre dışı bırakıldı")
-            except Exception as e:
-                print(f"⚠️ dhcpcd servisi devre dışı bırakılamadı: {e}")
-            
-            # DHCP mod ayarla (manuel komutlar gibi)
-            subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.method', 'auto'], check=True)
-            subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'connection.autoconnect', 'yes'], check=True)
-            print("✓ DHCP mod ayarlandı")
-            
-            # Bağlantıyı yeniden başlat (manuel komutlar gibi)
-            try:
-                print("✓ eth0 bağlantısı kapatılıyor...")
-                subprocess.run(['sudo', 'nmcli', 'connection', 'down', 'eth0'], check=True)
-                print("✓ eth0 bağlantısı başlatılıyor...")
-                subprocess.run(['sudo', 'nmcli', 'connection', 'up', 'eth0'], check=True)
-                print("✓ Bağlantı yeniden başlatıldı")
-                
-                # Kısa bir bekleme ve IP kontrolü
-                time.sleep(3)
-                result = subprocess.run(['hostname', '-I'], capture_output=True, text=True)
-                if result.returncode == 0:
-                    ips = result.stdout.strip().split()
-                    print(f"✓ Mevcut IP'ler: {ips}")
+            # Eğer yoksa yeni bağlantı oluştur
+            if not ethernet_connection:
+                subprocess.run(
+                    ["sudo", "nmcli", "connection", "add", "type", "ethernet",
+                     "con-name", "eth0", "ifname", "eth0"],
+                    check=True
+                )
+                ethernet_connection = "eth0"
+                print(f"✓ Yeni ethernet bağlantısı oluşturuldu: {ethernet_connection}")
+
+            # Statik IP ayarlarını temizle
+            print("🔄 Statik IP ayarları temizleniyor...")
+            cleanup_cmds = [
+                ["sudo", "nmcli", "connection", "modify", "eth0", "ipv4.addresses", ""],
+                ["sudo", "nmcli", "connection", "modify", "eth0", "ipv4.gateway", ""],
+                ["sudo", "nmcli", "connection", "modify", "eth0", "ipv4.dns", ""],
+                ["sudo", "nmcli", "connection", "modify", "eth0", "ipv4.method", "auto"],
+            ]
+            for cmd in cleanup_cmds:
+                subprocess.run(cmd, check=False)
+
+            # IP'leri sıfırla
+            subprocess.run(["sudo", "ip", "addr", "flush", "dev", "eth0"], check=False)
+            print("✓ Statik IP ayarları temizlendi, DHCP moda geçirildi")
+
+            # dhcpcd varsa durdur
+            subprocess.run(["sudo", "systemctl", "stop", "dhcpcd"], check=False)
+            subprocess.run(["sudo", "systemctl", "disable", "dhcpcd"], check=False)
+            print("✓ dhcpcd servisi devre dışı bırakıldı (varsa)")
+
+            # Bağlantıyı yeniden başlat
+            print("🔄 Bağlantı yeniden başlatılıyor...")
+            subprocess.run(["sudo", "nmcli", "connection", "down", "eth0"], check=False)
+            subprocess.run(["sudo", "nmcli", "connection", "up", "eth0"], check=True)
+            print("✓ Bağlantı yeniden başlatıldı")
+
+            # IP kontrolü
+            time.sleep(3)
+            result = subprocess.run(["hostname", "-I"], capture_output=True, text=True)
+            if result.returncode == 0:
+                ips = result.stdout.strip().split()
+                if ips:
+                    print(f"✓ Mevcut IP adresleri: {ips}")
                 else:
-                    print("⚠️ IP kontrolü yapılamadı")
-                    
-            except Exception as e:
-                print(f"❌ Bağlantı başlatma hatası: {e}")
-                print("⚠️ Bağlantı başlatma hatası, ancak DHCP ayarları uygulandı")
-            
-            print("✅ NetworkManager ile DHCP IP atama tamamlandı")
-            
+                    print("⚠️ DHCP’den IP alınamadı")
+            else:
+                print("⚠️ IP kontrolü yapılamadı")
+
+            print("✅ DHCP IP atama işlemi tamamlandı")
+
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Komut hatası: {e}")
         except Exception as e:
-            print(f"❌ NetworkManager DHCP IP atama hatası: {e}")
-            raise
+            print(f"❌ Beklenmeyen hata: {e}")
+
     
     def backup_dhcpcd_conf(self):
         """dhcpcd.conf dosyasını yedekle"""
