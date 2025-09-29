@@ -596,6 +596,16 @@ def db_worker():
                 
                 # Veri tipine göre log mesajı - KALDIRILDI
                 
+                # Tanımlanmış dtype kontrolü
+                valid_dtypes = [10, 11, 12, 13, 14, 15, 126]
+                if dtype not in valid_dtypes:
+                    print(f"⚠️ TANIMSIZ DTYPE ALGILANDI!")
+                    print(f"   📦 Ham Paket: {' '.join([f'0x{b:02X}' for b in [int(x, 16) for x in data]])}")
+                    print(f"   📊 Header: 0x{data[0]}, k: {k_value}, dtype: {dtype}, arm: {arm_value}")
+                    print(f"   📊 Veri: {salt_data}")
+                    print(f"   ❌ Bu veri veritabanına kaydedilmeyecek!")
+                    continue  # Bu veriyi atla
+                
                 # Veri işleme ve kayıt (tek tabloya)
                 if dtype == 10:  # Gerilim
                     # Ham gerilim verisini kaydet
@@ -844,14 +854,10 @@ def db_worker():
                     # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
                 else:  # Diğer Dtype değerleri için
-                    record = {
-                        "Arm": arm_value,
-                        "k": k_value,
-                        "Dtype": dtype,
-                        "data": salt_data,
-                        "timestamp": get_period_timestamp()
-                    }
-                    batch.append(record)
+                    # Bu noktaya gelirse tanımsız dtype demektir, zaten yukarıda kontrol edildi
+                    print(f"⚠️ TANIMSIZ DTYPE ELSE BLOĞUNA GELDİ!")
+                    print(f"   📊 dtype: {dtype}, arm: {arm_value}, k: {k_value}, data: {salt_data}")
+                    continue  # Bu veriyi atla
                     
                     # RAM'e yaz (Modbus/SNMP için)
                     with data_lock:

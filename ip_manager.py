@@ -163,13 +163,15 @@ class IPManager:
             # Statik IP ayarlarını temizle (doğru sırayla)
             print("🔄 Statik IP ayarları temizleniyor...")
             try:
+                # Sonra gateway'i temizle
+                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.gateway', ''], check=True)
+                print("✓ Gateway temizlendi")
+
                 # Önce addresses'i temizle (gateway'den önce)
                 subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.addresses', ''], check=True)
                 print("✓ IP adresleri temizlendi")
                 
-                # Sonra gateway'i temizle
-                subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.gateway', ''], check=True)
-                print("✓ Gateway temizlendi")
+                
                 
                 # Diğer ayarları temizle
                 subprocess.run(['sudo', 'nmcli', 'connection', 'modify', 'eth0', 'ipv4.dns', ''], check=True)
