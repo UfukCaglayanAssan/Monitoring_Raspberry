@@ -138,14 +138,13 @@ class IPManager:
             raise
     
 
+
+
     def assign_dhcp_ip_nm(self):
         """NetworkManager ile DHCP IP ata"""
         try:
             # eth0'ı yönetilebilir yap
-            subprocess.run(
-                ["sudo", "nmcli", "device", "set", "eth0", "managed", "yes"],
-                check=True
-            )
+            subprocess.run(["sudo", "nmcli", "device", "set", "eth0", "managed", "yes"], check=True)
             print("✓ eth0 yönetilebilir yapıldı")
 
             # Var olan ethernet bağlantısını bul
@@ -153,7 +152,6 @@ class IPManager:
                 ["sudo", "nmcli", "connection", "show"],
                 capture_output=True, text=True
             )
-
             ethernet_connection = None
             if result.returncode == 0:
                 for line in result.stdout.splitlines():
@@ -171,18 +169,24 @@ class IPManager:
                 ethernet_connection = "eth0"
                 print(f"✓ Yeni ethernet bağlantısı oluşturuldu: {ethernet_connection}")
 
-            # Statik IP ayarlarını temizle
             print("🔄 Statik IP ayarları temizleniyor...")
-            cleanup_cmds = [
-                ["sudo", "nmcli", "connection", "modify", "eth0", "ipv4.addresses", ""],
-                ["sudo", "nmcli", "connection", "modify", "eth0", "ipv4.gateway", ""],
-                ["sudo", "nmcli", "connection", "modify", "eth0", "ipv4.dns", ""],
+
+            # Önce DHCP modunu ayarla (manual moddayken gateway temizleme hatası olmasın)
+            subprocess.run(
                 ["sudo", "nmcli", "connection", "modify", "eth0", "ipv4.method", "auto"],
+                check=True
+            )
+
+            # Şimdi sırasıyla gateway ve IP adreslerini temizle
+            cleanup_cmds = [
+                ["sudo", "nmcli", "connection", "modify", "eth0", "ipv4.gateway", ""],
+                ["sudo", "nmcli", "connection", "modify", "eth0", "ipv4.addresses", ""],
+                ["sudo", "nmcli", "connection", "modify", "eth0", "ipv4.dns", ""],
             ]
             for cmd in cleanup_cmds:
                 subprocess.run(cmd, check=False)
 
-            # IP'leri sıfırla
+            # Arayüzdeki tüm IP’leri temizle
             subprocess.run(["sudo", "ip", "addr", "flush", "dev", "eth0"], check=False)
             print("✓ Statik IP ayarları temizlendi, DHCP moda geçirildi")
 
