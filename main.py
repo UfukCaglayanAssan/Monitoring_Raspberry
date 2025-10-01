@@ -830,6 +830,29 @@ def db_worker():
                     
                     # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
+                elif dtype == 12:  # RIMT/Sıcaklık
+                    record = {
+                        "Arm": arm_value,
+                        "k": k_value,
+                        "Dtype": 12,
+                        "data": salt_data,
+                        "timestamp": get_period_timestamp()
+                    }
+                    batch.append(record)
+                    
+                    # RAM'e yaz (Modbus/SNMP için)
+                    with data_lock:
+                        if arm_value not in battery_data_ram:
+                            battery_data_ram[arm_value] = {}
+                        if k_value not in battery_data_ram[arm_value]:
+                            battery_data_ram[arm_value][k_value] = {}
+                        battery_data_ram[arm_value][k_value][dtype] = {
+                            'value': salt_data,
+                            'timestamp': get_period_timestamp()
+                        }
+                        print(f"📊 RAM Mapping: UART dtype={dtype} -> RAM dtype={dtype} (RIMT/Sıcaklık)")
+                        print(f"🌡️ SICAKLIK VERİSİ ALGILANDI - Kol: {arm_value}, Sıcaklık: {salt_data}°C")
+                    
                 elif dtype == 15:  # NTC3
                     record = {
                         "Arm": arm_value,
