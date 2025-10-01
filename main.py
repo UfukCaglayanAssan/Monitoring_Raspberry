@@ -952,6 +952,20 @@ def db_worker():
                     print(f"✓ Modbus/SNMP RAM'e kaydedildi: {arm_slave_counts_ram}")
                     print(f"ℹ️ Not: Periyot kontrolü veritabanından yapılacak")
                     
+                    # Veritabanına kaydet
+                    try:
+                        updated_at = int(time.time() * 1000)
+                        # Her arm için ayrı kayıt oluştur
+                        with db_lock:
+                            db.insert_arm_slave_counts(1, arm1)
+                            db.insert_arm_slave_counts(2, arm2)
+                            db.insert_arm_slave_counts(3, arm3)
+                            db.insert_arm_slave_counts(4, arm4)
+                        print("✓ Armslavecounts SQLite'ye kaydedildi")
+                        
+                    except Exception as e:
+                        print(f"armslavecounts kayıt hatası: {e}")
+                    
                 # Hatkon (kol) alarm verisi: 2. byte (index 1) 0x8E ise
                 elif raw_bytes[1] == 0x8E:
                     arm_value = raw_bytes[2]
@@ -976,7 +990,7 @@ def db_worker():
                         alarm_processor.add_alarm(arm_value, 0, error_msb, error_lsb, alarm_timestamp)  # 0 = kol alarmı
                         print("📝 Yeni Hatkon alarm eklendi (beklemede)")
                     
-                    continue
+                    # Veritabanına kaydet
                     try:
                         updated_at = int(time.time() * 1000)
                         # Her arm için ayrı kayıt oluştur
