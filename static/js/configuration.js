@@ -396,7 +396,7 @@ if (typeof window.ConfigurationPage === 'undefined') {
             Tempmin_D: 15,
             Tempmax_D: 55,
             Tempmin_PN: 15,
-            Tempmax_PN: 30,
+            Tempmax_PN: 65,
             Socmin: 30,
             Sohmin: 30
         };

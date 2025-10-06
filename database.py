@@ -2712,21 +2712,40 @@ class BatteryDatabase:
                 cursor = conn.cursor()
                 
                 
-                # Direkt UPDATE - kayıt her zaman var olacak
-                cursor.execute('''
-                    UPDATE batconfigs SET 
-                    Vmin = ?, Vmax = ?, Vnom = ?, Rintnom = ?, 
-                    Tempmin_D = ?, Tempmax_D = ?, Tempmin_PN = ?, Tempmax_PN = ?, 
-                    Socmin = ?, Sohmin = ?, time = ?
-                    WHERE armValue = ?
-                ''', (
-                    vmin, vmax, vnom, rintnom, tempmin_d, tempmax_d, 
-                    tempmin_pn, tempmax_pn, socmin, sohmin, 
-                    int(time.time() * 1000), arm
-                ))
+                # Önce kayıt var mı kontrol et
+                cursor.execute('SELECT COUNT(*) FROM batconfigs WHERE armValue = ?', (arm,))
+                exists = cursor.fetchone()[0] > 0
+                
+                if exists:
+                    # Kayıt varsa UPDATE yap
+                    cursor.execute('''
+                        UPDATE batconfigs SET 
+                        Vmin = ?, Vmax = ?, Vnom = ?, Rintnom = ?, 
+                        Tempmin_D = ?, Tempmax_D = ?, Tempmin_PN = ?, Tempmax_PN = ?, 
+                        Socmin = ?, Sohmin = ?, time = ?
+                        WHERE armValue = ?
+                    ''', (
+                        vmin, vmax, vnom, rintnom, tempmin_d, tempmax_d, 
+                        tempmin_pn, tempmax_pn, socmin, sohmin, 
+                        int(time.time() * 1000), arm
+                    ))
+                    print(f"Batarya konfigürasyonu güncellendi: Kol {arm}")
+                else:
+                    # Kayıt yoksa INSERT yap
+                    cursor.execute('''
+                        INSERT INTO batconfigs 
+                        (armValue, Vmin, Vmax, Vnom, Rintnom, Tempmin_D, Tempmax_D, 
+                         Tempmin_PN, Tempmax_PN, Socmin, Sohmin, time, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        arm, vmin, vmax, vnom, rintnom, tempmin_d, tempmax_d, 
+                        tempmin_pn, tempmax_pn, socmin, sohmin, 
+                        int(time.time() * 1000), int(time.time() * 1000)
+                    ))
+                    print(f"Batarya konfigürasyonu eklendi: Kol {arm}")
                 
                 conn.commit()
-                print(f"Batarya konfigürasyonu kaydedildi: Kol {arm}")
+                print(f"✓ Batarya konfigürasyonu veritabanına kaydedildi: Kol {arm}")
                 
         except Exception as e:
             print(f"Batarya konfigürasyonu kaydedilirken hata: {e}")
@@ -2739,19 +2758,36 @@ class BatteryDatabase:
                 cursor = conn.cursor()
                 
                 
-                # Direkt UPDATE - kayıt her zaman var olacak
-                cursor.execute('''
-                    UPDATE armconfigs SET 
-                    akimKats = ?, akimMax = ?, nemMax = ?, nemMin = ?, 
-                    tempMax = ?, tempMin = ?, time = ?
-                    WHERE armValue = ?
-                ''', (
-                    akim_kats, akim_max, nem_max, nem_min, 
-                    temp_max, temp_min, int(time.time() * 1000), arm
-                ))
+                # Önce kayıt var mı kontrol et
+                cursor.execute('SELECT COUNT(*) FROM armconfigs WHERE armValue = ?', (arm,))
+                exists = cursor.fetchone()[0] > 0
+                
+                if exists:
+                    # Kayıt varsa UPDATE yap
+                    cursor.execute('''
+                        UPDATE armconfigs SET 
+                        akimKats = ?, akimMax = ?, nemMax = ?, nemMin = ?, 
+                        tempMax = ?, tempMin = ?, time = ?
+                        WHERE armValue = ?
+                    ''', (
+                        akim_kats, akim_max, nem_max, nem_min, 
+                        temp_max, temp_min, int(time.time() * 1000), arm
+                    ))
+                    print(f"Kol konfigürasyonu güncellendi: Kol {arm}")
+                else:
+                    # Kayıt yoksa INSERT yap
+                    cursor.execute('''
+                        INSERT INTO armconfigs 
+                        (armValue, akimKats, akimMax, nemMax, nemMin, tempMax, tempMin, time, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        arm, akim_kats, akim_max, nem_max, nem_min, 
+                        temp_max, temp_min, int(time.time() * 1000), int(time.time() * 1000)
+                    ))
+                    print(f"Kol konfigürasyonu eklendi: Kol {arm}")
                 
                 conn.commit()
-                print(f"Kol konfigürasyonu kaydedildi: Kol {arm}")
+                print(f"✓ Kol konfigürasyonu veritabanına kaydedildi: Kol {arm}")
                 
         except Exception as e:
             print(f"Kol konfigürasyonu kaydedilirken hata: {e}")
