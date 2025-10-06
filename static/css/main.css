@@ -369,6 +369,7 @@ body {
     transform-style: preserve-3d;
     cursor: pointer;
     min-width: 0;
+    background: transparent !important; /* Tüm battery-card'lar transparent */
 }
 
 .battery-card:hover {
@@ -724,46 +725,106 @@ body {
     line-height: 1.5;
 }
 
-/* Alarm Durumu Stilleri */
+/* Alarm Durumu Stilleri - React Component Renk Paleti */
 .arm-btn.arm-alarm {
-    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
-    border-color: #c0392b !important;
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important; /* red-600 to red-700 */
+    border-color: #b91c1c !important; /* red-700 */
     color: white !important;
-    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3) !important;
+    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3) !important;
     animation: pulse-red 2s infinite;
 }
 
 .arm-btn.battery-alarm {
-    background: linear-gradient(135deg, #e67e22 0%, #d35400 100%) !important;
-    border-color: #d35400 !important;
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important; /* red-600 to red-700 */
+    border-color: #b91c1c !important; /* red-700 */
     color: white !important;
-    box-shadow: 0 4px 15px rgba(230, 126, 34, 0.3) !important;
-    animation: pulse-orange 2s infinite;
+    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3) !important;
+    animation: pulse-red 2s infinite;
 }
 
 .battery-card.battery-alarm {
-    border: 2px solid #e74c3c !important;
-    background: linear-gradient(135deg, #fff5f5 0%, #ffe6e6 100%) !important;
-    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.2) !important;
+    border: 2px solid #dc2626 !important; /* red-600 */
+    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.2) !important;
     animation: pulse-card 2s infinite;
 }
 
-@keyframes pulse-red {
-    0% { box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3); }
-    50% { box-shadow: 0 6px 20px rgba(231, 76, 60, 0.5); }
-    100% { box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3); }
+/* Alarm durumunda ön yüz (card-front) */
+.battery-card.battery-alarm .card-front {
+    background: #fef2f2 !important; /* red-50 */
+    border-color: #dc2626 !important; /* red-600 */
 }
 
-@keyframes pulse-orange {
-    0% { box-shadow: 0 4px 15px rgba(230, 126, 34, 0.3); }
-    50% { box-shadow: 0 6px 20px rgba(230, 126, 34, 0.5); }
-    100% { box-shadow: 0 4px 15px rgba(230, 126, 34, 0.3); }
+.battery-card.battery-alarm .battery-icon {
+    background: #dc2626 !important; /* red-600 */
+}
+
+/* Alarm durumunda arka yüz (card-back) */
+.battery-card.battery-alarm .card-back {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important; /* red-600 to red-700 */
+}
+
+/* Pasif balans durumu */
+.battery-card.passive-balance {
+    border: 2px solid #2563eb !important; /* blue-600 */
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2) !important;
+    animation: pulse-blue 2s infinite;
+}
+
+.battery-card.passive-balance .card-front {
+    background: #eff6ff !important; /* blue-50 */
+    border-color: #2563eb !important; /* blue-600 */
+}
+
+.battery-card.passive-balance .battery-icon {
+    background: #2563eb !important; /* blue-600 */
+}
+
+.battery-card.passive-balance .card-back {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important; /* blue-600 to blue-700 */
+}
+
+/* Veri gelmiyor durumu */
+.battery-card.missing-data {
+    border: 2px solid #6b7280 !important; /* gray-500 */
+    box-shadow: 0 4px 15px rgba(107, 114, 128, 0.2) !important;
+    animation: pulse-gray 2s infinite;
+}
+
+.battery-card.missing-data .card-front {
+    background: #f9fafb !important; /* gray-50 */
+    border-color: #6b7280 !important; /* gray-500 */
+}
+
+.battery-card.missing-data .battery-icon {
+    background: #6b7280 !important; /* gray-500 */
+}
+
+.battery-card.missing-data .card-back {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%) !important; /* gray-500 to gray-600 */
+}
+
+@keyframes pulse-red {
+    0% { box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3); }
+    50% { box-shadow: 0 6px 20px rgba(220, 38, 38, 0.5); }
+    100% { box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3); }
 }
 
 @keyframes pulse-card {
-    0% { box-shadow: 0 4px 15px rgba(231, 76, 60, 0.2); }
-    50% { box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4); }
-    100% { box-shadow: 0 4px 15px rgba(231, 76, 60, 0.2); }
+    0% { box-shadow: 0 4px 15px rgba(220, 38, 38, 0.2); }
+    50% { box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4); }
+    100% { box-shadow: 0 4px 15px rgba(220, 38, 38, 0.2); }
+}
+
+@keyframes pulse-blue {
+    0% { box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2); }
+    50% { box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4); }
+    100% { box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2); }
+}
+
+@keyframes pulse-gray {
+    0% { box-shadow: 0 4px 15px rgba(107, 114, 128, 0.2); }
+    50% { box-shadow: 0 6px 20px rgba(107, 114, 128, 0.4); }
+    100% { box-shadow: 0 4px 15px rgba(107, 114, 128, 0.2); }
 }
 
 /* Mail Server Config Sayfası */

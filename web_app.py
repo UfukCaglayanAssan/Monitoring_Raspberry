@@ -979,31 +979,28 @@ def process_alarm_data(alarm):
         status = alarm[6]  # status
         resolved_at = alarm[7] if len(alarm) > 7 else None  # resolved_at
         
-        # Batarya alarmı mı kol alarmı mı kontrol et
-        if error_lsb == 9:  # Kol alarmı (Hatkon)
+        # Ortak alarm kontrol fonksiyonunu kullan
+        if not is_valid_alarm(error_msb, error_lsb):
+            return None
+        
+        alarm_type = get_alarm_type(error_msb, error_lsb)
+        
+        if alarm_type == 'arm':  # Kol alarmı
             description = get_arm_alarm_description(error_msb)
-            if error_msb == 0:  # Düzeldi durumu
-                battery_display = "Kol Alarmı"
-                status = "Düzeldi"
-            else:
-                battery_display = "Kol Alarmı"
-                status = "Devam Ediyor"
-        else:  # Batarya alarmı (Batkon)
+            battery_display = "Kol Alarmı"
+        else:  # Batarya alarmı
             description = get_battery_alarm_description(error_msb, error_lsb)
-            if not description:  # Açıklama yoksa alarm yok
-                return None
             # Batarya alarmlarında k değeri varsa göster (2 eksik), yoksa boş bırak
             if battery == 0:
                 battery_display = ""
             else:
                 battery_display = str(battery - 2)  # k değerinden 2 çıkar
-            status = "Devam Ediyor"
         
         return {
             'arm': arm,
             'battery': battery_display,
             'description': description,
-            'status': status,
+            'status': "Devam Ediyor",
             'timestamp': timestamp,
             'resolved_at': resolved_at
         }
@@ -1013,34 +1010,30 @@ def process_alarm_data(alarm):
 
 def get_battery_alarm_description(error_msb, error_lsb):
     """Batarya alarm açıklaması oluştur"""
-    description_parts = []
-    
-    # MSB kontrolü
-    if error_msb >= 1:
+    # MSB kontrolü (errorCodeLsb !== 1 && errorCodeMsb >= 1)
+    if error_lsb != 1 and error_msb >= 1:
         if error_msb == 1:
-            description_parts.append("Pozitif kutup başı alarmı")
+            return "Pozitif kutup başı alarmı"
         elif error_msb == 2:
-            description_parts.append("Negatif kutup başı sıcaklık alarmı")
+            return "Negatif kutup başı sıcaklık alarmı"
     
-    # LSB kontrolü
+    # LSB kontrolü (error_msb = 0 olan durumlar da dahil)
     if error_lsb == 4:
-        description_parts.append("Düşük batarya gerilim uyarısı")
+        return "Düşük batarya gerilim uyarısı"
     elif error_lsb == 8:
-        description_parts.append("Düşük batarya gerilimi alarmı")
+        return "Düşük batarya gerilimi alarmı"
     elif error_lsb == 16:
-        description_parts.append("Yüksek batarya gerilimi uyarısı")
+        return "Yüksek batarya gerilimi uyarısı"
     elif error_lsb == 32:
         return "Yüksek batarya gerilimi alarmı"
     elif error_lsb == 64:
-        description_parts.append("Modül sıcaklık alarmı")
+        return "Modül sıcaklık alarmı"
     
-    return " + ".join(description_parts) if description_parts else None
+    return None
 
 def get_arm_alarm_description(error_msb):
     """Kol alarm açıklaması oluştur"""
-    if error_msb == 0:
-        return "Alarm Düzeldi"  # Düzeldi durumunda açıklama
-    elif error_msb == 2:
+    if error_msb == 2:
         return "Yüksek akım alarmı"
     elif error_msb == 4:
         return "Yüksek nem alarmı"
@@ -1048,8 +1041,24 @@ def get_arm_alarm_description(error_msb):
         return "Yüksek ortam sıcaklığı alarmı"
     elif error_msb == 16:
         return "Yüksek kol sıcaklığı alarmı"
+    elif error_msb == 266:
+        return "Kol verisi gelmiyor"
     else:
         return None
+
+def is_valid_alarm(error_msb, error_lsb):
+    """Alarm geçerli mi kontrol et - process_alarm_data ile aynı mantık"""
+    if error_lsb == 9:  # Kol alarmı
+        return get_arm_alarm_description(error_msb) is not None
+    else:  # Batarya alarmı
+        return get_battery_alarm_description(error_msb, error_lsb) is not None
+
+def get_alarm_type(error_msb, error_lsb):
+    """Alarm türünü döndür - 'arm' veya 'battery'"""
+    if error_lsb == 9:
+        return 'arm'
+    else:
+        return 'battery'
 
 @app.route('/api/send-config-to-device', methods=['POST'])
 @admin_required
