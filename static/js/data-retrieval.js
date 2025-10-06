@@ -76,7 +76,7 @@ class DataRetrieval {
             if (response.ok) {
                 this.addOperation('read', `Tümünü Oku - ${selectedArm === '5' ? 'Tüm Kollar' : `Kol ${selectedArm}`}`);
                 this.showToast('Tümünü oku komutu başarıyla gönderildi', 'success');
-            } else {
+    } else {
                 throw new Error('Komut gönderilemedi');
             }
         } catch (error) {
