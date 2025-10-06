@@ -146,16 +146,16 @@ def get_data_retrieval_config():
 
 def should_capture_data(arm_value, k_value, dtype, config):
     """Veri yakalanmalı mı kontrol et"""
-    # Tüm kollar seçilmişse (arm=5)
+    # Tüm kollar seçilmişse (arm=5) - Tümünü Oku
     if config['arm'] == 5:
         return True
     
     # Belirli kol seçilmişse
     if config['arm'] == arm_value:
-        # Adres 0 ise kol verisi (k=2)
+        # Adres 0 ise Tümünü Oku işlemi - tüm verileri yakala
         if config['address'] == 0:
-            return k_value == 2 and dtype == config['value']
-        # Adres 1-255 ise batarya verisi
+            return True
+        # Adres 1-255 ise Veri Al işlemi - sadece istenen veriyi yakala
         else:
             return k_value > 2 and dtype == config['value']
     
@@ -167,16 +167,16 @@ def is_data_retrieval_period_complete(arm_value, k_value, dtype):
     if not config:
         return False
     
-    # Tüm kollar seçilmişse (arm=5) - genel periyot kontrolü
+    # Tüm kollar seçilmişse (arm=5) - Tümünü Oku işlemi
     if config['arm'] == 5:
         return is_period_complete(arm_value, k_value)
     
-    # Belirli kol seçilmişse - o koldaki son batarya kontrolü
+    # Belirli kol seçilmişse
     if config['arm'] == arm_value:
-        # Adres 0 ise kol verisi (k=2) - tek veri
+        # Adres 0 ise Tümünü Oku işlemi - genel periyot kontrolü
         if config['address'] == 0:
-            return k_value == 2 and dtype == config['value']
-        # Adres 1-255 ise batarya verisi - o koldaki son batarya
+            return is_period_complete(arm_value, k_value)
+        # Adres 1-255 ise Veri Al işlemi - sadece istenen veri
         else:
             # O koldaki son batarya numarasını al
             last_arm, last_battery = get_last_battery_info()

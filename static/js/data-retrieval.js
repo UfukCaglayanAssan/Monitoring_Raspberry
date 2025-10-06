@@ -122,16 +122,16 @@ if (typeof window.DataRetrieval === 'undefined') {
             });
 
             if (response.ok) {
-                this.showToast('Tümünü oku komutu başarıyla gönderildi - Veriler bekleniyor...', 'success');
+                this.showToast('Tümünü oku komutu başarıyla gönderildi', 'success');
                 
                 // Tümünü oku işlemi için veri alma modu başlat
                 if (selectedArm !== '5') {
                     // Belirli bir kol seçildiyse, o kol için veri alma modu başlat
                     await this.startDataRetrievalMode({
                         arm: parseInt(selectedArm),
-                        address: 0, // Kol verisi
-                        value: 10, // Akım verisi (varsayılan)
-                        valueText: 'Akım'
+                        address: 0, // Tümünü Oku işlemi için adres 0
+                        value: 0, // Tümünü Oku işlemi için değer 0
+                        valueText: 'Tüm Veriler'
                     });
                 }
     } else {
@@ -209,7 +209,7 @@ if (typeof window.DataRetrieval === 'undefined') {
 
             if (response.ok) {
                 const valueText = this.getDataTypeText(value);
-                this.showToast('Veri alma komutu başarıyla gönderildi - Veriler bekleniyor...', 'success');
+                this.showToast('Veri alma komutu başarıyla gönderildi', 'success');
                 
                 // Veri alma modunu aktif et
                 await this.startDataRetrievalMode({
@@ -441,11 +441,11 @@ if (typeof window.DataRetrieval === 'undefined') {
                         
                         if (this.retrievalConfig) {
                             if (this.retrievalConfig.address === 0) {
-                                // Kol verisi - Tümünü Oku işlemi
+                                // Tümünü Oku işlemi
                                 operationDescription = `Tümünü Oku - Kol ${this.retrievalConfig.arm}`;
                                 operationType = 'read';
                             } else {
-                                // Batarya verisi - Veri Al işlemi
+                                // Veri Al işlemi
                                 operationDescription = `Veri Al - Kol ${this.retrievalConfig.arm}, Adres ${this.retrievalConfig.address}, ${this.retrievalConfig.valueText}`;
                                 operationType = 'data';
                             }
@@ -497,15 +497,15 @@ if (typeof window.DataRetrieval === 'undefined') {
                         </thead>
                         <tbody id="dataTableBody">
                             <tr>
-                                <td colspan="5" class="no-data">Veri bekleniyor...</td>
+                                <td colspan="5" class="no-data">
+                                    <div class="loading">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                        Veriler alınıyor...
+                                    </div>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
-                </div>
-                <div class="data-actions">
-                    <p class="text-muted">
-                        <i class="fas fa-info-circle"></i> Veri alma modu aktif - Periyot bittiğinde otomatik duracak
-                    </p>
                 </div>
             </div>
         `;
