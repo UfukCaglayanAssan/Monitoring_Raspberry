@@ -1,7 +1,12 @@
 // Veri Alma Sayfası JavaScript
-class DataRetrieval {
+// Class'ın zaten tanımlanıp tanımlanmadığını kontrol et
+if (typeof window.DataRetrieval === 'undefined') {
+    window.DataRetrieval = class DataRetrieval {
     constructor() {
         this.operations = [];
+        this.isDataRetrievalMode = false;
+        this.retrievalConfig = null;
+        this.retrievedData = [];
         this.init();
     }
 
@@ -31,12 +36,55 @@ class DataRetrieval {
         });
 
         document.getElementById('dataAddressInput').addEventListener('input', () => {
+            this.updateDataTypeOptions();
             this.validateForm();
         });
 
         document.getElementById('dataValueSelect').addEventListener('change', () => {
             this.validateForm();
         });
+    }
+
+    updateDataTypeOptions() {
+        const address = document.getElementById('dataAddressInput').value;
+        const valueSelect = document.getElementById('dataValueSelect');
+        
+        // Mevcut seçimi temizle
+        valueSelect.innerHTML = '<option value="">Seçiniz</option>';
+        
+        if (address === '0') {
+            // Kol verileri (adres 0)
+            const kolOptions = [
+                { value: '10', text: 'Akım' },
+                { value: '11', text: 'Nem' },
+                { value: '12', text: 'Modül Sıcaklığı' },
+                { value: '13', text: 'Ortam Sıcaklığı' }
+            ];
+            
+            kolOptions.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option.value;
+                optionElement.textContent = option.text;
+                valueSelect.appendChild(optionElement);
+            });
+        } else {
+            // Batarya verileri (adres 1-255)
+            const bataryaOptions = [
+                { value: '10', text: 'Gerilim (V)' },
+                { value: '11', text: 'SOH (%)' },
+                { value: '12', text: 'Sıcaklık (°C)' },
+                { value: '13', text: 'NTC2 (°C)' },
+                { value: '14', text: 'NTC3 (°C)' },
+                { value: '126', text: 'SOC (%)' }
+            ];
+            
+            bataryaOptions.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option.value;
+                optionElement.textContent = option.text;
+                valueSelect.appendChild(optionElement);
+            });
+        }
     }
 
     validateForm() {
@@ -154,6 +202,14 @@ class DataRetrieval {
                 this.addOperation('data', `Veri Al - Kol ${arm}, Adres ${address}, ${valueText}`);
                 this.showToast('Veri alma komutu başarıyla gönderildi', 'success');
                 
+                // Veri alma modunu aktif et
+                await this.startDataRetrievalMode({
+                    arm: parseInt(arm),
+                    address: parseInt(address),
+                    value: parseInt(value),
+                    valueText: valueText
+                });
+                
                 // Formu temizle
                 this.clearForm();
             } else {
@@ -168,15 +224,29 @@ class DataRetrieval {
     }
 
     getDataTypeText(value) {
-        const dataTypes = {
-            '10': 'Gerilim (V)',
-            '11': 'SOH (%)',
-            '12': 'Sıcaklık (°C)',
-            '13': 'NTC2 (°C)',
-            '14': 'NTC3 (°C)',
-            '126': 'SOC (%)'
-        };
-        return dataTypes[value] || `Tip ${value}`;
+        const address = document.getElementById('dataAddressInput').value;
+        
+        if (address === '0') {
+            // Kol verileri
+            const kolDataTypes = {
+                '10': 'Akım',
+                '11': 'Nem',
+                '12': 'Modül Sıcaklığı',
+                '13': 'Ortam Sıcaklığı'
+            };
+            return kolDataTypes[value] || `Tip ${value}`;
+        } else {
+            // Batarya verileri
+            const bataryaDataTypes = {
+                '10': 'Gerilim (V)',
+                '11': 'SOH (%)',
+                '12': 'Sıcaklık (°C)',
+                '13': 'NTC2 (°C)',
+                '14': 'NTC3 (°C)',
+                '126': 'SOC (%)'
+            };
+            return bataryaDataTypes[value] || `Tip ${value}`;
+        }
     }
 
     addOperation(type, description) {
@@ -249,6 +319,178 @@ class DataRetrieval {
         return icons[type] || 'fa-cog';
     }
 
+    async startDataRetrievalMode(config) {
+        try {
+            // Backend'e veri alma modunu başlat
+            const response = await fetch('/api/start-data-retrieval', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(config)
+            });
+
+            if (response.ok) {
+                this.isDataRetrievalMode = true;
+                this.retrievalConfig = config;
+                this.retrievedData = [];
+                
+                // Veri tablosunu göster
+                this.showDataTable();
+                
+                // Periyot başlangıcını bekle
+                this.waitForPeriodStart();
+                
+                console.log('🔍 Veri alma modu başlatıldı:', config);
+            } else {
+                throw new Error('Veri alma modu başlatılamadı');
+            }
+        } catch (error) {
+            console.error('Veri alma modu başlatma hatası:', error);
+            this.showToast('Veri alma modu başlatılamadı', 'error');
+        }
+    }
+    
+    waitForPeriodStart() {
+        // Periyot başlangıcını kontrol et
+        this.checkPeriodStatus();
+    }
+    
+    async checkPeriodStatus() {
+        if (!this.isDataRetrievalMode) return;
+        
+        try {
+            // Yakalanan verileri al
+            const response = await fetch('/api/get-retrieved-data');
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && result.data) {
+                    // Yeni verileri ekle
+                    result.data.forEach(data => {
+                        this.addRetrievedData({
+                            timestamp: data.timestamp,
+                            requestedValue: data.requested_value,
+                            receivedValue: data.value,
+                            arm: data.arm,
+                            address: data.address
+                        });
+                    });
+                }
+            }
+            
+            // Veri alma modu durdu mu kontrol et
+            const statusResponse = await fetch('/api/data-retrieval-status');
+            if (statusResponse.ok) {
+                const statusResult = await statusResponse.json();
+                if (statusResult.success && !statusResult.is_active) {
+                    // Mod durdu, frontend'i güncelle
+                    this.isDataRetrievalMode = false;
+                    this.retrievalConfig = null;
+                    this.renderOperations();
+                    console.log('🛑 Veri alma modu otomatik olarak durduruldu');
+                    return;
+                }
+            }
+        } catch (error) {
+            console.error('Veri alma hatası:', error);
+        }
+        
+        // 1 saniye sonra tekrar kontrol et
+        setTimeout(() => {
+            if (this.isDataRetrievalMode) {
+                this.checkPeriodStatus();
+            }
+        }, 1000);
+    }
+    
+    showDataTable() {
+        // Veri tablosunu göster
+        const operationsList = document.getElementById('operationsList');
+        operationsList.innerHTML = `
+            <div class="data-table-container">
+                <h4>📊 Alınan Veriler</h4>
+                <div class="data-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Saat</th>
+                                <th>İstenilen Değer</th>
+                                <th>Gelen Veri</th>
+                                <th>Kol</th>
+                                <th>Adres</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                            <tr>
+                                <td colspan="5" class="no-data">Veri bekleniyor...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="data-actions">
+                    <p class="text-muted">
+                        <i class="fas fa-info-circle"></i> Veri alma modu aktif - Periyot bittiğinde otomatik duracak
+                    </p>
+                </div>
+            </div>
+        `;
+    }
+    
+    addRetrievedData(data) {
+        if (!this.isDataRetrievalMode) return;
+        
+        this.retrievedData.push(data);
+        this.updateDataTable();
+    }
+    
+    updateDataTable() {
+        const tbody = document.getElementById('dataTableBody');
+        if (!tbody) return;
+        
+        if (this.retrievedData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="no-data">Veri bekleniyor...</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = this.retrievedData.map(data => `
+            <tr>
+                <td>${data.timestamp}</td>
+                <td>${data.requestedValue}</td>
+                <td>${data.receivedValue}</td>
+                <td>${data.arm}</td>
+                <td>${data.address}</td>
+            </tr>
+        `).join('');
+    }
+    
+    async stopDataRetrieval() {
+        try {
+            // Backend'e veri alma modunu durdur
+            const response = await fetch('/api/stop-data-retrieval', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (response.ok) {
+                this.isDataRetrievalMode = false;
+                this.retrievalConfig = null;
+                this.retrievedData = [];
+                
+                // Normal işlemler listesine dön
+                this.renderOperations();
+                
+                console.log('🛑 Veri alma modu durduruldu');
+            } else {
+                throw new Error('Veri alma modu durdurulamadı');
+            }
+        } catch (error) {
+            console.error('Veri alma modu durdurma hatası:', error);
+            this.showToast('Veri alma modu durdurulamadı', 'error');
+        }
+    }
+
     clearForm() {
         document.getElementById('dataArmSelect').value = '';
         document.getElementById('dataAddressInput').value = '';
@@ -286,9 +528,24 @@ class DataRetrieval {
             toast.style.display = 'none';
         }, 3000);
     }
+    };
 }
 
 // Sayfa yüklendiğinde başlat
-document.addEventListener('DOMContentLoaded', () => {
-    new DataRetrieval();
-});
+function initDataRetrievalPage() {
+    console.log('🔧 initDataRetrievalPage() çağrıldı');
+    if (!window.dataRetrievalPage) {
+        window.dataRetrievalPage = new window.DataRetrieval();
+    } else {
+        // Mevcut instance'ı yeniden başlat
+        console.log('🔄 Mevcut DataRetrieval instance yeniden başlatılıyor');
+        window.dataRetrievalPage.init();
+    }
+}
+
+// Global olarak erişilebilir yap
+window.initDataRetrievalPage = initDataRetrievalPage;
+
+// Script yüklendiğinde otomatik init
+console.log('🔧 DataRetrieval.js yüklendi, otomatik init başlatılıyor...');
+initDataRetrievalPage();

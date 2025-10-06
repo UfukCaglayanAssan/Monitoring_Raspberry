@@ -1775,6 +1775,99 @@ def send_dataget():
         print(f"❌ Dataget gönderme hatası: {e}")
         return jsonify({'success': False, 'message': 'Veri alma komutu gönderilemedi'}), 500
 
+@app.route('/api/start-data-retrieval', methods=['POST'])
+@login_required
+def start_data_retrieval():
+    """Veri alma modunu başlat"""
+    try:
+        data = request.get_json()
+        arm = data.get('arm')
+        address = data.get('address')
+        value = data.get('value')
+        value_text = data.get('valueText')
+        
+        if arm is None or address is None or value is None or value_text is None:
+            return jsonify({'success': False, 'message': 'Eksik parametreler'}), 400
+        
+        # Veri alma modunu başlat
+        config = {
+            'arm': arm,
+            'address': address,
+            'value': value,
+            'valueText': value_text
+        }
+        
+        # main.py'deki fonksiyonu çağır
+        import main
+        main.set_data_retrieval_mode(True, config)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Veri alma modu başlatıldı',
+            'config': config
+        })
+        
+    except Exception as e:
+        print(f"❌ Veri alma modu başlatma hatası: {e}")
+        return jsonify({'success': False, 'message': 'Veri alma modu başlatılamadı'}), 500
+
+@app.route('/api/stop-data-retrieval', methods=['POST'])
+@login_required
+def stop_data_retrieval():
+    """Veri alma modunu durdur"""
+    try:
+        # main.py'deki fonksiyonu çağır
+        import main
+        main.set_data_retrieval_mode(False, None)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Veri alma modu durduruldu'
+        })
+        
+    except Exception as e:
+        print(f"❌ Veri alma modu durdurma hatası: {e}")
+        return jsonify({'success': False, 'message': 'Veri alma modu durdurulamadı'}), 500
+
+@app.route('/api/get-retrieved-data', methods=['GET'])
+@login_required
+def get_retrieved_data():
+    """Yakalanan verileri al"""
+    try:
+        if os.path.exists('pending_config.json'):
+            with open('pending_config.json', 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                retrieved_data = data.get('retrieved_data', [])
+                return jsonify({
+                    'success': True,
+                    'data': retrieved_data
+                })
+        else:
+            return jsonify({
+                'success': True,
+                'data': []
+            })
+            
+    except Exception as e:
+        print(f"❌ Yakalanan verileri alma hatası: {e}")
+        return jsonify({'success': False, 'message': 'Veriler alınamadı'}), 500
+
+@app.route('/api/data-retrieval-status', methods=['GET'])
+@login_required
+def get_data_retrieval_status():
+    """Veri alma modu durumunu kontrol et"""
+    try:
+        import main
+        is_active = main.is_data_retrieval_mode()
+        return jsonify({
+            'success': True,
+            'is_active': is_active
+        })
+        
+    except Exception as e:
+        print(f"❌ Veri alma modu durumu kontrol hatası: {e}")
+        return jsonify({'success': False, 'message': 'Durum kontrol edilemedi'}), 500
+
 if __name__ == '__main__':
     import sys
     

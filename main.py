@@ -48,6 +48,11 @@ data_lock = threading.Lock()  # Thread-safe erişim için
 alarm_ram = {}  # {arm: {battery: {alarm_type: bool}}}
 alarm_lock = threading.Lock()  # Thread-safe erişim için
 
+# Veri alma modu
+data_retrieval_mode = False
+data_retrieval_config = None
+data_retrieval_lock = threading.Lock()
+
 # Status verileri için RAM yapısı
 status_ram = {}  # {arm: {battery: bool}} - True=veri var, False=veri yok
 status_lock = threading.RLock()  # Thread-safe erişim için
@@ -116,6 +121,106 @@ def get_last_k_value():
     global last_k_value
     with last_k_value_lock:
         return last_k_value
+
+def set_data_retrieval_mode(enabled, config=None):
+    """Veri alma modunu ayarla"""
+    global data_retrieval_mode, data_retrieval_config
+    with data_retrieval_lock:
+        data_retrieval_mode = enabled
+        data_retrieval_config = config
+        print(f"🔍 Veri alma modu: {'Aktif' if enabled else 'Pasif'}")
+        if config:
+            print(f"📊 Veri alma konfigürasyonu: {config}")
+
+def is_data_retrieval_mode():
+    """Veri alma modu aktif mi kontrol et"""
+    global data_retrieval_mode
+    with data_retrieval_lock:
+        return data_retrieval_mode
+
+def get_data_retrieval_config():
+    """Veri alma konfigürasyonunu al"""
+    global data_retrieval_config
+    with data_retrieval_lock:
+        return data_retrieval_config
+
+def should_capture_data(arm_value, k_value, dtype, config):
+    """Veri yakalanmalı mı kontrol et"""
+    # Tüm kollar seçilmişse (arm=5)
+    if config['arm'] == 5:
+        return True
+    
+    # Belirli kol seçilmişse
+    if config['arm'] == arm_value:
+        # Adres 0 ise kol verisi (k=2)
+        if config['address'] == 0:
+            return k_value == 2 and dtype == config['value']
+        # Adres 1-255 ise batarya verisi
+        else:
+            return k_value > 2 and dtype == config['value']
+    
+    return False
+
+def is_data_retrieval_period_complete(arm_value, k_value, dtype):
+    """Veri alma modu için periyot tamamlandı mı kontrol et"""
+    config = get_data_retrieval_config()
+    if not config:
+        return False
+    
+    # Tüm kollar seçilmişse (arm=5) - genel periyot kontrolü
+    if config['arm'] == 5:
+        return is_period_complete(arm_value, k_value)
+    
+    # Belirli kol seçilmişse - o koldaki son batarya kontrolü
+    if config['arm'] == arm_value:
+        # Adres 0 ise kol verisi (k=2) - tek veri
+        if config['address'] == 0:
+            return k_value == 2 and dtype == config['value']
+        # Adres 1-255 ise batarya verisi - o koldaki son batarya
+        else:
+            # O koldaki son batarya numarasını al
+            last_arm, last_battery = get_last_battery_info()
+            if last_arm == arm_value and k_value == last_battery and dtype == config['value']:
+                return True
+    
+    return False
+
+def capture_data_for_retrieval(arm_value, k_value, dtype, salt_data):
+    """Veri alma için veriyi yakala"""
+    config = get_data_retrieval_config()
+    if not config:
+        return
+    
+    # Veriyi dosyaya yaz
+    data_entry = {
+        'timestamp': datetime.datetime.now().strftime('%H:%M:%S'),
+        'arm': arm_value,
+        'k': k_value,
+        'dtype': dtype,
+        'value': salt_data,
+        'requested_value': config['valueText']
+    }
+    
+    # pending_config.json dosyasına veri ekle
+    try:
+        if os.path.exists('pending_config.json'):
+            with open('pending_config.json', 'r', encoding='utf-8') as f:
+                existing_data = json.load(f)
+        else:
+            existing_data = {}
+        
+        if 'retrieved_data' not in existing_data:
+            existing_data['retrieved_data'] = []
+        
+        existing_data['retrieved_data'].append(data_entry)
+        
+        with open('pending_config.json', 'w', encoding='utf-8') as f:
+            json.dump(existing_data, f, indent=2, ensure_ascii=False)
+        
+        print(f"📊 Veri yakalandı: Kol {arm_value}, k={k_value}, dtype={dtype}, değer={salt_data}")
+        
+    except Exception as e:
+        print(f"❌ Veri yakalama hatası: {e}")
 
 
 def is_valid_arm_data(arm_value, k_value):
@@ -460,6 +565,10 @@ def db_worker():
                     print(f"🔄 PERİYOT BİTTİ - Son batarya alarmı: Kol {arm_value}, Batarya {battery}")
                     # Periyot bitti, alarmları işle
                     alarm_processor.process_period_end()
+                    # Veri alma modunu durdur
+                    if is_data_retrieval_mode():
+                        set_data_retrieval_mode(False, None)
+                        print("🛑 Veri alma modu durduruldu - Periyot bitti")
                     # Normal alarm verisi geldiğinde reset sinyali gönderme
                     # Reset sinyali sadece missing data durumunda gönderilir
                     # Yeni periyot başlat
@@ -499,6 +608,10 @@ def db_worker():
                     if is_period_complete(arm_value, slave_value, is_missing_data=True):
                         # Periyot bitti, alarmları işle
                         alarm_processor.process_period_end()
+                        # Veri alma modunu durdur
+                        if is_data_retrieval_mode():
+                            set_data_retrieval_mode(False, None)
+                            print("🛑 Veri alma modu durduruldu - Periyot bitti (missing data)")
                         # Reset system sinyali gönder (1 saat aralık kontrolü ile)
                         if send_reset_system_signal():
                             # Yeni periyot başlat
@@ -529,15 +642,9 @@ def db_worker():
 
             # 11 byte'lık veri kontrolü
             if len(data) == 11:
-                print(f"\n*** 11 BYTE VERİ ALGILANDI ***")
-                print(f"📦 Ham Veri: {data}")
-                print(f"📊 Hex Format: {' '.join([f'0x{b:02X}' for b in [int(x, 16) for x in data]])}")
-                
                 arm_value = int(data[3], 16)
                 dtype = int(data[2], 16)
                 k_value = int(data[1], 16)
-                
-                print(f"📊 Header: 0x{data[0]}, k: {k_value}, dtype: {dtype}, arm: {arm_value}")
                 
                 # k_value 2 geldiğinde yeni periyot başlat (ard arda gelmemesi şartıyla)
                 if k_value == 2:
@@ -556,6 +663,7 @@ def db_worker():
                 # Veri doğrulama: Sadece aktif kollar ve bataryalar işlenir
                 if not is_valid_arm_data(arm_value, k_value):
                     continue
+                
                 
                 # Missing data düzeltme (veri geldiğinde)
                 if k_value > 2:  # Batarya verisi
@@ -613,8 +721,6 @@ def db_worker():
                     continue  # Bu veriyi atla
                 
                 # Veri işleme ve kayıt (tek tabloya)
-                print(f"✅ VERİ İŞLENİYOR: Arm={arm_value}, k={k_value}, dtype={dtype}, data={salt_data}")
-                
                 if dtype == 10:  # Gerilim
                     # Ham gerilim verisini kaydet
                     record = {
@@ -948,6 +1054,27 @@ def db_worker():
                             }
                     
                     # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
+                    
+                    # Veri alma modu kontrolü
+                    if is_data_retrieval_mode():
+                        config = get_data_retrieval_config()
+                        if config and should_capture_data(arm_value, k_value, dtype, config):
+                            capture_data_for_retrieval(arm_value, k_value, dtype, salt_data)
+                            
+                            # Veri alma modu periyot tamamlandı mı kontrol et
+                            if is_data_retrieval_period_complete(arm_value, k_value, dtype):
+                                print(f"🔄 VERİ ALMA PERİYOTU BİTTİ - Kol {arm_value}, k={k_value}, dtype={dtype}")
+                                set_data_retrieval_mode(False, None)
+                                print("🛑 Veri alma modu durduruldu - İstenen veri alındı")
+                    
+                    # Genel periyot tamamlandı mı kontrol et (11 byte veri için)
+                    if is_period_complete(arm_value, k_value):
+                        print(f"🔄 PERİYOT BİTTİ - 11 byte veri: Kol {arm_value}, k={k_value}")
+                        # Periyot bitti, alarmları işle
+                        alarm_processor.process_period_end()
+                        # Yeni periyot başlat
+                        reset_period()
+                        get_period_timestamp()
 
             # 6 byte'lık balans komutu veya armslavecounts kontrolü
             elif len(data) == 6:
