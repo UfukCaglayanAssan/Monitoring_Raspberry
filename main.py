@@ -647,6 +647,16 @@ def db_worker():
                                 print(f"📊 RAM Mapping: Arm k={k_value}, UART dtype={dtype} -> RAM dtype=1 (Akım)")
                                 print(f"🔋 DEŞARJ AKIMI ALGILANDI - Kol: {arm_value}, Akım: {salt_data} A")
                             elif dtype == 11:  # Nem -> 2
+                                # Veritabanına kaydet
+                                nem_record = {
+                                    "Arm": arm_value,
+                                    "k": k_value,
+                                    "Dtype": 11,
+                                    "data": salt_data,
+                                    "timestamp": get_period_timestamp()
+                                }
+                                batch.append(nem_record)
+                                
                                 battery_data_ram[arm_value][k_value][2] = {
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
@@ -654,6 +664,16 @@ def db_worker():
                                 print(f"📊 RAM Mapping: Arm k={k_value}, UART dtype={dtype} -> RAM dtype=2 (Nem)")
                                 print(f"💧 NEM VERİSİ ALGILANDI - Kol: {arm_value}, Nem: {salt_data}%")
                             elif dtype == 12:  # Sıcaklık -> 3
+                                # Veritabanına kaydet
+                                sicaklik_record = {
+                                    "Arm": arm_value,
+                                    "k": k_value,
+                                    "Dtype": 12,
+                                    "data": salt_data,
+                                    "timestamp": get_period_timestamp()
+                                }
+                                batch.append(sicaklik_record)
+                                
                                 battery_data_ram[arm_value][k_value][3] = {
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
