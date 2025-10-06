@@ -2136,3 +2136,76 @@ input:disabled::placeholder {
 .data-actions .btn-secondary:hover {
     background: #545b62;
 }
+
+/* Veri Tablosu Stilleri - Son İşlemler için */
+.operation-data-table {
+    margin-top: 1rem;
+    border-top: 1px solid #e1e8ed;
+    padding-top: 1rem;
+}
+
+.data-table-header {
+    margin-bottom: 1rem;
+}
+
+.data-table-header h5 {
+    color: #2c3e50;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.data-table-header h5::before {
+    content: "📊";
+    font-size: 1.2rem;
+}
+
+.data-table-container {
+    overflow-x: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.operation-data-table .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    min-width: 600px;
+}
+
+.operation-data-table .data-table th,
+.operation-data-table .data-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #e1e8ed;
+    font-size: 0.9rem;
+}
+
+.operation-data-table .data-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #2c3e50;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.operation-data-table .data-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.operation-data-table .data-table tbody tr:nth-child(even) {
+    background: #fafbfc;
+}
+
+.operation-data-table .data-table tbody tr:nth-child(even):hover {
+    background: #f0f2f5;
+}

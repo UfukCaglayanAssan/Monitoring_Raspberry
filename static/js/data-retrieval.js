@@ -249,12 +249,13 @@ if (typeof window.DataRetrieval === 'undefined') {
         }
     }
 
-    addOperation(type, description) {
+    addOperation(type, description, retrievedData = null) {
         const operation = {
             id: Date.now(),
             type: type,
             description: description,
-            timestamp: new Date().toLocaleString('tr-TR')
+            timestamp: new Date().toLocaleString('tr-TR'),
+            retrievedData: retrievedData || []
         };
 
         this.operations.unshift(operation);
@@ -294,20 +295,61 @@ if (typeof window.DataRetrieval === 'undefined') {
             return;
         }
 
-        container.innerHTML = this.operations.map(op => `
-            <div class="operation-item">
-                <div class="operation-info">
-                    <div class="operation-icon ${op.type}">
-                        <i class="fas ${this.getOperationIcon(op.type)}"></i>
+        container.innerHTML = this.operations.map(op => {
+            let operationHtml = `
+                <div class="operation-item">
+                    <div class="operation-info">
+                        <div class="operation-icon ${op.type}">
+                            <i class="fas ${this.getOperationIcon(op.type)}"></i>
+                        </div>
+                        <div class="operation-details">
+                            <h4>${op.description}</h4>
+                            <p>İşlem tamamlandı</p>
+                        </div>
                     </div>
-                    <div class="operation-details">
-                        <h4>${op.description}</h4>
-                        <p>İşlem tamamlandı</p>
-                    </div>
+                    <div class="operation-time">${op.timestamp}</div>
                 </div>
-                <div class="operation-time">${op.timestamp}</div>
-            </div>
-        `).join('');
+            `;
+
+            // Eğer alınan veri varsa, tablo halinde göster
+            if (op.retrievedData && op.retrievedData.length > 0) {
+                operationHtml += `
+                    <div class="operation-data-table">
+                        <div class="data-table-header">
+                            <h5>Alınan Veriler (${op.retrievedData.length} adet)</h5>
+                        </div>
+                        <div class="data-table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Saat</th>
+                                        <th>Kol</th>
+                                        <th>Adres</th>
+                                        <th>Tip</th>
+                                        <th>Değer</th>
+                                        <th>İstenen</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${op.retrievedData.map(data => `
+                                        <tr>
+                                            <td>${data.timestamp}</td>
+                                            <td>${data.arm}</td>
+                                            <td>${data.k}</td>
+                                            <td>${data.dtype}</td>
+                                            <td>${data.value}</td>
+                                            <td>${data.requested_value}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return operationHtml;
+        }).join('');
     }
 
     getOperationIcon(type) {
@@ -383,9 +425,20 @@ if (typeof window.DataRetrieval === 'undefined') {
             if (statusResponse.ok) {
                 const statusResult = await statusResponse.json();
                 if (statusResult.success && !statusResult.is_active) {
+                    // Mod durdu, alınan verileri işleme ekle
+                    if (this.retrievedData.length > 0) {
+                        const operationDescription = this.retrievalConfig ? 
+                            `Veri Al - Kol ${this.retrievalConfig.arm}, Adres ${this.retrievalConfig.address}, ${this.retrievalConfig.valueText}` :
+                            'Veri Alma İşlemi';
+                        
+                        this.addOperation('data', operationDescription, this.retrievedData);
+                        this.showToast(`${this.retrievedData.length} adet veri alındı`, 'success');
+                    }
+                    
                     // Mod durdu, frontend'i güncelle
                     this.isDataRetrievalMode = false;
                     this.retrievalConfig = null;
+                    this.retrievedData = []; // Verileri temizle
                     this.renderOperations();
                     console.log('🛑 Veri alma modu otomatik olarak durduruldu');
                     return;
