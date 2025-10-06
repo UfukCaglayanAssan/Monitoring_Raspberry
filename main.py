@@ -1342,6 +1342,27 @@ def config_worker():
                             print(f"Arm: {arm}, Slave: {slave}, Komut: {command} (Hex: {[hex(x) for x in command]})")
                             wave_uart_send(pi, TX_PIN, command, int(1e6 / BAUD_RATE))
                             print(f"✓ Kol {arm}, Batarya {slave} manuel set komutu cihaza gönderildi")
+                    elif config_data.get('type') == 'command':
+                        # Toplu komut gönder (readAll, resetAll)
+                        command = config_data.get('command')
+                        arm = config_data.get('arm')
+                        packet = config_data.get('packet')
+                        if packet:
+                            print(f"*** TOPLU KOMUT GÖNDERİLİYOR ***")
+                            print(f"Komut: {command}, Kol: {arm}, Paket: {packet} (Hex: {[hex(x) for x in packet]})")
+                            wave_uart_send(pi, TX_PIN, packet, int(1e6 / BAUD_RATE))
+                            print(f"✓ {command} komutu cihaza gönderildi")
+                    elif config_data.get('type') == 'dataget':
+                        # Veri alma komutu gönder
+                        arm_value = config_data.get('armValue')
+                        slave_address = config_data.get('slaveAddress')
+                        slave_command = config_data.get('slaveCommand')
+                        packet = config_data.get('packet')
+                        if packet:
+                            print(f"*** VERİ ALMA KOMUTU GÖNDERİLİYOR ***")
+                            print(f"Kol: {arm_value}, Adres: {slave_address}, Komut: {slave_command}, Paket: {packet} (Hex: {[hex(x) for x in packet]})")
+                            wave_uart_send(pi, TX_PIN, packet, int(1e6 / BAUD_RATE))
+                            print(f"✓ Veri alma komutu cihaza gönderildi")
                     
                 except Exception as e:
                     print(f"Konfigürasyon dosyası işlenirken hata: {e}")
