@@ -445,80 +445,6 @@ if (typeof window.BatteriesPage === 'undefined') {
       
     }
     
-    openBatteryModal(battery) {
-        console.log('🔋 Batarya modal açılıyor:', battery);
-        
-        // Modal elementlerini al
-        const modal = document.getElementById('batteryModal');
-        const modalTitle = document.getElementById('modalTitle');
-        const modalArm = document.getElementById('modalArm');
-        const modalBatteryAddress = document.getElementById('modalBatteryAddress');
-        const modalTimestamp = document.getElementById('modalTimestamp');
-        const modalVoltage = document.getElementById('modalVoltage');
-        const modalTemperature = document.getElementById('modalTemperature');
-        const modalHealth = document.getElementById('modalHealth');
-        const modalCharge = document.getElementById('modalCharge');
-        
-        if (!modal) {
-            console.error('Modal elementi bulunamadı!');
-            return;
-        }
-        
-        // Modal verilerini doldur
-        modalTitle.textContent = `Batarya Detayları - Kol ${battery.arm}`;
-        modalArm.textContent = battery.arm;
-        modalBatteryAddress.textContent = battery.batteryAddress - 2; // 2 eksiği olarak göster
-        
-        // Timestamp formatla
-        const timestamp = new Date(battery.timestamp);
-        modalTimestamp.textContent = timestamp.toLocaleString('tr-TR');
-        
-        // Ölçüm verilerini doldur
-        modalVoltage.textContent = this.formatValue(battery.voltage, 'V');
-        modalTemperature.textContent = this.formatValue(battery.temperature, '°C');
-        modalHealth.textContent = this.formatValue(battery.health, '%');
-        modalCharge.textContent = this.formatValue(battery.charge, '%');
-        
-        // Modal'ı göster
-        modal.style.display = 'flex';
-        
-        // Modal kapatma event listener'larını ekle
-        this.setupModalEventListeners();
-    }
-    
-    setupModalEventListeners() {
-        const modal = document.getElementById('batteryModal');
-        const closeBtn = document.getElementById('modalClose');
-        
-        if (!modal || !closeBtn) return;
-        
-        // Kapat butonuna tıklama
-        closeBtn.onclick = () => {
-            this.closeBatteryModal();
-        };
-        
-        // Modal dışına tıklama
-        modal.onclick = (event) => {
-            if (event.target === modal) {
-                this.closeBatteryModal();
-            }
-        };
-        
-        // ESC tuşu
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape' && modal.style.display === 'flex') {
-                this.closeBatteryModal();
-            }
-        });
-    }
-    
-    closeBatteryModal() {
-        const modal = document.getElementById('batteryModal');
-        if (modal) {
-            modal.style.display = 'none';
-        }
-    }
-    
     updateCardTexts(language) {
         // Debug: Fonksiyon çağrıldı mı?
         console.log('updateCardTexts çağrıldı, dil:', language);
@@ -788,5 +714,78 @@ initBatteriesPage();
 window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
 });
+
+// Modal fonksiyonları
+function openBatteryModal(battery) {
+    console.log('🔋 Modal açılıyor:', battery);
+    
+    const modal = document.getElementById('batteryModal');
+    if (!modal) {
+        console.error('batteryModal bulunamadı!');
+        return;
+    }
+    
+    // Modal verilerini doldur
+    document.getElementById('modalArm').textContent = battery.arm;
+    document.getElementById('modalBatteryAddress').textContent = battery.batteryAddress - 2;
+    document.getElementById('modalTimestamp').textContent = new Date(battery.timestamp).toLocaleString('tr-TR');
+    
+    // Ölçüm verilerini doldur
+    document.getElementById('modalVoltage').textContent = formatValue(battery.voltage, 'V');
+    document.getElementById('modalTemperature').textContent = formatValue(battery.temperature, '°C');
+    document.getElementById('modalHealth').textContent = formatValue(battery.health, '%');
+    document.getElementById('modalCharge').textContent = formatValue(battery.charge, '%');
+    
+    // Modal'ı göster
+    modal.style.display = 'flex';
+    
+    // Event listener'ları ekle
+    bindModalEvents();
+}
+
+function bindModalEvents() {
+    const modal = document.getElementById('batteryModal');
+    const closeBtn = document.getElementById('modalClose');
+    
+    if (!modal || !closeBtn) return;
+    
+    // Kapatma butonuna tıklama
+    closeBtn.addEventListener('click', () => {
+        closeBatteryModal();
+    });
+    
+    // Modal dışına tıklama
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeBatteryModal();
+        }
+    });
+    
+    // ESC tuşu
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.style.display === 'flex') {
+            closeBatteryModal();
+        }
+    });
+}
+
+function closeBatteryModal() {
+    const modal = document.getElementById('batteryModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function formatValue(value, unit) {
+    if (value === null || value === undefined || value === '') {
+        return 'N/A';
+    }
+    
+    if (typeof value === 'number') {
+        return value.toFixed(3) + (unit ? ' ' + unit : '');
+    }
+    
+    return value + (unit ? ' ' + unit : '');
+}
 
 

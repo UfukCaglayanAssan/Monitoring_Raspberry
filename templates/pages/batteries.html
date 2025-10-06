@@ -44,69 +44,6 @@
 
 </div>
 
-<!-- Batarya Detay Modal -->
-<div id="batteryModal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2 id="modalTitle">Batarya Detayları</h2>
-            <span class="close" id="modalClose">&times;</span>
-        </div>
-        <div class="modal-body">
-            <div class="battery-info">
-                <div class="info-item">
-                    <label>Kol:</label>
-                    <span id="modalArm">--</span>
-                </div>
-                <div class="info-item">
-                    <label>Batarya Adresi:</label>
-                    <span id="modalBatteryAddress">--</span>
-                </div>
-                <div class="info-item">
-                    <label>Son Güncelleme:</label>
-                    <span id="modalTimestamp">--</span>
-                </div>
-            </div>
-            
-            <div class="battery-data">
-                <h3>Ölçüm Verileri</h3>
-                <div class="data-grid-modal">
-                    <div class="data-item-modal">
-                        <div class="data-header-modal">
-                            <i class="fas fa-bolt voltage-icon"></i>
-                            <span>Gerilim:</span>
-                        </div>
-                        <span class="data-value-modal" id="modalVoltage">--</span>
-                    </div>
-                    
-                    <div class="data-item-modal">
-                        <div class="data-header-modal">
-                            <i class="fas fa-thermometer-half temperature-icon"></i>
-                            <span>Sıcaklık:</span>
-                        </div>
-                        <span class="data-value-modal" id="modalTemperature">--</span>
-                    </div>
-                    
-                    <div class="data-item-modal">
-                        <div class="data-header-modal">
-                            <i class="fas fa-battery-full health-icon"></i>
-                            <span>Sağlık:</span>
-                        </div>
-                        <span class="data-value-modal" id="modalHealth">--</span>
-                    </div>
-                    
-                    <div class="data-item-modal">
-                        <div class="data-header-modal">
-                            <i class="fas fa-hashtag charge-icon"></i>
-                            <span>Şarj:</span>
-                        </div>
-                        <span class="data-value-modal" id="modalCharge">--</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Batarya kartı template'i -->
 <template id="batteryCardTemplate">
     <div class="battery-card" data-arm="" data-battery="" data-timestamp="">
@@ -167,5 +104,68 @@
         </div>
     </div>
 </template>
+
+<!-- Batarya Detay Modal -->
+<div id="batteryModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitle">Batarya Detayları</h2>
+            <span class="close" id="modalClose">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="battery-info">
+                <div class="info-item">
+                    <label>Kol:</label>
+                    <span id="modalArm">--</span>
+                </div>
+                <div class="info-item">
+                    <label>Batarya Adresi:</label>
+                    <span id="modalBatteryAddress">--</span>
+                </div>
+                <div class="info-item">
+                    <label>Son Güncelleme:</label>
+                    <span id="modalTimestamp">--</span>
+                </div>
+            </div>
+            
+            <div class="battery-data">
+                <h3>Ölçüm Verileri</h3>
+                <div class="data-grid-modal">
+                    <div class="data-item-modal">
+                        <div class="data-header-modal">
+                            <i class="fas fa-bolt voltage-icon"></i>
+                            <span>Gerilim (V)</span>
+                        </div>
+                        <span class="data-value-modal" id="modalVoltage">--</span>
+                    </div>
+                    
+                    <div class="data-item-modal">
+                        <div class="data-header-modal">
+                            <i class="fas fa-thermometer-half temperature-icon"></i>
+                            <span>Sıcaklık (°C)</span>
+                        </div>
+                        <span class="data-value-modal" id="modalTemperature">--</span>
+                    </div>
+                    
+                    <div class="data-item-modal">
+                        <div class="data-header-modal">
+                            <i class="fas fa-battery-full health-icon"></i>
+                            <span>Sağlık (%)</span>
+                        </div>
+                        <span class="data-value-modal" id="modalHealth">--</span>
+                    </div>
+                    
+                    <div class="data-item-modal">
+                        <div class="data-header-modal">
+                            <i class="fas fa-hashtag charge-icon"></i>
+                            <span>Şarj (%)</span>
+                        </div>
+                        <span class="data-value-modal" id="modalCharge">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Batteries sayfası script'i batteries.js tarafından yüklenecek -->
