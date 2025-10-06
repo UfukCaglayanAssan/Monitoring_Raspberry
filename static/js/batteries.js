@@ -396,6 +396,11 @@ if (typeof window.BatteriesPage === 'undefined') {
         cardElement.dataset.batteryAddress = battery.batteryAddress; // Alarm kontrolü için
         cardElement.dataset.timestamp = battery.timestamp;
         
+        // Modal açma event listener'ı ekle
+        cardElement.addEventListener('click', () => {
+            this.openBatteryModal(battery);
+        });
+        
         // Batarya adresi (2 eksiği olarak göster)
         const batteryValue = cardElement.querySelector('.battery-value');
         if (batteryValue) batteryValue.textContent = battery.batteryAddress - 2;
@@ -438,6 +443,80 @@ if (typeof window.BatteriesPage === 'undefined') {
         this.updateCardTexts(language);
         console.log('loadBatteries çağrılıyor...');
       
+    }
+    
+    openBatteryModal(battery) {
+        console.log('🔋 Batarya modal açılıyor:', battery);
+        
+        // Modal elementlerini al
+        const modal = document.getElementById('batteryModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalArm = document.getElementById('modalArm');
+        const modalBatteryAddress = document.getElementById('modalBatteryAddress');
+        const modalTimestamp = document.getElementById('modalTimestamp');
+        const modalVoltage = document.getElementById('modalVoltage');
+        const modalTemperature = document.getElementById('modalTemperature');
+        const modalHealth = document.getElementById('modalHealth');
+        const modalCharge = document.getElementById('modalCharge');
+        
+        if (!modal) {
+            console.error('Modal elementi bulunamadı!');
+            return;
+        }
+        
+        // Modal verilerini doldur
+        modalTitle.textContent = `Batarya Detayları - Kol ${battery.arm}`;
+        modalArm.textContent = battery.arm;
+        modalBatteryAddress.textContent = battery.batteryAddress - 2; // 2 eksiği olarak göster
+        
+        // Timestamp formatla
+        const timestamp = new Date(battery.timestamp);
+        modalTimestamp.textContent = timestamp.toLocaleString('tr-TR');
+        
+        // Ölçüm verilerini doldur
+        modalVoltage.textContent = this.formatValue(battery.voltage, 'V');
+        modalTemperature.textContent = this.formatValue(battery.temperature, '°C');
+        modalHealth.textContent = this.formatValue(battery.health, '%');
+        modalCharge.textContent = this.formatValue(battery.charge, '%');
+        
+        // Modal'ı göster
+        modal.style.display = 'flex';
+        
+        // Modal kapatma event listener'larını ekle
+        this.setupModalEventListeners();
+    }
+    
+    setupModalEventListeners() {
+        const modal = document.getElementById('batteryModal');
+        const closeBtn = document.getElementById('modalClose');
+        
+        if (!modal || !closeBtn) return;
+        
+        // Kapat butonuna tıklama
+        closeBtn.onclick = () => {
+            this.closeBatteryModal();
+        };
+        
+        // Modal dışına tıklama
+        modal.onclick = (event) => {
+            if (event.target === modal) {
+                this.closeBatteryModal();
+            }
+        };
+        
+        // ESC tuşu
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && modal.style.display === 'flex') {
+                this.closeBatteryModal();
+            }
+        });
+    }
+    
+    closeBatteryModal() {
+        const modal = document.getElementById('batteryModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
     }
     
     updateCardTexts(language) {

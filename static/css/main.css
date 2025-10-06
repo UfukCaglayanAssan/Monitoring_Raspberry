@@ -370,10 +370,12 @@ body {
     cursor: pointer;
     min-width: 0;
     background: transparent !important; /* Tüm battery-card'lar transparent */
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .battery-card:hover {
-    transform: rotateY(180deg);
+    transform: translateY(-5px) rotateY(180deg);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
@@ -743,15 +745,15 @@ body {
 }
 
 .battery-card.battery-alarm {
-    border: 2px solid #dc2626 !important; /* red-600 */
-    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.2) !important;
-    animation: pulse-card 2s infinite;
+    border: none !important;
+    box-shadow: none !important;
+    animation: none;
 }
 
 /* Alarm durumunda ön yüz (card-front) */
 .battery-card.battery-alarm .card-front {
     background: #fef2f2 !important; /* red-50 */
-    border-color: #dc2626 !important; /* red-600 */
+    border: none !important;
 }
 
 .battery-card.battery-alarm .battery-icon {
@@ -765,14 +767,14 @@ body {
 
 /* Pasif balans durumu */
 .battery-card.passive-balance {
-    border: 2px solid #2563eb !important; /* blue-600 */
-    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2) !important;
-    animation: pulse-blue 2s infinite;
+    border: none !important;
+    box-shadow: none !important;
+    animation: none;
 }
 
 .battery-card.passive-balance .card-front {
     background: #eff6ff !important; /* blue-50 */
-    border-color: #2563eb !important; /* blue-600 */
+    border: none !important;
 }
 
 .battery-card.passive-balance .battery-icon {
@@ -785,14 +787,14 @@ body {
 
 /* Veri gelmiyor durumu */
 .battery-card.missing-data {
-    border: 2px solid #6b7280 !important; /* gray-500 */
-    box-shadow: 0 4px 15px rgba(107, 114, 128, 0.2) !important;
-    animation: pulse-gray 2s infinite;
+    border: none !important;
+    box-shadow: none !important;
+    animation: none;
 }
 
 .battery-card.missing-data .card-front {
     background: #f9fafb !important; /* gray-50 */
-    border-color: #6b7280 !important; /* gray-500 */
+    border: none !important;
 }
 
 .battery-card.missing-data .battery-icon {
@@ -1521,4 +1523,600 @@ input:disabled {
 
 input:disabled::placeholder {
     color: #adb5bd !important;
+}
+
+/* Batarya Detay Modal */
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #e5e7eb;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: white;
+    border-radius: 12px 12px 0 0;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.close {
+    color: white;
+    font-size: 2rem;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.3s ease;
+}
+
+.close:hover {
+    color: #fbbf24;
+}
+
+.modal-body {
+    padding: 2rem;
+}
+
+.battery-info {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #1e3c72;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.info-item:last-child {
+    margin-bottom: 0;
+    border-bottom: none;
+}
+
+.info-item label {
+    font-weight: 600;
+    color: #374151;
+    font-size: 1rem;
+}
+
+.info-item span {
+    color: #6b7280;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.battery-data h3 {
+    color: #1f2937;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.data-grid-modal {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.data-item-modal {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.data-item-modal:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: #1e3c72;
+}
+
+.data-header-modal {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.data-header-modal i {
+    font-size: 1.25rem;
+    width: 20px;
+    text-align: center;
+}
+
+.data-header-modal .voltage-icon {
+    color: #f59e0b;
+}
+
+.data-header-modal .temperature-icon {
+    color: #ef4444;
+}
+
+.data-header-modal .health-icon {
+    color: #10b981;
+}
+
+.data-header-modal .charge-icon {
+    color: #8b5cf6;
+}
+
+.data-header-modal span {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.95rem;
+}
+
+.data-value-modal {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1f2937;
+    background: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    min-width: 80px;
+    text-align: center;
+}
+
+/* Responsive Modal */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        margin: 1rem;
+    }
+    
+    .modal-header {
+        padding: 1rem 1.5rem;
+    }
+    
+    .modal-body {
+        padding: 1.5rem;
+    }
+    
+    .data-grid-modal {
+        grid-template-columns: 1fr;
+    }
+    
+    .data-item-modal {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+}
+
+/* Veri Alma Sayfası Stilleri */
+.data-retrieval-page {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.page-header {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.page-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1e3c72;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.page-title i {
+    color: #2a5298;
+}
+
+.page-description {
+    color: #6b7280;
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+/* Bölüm Stilleri */
+.batch-operations-section,
+.data-retrieval-section,
+.recent-operations-section {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+    overflow: hidden;
+}
+
+.section-header {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: white;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.section-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Toplu İşlemler */
+.batch-controls {
+    padding: 2rem;
+    display: flex;
+    align-items: end;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.arm-selector-batch {
+    flex: 1;
+    min-width: 200px;
+}
+
+.arm-selector-batch label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.batch-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+/* Veri Alma Formu */
+.data-form {
+    padding: 2rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.95rem;
+}
+
+.form-select,
+.form-input {
+    padding: 0.75rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.form-select:focus,
+.form-input:focus {
+    outline: none;
+    border-color: #1e3c72;
+    box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
+}
+
+.form-actions {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+/* Buton Stilleri */
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(30, 60, 114, 0.3);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
+    color: white;
+}
+
+.btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(107, 114, 128, 0.3);
+}
+
+.btn-large {
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+}
+
+/* Son İşlemler */
+.operations-list {
+    padding: 2rem;
+    min-height: 200px;
+}
+
+.no-operations {
+    text-align: center;
+    color: #9ca3af;
+    padding: 3rem 1rem;
+}
+
+.no-operations i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.operation-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    background: #f9fafb;
+    transition: all 0.3s ease;
+}
+
+.operation-item:hover {
+    background: #f3f4f6;
+    border-color: #1e3c72;
+}
+
+.operation-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.operation-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: white;
+}
+
+.operation-icon.read {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.operation-icon.reset {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.operation-icon.data {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.operation-details h4 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.operation-details p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+.operation-time {
+    color: #9ca3af;
+    font-size: 0.85rem;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.loading-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.loading-content .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e5e7eb;
+    border-top: 4px solid #1e3c72;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Toast Notifications */
+.toast {
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    z-index: 10000;
+    animation: slideInRight 0.3s ease-out;
+}
+
+.toast-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+}
+
+.toast-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    color: white;
+}
+
+.toast.success .toast-icon {
+    background: #10b981;
+}
+
+.toast.error .toast-icon {
+    background: #ef4444;
+}
+
+.toast-message {
+    font-weight: 600;
+    color: #374151;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .data-retrieval-page {
+        padding: 1rem;
+    }
+    
+    .page-title {
+        font-size: 2rem;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .batch-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .batch-buttons {
+        justify-content: center;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .operation-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .operation-info {
+        width: 100%;
+    }
+    
+    .toast {
+        top: 1rem;
+        right: 1rem;
+        left: 1rem;
+    }
 }

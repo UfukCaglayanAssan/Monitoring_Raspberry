@@ -1,56 +1,128 @@
-<!-- Data Retrieval Sayfası İçeriği -->
+<!-- Veri Alma Sayfası İçeriği -->
 <div class="data-retrieval-page">
     <div class="page-header">
-        <h2>Veri Alma ve Dışa Aktarma</h2>
-        <p>Sistem verilerini farklı formatlarda dışa aktarın</p>
+        <h1 class="page-title">
+            <i class="fas fa-download"></i>
+            Veri Alma
+        </h1>
+        <p class="page-description">Sistemden belirli batarya verilerini almak için parametreleri seçin</p>
     </div>
-    
-    <div class="export-options">
-        <div class="export-card">
-            <h3>CSV Formatında Dışa Aktar</h3>
-            <p>Verileri Excel uyumlu CSV formatında indirin</p>
-            <div class="export-filters">
+
+    <!-- Toplu İşlemler Bölümü -->
+    <div class="batch-operations-section">
+        <div class="section-header">
+            <h2>
+                <i class="fas fa-tasks"></i>
+                Toplu İşlemler
+            </h2>
+        </div>
+        
+        <div class="batch-controls">
+            <div class="arm-selector-batch">
+                <label for="batchArmSelect">Kol Seçiniz</label>
+                <select id="batchArmSelect" class="form-select">
+                    <option value="">Kol Seçiniz</option>
+                    <option value="1">1. Kol</option>
+                    <option value="2">2. Kol</option>
+                    <option value="3">3. Kol</option>
+                    <option value="4">4. Kol</option>
+                    <option value="5">Tüm Kollar</option>
+                </select>
+            </div>
+            
+            <div class="batch-buttons">
+                <button id="readAllBtn" class="btn btn-primary">
+                    <i class="fas fa-play"></i>
+                    Tümünü Oku
+                </button>
+                <button id="resetAllBtn" class="btn btn-secondary">
+                    <i class="fas fa-undo"></i>
+                    Tümünü Sıfırla
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Veri Alma Bölümü -->
+    <div class="data-retrieval-section">
+        <div class="section-header">
+            <h2>
+                <i class="fas fa-search"></i>
+                Veri Alma
+            </h2>
+        </div>
+        
+        <div class="data-form">
+            <div class="form-row">
                 <div class="form-group">
-                    <label for="csvStartDate">Başlangıç Tarihi</label>
-                    <input type="date" id="csvStartDate" class="form-input">
+                    <label for="armSelect">Kol</label>
+                    <select id="armSelect" class="form-select" required>
+                        <option value="">Seçiniz</option>
+                        <option value="1">1. Kol</option>
+                        <option value="2">2. Kol</option>
+                        <option value="3">3. Kol</option>
+                        <option value="4">4. Kol</option>
+                    </select>
                 </div>
+                
                 <div class="form-group">
-                    <label for="csvEndDate">Bitiş Tarihi</label>
-                    <input type="date" id="csvEndDate" class="form-input">
+                    <label for="addressInput">Adres</label>
+                    <input type="number" id="addressInput" class="form-input" placeholder="Adres giriniz" min="1" max="255" required>
                 </div>
+                
                 <div class="form-group">
-                    <label for="csvDataType">Veri Türü</label>
-                    <select id="csvDataType" class="form-select">
-                        <option value="all">Tümü</option>
-                        <option value="arm">Kol Verileri</option>
-                        <option value="battery">Batarya Verileri</option>
+                    <label for="dataTypeSelect">İstenilen Değer</label>
+                    <select id="dataTypeSelect" class="form-select" required>
+                        <option value="">Seçiniz</option>
+                        <option value="voltage" data-dtype="1">Gerilim</option>
+                        <option value="soh" data-dtype="2">SOH (State of Health)</option>
+                        <option value="ntc1" data-dtype="3">NTC1</option>
+                        <option value="ntc2" data-dtype="4">NTC2</option>
+                        <option value="ntc3" data-dtype="5">NTC3</option>
+                        <option value="soc" data-dtype="6">SOC (State of Charge)</option>
                     </select>
                 </div>
             </div>
-            <button class="btn btn-primary" id="exportCSV">
-                <i class="fas fa-download"></i>
-                CSV İndir
-            </button>
+            
+            <div class="form-actions">
+                <button id="getDataBtn" class="btn btn-primary btn-large">
+                    <i class="fas fa-download"></i>
+                    Veri Al
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Son İşlemler Bölümü -->
+    <div class="recent-operations-section">
+        <div class="section-header">
+            <h2>
+                <i class="fas fa-history"></i>
+                Son İşlemler
+            </h2>
         </div>
         
-        <div class="export-card">
-            <h3>JSON Formatında Dışa Aktar</h3>
-            <p>Verileri programatik kullanım için JSON formatında indirin</p>
-            <div class="export-filters">
-                <div class="form-group">
-                    <label for="jsonStartDate">Başlangıç Tarihi</label>
-                    <input type="date" id="jsonStartDate" class="form-input">
-                </div>
-                <div class="form-group">
-                    <label for="jsonEndDate">Bitiş Tarihi</label>
-                    <input type="date" id="jsonEndDate" class="form-input">
-                </div>
+        <div class="operations-list" id="operationsList">
+            <div class="no-operations">
+                <i class="fas fa-info-circle"></i>
+                <p>Henüz işlem yapılmadı</p>
             </div>
-            <button class="btn btn-primary" id="exportJSON">
-                <i class="fas fa-download"></i>
-                JSON İndir
-            </button>
         </div>
     </div>
 </div>
-<!-- Data retrieval sayfası script'i main.js tarafından yüklenecek -->
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <div class="loading-content">
+        <div class="spinner"></div>
+        <p>İşlem gerçekleştiriliyor...</p>
+    </div>
+</div>
+
+<!-- Success/Error Toast -->
+<div id="toast" class="toast" style="display: none;">
+    <div class="toast-content">
+        <i class="toast-icon"></i>
+        <span class="toast-message"></span>
+    </div>
+</div>

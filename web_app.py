@@ -84,6 +84,11 @@ def login():
 def profile():
     return render_template('pages/profile.html')
 
+@app.route('/data-retrieval')
+@login_required
+def data_retrieval():
+    return render_template('pages/data-retrieval.html')
+
 @app.route('/api/login', methods=['POST'])
 def api_login():
     """Kullanıcı girişi (email ile)"""
@@ -1674,6 +1679,162 @@ def get_trap_stats():
         return jsonify({
             'success': False,
             'message': str(e)
+        }), 500
+
+# Veri Alma API Endpoint'leri
+@app.route('/api/data-retrieval/read-all', methods=['POST'])
+@admin_required
+def read_all_data():
+    """Tüm verileri oku - commands koleksiyonuna readAll komutu ekle"""
+    try:
+        data = request.get_json()
+        arm = data.get('arm')
+        
+        if not arm:
+            return jsonify({
+                'success': False,
+                'message': 'Kol numarası gerekli'
+            }), 400
+        
+        # MongoDB'ye commands koleksiyonuna readAll komutu ekle
+        from pymongo import MongoClient
+        from pymongo.server_api import ServerApi
+        
+        # MongoDB bağlantısı
+        uri = "mongodb+srv://ucaglayan:ucaglayan123@cluster0.8jqjq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+        client = MongoClient(uri, server_api=ServerApi('1'))
+        db = client['BatteryManagement']
+        commands_collection = db['commands']
+        
+        # readAll komutu oluştur
+        current_timestamp = int(time.time() * 1000)
+        command_doc = {
+            'command': 'readAll',
+            'arm': arm,
+            'updatedAt': current_timestamp,
+            'createdAt': current_timestamp
+        }
+        
+        # Komutu veritabanına ekle
+        result = commands_collection.insert_one(command_doc)
+        
+        client.close()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Kol {arm} için tüm veriler okunuyor',
+            'command_id': str(result.inserted_id)
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Veri okuma hatası: {str(e)}'
+        }), 500
+
+@app.route('/api/data-retrieval/reset-all', methods=['POST'])
+@admin_required
+def reset_all_data():
+    """Tüm verileri sıfırla - commands koleksiyonuna resetAll komutu ekle"""
+    try:
+        data = request.get_json()
+        arm = data.get('arm')
+        
+        if not arm:
+            return jsonify({
+                'success': False,
+                'message': 'Kol numarası gerekli'
+            }), 400
+        
+        # MongoDB'ye commands koleksiyonuna resetAll komutu ekle
+        from pymongo import MongoClient
+        from pymongo.server_api import ServerApi
+        
+        # MongoDB bağlantısı
+        uri = "mongodb+srv://ucaglayan:ucaglayan123@cluster0.8jqjq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+        client = MongoClient(uri, server_api=ServerApi('1'))
+        db = client['BatteryManagement']
+        commands_collection = db['commands']
+        
+        # resetAll komutu oluştur
+        current_timestamp = int(time.time() * 1000)
+        command_doc = {
+            'command': 'resetAll',
+            'arm': arm,
+            'updatedAt': current_timestamp,
+            'createdAt': current_timestamp
+        }
+        
+        # Komutu veritabanına ekle
+        result = commands_collection.insert_one(command_doc)
+        
+        client.close()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Kol {arm} için tüm veriler sıfırlanıyor',
+            'command_id': str(result.inserted_id)
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Veri sıfırlama hatası: {str(e)}'
+        }), 500
+
+@app.route('/api/data-retrieval/get-data', methods=['POST'])
+@admin_required
+def get_specific_data():
+    """Belirli veri al - datagets koleksiyonuna veri alma komutu ekle"""
+    try:
+        data = request.get_json()
+        arm = data.get('arm')
+        address = data.get('address')
+        data_type = data.get('dataType')
+        dtype = data.get('dtype')
+        
+        if not all([arm, address, data_type, dtype]):
+            return jsonify({
+                'success': False,
+                'message': 'Tüm parametreler gerekli'
+            }), 400
+        
+        # MongoDB'ye datagets koleksiyonuna veri alma komutu ekle
+        from pymongo import MongoClient
+        from pymongo.server_api import ServerApi
+        
+        # MongoDB bağlantısı
+        uri = "mongodb+srv://ucaglayan:ucaglayan123@cluster0.8jqjq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+        client = MongoClient(uri, server_api=ServerApi('1'))
+        db = client['BatteryManagement']
+        datagets_collection = db['datagets']
+        
+        # Veri alma komutu oluştur (main-mongo.py'deki gibi 3 byte)
+        current_timestamp = int(time.time() * 1000)
+        dataget_doc = {
+            'armValue': arm,           # Kol numarası
+            'slaveAddress': address,   # Slave adresi
+            'slaveCommand': dtype,     # Slave komutu (dtype değeri)
+            'time': str(current_timestamp),
+            'dataType': data_type,
+            'createdAt': current_timestamp
+        }
+        
+        # Komutu veritabanına ekle
+        result = datagets_collection.insert_one(dataget_doc)
+        
+        client.close()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Kol {arm}, Adres {address} - {data_type} verisi alınıyor',
+            'command_id': str(result.inserted_id)
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Veri alma hatası: {str(e)}'
         }), 500
 
 if __name__ == '__main__':

@@ -189,6 +189,8 @@ class App {
                 pageUrl = '/mail-server-config';
             } else if (page === 'interface-ip-settings') {
                 pageUrl = '/interface-ip-settings';
+            } else if (page === 'data-retrieval') {
+                pageUrl = '/data-retrieval';
             } else {
                 pageUrl = `/pages/${page}.html`;
             }
