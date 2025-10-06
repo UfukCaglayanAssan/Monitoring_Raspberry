@@ -52,6 +52,7 @@ alarm_lock = threading.Lock()  # Thread-safe erişim için
 data_retrieval_mode = False
 data_retrieval_config = None
 data_retrieval_lock = threading.Lock()
+data_retrieval_waiting_for_period = False  # Tümünü Oku işlemi için periyot bekleme flag'i
 
 # Status verileri için RAM yapısı
 status_ram = {}  # {arm: {battery: bool}} - True=veri var, False=veri yok
@@ -88,7 +89,7 @@ program_start_time = int(time.time() * 1000)
 
 def get_period_timestamp():
     """Aktif periyot için timestamp döndür"""
-    global current_period_timestamp, period_active, last_data_received
+    global current_period_timestamp, period_active, last_data_received, data_retrieval_waiting_for_period
     
     current_time = time.time()
     
@@ -98,6 +99,13 @@ def get_period_timestamp():
         last_data_received = current_time
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         print(f"🔄 PERİYOT BAŞLADI: {timestamp} - Timestamp: {current_period_timestamp}")
+        
+        # Tümünü Oku işlemi periyot bekliyorsa, şimdi aktif et
+        if data_retrieval_waiting_for_period:
+            with data_retrieval_lock:
+                data_retrieval_mode = True
+                data_retrieval_waiting_for_period = False
+            print(f"🔍 TÜMÜNÜ OKU AKTİF: Yeni periyot başladı, veri yakalama başlıyor")
     
     return current_period_timestamp
 
@@ -124,11 +132,27 @@ def get_last_k_value():
 
 def set_data_retrieval_mode(enabled, config=None):
     """Veri alma modunu ayarla"""
-    global data_retrieval_mode, data_retrieval_config
+    global data_retrieval_mode, data_retrieval_config, data_retrieval_waiting_for_period, period_active
     with data_retrieval_lock:
         data_retrieval_mode = enabled
         data_retrieval_config = config
-        print(f"🔍 Veri alma modu: {'Aktif' if enabled else 'Pasif'}")
+        
+        # Tümünü Oku işlemi için özel flag
+        if enabled and config and config.get('address') == 0:
+            # Eğer aktif periyot varsa, onu bitir ve yeni periyot başlat
+            if period_active:
+                print(f"🔄 TÜMÜNÜ OKU: Aktif periyot bitiriliyor, yeni periyot başlatılıyor")
+                reset_period()
+                get_period_timestamp()
+                data_retrieval_waiting_for_period = False
+                print(f"🔍 Veri alma modu: Tümünü Oku - Yeni periyot başlatıldı")
+            else:
+                data_retrieval_waiting_for_period = True
+                print(f"🔍 Veri alma modu: Tümünü Oku - Periyot bekleniyor")
+        else:
+            data_retrieval_waiting_for_period = False
+            print(f"🔍 Veri alma modu: {'Aktif' if enabled else 'Pasif'}")
+        
         if config:
             print(f"📊 Veri alma konfigürasyonu: {config}")
 
@@ -173,9 +197,17 @@ def is_data_retrieval_period_complete(arm_value, k_value, dtype):
     
     # Belirli kol seçilmişse
     if config['arm'] == arm_value:
-        # Adres 0 ise Tümünü Oku işlemi - genel periyot kontrolü
+        # Adres 0 ise Tümünü Oku işlemi - periyot bittiğinde beklemeye geç
         if config['address'] == 0:
-            return is_period_complete(arm_value, k_value)
+            if is_period_complete(arm_value, k_value):
+                # Periyot bitti, beklemeye geç
+                global data_retrieval_waiting_for_period
+                with data_retrieval_lock:
+                    data_retrieval_mode = False
+                    data_retrieval_waiting_for_period = True
+                print(f"🔍 TÜMÜNÜ OKU BEKLEMEDE: Periyot bitti, yeni periyot bekleniyor")
+                return True
+            return False
         # Adres 1-255 ise Veri Al işlemi - sadece istenen veri
         else:
             # O koldaki son batarya numarasını al
