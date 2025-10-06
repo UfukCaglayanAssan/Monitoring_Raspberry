@@ -222,8 +222,11 @@ if (typeof window.ConfigurationPage === 'undefined') {
         try {
             console.log('🔄 DB\'den batarya konfigürasyonları yükleniyor...');
             const response = await fetch('/api/batconfigs');
+            console.log('📡 API Response Status:', response.status);
+            console.log('📡 API Response OK:', response.ok);
+            
             const result = await response.json();
-            console.log('📡 API Response:', result);
+            console.log('📡 API Response Data:', result);
             
             if (result.success) {
                 console.log(`✅ ${result.data.length} adet batarya konfigürasyonu yüklendi:`, result.data);
@@ -252,10 +255,13 @@ if (typeof window.ConfigurationPage === 'undefined') {
     loadBatteryConfigForArm(armValue, configs) {
         console.log(`🔍 Kol ${armValue} için konfigürasyon aranıyor...`);
         console.log(`📋 Mevcut konfigürasyonlar:`, configs);
+        console.log(`📊 Konfigürasyon sayısı: ${configs.length}`);
         
         // DB'den bu kol için konfigürasyon bul
         const config = configs.find(c => c.armValue === armValue);
         console.log(`🔍 Bulunan konfigürasyon:`, config);
+        console.log(`🔍 Arama kriteri: armValue === ${armValue}`);
+        console.log(`🔍 Mevcut armValue'lar:`, configs.map(c => c.armValue));
         
         if (config) {
             console.log(`✅ Kol ${armValue} konfigürasyonu bulundu, DB değerleri yükleniyor`);
@@ -315,6 +321,7 @@ if (typeof window.ConfigurationPage === 'undefined') {
             console.log(`🔄 Kol ${armValue} için batarya konfigürasyonu yükleniyor...`);
             const configs = await this.loadBatteryConfigsFromDB();
             console.log(`📋 Yüklenen konfigürasyonlar:`, configs);
+            console.log(`🔍 Kol ${armValue} için arama yapılıyor...`);
             this.loadBatteryConfigForArm(armValue, configs);
         } catch (error) {
             console.error('❌ Batarya konfigürasyonu yüklenirken hata:', error);
