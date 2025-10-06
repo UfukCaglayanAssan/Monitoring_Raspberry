@@ -529,9 +529,15 @@ def db_worker():
 
             # 11 byte'lık veri kontrolü
             if len(data) == 11:
+                print(f"\n*** 11 BYTE VERİ ALGILANDI ***")
+                print(f"📦 Ham Veri: {data}")
+                print(f"📊 Hex Format: {' '.join([f'0x{b:02X}' for b in [int(x, 16) for x in data]])}")
+                
                 arm_value = int(data[3], 16)
                 dtype = int(data[2], 16)
                 k_value = int(data[1], 16)
+                
+                print(f"📊 Header: 0x{data[0]}, k: {k_value}, dtype: {dtype}, arm: {arm_value}")
                 
                 # k_value 2 geldiğinde yeni periyot başlat (ard arda gelmemesi şartıyla)
                 if k_value == 2:
@@ -607,6 +613,8 @@ def db_worker():
                     continue  # Bu veriyi atla
                 
                 # Veri işleme ve kayıt (tek tabloya)
+                print(f"✅ VERİ İŞLENİYOR: Arm={arm_value}, k={k_value}, dtype={dtype}, data={salt_data}")
+                
                 if dtype == 10:  # Gerilim
                     # Ham gerilim verisini kaydet
                     record = {
