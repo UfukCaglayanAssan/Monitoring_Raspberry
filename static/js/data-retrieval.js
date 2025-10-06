@@ -122,8 +122,18 @@ if (typeof window.DataRetrieval === 'undefined') {
             });
 
             if (response.ok) {
-                this.addOperation('read', `Tümünü Oku - ${selectedArm === '5' ? 'Tüm Kollar' : `Kol ${selectedArm}`}`);
-                this.showToast('Tümünü oku komutu başarıyla gönderildi', 'success');
+                this.showToast('Tümünü oku komutu başarıyla gönderildi - Veriler bekleniyor...', 'success');
+                
+                // Tümünü oku işlemi için veri alma modu başlat
+                if (selectedArm !== '5') {
+                    // Belirli bir kol seçildiyse, o kol için veri alma modu başlat
+                    await this.startDataRetrievalMode({
+                        arm: parseInt(selectedArm),
+                        address: 0, // Kol verisi
+                        value: 10, // Akım verisi (varsayılan)
+                        valueText: 'Akım'
+                    });
+                }
     } else {
                 throw new Error('Komut gönderilemedi');
             }
@@ -199,8 +209,7 @@ if (typeof window.DataRetrieval === 'undefined') {
 
             if (response.ok) {
                 const valueText = this.getDataTypeText(value);
-                this.addOperation('data', `Veri Al - Kol ${arm}, Adres ${address}, ${valueText}`);
-                this.showToast('Veri alma komutu başarıyla gönderildi', 'success');
+                this.showToast('Veri alma komutu başarıyla gönderildi - Veriler bekleniyor...', 'success');
                 
                 // Veri alma modunu aktif et
                 await this.startDataRetrievalMode({
@@ -427,11 +436,24 @@ if (typeof window.DataRetrieval === 'undefined') {
                 if (statusResult.success && !statusResult.is_active) {
                     // Mod durdu, alınan verileri işleme ekle
                     if (this.retrievedData.length > 0) {
-                        const operationDescription = this.retrievalConfig ? 
-                            `Veri Al - Kol ${this.retrievalConfig.arm}, Adres ${this.retrievalConfig.address}, ${this.retrievalConfig.valueText}` :
-                            'Veri Alma İşlemi';
+                        let operationDescription;
+                        let operationType = 'data';
                         
-                        this.addOperation('data', operationDescription, this.retrievedData);
+                        if (this.retrievalConfig) {
+                            if (this.retrievalConfig.address === 0) {
+                                // Kol verisi - Tümünü Oku işlemi
+                                operationDescription = `Tümünü Oku - Kol ${this.retrievalConfig.arm}`;
+                                operationType = 'read';
+                            } else {
+                                // Batarya verisi - Veri Al işlemi
+                                operationDescription = `Veri Al - Kol ${this.retrievalConfig.arm}, Adres ${this.retrievalConfig.address}, ${this.retrievalConfig.valueText}`;
+                                operationType = 'data';
+                            }
+                        } else {
+                            operationDescription = 'Veri Alma İşlemi';
+                        }
+                        
+                        this.addOperation(operationType, operationDescription, this.retrievedData);
                         this.showToast(`${this.retrievedData.length} adet veri alındı`, 'success');
                     }
                     
