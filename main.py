@@ -338,6 +338,20 @@ def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False
         print(f"✅ PERİYOT TAMAMLANDI: Son batarya alarmı geldi - Kol {arm_value}, Batarya {k_value}")
         return True
     
+    # Pasif balans kontrolü - son batarya pasif balansta mı?
+    if arm_value == last_arm and k_value == last_battery - 1:
+        # Son bataryadan bir önceki batarya geldi, son batarya pasif balansta mı kontrol et
+        try:
+            with db_lock:
+                balance_data = db.get_passive_balance(arm=arm_value)
+                # Son batarya için pasif balans durumunu kontrol et
+                for balance in balance_data:
+                    if balance['slave'] == last_battery and balance['status'] == 1:
+                        print(f"✅ PERİYOT TAMAMLANDI: Son batarya pasif balansta - Kol {arm_value}, Batarya {last_battery}")
+                        return True
+        except Exception as e:
+            print(f"❌ Pasif balans kontrol hatası: {e}")
+    
     print(f"⏳ PERİYOT DEVAM EDİYOR: Kol {arm_value}, k={k_value} - Beklenen: Kol {last_arm}, k={last_battery}")
     return False
 
