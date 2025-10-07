@@ -12,7 +12,7 @@ if (typeof window.DataRetrieval === 'undefined') {
 
     init() {
         this.bindEvents();
-        this.loadOperations();
+        this.hideOperationsList();
     }
 
     bindEvents() {
@@ -275,14 +275,21 @@ if (typeof window.DataRetrieval === 'undefined') {
         }
 
         this.saveOperations();
-        this.renderOperations();
     }
 
-    loadOperations() {
-        const saved = localStorage.getItem('dataRetrievalOperations');
-        if (saved) {
-            this.operations = JSON.parse(saved);
-            this.renderOperations();
+    hideOperationsList() {
+        // "Son İşlemler" bölümünü gizle
+        const operationsList = document.getElementById('operationsList');
+        if (operationsList) {
+            operationsList.innerHTML = `
+                <div class="data-table-container">
+                    <div class="no-data-message">
+                        <i class="fas fa-database"></i>
+                        <h4>Veri Alma Sistemi</h4>
+                        <p>Yukarıdaki butonları kullanarak veri alma işlemi başlatın</p>
+                    </div>
+                </div>
+            `;
         }
     }
 
@@ -290,85 +297,7 @@ if (typeof window.DataRetrieval === 'undefined') {
         localStorage.setItem('dataRetrievalOperations', JSON.stringify(this.operations));
     }
 
-    renderOperations() {
-        const container = document.getElementById('operationsList');
-        
-        if (this.operations.length === 0) {
-            container.innerHTML = `
-                <div class="no-operations">
-                    <i class="fas fa-inbox"></i>
-                    <h4>Henüz işlem yapılmadı</h4>
-                    <p>Veri alma işlemleri burada görüntülenecek</p>
-                </div>
-            `;
-            return;
-        }
 
-        container.innerHTML = this.operations.map(op => {
-            let operationHtml = `
-                <div class="operation-item">
-                    <div class="operation-info">
-                        <div class="operation-icon ${op.type}">
-                            <i class="fas ${this.getOperationIcon(op.type)}"></i>
-                        </div>
-                        <div class="operation-details">
-                            <h4>${op.description}</h4>
-                            <p>İşlem tamamlandı</p>
-                        </div>
-                    </div>
-                    <div class="operation-time">${op.timestamp}</div>
-                </div>
-            `;
-
-            // Eğer alınan veri varsa, tablo halinde göster
-            if (op.retrievedData && op.retrievedData.length > 0) {
-                operationHtml += `
-                    <div class="operation-data-table">
-                        <div class="data-table-header">
-                            <h5>Alınan Veriler (${op.retrievedData.length} adet)</h5>
-                        </div>
-                        <div class="data-table-container">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Saat</th>
-                                        <th>Kol</th>
-                                        <th>Adres</th>
-                                        <th>Tip</th>
-                                        <th>Değer</th>
-                                        <th>İstenen</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${op.retrievedData.map(data => `
-                                        <tr>
-                                            <td>${data.timestamp}</td>
-                                            <td>${data.arm}</td>
-                                            <td>${data.k}</td>
-                                            <td>${data.dtype}</td>
-                                            <td>${data.value}</td>
-                                            <td>${data.requested_value}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
-            }
-
-            return operationHtml;
-        }).join('');
-    }
-
-    getOperationIcon(type) {
-        const icons = {
-            'read': 'fa-download',
-            'reset': 'fa-refresh',
-            'data': 'fa-database'
-        };
-        return icons[type] || 'fa-cog';
-    }
 
     async startDataRetrievalMode(config) {
         try {
@@ -472,9 +401,10 @@ if (typeof window.DataRetrieval === 'undefined') {
             if (response.ok) {
                 const result = await response.json();
                 if (result.success && result.data) {
-                    // Yeni verileri ekle
+                    // Verileri temizle ve yeni verileri ekle
+                    this.retrievedData = [];
                     result.data.forEach(data => {
-                        this.addRetrievedData({
+                        this.retrievedData.push({
                             timestamp: data.timestamp,
                             requestedValue: data.requested_value,
                             receivedValue: data.value,
@@ -482,6 +412,7 @@ if (typeof window.DataRetrieval === 'undefined') {
                             address: data.address
                         });
                     });
+                    console.log(`📊 ${this.retrievedData.length} adet veri alındı`);
                 }
             }
         } catch (error) {
@@ -574,8 +505,8 @@ if (typeof window.DataRetrieval === 'undefined') {
                 this.retrievalConfig = null;
                 this.retrievedData = [];
                 
-                // Normal işlemler listesine dön
-                this.renderOperations();
+                // Ana sayfaya dön
+                this.hideOperationsList();
                 
                 console.log('🛑 Veri alma modu durduruldu');
             } else {
