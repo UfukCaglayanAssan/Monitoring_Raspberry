@@ -595,34 +595,54 @@ class BatteryDatabase:
             conn.commit()
 
     def update_or_insert_passive_balance(self, arm, slave, status, timestamp):
-        """Passive balance verisini güncelle veya ekle"""
+        """Passive balance verisini güncelle veya ekle - Tüm kollar için tek kayıt"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             
-            # Mevcut kaydı kontrol et
+            # Tüm kollar için tek kayıt kontrol et
             cursor.execute('''
-                SELECT id FROM passive_balance 
-                WHERE arm = ? AND slave = ?
+                SELECT id, slave, status FROM passive_balance 
+                WHERE arm = 0
                 ORDER BY timestamp DESC LIMIT 1
-            ''', (arm, slave))
+            ''')
             
             existing_record = cursor.fetchone()
             
             if existing_record:
-                # Güncelle
-                cursor.execute('''
-                    UPDATE passive_balance 
-                    SET status = ?, timestamp = ?, created_at = CURRENT_TIMESTAMP
-                    WHERE id = ?
-                ''', (status, timestamp, existing_record[0]))
-                print(f"✓ Passive balance güncellendi: Kol {arm}, Batarya {slave}, Status: {status}")
+                existing_id, existing_slave, existing_status = existing_record
+                
+                # Status 0: Pasif balans başlıyor - yeni batarya kaydet
+                if status == 0:
+                    cursor.execute('''
+                        UPDATE passive_balance 
+                        SET slave = ?, status = ?, timestamp = ?, created_at = CURRENT_TIMESTAMP
+                        WHERE id = ?
+                    ''', (slave, status, timestamp, existing_id))
+                    print(f"✓ Pasif balans BAŞLADI: Kol {arm}, Batarya: {slave}")
+                
+                # Status 1: Pasif balans bitiyor - eğer aynı batarya ise temizle
+                elif status == 1 and existing_slave == slave:
+                    cursor.execute('''
+                        UPDATE passive_balance 
+                        SET slave = 0, status = 0, timestamp = ?, created_at = CURRENT_TIMESTAMP
+                        WHERE id = ?
+                    ''', (timestamp, existing_id))
+                    print(f"✓ Pasif balans BİTTİ: Kol {arm}, Batarya: {slave} - Temizlendi")
+                
+                # Status 1: Farklı batarya ise güncelleme yapma
+                elif status == 1 and existing_slave != slave:
+                    print(f"ℹ️ Pasif balans BİTTİ: Kol {arm}, Batarya: {slave} - Farklı batarya, güncelleme yapılmadı")
+                
             else:
-                # Yeni kayıt ekle
-                cursor.execute('''
-                    INSERT INTO passive_balance (arm, slave, status, timestamp)
-                    VALUES (?, ?, ?, ?)
-                ''', (arm, slave, status, timestamp))
-                print(f"✓ Passive balance eklendi: Kol {arm}, Batarya {slave}, Status: {status}")
+                # Yeni kayıt ekle - sadece status 0 için
+                if status == 0:
+                    cursor.execute('''
+                        INSERT INTO passive_balance (arm, slave, status, timestamp)
+                        VALUES (0, ?, ?, ?)
+                    ''', (slave, status, timestamp))
+                    print(f"✓ Pasif balans BAŞLADI: Kol {arm}, Batarya: {slave}")
+                else:
+                    print(f"ℹ️ Pasif balans BİTTİ: Kol {arm}, Batarya: {slave} - Kayıt yok, işlem yapılmadı")
             
             conn.commit()
     
@@ -1842,6 +1862,9 @@ class BatteryDatabase:
                 # Debug: Veri satırlarını yazdır
                 print(f"DEBUG: Veri satırları: {data_rows}")
                 
+                # Pasif balans durumunu kontrol et
+                passive_balance_status = self.check_passive_balance_status(arm, battery_address)
+                
                 # Veri tiplerine göre organize et
                 battery_data = {
                     'arm': arm,
@@ -1851,7 +1874,8 @@ class BatteryDatabase:
                     'temperature': None,
                     'health': None,
                     'charge': None,
-                    'isActive': True
+                    'isActive': not passive_balance_status,  # Pasif balansta ise aktif değil
+                    'passiveBalance': passive_balance_status
                 }
                 
                 # Sadece en son verileri kullan
@@ -1911,6 +1935,31 @@ class BatteryDatabase:
         except Exception as e:
             print(f"get_latest_battery_data hatası (arm: {arm}, battery: {battery_address}): {e}")
             return None
+    
+    def check_passive_balance_status(self, arm, battery_address):
+        """Bataryanın pasif balansta olup olmadığını kontrol et"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Pasif balans kaydını kontrol et
+                cursor.execute('''
+                    SELECT slave, status FROM passive_balance 
+                    WHERE arm = 0
+                    ORDER BY timestamp DESC LIMIT 1
+                ''')
+                
+                result = cursor.fetchone()
+                if result:
+                    slave, status = result
+                    # Eğer bu batarya pasif balansta ise (status=0 ve slave=battery_address)
+                    return slave == battery_address and status == 0
+                
+                return False
+                
+        except Exception as e:
+            print(f"Pasif balans durumu kontrol hatası: {e}")
+            return False
     
     def export_batteries_to_csv(self):
         """Batarya verilerini CSV formatında export et"""
@@ -2521,26 +2570,19 @@ class BatteryDatabase:
             raise e
 
     def get_passive_balance(self, arm=None):
-        """Passive balance verilerini getir"""
+        """Passive balance verilerini getir - Tüm kollar için tek kayıt"""
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 
-                if arm:
-                    # Belirli kol için
-                    cursor.execute('''
-                        SELECT arm, slave, status, timestamp, created_at
-                        FROM passive_balance
-                        WHERE arm = ?
-                        ORDER BY timestamp DESC
-                    ''', (arm,))
-                else:
-                    # Tüm kollar için
-                    cursor.execute('''
-                        SELECT arm, slave, status, timestamp, created_at
-                        FROM passive_balance
-                        ORDER BY arm, slave, timestamp DESC
-                    ''')
+                # Tüm kollar için tek kayıt (arm=0)
+                cursor.execute('''
+                    SELECT arm, slave, status, timestamp, created_at
+                    FROM passive_balance
+                    WHERE arm = 0
+                    ORDER BY timestamp DESC
+                    LIMIT 1
+                ''')
                 
                 balance_data = []
                 for row in cursor.fetchall():

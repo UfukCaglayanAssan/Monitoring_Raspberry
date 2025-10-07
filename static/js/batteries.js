@@ -430,6 +430,15 @@ if (typeof window.BatteriesPage === 'undefined') {
         console.log('Health name:', battery.health_name);
         console.log('Charge name:', battery.charge_name);
         
+        // Pasif balans durumunu kontrol et ve göster
+        if (battery.passiveBalance) {
+            cardElement.classList.add('passive-balance');
+            const batteryValue = cardElement.querySelector('.battery-value');
+            if (batteryValue) {
+                batteryValue.innerHTML = `${battery.batteryAddress - 2} <span class="passive-balance-indicator">⚡</span>`;
+            }
+        }
+        
         // Çeviri attribute'larını ekle
         this.addTranslationAttributes(cardElement);
         

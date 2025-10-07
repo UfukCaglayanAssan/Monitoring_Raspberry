@@ -344,9 +344,9 @@ def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False
         try:
             with db_lock:
                 balance_data = db.get_passive_balance(arm=arm_value)
-                # Son batarya için pasif balans durumunu kontrol et
+                # Aktif pasif balans durumunu kontrol et (status=0 ve slave=last_battery)
                 for balance in balance_data:
-                    if balance['slave'] == last_battery and balance['status'] == 1:
+                    if balance['slave'] == last_battery and balance['status'] == 0:
                         print(f"✅ PERİYOT TAMAMLANDI: Son batarya pasif balansta - Kol {arm_value}, Batarya {last_battery}")
                         return True
         except Exception as e:

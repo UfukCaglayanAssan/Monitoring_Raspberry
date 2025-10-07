@@ -2209,3 +2209,28 @@ input:disabled::placeholder {
 .operation-data-table .data-table tbody tr:nth-child(even):hover {
     background: #f0f2f5;
 }
+
+/* Pasif Balans Stilleri */
+.battery-card.passive-balance {
+    border: 2px solid #ff9800;
+    background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+    box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
+}
+
+.battery-card.passive-balance:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(255, 152, 0, 0.4);
+}
+
+.passive-balance-indicator {
+    color: #ff9800;
+    font-size: 1.2em;
+    margin-left: 5px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
