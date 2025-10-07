@@ -336,8 +336,12 @@ def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False
         last_arm, last_battery = get_last_battery_info()
         print(f"🔍 TÜMÜNÜ OKU PERİYOT KONTROL: Kol {tumunu_oku_arm}, k={k_value}, dtype={dtype}, Son batarya: {last_battery}")
         
-        # Sadece o koldaki son batarya VE dtype=15 geldi mi?
-        if arm_value == tumunu_oku_arm and k_value == last_battery and dtype == 15:
+        # Sadece o koldaki son batarya geldi mi? (dtype kontrolü sadece 11 byte veri işlenirken yapılır)
+        if arm_value == tumunu_oku_arm and k_value == last_battery:
+            if dtype is not None and dtype != 15:
+                # 11 byte veri işlenirken dtype=15 değilse devam et
+                print(f"⏳ TÜMÜNÜ OKU PERİYOTU DEVAM EDİYOR: dtype={dtype} (15 bekleniyor)")
+                return False
             print(f"✅ TÜMÜNÜ OKU PERİYOTU TAMAMLANDI: Kol {tumunu_oku_arm}, Son batarya {last_battery}, dtype={dtype}")
             return True
         return False
@@ -1149,8 +1153,8 @@ def db_worker():
                                 print("🛑 Veri alma modu durduruldu - İstenen veri alındı")
                     
                     # Genel periyot tamamlandı mı kontrol et (11 byte veri için)
-                    if is_period_complete(arm_value, k_value, dtype=dtype):
-                        print(f"🔄 PERİYOT BİTTİ - 11 byte veri: Kol {arm_value}, k={k_value}, dtype={dtype}")
+                    if is_period_complete(arm_value, k_value):
+                        print(f"🔄 PERİYOT BİTTİ - 11 byte veri: Kol {arm_value}, k={k_value}")
                         # Periyot bitti, alarmları işle
                         alarm_processor.process_period_end()
                         # Veri alma modunu durdur
@@ -1309,7 +1313,7 @@ def db_worker():
                         
                         
                         # Normal periyot bitiş kontrolü
-                        last_dtype = last_record.get('dtype')
+                        last_dtype = last_record.get('Dtype')
                         if is_period_complete(arm_value, k_value, dtype=last_dtype):
                             print(f"🔄 PERİYOT BİTTİ - Son normal veri: Kol {arm_value}, Batarya {k_value}, dtype={last_dtype}")
                             # Periyot bitti, alarmları işle
@@ -1356,7 +1360,7 @@ def db_worker():
                         if is_data_retrieval_mode():
                             config = get_data_retrieval_config()
                             if config and config.get('address') == 0:  # Tümünü Oku
-                                last_dtype = last_record.get('dtype')
+                                last_dtype = last_record.get('Dtype')
                                 if last_dtype and is_data_retrieval_period_complete(arm_value, k_value, last_dtype):
                                     print(f"🔄 TÜMÜNÜ OKU PERİYOTU BİTTİ (Empty) - Kol {arm_value}, k={k_value}, dtype={last_dtype}")
                                     set_data_retrieval_mode(False, None)
@@ -1369,7 +1373,7 @@ def db_worker():
                                     return  # "Tümünü Oku" bitti, normal akışa geç
                         
                         # Normal periyot bitiş kontrolü
-                        last_dtype = last_record.get('dtype')
+                        last_dtype = last_record.get('Dtype')
                         period_complete = is_period_complete(arm_value, k_value, dtype=last_dtype)
                         print(f"🔍 PERİYOT TAMAMLANDI MI: {period_complete}")
                         if period_complete:
