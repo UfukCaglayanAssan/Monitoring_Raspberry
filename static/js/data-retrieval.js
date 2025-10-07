@@ -230,7 +230,7 @@ if (typeof window.DataRetrieval === 'undefined') {
 
             if (response.ok) {
                 const valueText = this.getDataTypeText(value);
-                this.showToast('Veri alma komutu başarıyla gönderildi', 'success');
+                // Toast bildirimi kaldırıldı
                 
                 // Komut gönderildiği zamanı kaydet
                 const commandTimestamp = Date.now();
@@ -275,7 +275,8 @@ if (typeof window.DataRetrieval === 'undefined') {
             
             if (attempt < maxAttempts) {
                 console.log('⏳ Veri gelmedi, tekrar denenecek...');
-                this.showLoading(`Veri bekleniyor... (${attempt + 1}/${maxAttempts})`);
+                // Deneme sayısı gösterilmiyor, sadece başlangıç mesajı
+                this.showLoading('Veri bekleniyor...');
             }
         }
         
@@ -297,10 +298,11 @@ if (typeof window.DataRetrieval === 'undefined') {
                 const result = await response.json();
                 if (result.success && result.data) {
                     // Gönderilen adresin 1 fazlasına bak (k-2 mantığı nedeniyle)
-                    const targetAddress = address + 1;
+                    const targetAddress = parseInt(address) + 1;
                     
                     console.log(`🔍 Tekil veri arama: Kol ${arm}, Gönderilen adres ${address}, Aranan adres ${targetAddress}, Tip ${value}`);
                     console.log(`🕐 Komut zamanı: ${new Date(commandTimestamp).toLocaleString()}`);
+                    console.log(`🔍 Mevcut bataryalar:`, result.data.map(b => ({arm: b.arm, address: b.address})));
                     
                     // İlgili kol ve adrese sahip bataryayı ara
                     const targetBattery = result.data.find(battery => 
