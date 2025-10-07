@@ -361,12 +361,16 @@ if (typeof window.BatteriesPage === 'undefined') {
                         // "Son güncelleme" yazısını kaldır
                         lastUpdateDiv.style.display = 'none';
                         
-                        // "Pasif Balans Aktif" yazısını ekle
-                        const passiveBalanceText = document.createElement('div');
-                        passiveBalanceText.className = 'passive-balance-text';
-                        passiveBalanceText.style.cssText = 'color: #2563eb; font-weight: 500; font-size: 0.9rem; margin-top: 0.5rem; text-align: center;';
-                        passiveBalanceText.textContent = 'Pasif Balans Aktif';
-                        lastUpdateDiv.parentNode.insertBefore(passiveBalanceText, lastUpdateDiv.nextSibling);
+                        // Önceki pasif balans yazısını kontrol et
+                        const existingPassiveText = card.querySelector('.passive-balance-text');
+                        if (!existingPassiveText) {
+                            // "Pasif Balans Aktif" yazısını ekle
+                            const passiveBalanceText = document.createElement('div');
+                            passiveBalanceText.className = 'passive-balance-text';
+                            passiveBalanceText.style.cssText = 'color: #2563eb; font-weight: 500; font-size: 0.9rem; margin-top: 0.5rem; text-align: center;';
+                            passiveBalanceText.textContent = 'Pasif Balans Aktif';
+                            lastUpdateDiv.parentNode.insertBefore(passiveBalanceText, lastUpdateDiv.nextSibling);
+                        }
                     }
                 }
             }

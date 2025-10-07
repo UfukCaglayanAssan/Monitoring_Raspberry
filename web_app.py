@@ -1858,7 +1858,10 @@ def get_retrieved_data():
 def get_data_retrieval_status():
     """Veri alma modu durumunu kontrol et"""
     try:
+        # Fresh import - her seferinde yeniden yükle
+        import importlib
         import main
+        importlib.reload(main)
         is_active = main.is_data_retrieval_mode()
         print(f"🔍 API VERİ ALMA MODU DURUMU: {is_active}")
         return jsonify({

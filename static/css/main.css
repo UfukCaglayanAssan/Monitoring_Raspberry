@@ -764,6 +764,18 @@ body {
     border-radius: 18px !important; /* İçerik de oval olsun */
 }
 
+/* Pasif balans arka yüzde bant */
+.battery-card.passive-balance .card-back {
+    background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%) !important; /* blue-700 to blue-600 */
+    border: 2px solid #3b82f6 !important; /* blue-500 */
+}
+
+.battery-card.passive-balance .card-back .data-item {
+    background: rgba(59, 130, 246, 0.3) !important; /* blue-500 with opacity */
+    border: 1px solid rgba(59, 130, 246, 0.5) !important;
+    border-radius: 8px !important;
+}
+
 @keyframes pulse-red {
     0% { box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3); }
     50% { box-shadow: 0 6px 20px rgba(220, 38, 38, 0.5); }
