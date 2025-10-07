@@ -1149,8 +1149,8 @@ def db_worker():
                                 print("🛑 Veri alma modu durduruldu - İstenen veri alındı")
                     
                     # Genel periyot tamamlandı mı kontrol et (11 byte veri için)
-                    if is_period_complete(arm_value, k_value):
-                        print(f"🔄 PERİYOT BİTTİ - 11 byte veri: Kol {arm_value}, k={k_value}")
+                    if is_period_complete(arm_value, k_value, dtype=dtype):
+                        print(f"🔄 PERİYOT BİTTİ - 11 byte veri: Kol {arm_value}, k={k_value}, dtype={dtype}")
                         # Periyot bitti, alarmları işle
                         alarm_processor.process_period_end()
                         # Veri alma modunu durdur
