@@ -232,9 +232,13 @@ if (typeof window.DataRetrieval === 'undefined') {
                 const valueText = this.getDataTypeText(value);
                 this.showToast('Veri alma komutu başarıyla gönderildi', 'success');
                 
+                // Komut gönderildiği zamanı kaydet
+                const commandTimestamp = Date.now();
+                console.log(`🕐 Komut gönderildi: ${new Date(commandTimestamp).toLocaleString()}`);
+                
                 // Tekil veri alma - sadece 3 saniye bekle
                 this.showLoading('Veri bekleniyor...');
-                await this.waitForSingleData(parseInt(arm), parseInt(address), parseInt(value), valueText);
+                await this.waitForSingleData(parseInt(arm), parseInt(address), parseInt(value), valueText, commandTimestamp);
                 
                 // Formu temizle
                 this.clearForm();
@@ -249,7 +253,7 @@ if (typeof window.DataRetrieval === 'undefined') {
         }
     }
 
-    async waitForSingleData(arm, address, value, valueText) {
+    async waitForSingleData(arm, address, value, valueText, commandTimestamp) {
         const maxAttempts = 2; // 2 deneme (3 saniye + 3 saniye)
         let attempt = 0;
         
@@ -261,7 +265,7 @@ if (typeof window.DataRetrieval === 'undefined') {
             await new Promise(resolve => setTimeout(resolve, 3000));
             
             // Veri gelip gelmediğini kontrol et
-            const data = await this.checkForSingleData(arm, address, value);
+            const data = await this.checkForSingleData(arm, address, value, commandTimestamp);
             
             if (data) {
                 console.log('✅ Tekil veri alındı:', data);
@@ -280,34 +284,50 @@ if (typeof window.DataRetrieval === 'undefined') {
         return null;
     }
 
-    async checkForSingleData(arm, address, value) {
+    async checkForSingleData(arm, address, value, commandTimestamp) {
         try {
-            // Son 5 saniye içindeki verileri kontrol et
-            const response = await fetch('/api/get-retrieved-data', {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' }
+            // Tekil veri alma için doğrudan batarya verilerini kontrol et
+            const response = await fetch('/api/batteries', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
             });
             
             if (response.ok) {
                 const result = await response.json();
-                if (result.success && result.data && result.data.length > 0) {
+                if (result.success && result.data) {
                     // Gönderilen adresin 1 fazlasına bak (k-2 mantığı nedeniyle)
                     const targetAddress = address + 1;
                     
                     console.log(`🔍 Tekil veri arama: Kol ${arm}, Gönderilen adres ${address}, Aranan adres ${targetAddress}, Tip ${value}`);
+                    console.log(`🕐 Komut zamanı: ${new Date(commandTimestamp).toLocaleString()}`);
                     
-                    // İlgili kol, hedef adres ve değer tipine sahip veriyi ara
-                    const relevantData = result.data.find(item => 
-                        item.arm == arm && 
-                        item.address == targetAddress &&
-                        this.getDataValueByType(item, value) !== null
+                    // İlgili kol ve adrese sahip bataryayı ara
+                    const targetBattery = result.data.find(battery => 
+                        battery.arm == arm && 
+                        battery.address == targetAddress
                     );
                     
-                    if (relevantData) {
-                        console.log(`✅ Tekil veri bulundu: Kol ${arm}, Adres ${targetAddress}, Tip ${value}, Değer ${this.getDataValueByType(relevantData, value)}`);
-                        return this.getDataValueByType(relevantData, value);
+                    if (targetBattery && targetBattery.entries) {
+                        // Komut gönderildikten sonraki verileri kontrol et
+                        const recentEntry = targetBattery.entries.find(entry => {
+                            const entryTime = new Date(entry.timestamp).getTime();
+                            return entryTime >= commandTimestamp; // Komut gönderildikten sonraki veriler
+                        });
+                        
+                        if (recentEntry) {
+                            // Değer tipine göre veriyi al
+                            const dataValue = this.getDataValueFromEntry(recentEntry, value);
+                            if (dataValue !== null) {
+                                console.log(`✅ Tekil veri bulundu: Kol ${arm}, Adres ${targetAddress}, Tip ${value}, Değer ${dataValue}`);
+                                console.log(`🕐 Veri zamanı: ${new Date(recentEntry.timestamp).toLocaleString()}`);
+                                return dataValue;
+                            }
+                        }
+                        
+                        console.log(`❌ Tekil veri bulunamadı: Kol ${arm}, Adres ${targetAddress}, Tip ${value} - Komut gönderildikten sonra veri yok`);
                     } else {
-                        console.log(`❌ Tekil veri bulunamadı: Kol ${arm}, Adres ${targetAddress}, Tip ${value}`);
+                        console.log(`❌ Batarya bulunamadı: Kol ${arm}, Adres ${targetAddress}`);
                     }
                 }
             }
@@ -316,6 +336,12 @@ if (typeof window.DataRetrieval === 'undefined') {
         }
         
         return null;
+    }
+
+    getDataValueFromEntry(entry, value) {
+        // entry.entries array'inden ilgili dtype'ı bul
+        const targetEntry = entry.entries.find(e => e.dtype == value);
+        return targetEntry ? targetEntry.data : null;
     }
 
     getDataValueByType(data, value) {
