@@ -1326,10 +1326,9 @@ def db_worker():
                                 print(f"🛑 TÜMÜNÜ OKU MODU KAPATILDI - Normal periyot akışına geçildi")
                                 
                                 # Veri alma modunu da durdur
-                                if is_data_retrieval_mode():
-                                    print(f"🔧 VERİ ALMA MODU DURDURULUYOR - Tümünü Oku periyot bitti")
-                                    set_data_retrieval_mode(False, None)
-                                    print(f"🛑 Veri alma modu durduruldu - Yeni durum: {is_data_retrieval_mode()}")
+                                print(f"🔧 VERİ ALMA MODU DURDURULUYOR - Tümünü Oku periyot bitti")
+                                set_data_retrieval_mode(False, None)
+                                print(f"🛑 Veri alma modu durduruldu - Yeni durum: {is_data_retrieval_mode()}")
                             
                             # Veri alma modu aktifse durdur
                             if is_data_retrieval_mode():

@@ -498,7 +498,6 @@ if (typeof window.DataRetrieval === 'undefined') {
                     <div class="loading">
                         <i class="fas fa-spinner fa-spin"></i>
                         <h4>Veriler alınıyor...</h4>
-                        <p>Lütfen bekleyin, veriler toplanıyor</p>
                     </div>
                 </div>
                 <div class="data-table" style="display: none;" id="retrievedDataTable">
