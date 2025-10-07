@@ -396,10 +396,15 @@ if (typeof window.DataRetrieval === 'undefined') {
     
     async fetchRetrievedData() {
         try {
+            console.log('🔍 fetchRetrievedData çağrıldı');
             // Yakalanan verileri al
             const response = await fetch('/api/get-retrieved-data');
+            console.log('📡 API yanıtı:', response.status);
+            
             if (response.ok) {
                 const result = await response.json();
+                console.log('📊 API sonucu:', result);
+                
                 if (result.success && result.data) {
                     // Verileri temizle ve yeni verileri ekle
                     this.retrievedData = [];
@@ -412,8 +417,12 @@ if (typeof window.DataRetrieval === 'undefined') {
                             address: data.address
                         });
                     });
-                    console.log(`📊 ${this.retrievedData.length} adet veri alındı`);
+                    console.log(`📊 ${this.retrievedData.length} adet veri alındı ve this.retrievedData'ya eklendi`);
+                } else {
+                    console.log('⚠️ API başarılı ama veri yok');
                 }
+            } else {
+                console.log('❌ API hatası:', response.status);
             }
         } catch (error) {
             console.error('Veri çekme hatası:', error);
@@ -460,10 +469,16 @@ if (typeof window.DataRetrieval === 'undefined') {
     
     updateDataTable() {
         const tbody = document.getElementById('dataTableBody');
-        if (!tbody) return;
+        if (!tbody) {
+            console.log('❌ dataTableBody bulunamadı');
+            return;
+        }
+        
+        console.log(`🔍 updateDataTable çağrıldı - Veri sayısı: ${this.retrievedData.length}`);
         
         if (this.retrievedData.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5" class="no-data">Veri bekleniyor...</td></tr>';
+            console.log('⚠️ Veri yok, "Veri bekleniyor..." gösteriliyor');
             return;
         }
         
@@ -476,6 +491,8 @@ if (typeof window.DataRetrieval === 'undefined') {
                 <td>${data.address}</td>
             </tr>
         `).join('');
+        
+        console.log('✅ Veriler tabloya yazıldı');
     }
     
     showRetrievedData() {
