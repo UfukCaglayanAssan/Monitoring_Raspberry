@@ -155,7 +155,7 @@ if (typeof window.DataRetrieval === 'undefined') {
                 
                 // Periyot durumunu kontrol etmeye başla
                 this.checkPeriodStatus();
-            } else {
+    } else {
                 throw new Error('Komut gönderilemedi');
             }
         } catch (error) {
@@ -291,15 +291,23 @@ if (typeof window.DataRetrieval === 'undefined') {
             if (response.ok) {
                 const result = await response.json();
                 if (result.success && result.data && result.data.length > 0) {
-                    // İlgili kol, adres ve değer tipine sahip veriyi ara
+                    // Gönderilen adresin 1 fazlasına bak (k-2 mantığı nedeniyle)
+                    const targetAddress = address + 1;
+                    
+                    console.log(`🔍 Tekil veri arama: Kol ${arm}, Gönderilen adres ${address}, Aranan adres ${targetAddress}, Tip ${value}`);
+                    
+                    // İlgili kol, hedef adres ve değer tipine sahip veriyi ara
                     const relevantData = result.data.find(item => 
                         item.arm == arm && 
-                        item.address == address &&
+                        item.address == targetAddress &&
                         this.getDataValueByType(item, value) !== null
                     );
                     
                     if (relevantData) {
+                        console.log(`✅ Tekil veri bulundu: Kol ${arm}, Adres ${targetAddress}, Tip ${value}, Değer ${this.getDataValueByType(relevantData, value)}`);
                         return this.getDataValueByType(relevantData, value);
+                    } else {
+                        console.log(`❌ Tekil veri bulunamadı: Kol ${arm}, Adres ${targetAddress}, Tip ${value}`);
                     }
                 }
             }
