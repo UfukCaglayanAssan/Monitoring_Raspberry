@@ -1280,12 +1280,13 @@ def db_worker():
                             print(f"🔄 PERİYOT BİTTİ - Son normal veri: Kol {arm_value}, Batarya {k_value}")
                             # Periyot bitti, alarmları işle
                             alarm_processor.process_period_end()
-                            # Veri alma modunu durdur
-                            if is_data_retrieval_mode():
-                                set_data_retrieval_mode(False, None)
-                                print("🛑 Veri alma modu durduruldu - Periyot bitti (normal veri)")
-                                # Veri alma modu için kısa bekleme
-                                time.sleep(0.5)
+                            # Veri alma modunu durdur - ZORLA
+                            print(f"🔍 VERİ ALMA MODU KONTROL: {is_data_retrieval_mode()}")
+                            print(f"🔧 VERİ ALMA MODU ZORLA DURDURULUYOR")
+                            set_data_retrieval_mode(False, None)
+                            print(f"🛑 Veri alma modu durduruldu - Yeni durum: {is_data_retrieval_mode()}")
+                            # Veri alma modu için kısa bekleme
+                            time.sleep(0.5)
                             # Periyot bitti, yeni periyot k=2 (akım verisi) geldiğinde başlayacak
                             reset_period()
                 
@@ -1310,18 +1311,23 @@ def db_worker():
                     k_value = last_record.get('k')
                     if arm_value and k_value:
                         print(f"🔍 NORMAL VERİ PERİYOT KONTROL (Empty): Kol {arm_value}, k={k_value}")
-                        if is_period_complete(arm_value, k_value):
+                        period_complete = is_period_complete(arm_value, k_value)
+                        print(f"🔍 PERİYOT TAMAMLANDI MI: {period_complete}")
+                        if period_complete:
                             print(f"🔄 PERİYOT BİTTİ - Son normal veri (Empty): Kol {arm_value}, Batarya {k_value}")
                             # Periyot bitti, alarmları işle
                             alarm_processor.process_period_end()
-                            # Veri alma modunu durdur
-                            if is_data_retrieval_mode():
-                                set_data_retrieval_mode(False, None)
-                                print("🛑 Veri alma modu durduruldu - Periyot bitti (normal veri - Empty)")
-                                # Veri alma modu için kısa bekleme
-                                time.sleep(0.5)
+                            # Veri alma modunu durdur - ZORLA
+                            print(f"🔍 VERİ ALMA MODU KONTROL (Empty): {is_data_retrieval_mode()}")
+                            print(f"🔧 VERİ ALMA MODU ZORLA DURDURULUYOR")
+                            set_data_retrieval_mode(False, None)
+                            print(f"🛑 Veri alma modu durduruldu - Yeni durum: {is_data_retrieval_mode()}")
+                            # Veri alma modu için kısa bekleme
+                            time.sleep(0.5)
                             # Periyot bitti, yeni periyot k=2 (akım verisi) geldiğinde başlayacak
                             reset_period()
+                        else:
+                            print(f"⏳ PERİYOT DEVAM EDİYOR - Beklenen son k: {get_last_battery_info()[1]}")
                 
                 with db_lock:
                     db.insert_battery_data_batch(batch)

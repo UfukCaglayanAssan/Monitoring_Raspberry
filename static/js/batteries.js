@@ -355,21 +355,18 @@ if (typeof window.BatteriesPage === 'undefined') {
                     console.log(`⚡ Batarya ${batteryAddress} pasif balans durumu: AKTIF - Class eklendi`);
                     console.log(`🔍 Kart class'ları:`, card.className);
                     
-                    // Pasif balans yazısını ekle - kartın içine
-                    const cardContent = card.querySelector('.battery-card-content');
-                    if (cardContent) {
-                        // Önceki pasif balans yazısını kaldır
-                        const existingText = cardContent.querySelector('.passive-balance-text');
-                        if (existingText) {
-                            existingText.remove();
-                        }
+                    // Pasif balans yazısını ekle - "Son güncelleme" yerine
+                    const lastUpdateDiv = card.querySelector('.battery-last-update');
+                    if (lastUpdateDiv) {
+                        // "Son güncelleme" yazısını kaldır
+                        lastUpdateDiv.style.display = 'none';
                         
-                        // Yeni pasif balans yazısını ekle
+                        // "Pasif Balans Aktif" yazısını ekle
                         const passiveBalanceText = document.createElement('div');
                         passiveBalanceText.className = 'passive-balance-text';
                         passiveBalanceText.style.cssText = 'color: #2563eb; font-weight: 500; font-size: 0.9rem; margin-top: 0.5rem; text-align: center;';
                         passiveBalanceText.textContent = 'Pasif Balans Aktif';
-                        cardContent.appendChild(passiveBalanceText);
+                        lastUpdateDiv.parentNode.insertBefore(passiveBalanceText, lastUpdateDiv.nextSibling);
                     }
                 }
             }
