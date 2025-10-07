@@ -197,18 +197,27 @@ def is_data_retrieval_period_complete(arm_value, k_value, dtype):
     if config['arm'] == 5:
         return is_period_complete(arm_value, k_value)
     
-    # Belirli kol seçilmişse
+    # Belirli kol seçilmişse - Sadece o koldaki son batarya kontrolü
     if config['arm'] == arm_value:
-        # Adres 0 ise Tümünü Oku işlemi - periyot bittiğinde beklemeye geç
+        # Adres 0 ise Tümünü Oku işlemi - sadece seçilen koldaki son batarya
         if config['address'] == 0:
-            if is_period_complete(arm_value, k_value):
-                # Periyot bitti, beklemeye geç
-                global data_retrieval_waiting_for_period
-                with data_retrieval_lock:
-                    data_retrieval_mode = False
-                    data_retrieval_waiting_for_period = True
-                print(f"🔍 TÜMÜNÜ OKU BEKLEMEDE: Periyot bitti, yeni periyot bekleniyor")
+            # Sadece belirli dtype'lar için periyot bitiş kontrolü yap
+            # dtype=10 (Akım), dtype=11 (Nem), dtype=12 (RIMT), dtype=15 (NTC3) - ana veriler
+            if dtype not in [10, 11, 12, 15]:
+                return False
+                
+            # Seçilen koldaki son batarya sayısını al
+            arm_slave_counts = db.get_arm_slave_counts()
+            selected_arm = config['arm']
+            last_battery = arm_slave_counts.get(selected_arm, 0)
+            
+            print(f"🔍 VERİ ALMA PERİYOT KONTROL: Seçilen kol {selected_arm}, k={k_value}, dtype={dtype}, Son batarya: {last_battery}")
+            
+            # Seçilen koldaki son batarya geldi mi?
+            if k_value == last_battery:
+                print(f"✅ VERİ ALMA PERİYOTU TAMAMLANDI: Kol {selected_arm}, Son batarya {last_battery}, dtype={dtype}")
                 return True
+            
             return False
         # Adres 1-255 ise Veri Al işlemi - sadece istenen veri
         else:
@@ -1280,6 +1289,13 @@ def db_worker():
                             print(f"🔄 PERİYOT BİTTİ - Son normal veri: Kol {arm_value}, Batarya {k_value}")
                             # Periyot bitti, alarmları işle
                             alarm_processor.process_period_end()
+                            
+                            # Veri alma modu aktifse durdur
+                            if is_data_retrieval_mode():
+                                print(f"🔧 VERİ ALMA MODU DURDURULUYOR - Periyot bitti")
+                                set_data_retrieval_mode(False, None)
+                                print(f"🛑 Veri alma modu durduruldu - Yeni durum: {is_data_retrieval_mode()}")
+                            
                             # Periyot bitti, yeni periyot k=2 (akım verisi) geldiğinde başlayacak
                             reset_period()
                 
@@ -1311,8 +1327,11 @@ def db_worker():
                             # Periyot bitti, alarmları işle
                             alarm_processor.process_period_end()
                             
-                            # Normal periyot bitişinde veri alma modu durdurulmaz
-                            # Sadece "Tümünü Oku" periyot bitişinde durdurulur
+                            # Veri alma modu aktifse durdur
+                            if is_data_retrieval_mode():
+                                print(f"🔧 VERİ ALMA MODU DURDURULUYOR - Periyot bitti")
+                                set_data_retrieval_mode(False, None)
+                                print(f"🛑 Veri alma modu durduruldu - Yeni durum: {is_data_retrieval_mode()}")
                             
                             # Periyot bitti, yeni periyot k=2 (akım verisi) geldiğinde başlayacak
                             reset_period()

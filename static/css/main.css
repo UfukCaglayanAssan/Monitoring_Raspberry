@@ -751,7 +751,8 @@ body {
     background: #dbeafe !important; /* bg-blue-100 */
     border: 2px solid #93c5fd !important; /* border-blue-300 */
     border-radius: 20px !important; /* Daha oval border */
-    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2) !important;
+    box-shadow: none !important; /* Gölgeyi kaldır */
+    outline: none !important; /* Beyaz border'ı kaldır */
 }
 
 /* Daha güçlü kural - tüm child elementleri de etkile */
