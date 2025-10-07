@@ -415,6 +415,7 @@ if (typeof window.DataRetrieval === 'undefined') {
             const statusResponse = await fetch('/api/data-retrieval-status');
             if (statusResponse.ok) {
                 const statusResult = await statusResponse.json();
+                console.log('🔍 VERİ ALMA MODU DURUMU:', statusResult);
                 if (statusResult.success && !statusResult.is_active) {
                     // Mod durdu - periyot bitti, verileri çek
                     await this.fetchRetrievedData();
@@ -445,8 +446,9 @@ if (typeof window.DataRetrieval === 'undefined') {
                     // Mod durdu, frontend'i güncelle
                     this.isDataRetrievalMode = false;
                     this.retrievalConfig = null;
-                    this.retrievedData = []; // Verileri temizle
-                    this.renderOperations();
+                    
+                    // Verileri göster
+                    this.showRetrievedData();
                     console.log('🛑 Veri alma modu otomatik olarak durduruldu');
                     return;
                 }
@@ -492,8 +494,15 @@ if (typeof window.DataRetrieval === 'undefined') {
         const operationsList = document.getElementById('operationsList');
         operationsList.innerHTML = `
             <div class="data-table-container">
-                <h4>📊 Alınan Veriler</h4>
-                <div class="data-table">
+                <div class="loading-container">
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <h4>Veriler alınıyor...</h4>
+                        <p>Lütfen bekleyin, veriler toplanıyor</p>
+                    </div>
+                </div>
+                <div class="data-table" style="display: none;" id="retrievedDataTable">
+                    <h4>📊 Alınan Veriler</h4>
                     <table>
                         <thead>
                             <tr>
@@ -505,14 +514,6 @@ if (typeof window.DataRetrieval === 'undefined') {
                             </tr>
                         </thead>
                         <tbody id="dataTableBody">
-                            <tr>
-                                <td colspan="5" class="no-data">
-                                    <div class="loading">
-                                        <i class="fas fa-spinner fa-spin"></i>
-                                        Veriler alınıyor...
-                                    </div>
-                                </td>
-                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -545,6 +546,18 @@ if (typeof window.DataRetrieval === 'undefined') {
                 <td>${data.address}</td>
             </tr>
         `).join('');
+    }
+    
+    showRetrievedData() {
+        // Loading'i gizle, tabloyu göster
+        const loadingContainer = document.querySelector('.loading-container');
+        const dataTable = document.getElementById('retrievedDataTable');
+        
+        if (loadingContainer) loadingContainer.style.display = 'none';
+        if (dataTable) dataTable.style.display = 'block';
+        
+        // Verileri tabloya yaz
+        this.updateDataTable();
     }
     
     async stopDataRetrieval() {
