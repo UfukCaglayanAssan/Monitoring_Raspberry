@@ -332,15 +332,15 @@ def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False
     global tumunu_oku_mode, tumunu_oku_arm
     
     if tumunu_oku_mode and tumunu_oku_arm is not None:
-        # "Tümünü Oku" modu aktifse - sadece o koldaki son bataryanın dtype=15'ine bak
+        # "Tümünü Oku" modu aktifse - sadece o koldaki son bataryanın dtype=14'ine bak
         last_arm, last_battery = get_last_battery_info()
         print(f"🔍 TÜMÜNÜ OKU PERİYOT KONTROL: Kol {tumunu_oku_arm}, k={k_value}, dtype={dtype}, Son batarya: {last_battery}")
         
         # Sadece o koldaki son batarya geldi mi? (dtype kontrolü sadece 11 byte veri işlenirken yapılır)
         if arm_value == tumunu_oku_arm and k_value == last_battery:
-            if dtype is not None and dtype != 15:
-                # 11 byte veri işlenirken dtype=15 değilse devam et
-                print(f"⏳ TÜMÜNÜ OKU PERİYOTU DEVAM EDİYOR: dtype={dtype} (15 bekleniyor)")
+            if dtype is not None and dtype != 14:
+                # 11 byte veri işlenirken dtype=14 değilse devam et
+                print(f"⏳ TÜMÜNÜ OKU PERİYOTU DEVAM EDİYOR: dtype={dtype} (14 bekleniyor)")
                 return False
             print(f"✅ TÜMÜNÜ OKU PERİYOTU TAMAMLANDI: Kol {tumunu_oku_arm}, Son batarya {last_battery}, dtype={dtype}")
             return True
@@ -1319,11 +1319,17 @@ def db_worker():
                             # Periyot bitti, alarmları işle
                             alarm_processor.process_period_end()
                             
-                            # "Tümünü Oku" modu aktifse flag'i False yap
+                            # "Tümünü Oku" modu aktifse flag'i False yap ve veri alma modunu durdur
                             if tumunu_oku_mode:
                                 tumunu_oku_mode = False
                                 tumunu_oku_arm = None
                                 print(f"🛑 TÜMÜNÜ OKU MODU KAPATILDI - Normal periyot akışına geçildi")
+                                
+                                # Veri alma modunu da durdur
+                                if is_data_retrieval_mode():
+                                    print(f"🔧 VERİ ALMA MODU DURDURULUYOR - Tümünü Oku periyot bitti")
+                                    set_data_retrieval_mode(False, None)
+                                    print(f"🛑 Veri alma modu durduruldu - Yeni durum: {is_data_retrieval_mode()}")
                             
                             # Veri alma modu aktifse durdur
                             if is_data_retrieval_mode():
