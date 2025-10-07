@@ -411,30 +411,15 @@ if (typeof window.DataRetrieval === 'undefined') {
         if (!this.isDataRetrievalMode) return;
         
         try {
-            // Yakalanan verileri al
-            const response = await fetch('/api/get-retrieved-data');
-            if (response.ok) {
-                const result = await response.json();
-                if (result.success && result.data) {
-                    // Yeni verileri ekle
-                    result.data.forEach(data => {
-                        this.addRetrievedData({
-                            timestamp: data.timestamp,
-                            requestedValue: data.requested_value,
-                            receivedValue: data.value,
-                            arm: data.arm,
-                            address: data.address
-                        });
-                    });
-                }
-            }
-            
             // Veri alma modu durdu mu kontrol et
             const statusResponse = await fetch('/api/data-retrieval-status');
             if (statusResponse.ok) {
                 const statusResult = await statusResponse.json();
                 if (statusResult.success && !statusResult.is_active) {
-                    // Mod durdu, alınan verileri işleme ekle
+                    // Mod durdu - periyot bitti, verileri çek
+                    await this.fetchRetrievedData();
+                    
+                    // Alınan verileri işleme ekle
                     if (this.retrievedData.length > 0) {
                         let operationDescription;
                         let operationType = 'data';
@@ -470,12 +455,36 @@ if (typeof window.DataRetrieval === 'undefined') {
             console.error('Veri alma hatası:', error);
         }
         
-        // 1 saniye sonra tekrar kontrol et
+        // 2 saniye sonra tekrar kontrol et (daha az sıklıkta)
         setTimeout(() => {
             if (this.isDataRetrievalMode) {
                 this.checkPeriodStatus();
             }
-        }, 1000);
+        }, 2000);
+    }
+    
+    async fetchRetrievedData() {
+        try {
+            // Yakalanan verileri al
+            const response = await fetch('/api/get-retrieved-data');
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && result.data) {
+                    // Yeni verileri ekle
+                    result.data.forEach(data => {
+                        this.addRetrievedData({
+                            timestamp: data.timestamp,
+                            requestedValue: data.requested_value,
+                            receivedValue: data.value,
+                            arm: data.arm,
+                            address: data.address
+                        });
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Veri çekme hatası:', error);
+        }
     }
     
     showDataTable() {
