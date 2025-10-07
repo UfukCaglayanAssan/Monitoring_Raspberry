@@ -739,6 +739,17 @@ def db_worker():
                     # Yeni periyot başlat (k=2 akım verisi geldiğinde)
                     if not period_active:
                         get_period_timestamp()
+                        
+                        # "Tümünü Oku" kontrolü - k=2 geldiğinde
+                        if is_data_retrieval_mode():
+                            config = get_data_retrieval_config()
+                            if config and config.get('address') == 0:  # Tümünü Oku
+                                print(f"🔍 TÜMÜNÜ OKU PERİYOTU BAŞLADI - Kol {arm_value}, k={k_value}")
+                                # "Tümünü Oku" periyot akışı başladı
+                            else:
+                                print(f"ℹ️ NORMAL PERİYOT BAŞLADI - Kol {arm_value}, k={k_value}")
+                        else:
+                            print(f"ℹ️ NORMAL PERİYOT BAŞLADI - Kol {arm_value}, k={k_value}")
                 
                 if dtype == 11 and k_value == 2:  # Nem hesapla
                     print(f"💧 NEM VERİSİ PAKETİ ALGILANDI - 11 byte")
@@ -1286,16 +1297,21 @@ def db_worker():
                     if arm_value and k_value:
                         print(f"🔍 NORMAL VERİ PERİYOT KONTROL: Kol {arm_value}, k={k_value}")
                         
-                        # "Tümünü Oku" periyot bitiş kontrolü
+                        # "Tümünü Oku" periyot bitiş kontrolü - sadece veri alma modu aktifken
                         if is_data_retrieval_mode():
                             config = get_data_retrieval_config()
                             if config and config.get('address') == 0:  # Tümünü Oku
-                                # Son batch'teki son veriyi al
                                 last_dtype = last_record.get('dtype')
                                 if last_dtype and is_data_retrieval_period_complete(arm_value, k_value, last_dtype):
-                                    print(f"🔄 VERİ ALMA PERİYOTU BİTTİ - Kol {arm_value}, k={k_value}, dtype={last_dtype}")
+                                    print(f"🔄 TÜMÜNÜ OKU PERİYOTU BİTTİ - Kol {arm_value}, k={k_value}, dtype={last_dtype}")
                                     set_data_retrieval_mode(False, None)
-                                    print("🛑 Veri alma modu durduruldu - İstenen veri alındı")
+                                    print("🛑 Tümünü Oku modu durduruldu - Normal periyot akışına geçildi")
+                                    # Normal periyot bitiş kontrolüne geç
+                                    if is_period_complete(arm_value, k_value):
+                                        print(f"🔄 NORMAL PERİYOT BİTTİ - Kol {arm_value}, Batarya {k_value}")
+                                        alarm_processor.process_period_end()
+                                        reset_period()
+                                    return  # "Tümünü Oku" bitti, normal akışa geç
                         
                         # Normal periyot bitiş kontrolü
                         if is_period_complete(arm_value, k_value):
@@ -1334,16 +1350,21 @@ def db_worker():
                     if arm_value and k_value:
                         print(f"🔍 NORMAL VERİ PERİYOT KONTROL (Empty): Kol {arm_value}, k={k_value}")
                         
-                        # "Tümünü Oku" periyot bitiş kontrolü
+                        # "Tümünü Oku" periyot bitiş kontrolü - sadece veri alma modu aktifken
                         if is_data_retrieval_mode():
                             config = get_data_retrieval_config()
                             if config and config.get('address') == 0:  # Tümünü Oku
-                                # Son batch'teki son veriyi al
                                 last_dtype = last_record.get('dtype')
                                 if last_dtype and is_data_retrieval_period_complete(arm_value, k_value, last_dtype):
-                                    print(f"🔄 VERİ ALMA PERİYOTU BİTTİ (Empty) - Kol {arm_value}, k={k_value}, dtype={last_dtype}")
+                                    print(f"🔄 TÜMÜNÜ OKU PERİYOTU BİTTİ (Empty) - Kol {arm_value}, k={k_value}, dtype={last_dtype}")
                                     set_data_retrieval_mode(False, None)
-                                    print("🛑 Veri alma modu durduruldu - İstenen veri alındı")
+                                    print("🛑 Tümünü Oku modu durduruldu - Normal periyot akışına geçildi")
+                                    # Normal periyot bitiş kontrolüne geç
+                                    if is_period_complete(arm_value, k_value):
+                                        print(f"🔄 NORMAL PERİYOT BİTTİ (Empty) - Kol {arm_value}, Batarya {k_value}")
+                                        alarm_processor.process_period_end()
+                                        reset_period()
+                                    return  # "Tümünü Oku" bitti, normal akışa geç
                         
                         # Normal periyot bitiş kontrolü
                         period_complete = is_period_complete(arm_value, k_value)
