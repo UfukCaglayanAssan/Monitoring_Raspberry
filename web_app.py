@@ -1860,6 +1860,7 @@ def get_data_retrieval_status():
     try:
         import main
         is_active = main.is_data_retrieval_mode()
+        print(f"🔍 API VERİ ALMA MODU DURUMU: {is_active}")
         return jsonify({
             'success': True,
             'is_active': is_active

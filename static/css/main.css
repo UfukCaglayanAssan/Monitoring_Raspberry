@@ -749,6 +749,7 @@ body {
 
 .battery-card.passive-balance {
     background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%) !important; /* blue-100 */
+    border: 2px solid #93c5fd !important; /* blue-300 */
     box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2) !important;
 }
 
@@ -2214,24 +2215,7 @@ input:disabled::placeholder {
     background: #f0f2f5;
 }
 
-/* Pasif Balans Stilleri */
-.battery-card.passive-balance {
-    border: 2px solid #ff9800;
-    background: linear-gradient(135deg, #fff3e0, #ffe0b2);
-    box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
-}
-
-.battery-card.passive-balance:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(255, 152, 0, 0.4);
-}
-
-.passive-balance-indicator {
-    color: #ff9800;
-    font-size: 1.2em;
-    margin-left: 5px;
-    animation: pulse 2s infinite;
-}
+/* Pasif Balans Stilleri - Eski tanım kaldırıldı, yukarıdaki tanım kullanılıyor */
 
 @keyframes pulse {
     0% { opacity: 1; }

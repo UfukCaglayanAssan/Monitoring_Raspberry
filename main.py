@@ -134,8 +134,10 @@ def set_data_retrieval_mode(enabled, config=None):
     """Veri alma modunu ayarla"""
     global data_retrieval_mode, data_retrieval_config, data_retrieval_waiting_for_period, period_active
     with data_retrieval_lock:
+        old_mode = data_retrieval_mode
         data_retrieval_mode = enabled
         data_retrieval_config = config
+        print(f"🔧 VERİ ALMA MODU DEĞİŞTİRİLDİ: {old_mode} -> {enabled}")
         
         # Tümünü Oku işlemi için özel flag
         if enabled and config and config.get('address') == 0:
@@ -1123,8 +1125,11 @@ def db_worker():
                         alarm_processor.process_period_end()
                         # Veri alma modunu durdur
                         if is_data_retrieval_mode():
+                            print(f"🔍 VERİ ALMA MODU DURDURULUYOR - Önceki durum: {is_data_retrieval_mode()}")
                             set_data_retrieval_mode(False, None)
-                            print("🛑 Veri alma modu durduruldu - Periyot bitti (11 byte veri)")
+                            print(f"🛑 Veri alma modu durduruldu - Yeni durum: {is_data_retrieval_mode()}")
+                        else:
+                            print(f"ℹ️ Veri alma modu zaten kapalı - Durum: {is_data_retrieval_mode()}")
                         # Periyot bitti, yeni periyot k=2 (akım verisi) geldiğinde başlayacak
                         reset_period()
 
