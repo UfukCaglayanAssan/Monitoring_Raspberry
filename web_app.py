@@ -1835,18 +1835,58 @@ def stop_data_retrieval():
 def get_retrieved_data():
     """Yakalanan verileri al"""
     try:
-        if os.path.exists('pending_config.json'):
-            with open('pending_config.json', 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                retrieved_data = data.get('retrieved_data', [])
-                return jsonify({
-                    'success': True,
-                    'data': retrieved_data
+        # Veri alma durumunu yükle
+        import main
+        status = main.load_data_retrieval_status()
+        if not status:
+            return jsonify({'success': True, 'data': []})
+        
+        start_timestamp = status.get('data_retrieval_start_timestamp')
+        if not start_timestamp:
+            return jsonify({'success': True, 'data': []})
+        
+        # Veritabanından timestamp'a göre veri çek
+        db = get_db()
+        with db_read_lock:
+            # Timestamp'ı datetime'a çevir
+            start_datetime = datetime.fromtimestamp(start_timestamp)
+            print(f"🔍 VERİ ALMA BAŞLANGIÇ: {start_datetime}")
+            
+            # Bu tarihten sonraki verileri al
+            query = """
+                SELECT timestamp, arm, k as address, dtype, value, 
+                       CASE 
+                           WHEN dtype = 1 THEN 'Gerilim (V)'
+                           WHEN dtype = 2 THEN 'SOC (%)'
+                           WHEN dtype = 3 THEN 'Sıcaklık (°C)'
+                           WHEN dtype = 4 THEN 'NTC2 (°C)'
+                           WHEN dtype = 5 THEN 'NTC3 (°C)'
+                           ELSE 'Bilinmeyen'
+                       END as requested_value
+                FROM battery_data 
+                WHERE timestamp >= ? 
+                ORDER BY timestamp ASC
+            """
+            
+            data = db.execute_query(query, (start_datetime,))
+            
+            # Verileri formatla
+            retrieved_data = []
+            for row in data:
+                retrieved_data.append({
+                    'timestamp': row[0],
+                    'arm': row[1],
+                    'address': row[2],
+                    'dtype': row[3],
+                    'value': row[4],
+                    'requested_value': row[5]
                 })
-        else:
+            
+            print(f"📊 {len(retrieved_data)} adet veri alındı (timestamp >= {start_datetime})")
+            
             return jsonify({
                 'success': True,
-                'data': []
+                'data': retrieved_data
             })
             
     except Exception as e:

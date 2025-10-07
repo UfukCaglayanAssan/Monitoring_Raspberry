@@ -484,10 +484,11 @@ if (typeof window.DataRetrieval === 'undefined') {
         const dataTable = document.getElementById('retrievedDataTable');
         
         if (loadingContainer) loadingContainer.style.display = 'none';
-        if (dataTable) dataTable.style.display = 'block';
-        
-        // Verileri tabloya yaz
-        this.updateDataTable();
+        if (dataTable) {
+            dataTable.style.display = 'block';
+            // Verileri tabloya yaz
+            this.updateDataTable();
+        }
     }
     
     async stopDataRetrieval() {
