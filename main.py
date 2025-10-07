@@ -58,9 +58,6 @@ data_retrieval_waiting_for_period = False  # Tümünü Oku işlemi için periyot
 read_all_mode = False
 read_all_arm = None
 
-# Veri alma modu timestamp'ı
-data_retrieval_start_timestamp = None
-
 # Status verileri için RAM yapısı
 status_ram = {}  # {arm: {battery: bool}} - True=veri var, False=veri yok
 status_lock = threading.RLock()  # Thread-safe erişim için
@@ -146,13 +143,7 @@ def set_data_retrieval_mode(enabled, config=None):
         data_retrieval_config = config
         print(f"🔧 VERİ ALMA MODU DEĞİŞTİRİLDİ: {old_mode} -> {enabled}")
         
-        # Timestamp kaydet/temizle (milisaniye cinsinden)
-        if enabled:
-            data_retrieval_start_timestamp = int(time.time() * 1000)
-            print(f"🕐 VERİ ALMA BAŞLANGIÇ TIMESTAMP: {data_retrieval_start_timestamp}")
-        else:
-            data_retrieval_start_timestamp = None
-            print(f"🕐 VERİ ALMA TIMESTAMP TEMİZLENDİ")
+        # Timestamp artık web app tarafında tutuluyor
         
         # Tümünü Oku işlemi için özel flag
         if enabled and config and config.get('address') == 0:
@@ -195,8 +186,7 @@ def save_data_retrieval_status():
             'data_retrieval_mode': data_retrieval_mode,
             'data_retrieval_config': data_retrieval_config,
             'read_all_mode': read_all_mode,
-            'read_all_arm': read_all_arm,
-            'data_retrieval_start_timestamp': data_retrieval_start_timestamp
+            'read_all_arm': read_all_arm
         }
         with open('data_retrieval_status.json', 'w') as f:
             json.dump(status, f, indent=2)

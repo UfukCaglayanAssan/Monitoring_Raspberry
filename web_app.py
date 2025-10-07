@@ -18,6 +18,9 @@ db_read_lock = threading.RLock()  # Read işlemleri için (multiple readers allo
 # Retry mekanizması için
 import time as time_module
 
+# Veri alma periyot başlangıcı
+data_retrieval_period_start = None
+
 # Database instance'ını thread-safe yapmak için lazy loading
 # main.py'den farklı bir connection pool kullan
 def get_db():
@@ -1802,6 +1805,11 @@ def start_data_retrieval():
         import main
         main.set_data_retrieval_mode(True, config)
         
+        # Web app tarafında da periyot başlangıcını kaydet
+        global data_retrieval_period_start
+        data_retrieval_period_start = int(time.time() * 1000)  # Milisaniye
+        print(f"🕐 WEB APP PERİYOT BAŞLANGIÇ: {data_retrieval_period_start}")
+        
         return jsonify({
             'success': True,
             'message': 'Veri alma modu başlatıldı',
@@ -1821,6 +1829,11 @@ def stop_data_retrieval():
         import main
         main.set_data_retrieval_mode(False, None)
         
+        # Web app tarafında periyot başlangıcını temizle
+        global data_retrieval_period_start
+        data_retrieval_period_start = None
+        print(f"🕐 WEB APP PERİYOT BAŞLANGIÇ TEMİZLENDİ")
+        
         return jsonify({
             'success': True,
             'message': 'Veri alma modu durduruldu'
@@ -1835,14 +1848,10 @@ def stop_data_retrieval():
 def get_retrieved_data():
     """Yakalanan verileri al"""
     try:
-        # Veri alma durumunu yükle
-        import main
-        status = main.load_data_retrieval_status()
-        if not status:
-            return jsonify({'success': True, 'data': []})
-        
-        start_timestamp = status.get('data_retrieval_start_timestamp')
-        print(f"🔍 JSON'dan alınan timestamp: {start_timestamp}")
+        # Web app'teki timestamp'ı kullan
+        global data_retrieval_period_start
+        start_timestamp = data_retrieval_period_start
+        print(f"🔍 WEB APP'ten alınan timestamp: {start_timestamp}")
         
         if not start_timestamp:
             print("⚠️ Timestamp yok, boş veri döndürülüyor")
