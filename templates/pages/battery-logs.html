@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const batteryCount = selectedArmData ? selectedArmData.slave_count : 0;
                     
                     batteryFilter.innerHTML = '<option value="">Tüm Bataryalar</option>';
-                    for (let i = 0; i < batteryCount; i++) {
+                    for (let i = 0; i <= batteryCount; i++) {
                         const option = document.createElement('option');
                         option.value = i;
                         option.textContent = `Batarya ${i}`;

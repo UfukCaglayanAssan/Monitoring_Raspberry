@@ -232,13 +232,9 @@ if (typeof window.DataRetrieval === 'undefined') {
                 const valueText = this.getDataTypeText(value);
                 this.showToast('Veri alma komutu başarıyla gönderildi', 'success');
                 
-                // Veri alma modunu aktif et
-                await this.startDataRetrievalMode({
-                    arm: parseInt(arm),
-                    address: parseInt(address),
-                    value: parseInt(value),
-                    valueText: valueText
-                });
+                // Tekil veri alma - sadece 3 saniye bekle
+                this.showLoading('Veri bekleniyor...');
+                await this.waitForSingleData(parseInt(arm), parseInt(address), parseInt(value), valueText);
                 
                 // Formu temizle
                 this.clearForm();
@@ -251,6 +247,81 @@ if (typeof window.DataRetrieval === 'undefined') {
         } finally {
             this.hideLoading();
         }
+    }
+
+    async waitForSingleData(arm, address, value, valueText) {
+        const maxAttempts = 2; // 2 deneme (3 saniye + 3 saniye)
+        let attempt = 0;
+        
+        while (attempt < maxAttempts) {
+            attempt++;
+            console.log(`🔍 Tekil veri bekleme - Deneme ${attempt}/${maxAttempts}`);
+            
+            // 3 saniye bekle
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            
+            // Veri gelip gelmediğini kontrol et
+            const data = await this.checkForSingleData(arm, address, value);
+            
+            if (data) {
+                console.log('✅ Tekil veri alındı:', data);
+                this.showToast(`${valueText} verisi alındı: ${data}`, 'success');
+                return data;
+            }
+            
+            if (attempt < maxAttempts) {
+                console.log('⏳ Veri gelmedi, tekrar denenecek...');
+                this.showLoading(`Veri bekleniyor... (${attempt + 1}/${maxAttempts})`);
+            }
+        }
+        
+        console.log('❌ Tekil veri alınamadı');
+        this.showToast('Veri alınamadı, lütfen tekrar deneyin', 'error');
+        return null;
+    }
+
+    async checkForSingleData(arm, address, value) {
+        try {
+            // Son 5 saniye içindeki verileri kontrol et
+            const response = await fetch('/api/get-retrieved-data', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && result.data && result.data.length > 0) {
+                    // İlgili kol, adres ve değer tipine sahip veriyi ara
+                    const relevantData = result.data.find(item => 
+                        item.arm == arm && 
+                        item.address == address &&
+                        this.getDataValueByType(item, value) !== null
+                    );
+                    
+                    if (relevantData) {
+                        return this.getDataValueByType(relevantData, value);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Tekil veri kontrol hatası:', error);
+        }
+        
+        return null;
+    }
+
+    getDataValueByType(data, value) {
+        const valueMap = {
+            '10': data.voltage,
+            '11': data.health_status,
+            '12': data.temperature,
+            '13': data.positive_pole_temp,
+            '14': data.negative_pole_temp,
+            '15': data.ntc3_temp,
+            '126': data.charge_status
+        };
+        
+        return valueMap[value] || null;
     }
 
     getDataTypeText(value) {
@@ -402,9 +473,9 @@ if (typeof window.DataRetrieval === 'undefined') {
                 const batteryCount = selectedArmData ? selectedArmData.slave_count : 0;
                 
                 if (batteryCount > 0) {
-                    addressInput.placeholder = `0-${batteryCount - 1} arası giriniz`;
+                    addressInput.placeholder = `0-${batteryCount} arası giriniz`;
                     addressInput.min = 0;
-                    addressInput.max = batteryCount - 1;
+                    addressInput.max = batteryCount;
                     addressInput.disabled = false;
                 } else {
                     addressInput.placeholder = 'Bu kolda batarya yok';
