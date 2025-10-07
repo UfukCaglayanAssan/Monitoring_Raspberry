@@ -1869,22 +1869,23 @@ def get_retrieved_data():
             total_count = count_cursor.fetchone()[0]
             print(f"📊 Veritabanında toplam {total_count} adet veri var")
             
-            # Bu tarihten sonraki verileri al (milisaniye cinsinden karşılaştır)
+            # Bu tarihten sonraki verileri al (gruplama ile)
             query = """
-                SELECT timestamp, arm, k as address, dtype, data, 
-                       CASE 
-                           WHEN dtype = 10 THEN 'Gerilim (V)'
-                           WHEN dtype = 11 THEN 'SOH (%)'
-                           WHEN dtype = 12 THEN 'Sıcaklık (°C)'
-                           WHEN dtype = 13 THEN 'NTC1 (°C)'
-                           WHEN dtype = 14 THEN 'NTC2 (°C)'
-                           WHEN dtype = 15 THEN 'NTC3 (°C)'
-                           WHEN dtype = 126 THEN 'SOC (%)'
-                           ELSE 'Bilinmeyen'
-                       END as requested_value
+                SELECT 
+                    timestamp,
+                    arm,
+                    (k - 2) as address,
+                    MAX(CASE WHEN dtype = 10 THEN data END) as voltage,
+                    MAX(CASE WHEN dtype = 11 THEN data END) as health_status,
+                    MAX(CASE WHEN dtype = 12 THEN data END) as temperature,
+                    MAX(CASE WHEN dtype = 13 THEN data END) as positive_pole_temp,
+                    MAX(CASE WHEN dtype = 14 THEN data END) as negative_pole_temp,
+                    MAX(CASE WHEN dtype = 15 THEN data END) as ntc3_temp,
+                    MAX(CASE WHEN dtype = 126 THEN data END) as charge_status
                 FROM battery_data 
                 WHERE timestamp >= ? 
-                ORDER BY timestamp ASC
+                GROUP BY timestamp, arm, k
+                ORDER BY timestamp ASC, arm ASC, k ASC
             """
             
             print(f"🔍 SQL Sorgusu: WHERE timestamp >= {start_timestamp}")
@@ -1901,17 +1902,28 @@ def get_retrieved_data():
             data = data_cursor.fetchall()
             print(f"🔍 SQL sonucu: {len(data)} adet veri")
             
-            # Verileri formatla
+            # Verileri formatla (gruplama ile)
             retrieved_data = []
             for row in data:
-                retrieved_data.append({
-                    'timestamp': row[0],
+                # Timestamp'ı çevir
+                timestamp_ms = row[0]
+                timestamp_dt = datetime.fromtimestamp(timestamp_ms / 1000)
+                formatted_time = timestamp_dt.strftime("%Y-%m-%d %H:%M:%S")
+                
+                # Veri satırı oluştur
+                data_row = {
+                    'timestamp': formatted_time,
                     'arm': row[1],
                     'address': row[2],
-                    'dtype': row[3],
-                    'value': row[4],  # data sütunu
-                    'requested_value': row[5]
-                })
+                    'voltage': row[3],
+                    'health_status': row[4],
+                    'temperature': row[5],
+                    'positive_pole_temp': row[6],
+                    'negative_pole_temp': row[7],
+                    'ntc3_temp': row[8],
+                    'charge_status': row[9]
+                }
+                retrieved_data.append(data_row)
             
             print(f"📊 {len(retrieved_data)} adet veri alındı (timestamp >= {start_timestamp})")
             

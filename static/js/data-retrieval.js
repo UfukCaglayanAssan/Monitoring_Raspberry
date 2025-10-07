@@ -411,10 +411,15 @@ if (typeof window.DataRetrieval === 'undefined') {
                     result.data.forEach(data => {
                         this.retrievedData.push({
                             timestamp: data.timestamp,
-                            requestedValue: data.requested_value,
-                            receivedValue: data.value,
                             arm: data.arm,
-                            address: data.address
+                            address: data.address,
+                            voltage: data.voltage,
+                            health_status: data.health_status,
+                            temperature: data.temperature,
+                            positive_pole_temp: data.positive_pole_temp,
+                            negative_pole_temp: data.negative_pole_temp,
+                            ntc3_temp: data.ntc3_temp,
+                            charge_status: data.charge_status
                         });
                     });
                     console.log(`📊 ${this.retrievedData.length} adet veri alındı ve this.retrievedData'ya eklendi`);
@@ -441,20 +446,23 @@ if (typeof window.DataRetrieval === 'undefined') {
                     </div>
                 </div>
                 <div class="data-table" style="display: none;" id="retrievedDataTable">
-                    <h4>📊 Alınan Veriler</h4>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Saat</th>
-                                <th>İstenilen Değer</th>
-                                <th>Gelen Veri</th>
-                                <th>Kol</th>
-                                <th>Adres</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dataTableBody">
-                        </tbody>
-                    </table>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ZAMAN</th>
+                                    <th>KOL</th>
+                                    <th>BATARYA ADRESİ</th>
+                                    <th>GERİLİM</th>
+                                    <th>ŞARJ DURUMU</th>
+                                    <th>MODÜL SICAKLIĞI</th>
+                                    <th>POZİTİF KUTUP SICAKLIĞI</th>
+                                    <th>NEGATİF KUTUP SICAKLIĞI</th>
+                                    <th>SAĞLIK DURUMU</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dataTableBody">
+                            </tbody>
+                        </table>
                 </div>
             </div>
         `;
@@ -477,7 +485,7 @@ if (typeof window.DataRetrieval === 'undefined') {
         console.log(`🔍 updateDataTable çağrıldı - Veri sayısı: ${this.retrievedData.length}`);
         
         if (this.retrievedData.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="no-data">Veri bekleniyor...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="no-data">Veri bekleniyor...</td></tr>';
             console.log('⚠️ Veri yok, "Veri bekleniyor..." gösteriliyor');
             return;
         }
@@ -485,10 +493,14 @@ if (typeof window.DataRetrieval === 'undefined') {
         tbody.innerHTML = this.retrievedData.map(data => `
             <tr>
                 <td>${data.timestamp}</td>
-                <td>${data.requestedValue}</td>
-                <td>${data.receivedValue}</td>
                 <td>${data.arm}</td>
                 <td>${data.address}</td>
+                <td>${data.voltage || '-'}</td>
+                <td>${data.charge_status || '-'}</td>
+                <td>${data.temperature || '-'}</td>
+                <td>${data.positive_pole_temp || '-'}</td>
+                <td>${data.negative_pole_temp || '-'}</td>
+                <td>${data.health_status || '-'}</td>
             </tr>
         `).join('');
         
