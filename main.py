@@ -1285,6 +1285,19 @@ def db_worker():
                     k_value = last_record.get('k')
                     if arm_value and k_value:
                         print(f"🔍 NORMAL VERİ PERİYOT KONTROL: Kol {arm_value}, k={k_value}")
+                        
+                        # "Tümünü Oku" periyot bitiş kontrolü
+                        if is_data_retrieval_mode():
+                            config = get_data_retrieval_config()
+                            if config and config.get('address') == 0:  # Tümünü Oku
+                                # Son batch'teki son veriyi al
+                                last_dtype = last_record.get('dtype')
+                                if last_dtype and is_data_retrieval_period_complete(arm_value, k_value, last_dtype):
+                                    print(f"🔄 VERİ ALMA PERİYOTU BİTTİ - Kol {arm_value}, k={k_value}, dtype={last_dtype}")
+                                    set_data_retrieval_mode(False, None)
+                                    print("🛑 Veri alma modu durduruldu - İstenen veri alındı")
+                        
+                        # Normal periyot bitiş kontrolü
                         if is_period_complete(arm_value, k_value):
                             print(f"🔄 PERİYOT BİTTİ - Son normal veri: Kol {arm_value}, Batarya {k_value}")
                             # Periyot bitti, alarmları işle
@@ -1320,6 +1333,19 @@ def db_worker():
                     k_value = last_record.get('k')
                     if arm_value and k_value:
                         print(f"🔍 NORMAL VERİ PERİYOT KONTROL (Empty): Kol {arm_value}, k={k_value}")
+                        
+                        # "Tümünü Oku" periyot bitiş kontrolü
+                        if is_data_retrieval_mode():
+                            config = get_data_retrieval_config()
+                            if config and config.get('address') == 0:  # Tümünü Oku
+                                # Son batch'teki son veriyi al
+                                last_dtype = last_record.get('dtype')
+                                if last_dtype and is_data_retrieval_period_complete(arm_value, k_value, last_dtype):
+                                    print(f"🔄 VERİ ALMA PERİYOTU BİTTİ (Empty) - Kol {arm_value}, k={k_value}, dtype={last_dtype}")
+                                    set_data_retrieval_mode(False, None)
+                                    print("🛑 Veri alma modu durduruldu - İstenen veri alındı")
+                        
+                        # Normal periyot bitiş kontrolü
                         period_complete = is_period_complete(arm_value, k_value)
                         print(f"🔍 PERİYOT TAMAMLANDI MI: {period_complete}")
                         if period_complete:
