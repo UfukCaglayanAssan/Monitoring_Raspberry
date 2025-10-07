@@ -1860,9 +1860,8 @@ def get_retrieved_data():
         # Veritabanından timestamp'a göre veri çek
         db = get_db()
         with db_read_lock:
-            # Timestamp'ı datetime'a çevir (milisaniye cinsinden)
-            start_datetime = datetime.fromtimestamp(start_timestamp / 1000)
-            print(f"🔍 VERİ ALMA BAŞLANGIÇ: {start_datetime}")
+            # Timestamp'ı milisaniye cinsinden kullan (veritabanındaki format)
+            print(f"🔍 VERİ ALMA BAŞLANGIÇ TIMESTAMP: {start_timestamp}")
             
             # Önce toplam veri sayısını kontrol et
             count_query = "SELECT COUNT(*) FROM battery_data"
@@ -1870,7 +1869,7 @@ def get_retrieved_data():
             total_count = count_cursor.fetchone()[0]
             print(f"📊 Veritabanında toplam {total_count} adet veri var")
             
-            # Bu tarihten sonraki verileri al
+            # Bu tarihten sonraki verileri al (milisaniye cinsinden karşılaştır)
             query = """
                 SELECT timestamp, arm, k as address, dtype, data, 
                        CASE 
@@ -1888,8 +1887,17 @@ def get_retrieved_data():
                 ORDER BY timestamp ASC
             """
             
-            print(f"🔍 SQL Sorgusu: WHERE timestamp >= {start_datetime}")
-            data_cursor = db.execute_query(query, (start_datetime,))
+            print(f"🔍 SQL Sorgusu: WHERE timestamp >= {start_timestamp}")
+            
+            # Önce son birkaç veriyi kontrol et
+            debug_query = "SELECT timestamp, arm, k, dtype, data FROM battery_data ORDER BY timestamp DESC LIMIT 5"
+            debug_cursor = db.execute_query(debug_query)
+            debug_data = debug_cursor.fetchall()
+            print(f"🔍 SON 5 VERİ:")
+            for row in debug_data:
+                print(f"  - {row[0]} | Kol:{row[1]} | k:{row[2]} | dtype:{row[3]} | data:{row[4]}")
+            
+            data_cursor = db.execute_query(query, (start_timestamp,))
             data = data_cursor.fetchall()
             print(f"🔍 SQL sonucu: {len(data)} adet veri")
             
