@@ -5,12 +5,16 @@
         <div class="filters-grid">
             <div class="filter-group">
                 <label for="armFilter" data-tr="Kol Numarası" data-en="Arm Number">Kol Numarası</label>
-                <input type="text" id="armFilter" placeholder="Kol numarası giriniz" class="filter-input">
+                <select id="armFilter" class="filter-input">
+                    <option value="">Tüm Kollar</option>
+                </select>
             </div>
             
             <div class="filter-group">
                 <label for="batteryFilter" data-tr="Batarya Adresi" data-en="Battery Address">Batarya Adresi</label>
-                <input type="text" id="batteryFilter" placeholder="Batarya adresi giriniz" class="filter-input">
+                <select id="batteryFilter" class="filter-input" disabled>
+                    <option value="">Önce kol seçiniz</option>
+                </select>
             </div>
             
             <div class="filter-group">
@@ -94,3 +98,76 @@
         </div>
     </div>
 </div>
+
+<script>
+// Batarya logları sayfası için kol/batarya seçimi
+document.addEventListener('DOMContentLoaded', function() {
+    const armFilter = document.getElementById('armFilter');
+    const batteryFilter = document.getElementById('batteryFilter');
+    
+    // Kol seçeneklerini yükle
+    loadArmOptions();
+    
+    // Kol seçimi değiştiğinde batarya seçeneklerini güncelle
+    armFilter.addEventListener('change', function() {
+        updateBatteryOptions(this.value);
+    });
+    
+    async function loadArmOptions() {
+        try {
+            const response = await fetch('/api/active-arms', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.activeArms) {
+                    // Kol seçeneklerini güncelle
+                    armFilter.innerHTML = '<option value="">Tüm Kollar</option>';
+                    data.activeArms.forEach(arm => {
+                        if (arm.slave_count > 0) {
+                            const option = document.createElement('option');
+                            option.value = arm.arm;
+                            option.textContent = `Kol ${arm.arm}`;
+                            armFilter.appendChild(option);
+                        }
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Kol seçenekleri yükleme hatası:', error);
+        }
+    }
+    
+    function updateBatteryOptions(selectedArm) {
+        if (!selectedArm) {
+            batteryFilter.innerHTML = '<option value="">Önce kol seçiniz</option>';
+            batteryFilter.disabled = true;
+            return;
+        }
+        
+        // Batarya sayısını al (active-arms'tan)
+        fetch('/api/active-arms')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.activeArms) {
+                    const selectedArmData = data.activeArms.find(arm => arm.arm == selectedArm);
+                    const batteryCount = selectedArmData ? selectedArmData.slave_count : 0;
+                    
+                    batteryFilter.innerHTML = '<option value="">Tüm Bataryalar</option>';
+                    for (let i = 0; i < batteryCount; i++) {
+                        const option = document.createElement('option');
+                        option.value = i;
+                        option.textContent = `Batarya ${i}`;
+                        batteryFilter.appendChild(option);
+                    }
+                    batteryFilter.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Batarya seçenekleri yükleme hatası:', error);
+            });
+    }
+});
+</script>

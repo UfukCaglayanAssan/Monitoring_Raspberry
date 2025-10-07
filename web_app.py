@@ -1869,7 +1869,7 @@ def get_retrieved_data():
             total_count = count_cursor.fetchone()[0]
             print(f"📊 Veritabanında toplam {total_count} adet veri var")
             
-            # Bu tarihten sonraki verileri al (gruplama ile)
+            # Bu tarihten sonraki verileri al (gruplama ile) - sadece batarya verileri (k > 2)
             query = """
                 SELECT 
                     timestamp,
@@ -1883,7 +1883,7 @@ def get_retrieved_data():
                     MAX(CASE WHEN dtype = 15 THEN data END) as ntc3_temp,
                     MAX(CASE WHEN dtype = 126 THEN data END) as charge_status
                 FROM battery_data 
-                WHERE timestamp >= ? 
+                WHERE timestamp >= ? AND k > 2
                 GROUP BY timestamp, arm, k
                 ORDER BY timestamp ASC, arm ASC, k ASC
             """

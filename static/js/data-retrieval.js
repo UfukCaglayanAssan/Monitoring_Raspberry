@@ -13,6 +13,7 @@ if (typeof window.DataRetrieval === 'undefined') {
     init() {
         this.bindEvents();
         this.hideOperationsList();
+        this.loadArmOptions();
     }
 
     bindEvents() {
@@ -28,6 +29,11 @@ if (typeof window.DataRetrieval === 'undefined') {
         // Veri alma butonu
         document.getElementById('getDataBtn').addEventListener('click', () => {
             this.handleGetData();
+        });
+
+        // Kol seçimi değiştiğinde batarya adresi sınırlaması
+        document.getElementById('dataArmSelect').addEventListener('change', (e) => {
+            this.updateAddressInput(e.target.value);
         });
 
         // Form validasyonu
@@ -122,8 +128,6 @@ if (typeof window.DataRetrieval === 'undefined') {
             });
 
             if (response.ok) {
-                this.showToast('Tümünü oku komutu başarıyla gönderildi', 'success');
-                
                 // Tümünü oku işlemi için veri alma modu başlat
                 if (selectedArm !== '5') {
                     // Belirli bir kol seçildiyse, o kol için veri alma modu başlat
@@ -133,8 +137,25 @@ if (typeof window.DataRetrieval === 'undefined') {
                         value: 0, // Tümünü Oku işlemi için değer 0
                         valueText: 'Tüm Veriler'
                     });
+                } else {
+                    // Tüm kollar seçildiyse, genel veri alma modu başlat
+                    await this.startDataRetrievalMode({
+                        arm: 5,
+                        address: 0,
+                        value: 0,
+                        valueText: 'Tüm Veriler'
+                    });
                 }
-    } else {
+                
+                // Veri tablosunu göster
+                this.showDataTable();
+                
+                // Tablo kısmına kaydır
+                this.scrollToDataTable();
+                
+                // Periyot durumunu kontrol etmeye başla
+                this.checkPeriodStatus();
+            } else {
                 throw new Error('Komut gönderilemedi');
             }
         } catch (error) {
@@ -293,6 +314,132 @@ if (typeof window.DataRetrieval === 'undefined') {
         }
     }
 
+    async loadArmOptions() {
+        try {
+            const response = await fetch('/api/active-arms', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    this.updateArmSelectOptions(data.activeArms);
+                }
+            }
+        } catch (error) {
+            console.error('Kol seçenekleri yükleme hatası:', error);
+        }
+    }
+
+    updateArmSelectOptions(activeArms) {
+        // arm_slave_counts verilerini map'e çevir
+        const armSlaveCountsMap = new Map();
+        activeArms.forEach(arm => {
+            armSlaveCountsMap.set(arm.arm, arm.slave_count || 0);
+        });
+        
+        // Toplu işlemler kol seçimi
+        const batchArmSelect = document.getElementById('batchArmSelect');
+        if (batchArmSelect) {
+            batchArmSelect.innerHTML = '<option value="">Kol Seçiniz</option>';
+            
+            // Sadece batarya olan kolları ekle
+            for (let arm = 1; arm <= 4; arm++) {
+                if (armSlaveCountsMap.has(arm) && armSlaveCountsMap.get(arm) > 0) {
+                    const option = document.createElement('option');
+                    option.value = arm;
+                    option.textContent = `Kol ${arm}`;
+                    batchArmSelect.appendChild(option);
+                }
+            }
+            
+            // Tüm kollar seçeneği (eğer en az 2 kol varsa)
+            if (armSlaveCountsMap.size > 1) {
+                const option = document.createElement('option');
+                option.value = '5';
+                option.textContent = 'Tüm Kollar';
+                batchArmSelect.appendChild(option);
+            }
+        }
+        
+        // Veri alma formu kol seçimi
+        const dataArmSelect = document.getElementById('dataArmSelect');
+        if (dataArmSelect) {
+            dataArmSelect.innerHTML = '<option value="">Seçiniz</option>';
+            
+            // Sadece batarya olan kolları ekle
+            for (let arm = 1; arm <= 4; arm++) {
+                if (armSlaveCountsMap.has(arm) && armSlaveCountsMap.get(arm) > 0) {
+                    const option = document.createElement('option');
+                    option.value = arm;
+                    option.textContent = `Kol ${arm}`;
+                    dataArmSelect.appendChild(option);
+                }
+            }
+        }
+    }
+
+    async updateAddressInput(selectedArm) {
+        const addressInput = document.getElementById('dataAddressInput');
+        
+        if (!selectedArm) {
+            addressInput.placeholder = 'Önce kol seçiniz';
+            addressInput.min = 0;
+            addressInput.max = 0;
+            addressInput.disabled = true;
+            addressInput.value = '';
+            return;
+        }
+        
+        try {
+            // active-arms'tan batarya sayısını al
+            const response = await fetch('/api/active-arms');
+            const data = await response.json();
+            
+            if (data.success && data.activeArms) {
+                const selectedArmData = data.activeArms.find(arm => arm.arm == selectedArm);
+                const batteryCount = selectedArmData ? selectedArmData.slave_count : 0;
+                
+                if (batteryCount > 0) {
+                    addressInput.placeholder = `0-${batteryCount - 1} arası giriniz`;
+                    addressInput.min = 0;
+                    addressInput.max = batteryCount - 1;
+                    addressInput.disabled = false;
+                } else {
+                    addressInput.placeholder = 'Bu kolda batarya yok';
+                    addressInput.min = 0;
+                    addressInput.max = 0;
+                    addressInput.disabled = true;
+                }
+            }
+        } catch (error) {
+            console.error('Batarya sayısı alma hatası:', error);
+            addressInput.placeholder = 'Hata oluştu';
+            addressInput.disabled = true;
+        }
+    }
+
+    scrollToDataTable() {
+        // Tablo kısmına yumuşak kaydırma
+        const dataTable = document.getElementById('retrievedDataTable');
+        if (dataTable) {
+            dataTable.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        } else {
+            // Eğer tablo henüz oluşmamışsa, operationsList'e kaydır
+            const operationsList = document.getElementById('operationsList');
+            if (operationsList) {
+                operationsList.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+            }
+        }
+    }
+
     saveOperations() {
         localStorage.setItem('dataRetrievalOperations', JSON.stringify(this.operations));
     }
@@ -446,9 +593,9 @@ if (typeof window.DataRetrieval === 'undefined') {
                     </div>
                 </div>
                 <div class="data-table" style="display: none;" id="retrievedDataTable">
-                        <table>
-                            <thead>
-                                <tr>
+                    <table>
+                        <thead>
+                            <tr>
                                     <th>ZAMAN</th>
                                     <th>KOL</th>
                                     <th>BATARYA ADRESİ</th>
@@ -458,11 +605,11 @@ if (typeof window.DataRetrieval === 'undefined') {
                                     <th>POZİTİF KUTUP SICAKLIĞI</th>
                                     <th>NEGATİF KUTUP SICAKLIĞI</th>
                                     <th>SAĞLIK DURUMU</th>
-                                </tr>
-                            </thead>
-                            <tbody id="dataTableBody">
-                            </tbody>
-                        </table>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                        </tbody>
+                    </table>
                 </div>
             </div>
         `;
