@@ -161,6 +161,9 @@ def set_data_retrieval_mode(enabled, config=None):
         
         if config:
             print(f"📊 Veri alma konfigürasyonu: {config}")
+        
+        # JSON dosyasına kaydet
+        save_data_retrieval_status()
 
 def is_data_retrieval_mode():
     """Veri alma modu aktif mi kontrol et"""
@@ -173,6 +176,31 @@ def get_data_retrieval_config():
     global data_retrieval_config
     with data_retrieval_lock:
         return data_retrieval_config
+
+def save_data_retrieval_status():
+    """Veri alma durumunu JSON dosyasına kaydet"""
+    try:
+        status = {
+            'data_retrieval_mode': data_retrieval_mode,
+            'data_retrieval_config': data_retrieval_config,
+            'read_all_mode': read_all_mode,
+            'read_all_arm': read_all_arm
+        }
+        with open('data_retrieval_status.json', 'w') as f:
+            json.dump(status, f, indent=2)
+    except Exception as e:
+        print(f"❌ JSON kaydetme hatası: {e}")
+
+def load_data_retrieval_status():
+    """Veri alma durumunu JSON dosyasından yükle"""
+    try:
+        if os.path.exists('data_retrieval_status.json'):
+            with open('data_retrieval_status.json', 'r') as f:
+                status = json.load(f)
+                return status
+    except Exception as e:
+        print(f"❌ JSON yükleme hatası: {e}")
+    return None
 
 def should_capture_data(arm_value, k_value, dtype, config):
     """Veri yakalanmalı mı kontrol et"""
