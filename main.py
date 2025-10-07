@@ -1125,9 +1125,8 @@ def db_worker():
                         if is_data_retrieval_mode():
                             set_data_retrieval_mode(False, None)
                             print("🛑 Veri alma modu durduruldu - Periyot bitti (11 byte veri)")
-                        # Yeni periyot başlat
+                        # Periyot bitti, yeni periyot k=2 (akım verisi) geldiğinde başlayacak
                         reset_period()
-                        get_period_timestamp()
 
             # 6 byte'lık balans komutu veya armslavecounts kontrolü
             elif len(data) == 6:
