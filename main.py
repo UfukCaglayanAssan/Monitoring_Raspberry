@@ -55,8 +55,8 @@ data_retrieval_lock = threading.Lock()
 data_retrieval_waiting_for_period = False  # Tümünü Oku işlemi için periyot bekleme flag'i
 
 # "Tümünü Oku" flag'i
-tumunu_oku_mode = False
-tumunu_oku_arm = None
+read_all_mode = False
+read_all_arm = None
 
 # Status verileri için RAM yapısı
 status_ram = {}  # {arm: {battery: bool}} - True=veri var, False=veri yok
@@ -329,20 +329,20 @@ def get_last_battery_info():
 
 def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False, dtype=None):
     """Periyot tamamlandı mı kontrol et"""
-    global tumunu_oku_mode, tumunu_oku_arm
+    global read_all_mode, read_all_arm
     
-    if tumunu_oku_mode and tumunu_oku_arm is not None:
+    if read_all_mode and read_all_arm is not None:
         # "Tümünü Oku" modu aktifse - sadece o koldaki son bataryanın dtype=14'ine bak
         last_arm, last_battery = get_last_battery_info()
-        print(f"🔍 TÜMÜNÜ OKU PERİYOT KONTROL: Kol {tumunu_oku_arm}, k={k_value}, dtype={dtype}, Son batarya: {last_battery}")
+        print(f"🔍 TÜMÜNÜ OKU PERİYOT KONTROL: Kol {read_all_arm}, k={k_value}, dtype={dtype}, Son batarya: {last_battery}")
         
         # Sadece o koldaki son batarya geldi mi? (dtype kontrolü sadece 11 byte veri işlenirken yapılır)
-        if arm_value == tumunu_oku_arm and k_value == last_battery:
+        if arm_value == read_all_arm and k_value == last_battery:
             if dtype is not None and dtype != 14:
                 # 11 byte veri işlenirken dtype=14 değilse devam et
                 print(f"⏳ TÜMÜNÜ OKU PERİYOTU DEVAM EDİYOR: dtype={dtype} (14 bekleniyor)")
                 return False
-            print(f"✅ TÜMÜNÜ OKU PERİYOTU TAMAMLANDI: Kol {tumunu_oku_arm}, Son batarya {last_battery}, dtype={dtype}")
+            print(f"✅ TÜMÜNÜ OKU PERİYOTU TAMAMLANDI: Kol {read_all_arm}, Son batarya {last_battery}, dtype={dtype}")
             return True
         return False
     else:
@@ -1320,9 +1320,9 @@ def db_worker():
                             alarm_processor.process_period_end()
                             
                             # "Tümünü Oku" modu aktifse flag'i False yap ve veri alma modunu durdur
-                            if tumunu_oku_mode:
-                                tumunu_oku_mode = False
-                                tumunu_oku_arm = None
+                            if read_all_mode:
+                                read_all_mode = False
+                                read_all_arm = None
                                 print(f"🛑 TÜMÜNÜ OKU MODU KAPATILDI - Normal periyot akışına geçildi")
                                 
                                 # Veri alma modunu da durdur
@@ -1688,12 +1688,22 @@ def config_worker():
                             wave_uart_send(pi, TX_PIN, packet, int(1e6 / BAUD_RATE))
                             print(f"✓ {command} komutu cihaza gönderildi")
                             
-                            # "Tümünü Oku" komutu gönderildiğinde flag'i True yap
+                            # "Tümünü Oku" komutu gönderildiğinde flag'i True yap ve veri alma modunu başlat
                             if command == 'readAll':
-                                global tumunu_oku_mode, tumunu_oku_arm
-                                tumunu_oku_mode = True
-                                tumunu_oku_arm = arm
+                                global read_all_mode, read_all_arm
+                                read_all_mode = True
+                                read_all_arm = arm
                                 print(f"🔍 TÜMÜNÜ OKU MODU AKTİF - Kol {arm}")
+                                
+                                # Veri alma modunu da başlat
+                                config = {
+                                    'arm': arm,
+                                    'address': 0,  # Tümünü Oku için adres 0
+                                    'value': 0,    # Tümünü Oku için değer 0
+                                    'valueText': 'Tüm Veriler'
+                                }
+                                set_data_retrieval_mode(True, config)
+                                print(f"🔧 VERİ ALMA MODU BAŞLATILDI - Tümünü Oku için")
                     elif config_data.get('type') == 'dataget':
                         # Veri alma komutu gönder
                         arm_value = config_data.get('armValue')
