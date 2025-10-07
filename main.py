@@ -153,10 +153,6 @@ def set_data_retrieval_mode(enabled, config=None):
             data_retrieval_waiting_for_period = False
             print(f"🔍 Veri alma modu: {'Aktif' if enabled else 'Pasif'}")
         
-        # Eğer mod kapatılıyorsa, bekleme flag'ini de kapat
-        if not enabled:
-            data_retrieval_waiting_for_period = False
-        
         if config:
             print(f"📊 Veri alma konfigürasyonu: {config}")
 
@@ -664,9 +660,8 @@ def db_worker():
                             print("🛑 Veri alma modu durduruldu - Periyot bitti (missing data)")
                         # Reset system sinyali gönder (1 saat aralık kontrolü ile)
                         if send_reset_system_signal():
-                            # Yeni periyot başlat
+                            # Periyot bitti, yeni periyot k=2 (akım verisi) geldiğinde başlayacak
                             reset_period()
-                            get_period_timestamp()
                         else:
                             print("⏰ Reset system gönderilemedi, periyot devam ediyor")
                         
@@ -729,6 +724,10 @@ def db_worker():
                     print(f"📦 Ham Paket: {' '.join([f'0x{b:02X}' for b in [int(x, 16) for x in data]])}")
                     print(f"📊 Header: 0x{data[0]}, k: {k_value}, dtype: {dtype}, arm: {arm_value}")
                     print(f"📊 Veri bytes: {data[4:10]}")
+                    
+                    # Yeni periyot başlat (k=2 akım verisi geldiğinde)
+                    if not period_active:
+                        get_period_timestamp()
                 
                 if dtype == 11 and k_value == 2:  # Nem hesapla
                     print(f"💧 NEM VERİSİ PAKETİ ALGILANDI - 11 byte")
@@ -1275,15 +1274,12 @@ def db_worker():
                             alarm_processor.process_period_end()
                             # Veri alma modunu durdur
                             if is_data_retrieval_mode():
-                                # Tümünü Oku işlemi için özel kontrol
-                                config = get_data_retrieval_config()
-                                if config and config.get('address') == 0:
-                                    print(f"🔄 TÜMÜNÜ OKU PERİYOTU BİTTİ - Kol {arm_value}, Batarya {k_value}")
                                 set_data_retrieval_mode(False, None)
                                 print("🛑 Veri alma modu durduruldu - Periyot bitti (normal veri)")
-                            # Yeni periyot başlat
+                                # Veri alma modu için kısa bekleme
+                                time.sleep(0.5)
+                            # Periyot bitti, yeni periyot k=2 (akım verisi) geldiğinde başlayacak
                             reset_period()
-                            get_period_timestamp()
                 
                 with db_lock:
                     db.insert_battery_data_batch(batch)
@@ -1312,15 +1308,12 @@ def db_worker():
                             alarm_processor.process_period_end()
                             # Veri alma modunu durdur
                             if is_data_retrieval_mode():
-                                # Tümünü Oku işlemi için özel kontrol
-                                config = get_data_retrieval_config()
-                                if config and config.get('address') == 0:
-                                    print(f"🔄 TÜMÜNÜ OKU PERİYOTU BİTTİ (Empty) - Kol {arm_value}, Batarya {k_value}")
                                 set_data_retrieval_mode(False, None)
                                 print("🛑 Veri alma modu durduruldu - Periyot bitti (normal veri - Empty)")
-                            # Yeni periyot başlat
+                                # Veri alma modu için kısa bekleme
+                                time.sleep(0.5)
+                            # Periyot bitti, yeni periyot k=2 (akım verisi) geldiğinde başlayacak
                             reset_period()
-                            get_period_timestamp()
                 
                 with db_lock:
                     db.insert_battery_data_batch(batch)
