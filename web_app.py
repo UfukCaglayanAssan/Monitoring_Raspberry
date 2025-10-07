@@ -1872,13 +1872,15 @@ def get_retrieved_data():
             
             # Bu tarihten sonraki verileri al
             query = """
-                SELECT timestamp, arm, k as address, dtype, value, 
+                SELECT timestamp, arm, k as address, dtype, data, 
                        CASE 
-                           WHEN dtype = 1 THEN 'Gerilim (V)'
-                           WHEN dtype = 2 THEN 'SOC (%)'
-                           WHEN dtype = 3 THEN 'Sıcaklık (°C)'
-                           WHEN dtype = 4 THEN 'NTC2 (°C)'
-                           WHEN dtype = 5 THEN 'NTC3 (°C)'
+                           WHEN dtype = 10 THEN 'Gerilim (V)'
+                           WHEN dtype = 11 THEN 'SOH (%)'
+                           WHEN dtype = 12 THEN 'Sıcaklık (°C)'
+                           WHEN dtype = 13 THEN 'NTC1 (°C)'
+                           WHEN dtype = 14 THEN 'NTC2 (°C)'
+                           WHEN dtype = 15 THEN 'NTC3 (°C)'
+                           WHEN dtype = 126 THEN 'SOC (%)'
                            ELSE 'Bilinmeyen'
                        END as requested_value
                 FROM battery_data 
@@ -1899,7 +1901,7 @@ def get_retrieved_data():
                     'arm': row[1],
                     'address': row[2],
                     'dtype': row[3],
-                    'value': row[4],
+                    'value': row[4],  # data sütunu
                     'requested_value': row[5]
                 })
             
