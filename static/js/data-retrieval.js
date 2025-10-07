@@ -457,12 +457,12 @@ if (typeof window.DataRetrieval === 'undefined') {
             console.error('Veri alma hatası:', error);
         }
         
-        // 2 saniye sonra tekrar kontrol et (daha az sıklıkta)
+        // 3 saniye sonra tekrar kontrol et (daha az sıklıkta)
         setTimeout(() => {
             if (this.isDataRetrievalMode) {
                 this.checkPeriodStatus();
             }
-        }, 2000);
+        }, 3000);
     }
     
     async fetchRetrievedData() {
