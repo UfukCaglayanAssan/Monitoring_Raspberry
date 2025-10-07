@@ -153,6 +153,10 @@ def set_data_retrieval_mode(enabled, config=None):
             data_retrieval_waiting_for_period = False
             print(f"🔍 Veri alma modu: {'Aktif' if enabled else 'Pasif'}")
         
+        # Eğer mod kapatılıyorsa, bekleme flag'ini de kapat
+        if not enabled:
+            data_retrieval_waiting_for_period = False
+        
         if config:
             print(f"📊 Veri alma konfigürasyonu: {config}")
 
@@ -1271,6 +1275,10 @@ def db_worker():
                             alarm_processor.process_period_end()
                             # Veri alma modunu durdur
                             if is_data_retrieval_mode():
+                                # Tümünü Oku işlemi için özel kontrol
+                                config = get_data_retrieval_config()
+                                if config and config.get('address') == 0:
+                                    print(f"🔄 TÜMÜNÜ OKU PERİYOTU BİTTİ - Kol {arm_value}, Batarya {k_value}")
                                 set_data_retrieval_mode(False, None)
                                 print("🛑 Veri alma modu durduruldu - Periyot bitti (normal veri)")
                             # Yeni periyot başlat
@@ -1304,6 +1312,10 @@ def db_worker():
                             alarm_processor.process_period_end()
                             # Veri alma modunu durdur
                             if is_data_retrieval_mode():
+                                # Tümünü Oku işlemi için özel kontrol
+                                config = get_data_retrieval_config()
+                                if config and config.get('address') == 0:
+                                    print(f"🔄 TÜMÜNÜ OKU PERİYOTU BİTTİ (Empty) - Kol {arm_value}, Batarya {k_value}")
                                 set_data_retrieval_mode(False, None)
                                 print("🛑 Veri alma modu durduruldu - Periyot bitti (normal veri - Empty)")
                             # Yeni periyot başlat
