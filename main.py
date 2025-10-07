@@ -54,6 +54,10 @@ data_retrieval_config = None
 data_retrieval_lock = threading.Lock()
 data_retrieval_waiting_for_period = False  # Tümünü Oku işlemi için periyot bekleme flag'i
 
+# "Tümünü Oku" flag'i
+tumunu_oku_mode = False
+tumunu_oku_arm = None
+
 # Status verileri için RAM yapısı
 status_ram = {}  # {arm: {battery: bool}} - True=veri var, False=veri yok
 status_lock = threading.RLock()  # Thread-safe erişim için
@@ -325,19 +329,34 @@ def get_last_battery_info():
 
 def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False):
     """Periyot tamamlandı mı kontrol et"""
-    last_arm, last_battery = get_last_battery_info()
+    global tumunu_oku_mode, tumunu_oku_arm
     
-    if not last_arm or not last_battery:
-        print(f"🔍 PERİYOT KONTROL: last_arm={last_arm}, last_battery={last_battery} - Kontrol edilemiyor")
+    if tumunu_oku_mode and tumunu_oku_arm is not None:
+        # "Tümünü Oku" modu aktifse - sadece o koldaki son bataryanın dtype=15'ine bak
+        arm_slave_counts = db.get_arm_slave_counts()
+        last_battery = arm_slave_counts.get(tumunu_oku_arm, 0)
+        print(f"🔍 TÜMÜNÜ OKU PERİYOT KONTROL: Kol {tumunu_oku_arm}, k={k_value}, Son batarya: {last_battery}")
+        
+        # Sadece o koldaki son batarya geldi mi?
+        if arm_value == tumunu_oku_arm and k_value == last_battery:
+            print(f"✅ TÜMÜNÜ OKU PERİYOTU TAMAMLANDI: Kol {tumunu_oku_arm}, Son batarya {last_battery}")
+            return True
         return False
-    
-    # Debug: Periyot kontrol bilgilerini yazdır
-    print(f"🔍 PERİYOT KONTROL: Kol {arm_value}, k={k_value}, Beklenen son k: {last_battery}")
-    
-    # En son koldaki en son batarya verisi geldi mi?
-    if arm_value == last_arm and k_value == last_battery:
-        print(f"✅ PERİYOT TAMAMLANDI: En son batarya verisi geldi - Kol {arm_value}, Batarya {k_value}")
-        return True
+    else:
+        # Normal mod - tüm kolların son bataryası
+        last_arm, last_battery = get_last_battery_info()
+        
+        if not last_arm or not last_battery:
+            print(f"🔍 PERİYOT KONTROL: last_arm={last_arm}, last_battery={last_battery} - Kontrol edilemiyor")
+            return False
+        
+        # Debug: Periyot kontrol bilgilerini yazdır
+        print(f"🔍 PERİYOT KONTROL: Kol {arm_value}, k={k_value}, Beklenen son k: {last_battery}")
+        
+        # En son koldaki en son batarya verisi geldi mi?
+        if arm_value == last_arm and k_value == last_battery:
+            print(f"✅ PERİYOT TAMAMLANDI: En son batarya verisi geldi - Kol {arm_value}, Batarya {k_value}")
+            return True
     
     # Missing data geldi mi?
     if is_missing_data:
@@ -740,16 +759,8 @@ def db_worker():
                     if not period_active:
                         get_period_timestamp()
                         
-                        # "Tümünü Oku" kontrolü - k=2 geldiğinde
-                        if is_data_retrieval_mode():
-                            config = get_data_retrieval_config()
-                            if config and config.get('address') == 0:  # Tümünü Oku
-                                print(f"🔍 TÜMÜNÜ OKU PERİYOTU BAŞLADI - Kol {arm_value}, k={k_value}")
-                                # "Tümünü Oku" periyot akışı başladı
-                            else:
-                                print(f"ℹ️ NORMAL PERİYOT BAŞLADI - Kol {arm_value}, k={k_value}")
-                        else:
-                            print(f"ℹ️ NORMAL PERİYOT BAŞLADI - Kol {arm_value}, k={k_value}")
+                        # Yeni periyot başladı
+                        print(f"ℹ️ YENİ PERİYOT BAŞLADI - Kol {arm_value}, k={k_value}")
                 
                 if dtype == 11 and k_value == 2:  # Nem hesapla
                     print(f"💧 NEM VERİSİ PAKETİ ALGILANDI - 11 byte")
@@ -1297,27 +1308,19 @@ def db_worker():
                     if arm_value and k_value:
                         print(f"🔍 NORMAL VERİ PERİYOT KONTROL: Kol {arm_value}, k={k_value}")
                         
-                        # "Tümünü Oku" periyot bitiş kontrolü - sadece veri alma modu aktifken
-                        if is_data_retrieval_mode():
-                            config = get_data_retrieval_config()
-                            if config and config.get('address') == 0:  # Tümünü Oku
-                                last_dtype = last_record.get('dtype')
-                                if last_dtype and is_data_retrieval_period_complete(arm_value, k_value, last_dtype):
-                                    print(f"🔄 TÜMÜNÜ OKU PERİYOTU BİTTİ - Kol {arm_value}, k={k_value}, dtype={last_dtype}")
-                                    set_data_retrieval_mode(False, None)
-                                    print("🛑 Tümünü Oku modu durduruldu - Normal periyot akışına geçildi")
-                                    # Normal periyot bitiş kontrolüne geç
-                                    if is_period_complete(arm_value, k_value):
-                                        print(f"🔄 NORMAL PERİYOT BİTTİ - Kol {arm_value}, Batarya {k_value}")
-                                        alarm_processor.process_period_end()
-                                        reset_period()
-                                    return  # "Tümünü Oku" bitti, normal akışa geç
                         
                         # Normal periyot bitiş kontrolü
                         if is_period_complete(arm_value, k_value):
                             print(f"🔄 PERİYOT BİTTİ - Son normal veri: Kol {arm_value}, Batarya {k_value}")
                             # Periyot bitti, alarmları işle
                             alarm_processor.process_period_end()
+                            
+                            # "Tümünü Oku" modu aktifse flag'i False yap
+                            if tumunu_oku_mode:
+                                global tumunu_oku_mode, tumunu_oku_arm
+                                tumunu_oku_mode = False
+                                tumunu_oku_arm = None
+                                print(f"🛑 TÜMÜNÜ OKU MODU KAPATILDI - Normal periyot akışına geçildi")
                             
                             # Veri alma modu aktifse durdur
                             if is_data_retrieval_mode():
@@ -1674,6 +1677,13 @@ def config_worker():
                             print(f"Komut: {command}, Kol: {arm}, Paket: {packet} (Hex: {[hex(x) for x in packet]})")
                             wave_uart_send(pi, TX_PIN, packet, int(1e6 / BAUD_RATE))
                             print(f"✓ {command} komutu cihaza gönderildi")
+                            
+                            # "Tümünü Oku" komutu gönderildiğinde flag'i True yap
+                            if command == 'readAll':
+                                global tumunu_oku_mode, tumunu_oku_arm
+                                tumunu_oku_mode = True
+                                tumunu_oku_arm = arm
+                                print(f"🔍 TÜMÜNÜ OKU MODU AKTİF - Kol {arm}")
                     elif config_data.get('type') == 'dataget':
                         # Veri alma komutu gönder
                         arm_value = config_data.get('armValue')
