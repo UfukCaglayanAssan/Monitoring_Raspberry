@@ -115,8 +115,8 @@ def reset_period():
     old_timestamp = current_period_timestamp
     period_active = False
     current_period_timestamp = None
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"🔄 PERİYOT BİTTİ: {timestamp} - Eski Timestamp: {old_timestamp}")
+    # Sadece debug için - periyot sıfırlandı
+    # print(f"🔄 PERİYOT SIFIRLANDI: Eski Timestamp: {old_timestamp}")
 
 def update_last_k_value(new_value):
     """Thread-safe olarak last_k_value güncelle"""
@@ -1121,6 +1121,10 @@ def db_worker():
                         print(f"🔄 PERİYOT BİTTİ - 11 byte veri: Kol {arm_value}, k={k_value}")
                         # Periyot bitti, alarmları işle
                         alarm_processor.process_period_end()
+                        # Veri alma modunu durdur
+                        if is_data_retrieval_mode():
+                            set_data_retrieval_mode(False, None)
+                            print("🛑 Veri alma modu durduruldu - Periyot bitti (11 byte veri)")
                         # Yeni periyot başlat
                         reset_period()
                         get_period_timestamp()
