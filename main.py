@@ -1310,6 +1310,10 @@ def db_worker():
                             print(f"🔄 PERİYOT BİTTİ - Son normal veri (Empty): Kol {arm_value}, Batarya {k_value}")
                             # Periyot bitti, alarmları işle
                             alarm_processor.process_period_end()
+                            
+                            # Normal periyot bitişinde veri alma modu durdurulmaz
+                            # Sadece "Tümünü Oku" periyot bitişinde durdurulur
+                            
                             # Periyot bitti, yeni periyot k=2 (akım verisi) geldiğinde başlayacak
                             reset_period()
                         else:
