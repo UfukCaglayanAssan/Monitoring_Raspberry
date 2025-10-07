@@ -594,7 +594,7 @@ def db_worker():
     """Veritabanı işlemleri"""
     batch = []
     last_insert = time.time()
-    global last_data_received
+    global last_data_received, tumunu_oku_mode, tumunu_oku_arm
     
     while True:
         try:
@@ -1317,7 +1317,6 @@ def db_worker():
                             
                             # "Tümünü Oku" modu aktifse flag'i False yap
                             if tumunu_oku_mode:
-                                global tumunu_oku_mode, tumunu_oku_arm
                                 tumunu_oku_mode = False
                                 tumunu_oku_arm = None
                                 print(f"🛑 TÜMÜNÜ OKU MODU KAPATILDI - Normal periyot akışına geçildi")
