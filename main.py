@@ -146,9 +146,9 @@ def set_data_retrieval_mode(enabled, config=None):
         data_retrieval_config = config
         print(f"🔧 VERİ ALMA MODU DEĞİŞTİRİLDİ: {old_mode} -> {enabled}")
         
-        # Timestamp kaydet/temizle
+        # Timestamp kaydet/temizle (milisaniye cinsinden)
         if enabled:
-            data_retrieval_start_timestamp = time.time()
+            data_retrieval_start_timestamp = int(time.time() * 1000)
             print(f"🕐 VERİ ALMA BAŞLANGIÇ TIMESTAMP: {data_retrieval_start_timestamp}")
         else:
             data_retrieval_start_timestamp = None

@@ -1842,15 +1842,23 @@ def get_retrieved_data():
             return jsonify({'success': True, 'data': []})
         
         start_timestamp = status.get('data_retrieval_start_timestamp')
+        print(f"🔍 JSON'dan alınan timestamp: {start_timestamp}")
+        
         if not start_timestamp:
+            print("⚠️ Timestamp yok, boş veri döndürülüyor")
             return jsonify({'success': True, 'data': []})
         
         # Veritabanından timestamp'a göre veri çek
         db = get_db()
         with db_read_lock:
-            # Timestamp'ı datetime'a çevir
-            start_datetime = datetime.fromtimestamp(start_timestamp)
+            # Timestamp'ı datetime'a çevir (milisaniye cinsinden)
+            start_datetime = datetime.fromtimestamp(start_timestamp / 1000)
             print(f"🔍 VERİ ALMA BAŞLANGIÇ: {start_datetime}")
+            
+            # Önce toplam veri sayısını kontrol et
+            count_query = "SELECT COUNT(*) FROM battery_data"
+            total_count = db.execute_query(count_query)[0][0]
+            print(f"📊 Veritabanında toplam {total_count} adet veri var")
             
             # Bu tarihten sonraki verileri al
             query = """
@@ -1868,7 +1876,9 @@ def get_retrieved_data():
                 ORDER BY timestamp ASC
             """
             
+            print(f"🔍 SQL Sorgusu: WHERE timestamp >= {start_datetime}")
             data = db.execute_query(query, (start_datetime,))
+            print(f"🔍 SQL sonucu: {len(data)} adet veri")
             
             # Verileri formatla
             retrieved_data = []
