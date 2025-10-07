@@ -1913,7 +1913,7 @@ def get_retrieved_data():
                     'requested_value': row[5]
                 })
             
-            print(f"📊 {len(retrieved_data)} adet veri alındı (timestamp >= {start_datetime})")
+            print(f"📊 {len(retrieved_data)} adet veri alındı (timestamp >= {start_timestamp})")
             
             return jsonify({
                 'success': True,
