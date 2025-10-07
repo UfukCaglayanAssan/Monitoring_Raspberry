@@ -1255,6 +1255,28 @@ def db_worker():
             if len(batch) >= 100 or (time.time() - last_insert) > 5:
                 # Sadece yazma işlemi için kısa süreli kilit
                 batch_size = len(batch)
+                
+                # Normal veri işlendikten sonra periyot bitiş kontrolü
+                # Son işlenen veriyi kontrol et (batch temizlenmeden önce)
+                if batch_size > 0:
+                    # Son batch'teki son veriyi al
+                    last_record = batch[-1]
+                    arm_value = last_record.get('Arm')
+                    k_value = last_record.get('k')
+                    if arm_value and k_value:
+                        print(f"🔍 NORMAL VERİ PERİYOT KONTROL: Kol {arm_value}, k={k_value}")
+                        if is_period_complete(arm_value, k_value):
+                            print(f"🔄 PERİYOT BİTTİ - Son normal veri: Kol {arm_value}, Batarya {k_value}")
+                            # Periyot bitti, alarmları işle
+                            alarm_processor.process_period_end()
+                            # Veri alma modunu durdur
+                            if is_data_retrieval_mode():
+                                set_data_retrieval_mode(False, None)
+                                print("🛑 Veri alma modu durduruldu - Periyot bitti (normal veri)")
+                            # Yeni periyot başlat
+                            reset_period()
+                            get_period_timestamp()
+                
                 with db_lock:
                     db.insert_battery_data_batch(batch)
                 batch = []
@@ -1266,6 +1288,28 @@ def db_worker():
         except queue.Empty:
             if batch:
                 batch_size = len(batch)
+                
+                # Normal veri işlendikten sonra periyot bitiş kontrolü
+                # Son işlenen veriyi kontrol et (batch temizlenmeden önce)
+                if batch_size > 0:
+                    # Son batch'teki son veriyi al
+                    last_record = batch[-1]
+                    arm_value = last_record.get('Arm')
+                    k_value = last_record.get('k')
+                    if arm_value and k_value:
+                        print(f"🔍 NORMAL VERİ PERİYOT KONTROL (Empty): Kol {arm_value}, k={k_value}")
+                        if is_period_complete(arm_value, k_value):
+                            print(f"🔄 PERİYOT BİTTİ - Son normal veri (Empty): Kol {arm_value}, Batarya {k_value}")
+                            # Periyot bitti, alarmları işle
+                            alarm_processor.process_period_end()
+                            # Veri alma modunu durdur
+                            if is_data_retrieval_mode():
+                                set_data_retrieval_mode(False, None)
+                                print("🛑 Veri alma modu durduruldu - Periyot bitti (normal veri - Empty)")
+                            # Yeni periyot başlat
+                            reset_period()
+                            get_period_timestamp()
+                
                 with db_lock:
                     db.insert_battery_data_batch(batch)
                 batch = []

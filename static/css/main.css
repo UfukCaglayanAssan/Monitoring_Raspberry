@@ -742,10 +742,14 @@ body {
 }
 
 .battery-card.battery-alarm {
-    border: 2px solid #dc2626 !important; /* red-600 */
     background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%) !important; /* red-50 to red-100 */
     box-shadow: 0 4px 15px rgba(220, 38, 38, 0.2) !important;
     animation: pulse-card 2s infinite;
+}
+
+.battery-card.passive-balance {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%) !important; /* blue-100 */
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2) !important;
 }
 
 @keyframes pulse-red {
