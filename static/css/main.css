@@ -753,6 +753,15 @@ body {
     box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2) !important;
 }
 
+/* Daha güçlü kural - tüm child elementleri de etkile */
+.battery-card.passive-balance * {
+    background: transparent !important;
+}
+
+.battery-card.passive-balance .battery-card-content {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%) !important;
+}
+
 @keyframes pulse-red {
     0% { box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3); }
     50% { box-shadow: 0 6px 20px rgba(220, 38, 38, 0.5); }

@@ -348,9 +348,12 @@ if (typeof window.BatteriesPage === 'undefined') {
                 const batteryData = this.batteriesData.find(b => 
                     b.arm === arm && b.batteryAddress == batteryAddress
                 );
+                console.log(`🔍 Batarya ${batteryAddress} verisi:`, batteryData);
+                console.log(`🔍 passiveBalance değeri:`, batteryData?.passiveBalance);
                 if (batteryData && batteryData.passiveBalance) {
                     card.classList.add('passive-balance');
-                    console.log(`⚡ Batarya ${batteryAddress} pasif balans durumu: AKTIF`);
+                    console.log(`⚡ Batarya ${batteryAddress} pasif balans durumu: AKTIF - Class eklendi`);
+                    console.log(`🔍 Kart class'ları:`, card.className);
                     
                     // Pasif balans yazısını ekle - kartın içine
                     const cardContent = card.querySelector('.battery-card-content');
