@@ -1866,7 +1866,8 @@ def get_retrieved_data():
             
             # Önce toplam veri sayısını kontrol et
             count_query = "SELECT COUNT(*) FROM battery_data"
-            total_count = db.execute_query(count_query)[0][0]
+            count_cursor = db.execute_query(count_query)
+            total_count = count_cursor.fetchone()[0]
             print(f"📊 Veritabanında toplam {total_count} adet veri var")
             
             # Bu tarihten sonraki verileri al
@@ -1886,7 +1887,8 @@ def get_retrieved_data():
             """
             
             print(f"🔍 SQL Sorgusu: WHERE timestamp >= {start_datetime}")
-            data = db.execute_query(query, (start_datetime,))
+            data_cursor = db.execute_query(query, (start_datetime,))
+            data = data_cursor.fetchall()
             print(f"🔍 SQL sonucu: {len(data)} adet veri")
             
             # Verileri formatla
