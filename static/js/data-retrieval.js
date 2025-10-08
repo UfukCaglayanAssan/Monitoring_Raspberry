@@ -423,16 +423,8 @@ if (typeof window.DataRetrieval === 'undefined') {
         // Mevcut verileri temizle ve yeni veriyi ekle
         this.retrievedData = [singleData];
         
-        // Tabloyu göster
-        this.showDataTable();
-        this.updateDataTable();
-        
-        // Loading'i gizle, tabloyu göster
-        const loadingContainer = document.getElementById('loadingContainer');
-        const dataTable = document.getElementById('retrievedDataTable');
-        
-        if (loadingContainer) loadingContainer.style.display = 'none';
-        if (dataTable) dataTable.style.display = 'block';
+        // Tekil veri için özel tablo göster
+        this.showSingleDataTable();
         
         console.log('📊 Tekil veri tabloya eklendi:', singleData);
     }
@@ -780,6 +772,41 @@ if (typeof window.DataRetrieval === 'undefined') {
         }
     }
     
+    showSingleDataTable() {
+        // Tekil veri için özel tablo göster
+        const operationsList = document.getElementById('operationsList');
+        const singleData = this.retrievedData[0];
+        
+        operationsList.innerHTML = `
+            <div class="data-table-container">
+                <div class="single-data-table" id="singleDataTable">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ZAMAN</th>
+                                <th>KOL</th>
+                                <th>BATARYA ADRESİ</th>
+                                <th>VERİ TİPİ</th>
+                                <th>DEĞER</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>${singleData.formattedTime}</td>
+                                <td>${singleData.arm}</td>
+                                <td>${singleData.address}</td>
+                                <td>${singleData.valueText}</td>
+                                <td>${singleData.data}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        
+        console.log('📊 Tekil veri tablosu gösterildi');
+    }
+
     showDataTable() {
         // Veri tablosunu göster
         const operationsList = document.getElementById('operationsList');
