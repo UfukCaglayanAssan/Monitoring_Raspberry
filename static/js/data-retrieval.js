@@ -270,6 +270,10 @@ if (typeof window.DataRetrieval === 'undefined') {
             if (data) {
                 console.log('✅ Tekil veri alındı:', data);
                 this.showToast(`${valueText} verisi alındı: ${data}`, 'success');
+                
+                // Veriyi tabloya ekle
+                this.addSingleDataToTable(arm, address, value, valueText, data);
+                
                 return data;
             }
             
@@ -389,6 +393,36 @@ if (typeof window.DataRetrieval === 'undefined') {
         };
         
         return valueMap[value] || null;
+    }
+
+    addSingleDataToTable(arm, address, value, valueText, data) {
+        // Tekil veriyi tabloya ekle
+        const now = new Date();
+        const singleData = {
+            timestamp: now.getTime(),
+            formattedTime: now.toLocaleString('tr-TR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            }),
+            arm: arm,
+            address: address,
+            value: value,
+            valueText: valueText,
+            data: data
+        };
+        
+        // Mevcut verileri temizle ve yeni veriyi ekle
+        this.retrievedData = [singleData];
+        
+        // Tabloyu göster
+        this.showDataTable();
+        this.updateDataTable();
+        
+        console.log('📊 Tekil veri tabloya eklendi:', singleData);
     }
 
     getDataTypeText(value) {
@@ -790,19 +824,31 @@ if (typeof window.DataRetrieval === 'undefined') {
             return;
         }
         
-        tbody.innerHTML = this.retrievedData.map(data => `
-            <tr>
-                <td>${data.timestamp}</td>
-                <td>${data.arm}</td>
-                <td>${data.address}</td>
-                <td>${data.voltage || '-'}</td>
-                <td>${data.charge_status || '-'}</td>
-                <td>${data.temperature || '-'}</td>
-                <td>${data.positive_pole_temp || '-'}</td>
-                <td>${data.negative_pole_temp || '-'}</td>
-                <td>${data.health_status || '-'}</td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = this.retrievedData.map(data => {
+            // Timestamp formatla
+            const timestamp = data.formattedTime || new Date(data.timestamp).toLocaleString('tr-TR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            
+            return `
+                <tr>
+                    <td>${timestamp}</td>
+                    <td>${data.arm}</td>
+                    <td>${data.address}</td>
+                    <td>${data.voltage || data.data || '-'}</td>
+                    <td>${data.charge_status || '-'}</td>
+                    <td>${data.temperature || '-'}</td>
+                    <td>${data.positive_pole_temp || '-'}</td>
+                    <td>${data.negative_pole_temp || '-'}</td>
+                    <td>${data.health_status || '-'}</td>
+                </tr>
+            `;
+        }).join('');
         
         console.log('✅ Veriler tabloya yazıldı');
     }
