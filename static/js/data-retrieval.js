@@ -370,16 +370,20 @@ if (typeof window.DataRetrieval === 'undefined') {
 
     getDataValueFromBattery(battery, value) {
         // API'den gelen battery objesinden değer tipine göre veri al
+        console.log(`🔍 getDataValueFromBattery: Tip ${value}, Batarya:`, battery);
+        
         const valueMap = {
             '10': battery.voltage,           // Gerilim
             '11': battery.health,            // SOH
             '12': battery.temperature,       // Sıcaklık
-            '13': battery.positivePoleTemp,  // NTC2 (yoksa null)
-            '14': battery.negativePoleTemp,  // NTC3 (yoksa null)
+            '13': battery.positivePoleTemp || battery.ntc2Temp,  // NTC2
+            '14': battery.negativePoleTemp || battery.ntc3Temp,  // NTC3
             '126': battery.charge            // SOC
         };
         
-        return valueMap[value] || null;
+        const result = valueMap[value] || null;
+        console.log(`🔍 Sonuç: Tip ${value} = ${result}`);
+        return result;
     }
 
     getDataValueByType(data, value) {
@@ -846,15 +850,15 @@ if (typeof window.DataRetrieval === 'undefined') {
             return `
                 <tr>
                     <td>${timestamp}</td>
-                    <td>${data.arm}</td>
-                    <td>${data.address}</td>
+                <td>${data.arm}</td>
+                <td>${data.address}</td>
                     <td>${data.voltage || data.data || '-'}</td>
                     <td>${data.charge_status || '-'}</td>
                     <td>${data.temperature || '-'}</td>
                     <td>${data.positive_pole_temp || '-'}</td>
                     <td>${data.negative_pole_temp || '-'}</td>
                     <td>${data.health_status || '-'}</td>
-                </tr>
+            </tr>
             `;
         }).join('');
         
