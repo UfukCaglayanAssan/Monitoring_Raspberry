@@ -326,6 +326,7 @@ if (typeof window.DataRetrieval === 'undefined') {
                     
                     if (targetBattery) {
                         console.log(`🔍 Hedef batarya bulundu:`, targetBattery);
+                        console.log(`🔍 Batarya alanları:`, Object.keys(targetBattery));
                         
                         // Timestamp kontrolü - komut gönderildikten sonraki veri mi?
                         const batteryTime = new Date(targetBattery.timestamp).getTime();
@@ -421,6 +422,13 @@ if (typeof window.DataRetrieval === 'undefined') {
         // Tabloyu göster
         this.showDataTable();
         this.updateDataTable();
+        
+        // Loading'i gizle, tabloyu göster
+        const loadingContainer = document.getElementById('loadingContainer');
+        const dataTable = document.getElementById('retrievedDataTable');
+        
+        if (loadingContainer) loadingContainer.style.display = 'none';
+        if (dataTable) dataTable.style.display = 'block';
         
         console.log('📊 Tekil veri tabloya eklendi:', singleData);
     }
@@ -773,7 +781,7 @@ if (typeof window.DataRetrieval === 'undefined') {
         const operationsList = document.getElementById('operationsList');
         operationsList.innerHTML = `
             <div class="data-table-container">
-                <div class="loading-container">
+                <div class="loading-container" id="loadingContainer">
                     <div class="loading">
                         <i class="fas fa-spinner fa-spin"></i>
                         <h4>Veriler alınıyor...</h4>
