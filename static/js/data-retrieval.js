@@ -303,43 +303,45 @@ if (typeof window.DataRetrieval === 'undefined') {
                 console.log('📊 result.success:', result.success);
                 console.log('📊 result.data var mı:', !!result.data);
                 console.log('📊 result.data uzunluğu:', result.data ? result.data.length : 'yok');
+                console.log('📊 result.batteries var mı:', !!result.batteries);
+                console.log('📊 result.batteries uzunluğu:', result.batteries ? result.batteries.length : 'yok');
                 
-                if (result.success && result.data) {
+                if (result.success && result.batteries) {
                     // Gönderilen adresin 1 fazlasına bak (k-2 mantığı nedeniyle)
                     const targetAddress = parseInt(address) + 1;
                     
                     console.log(`🔍 Tekil veri arama: Kol ${arm}, Gönderilen adres ${address}, Aranan adres ${targetAddress}, Tip ${value}`);
                     console.log(`🕐 Komut zamanı: ${new Date(commandTimestamp).toLocaleString()}`);
-                    console.log(`🔍 Mevcut bataryalar:`, result.data.map(b => ({arm: b.arm, address: b.address})));
+                    console.log(`🔍 Mevcut bataryalar:`, result.batteries.map(b => ({arm: b.arm, address: b.batteryAddress})));
                     
                     // İlgili kol ve adrese sahip bataryayı ara
-                    const targetBattery = result.data.find(battery => 
+                    const targetBattery = result.batteries.find(battery => 
                         battery.arm == arm && 
-                        battery.address == targetAddress
+                        battery.batteryAddress == targetAddress
                     );
                     
-                    if (targetBattery && targetBattery.entries) {
+                    if (targetBattery) {
                         console.log(`🔍 Hedef batarya bulundu:`, targetBattery);
-                        console.log(`🔍 Batarya verileri:`, targetBattery.entries);
                         
-                        // Komut gönderildikten sonraki verileri kontrol et
-                        const recentEntries = targetBattery.entries.filter(entry => {
-                            const entryTime = new Date(entry.timestamp).getTime();
-                            return entryTime >= commandTimestamp; // Komut gönderildikten sonraki veriler
-                        });
+                        // Timestamp kontrolü - komut gönderildikten sonraki veri mi?
+                        const batteryTime = new Date(targetBattery.timestamp).getTime();
+                        console.log(`🕐 Batarya zamanı: ${new Date(targetBattery.timestamp).toLocaleString()}`);
+                        console.log(`🕐 Komut zamanı: ${new Date(commandTimestamp).toLocaleString()}`);
+                        console.log(`🕐 Zaman farkı: ${batteryTime - commandTimestamp}ms`);
                         
-                        console.log(`🔍 Komut sonrası veriler (${recentEntries.length} adet):`, recentEntries);
-                        
-                        // Sadece hedef dtype'ı ara
-                        const targetEntry = recentEntries.find(entry => entry.dtype == value);
-                        
-                        if (targetEntry) {
-                            console.log(`✅ Tekil veri bulundu: Kol ${arm}, Adres ${targetAddress}, Tip ${value}, Değer ${targetEntry.data}`);
-                            console.log(`🕐 Veri zamanı: ${new Date(targetEntry.timestamp).toLocaleString()}`);
-                            return targetEntry.data;
+                        if (batteryTime >= commandTimestamp) {
+                            // Değer tipine göre veriyi al
+                            const dataValue = this.getDataValueFromBattery(targetBattery, value);
+                            console.log(`🔍 Aranan tip: ${value}, Bulunan değer: ${dataValue}`);
+                            
+                            if (dataValue !== null) {
+                                console.log(`✅ Tekil veri bulundu: Kol ${arm}, Adres ${targetAddress}, Tip ${value}, Değer ${dataValue}`);
+                                return dataValue;
+                            } else {
+                                console.log(`❌ Tekil veri bulunamadı: Kol ${arm}, Adres ${targetAddress}, Tip ${value} - Bu dtype mevcut değil`);
+                            }
                         } else {
-                            console.log(`❌ Tekil veri bulunamadı: Kol ${arm}, Adres ${targetAddress}, Tip ${value} - Komut gönderildikten sonra bu dtype yok`);
-                            console.log(`🔍 Mevcut dtype'lar:`, recentEntries.map(e => e.dtype));
+                            console.log(`❌ Tekil veri bulunamadı: Kol ${arm}, Adres ${targetAddress}, Tip ${value} - Komut gönderildikten önceki veri`);
                         }
                     } else {
                         console.log(`❌ Batarya bulunamadı: Kol ${arm}, Adres ${targetAddress}`);
@@ -359,6 +361,20 @@ if (typeof window.DataRetrieval === 'undefined') {
             return entry.data;
         }
         return null;
+    }
+
+    getDataValueFromBattery(battery, value) {
+        // API'den gelen battery objesinden değer tipine göre veri al
+        const valueMap = {
+            '10': battery.voltage,           // Gerilim
+            '11': battery.health,            // SOH
+            '12': battery.temperature,       // Sıcaklık
+            '13': battery.positivePoleTemp,  // NTC2 (yoksa null)
+            '14': battery.negativePoleTemp,  // NTC3 (yoksa null)
+            '126': battery.charge            // SOC
+        };
+        
+        return valueMap[value] || null;
     }
 
     getDataValueByType(data, value) {
