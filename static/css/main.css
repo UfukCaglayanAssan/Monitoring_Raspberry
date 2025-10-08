@@ -2012,11 +2012,10 @@ input:disabled::placeholder {
 .data-table-container .loading {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
     padding: 40px 20px;
-    text-align: left;
-    margin-left: 20px; /* Biraz sağa kaydır */
+    text-align: center;
 }
 
 .data-table-container .loading i {

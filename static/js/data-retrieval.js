@@ -311,23 +311,28 @@ if (typeof window.DataRetrieval === 'undefined') {
                     );
                     
                     if (targetBattery && targetBattery.entries) {
+                        console.log(`🔍 Hedef batarya bulundu:`, targetBattery);
+                        console.log(`🔍 Batarya verileri:`, targetBattery.entries);
+                        
                         // Komut gönderildikten sonraki verileri kontrol et
-                        const recentEntry = targetBattery.entries.find(entry => {
+                        const recentEntries = targetBattery.entries.filter(entry => {
                             const entryTime = new Date(entry.timestamp).getTime();
                             return entryTime >= commandTimestamp; // Komut gönderildikten sonraki veriler
                         });
                         
-                        if (recentEntry) {
-                            // Değer tipine göre veriyi al
-                            const dataValue = this.getDataValueFromEntry(recentEntry, value);
-                            if (dataValue !== null) {
-                                console.log(`✅ Tekil veri bulundu: Kol ${arm}, Adres ${targetAddress}, Tip ${value}, Değer ${dataValue}`);
-                                console.log(`🕐 Veri zamanı: ${new Date(recentEntry.timestamp).toLocaleString()}`);
-                                return dataValue;
-                            }
-                        }
+                        console.log(`🔍 Komut sonrası veriler (${recentEntries.length} adet):`, recentEntries);
                         
-                        console.log(`❌ Tekil veri bulunamadı: Kol ${arm}, Adres ${targetAddress}, Tip ${value} - Komut gönderildikten sonra veri yok`);
+                        // Sadece hedef dtype'ı ara
+                        const targetEntry = recentEntries.find(entry => entry.dtype == value);
+                        
+                        if (targetEntry) {
+                            console.log(`✅ Tekil veri bulundu: Kol ${arm}, Adres ${targetAddress}, Tip ${value}, Değer ${targetEntry.data}`);
+                            console.log(`🕐 Veri zamanı: ${new Date(targetEntry.timestamp).toLocaleString()}`);
+                            return targetEntry.data;
+                        } else {
+                            console.log(`❌ Tekil veri bulunamadı: Kol ${arm}, Adres ${targetAddress}, Tip ${value} - Komut gönderildikten sonra bu dtype yok`);
+                            console.log(`🔍 Mevcut dtype'lar:`, recentEntries.map(e => e.dtype));
+                        }
                     } else {
                         console.log(`❌ Batarya bulunamadı: Kol ${arm}, Adres ${targetAddress}`);
                     }
@@ -341,9 +346,11 @@ if (typeof window.DataRetrieval === 'undefined') {
     }
 
     getDataValueFromEntry(entry, value) {
-        // entry.entries array'inden ilgili dtype'ı bul
-        const targetEntry = entry.entries.find(e => e.dtype == value);
-        return targetEntry ? targetEntry.data : null;
+        // entry zaten tek bir veri, dtype kontrolü yap
+        if (entry.dtype == value) {
+            return entry.data;
+        }
+        return null;
     }
 
     getDataValueByType(data, value) {
@@ -451,14 +458,21 @@ if (typeof window.DataRetrieval === 'undefined') {
         if (batchArmSelect) {
             batchArmSelect.innerHTML = '<option value="">Kol Seçiniz</option>';
             
-            // Sadece batarya olan kolları ekle
+            // Tüm kolları ekle - bataryası olmayanları disabled yap
             for (let arm = 1; arm <= 4; arm++) {
-                if (armSlaveCountsMap.has(arm) && armSlaveCountsMap.get(arm) > 0) {
-                    const option = document.createElement('option');
-                    option.value = arm;
-                    option.textContent = `Kol ${arm}`;
-                    batchArmSelect.appendChild(option);
+                const hasBatteries = armSlaveCountsMap.has(arm) && armSlaveCountsMap.get(arm) > 0;
+                
+                const option = document.createElement('option');
+                option.value = arm;
+                option.textContent = `Kol ${arm}`;
+                option.disabled = !hasBatteries; // Batarya yoksa tıklanamaz
+                
+                if (!hasBatteries) {
+                    option.style.color = '#999';
+                    option.style.fontStyle = 'italic';
                 }
+                
+                batchArmSelect.appendChild(option);
             }
             
             // Tüm kollar seçeneği (eğer en az 2 kol varsa)
@@ -472,17 +486,25 @@ if (typeof window.DataRetrieval === 'undefined') {
         
         // Veri alma formu kol seçimi
         const dataArmSelect = document.getElementById('dataArmSelect');
+        
         if (dataArmSelect) {
             dataArmSelect.innerHTML = '<option value="">Seçiniz</option>';
             
-            // Sadece batarya olan kolları ekle
+            // Tüm kolları ekle - bataryası olmayanları disabled yap
             for (let arm = 1; arm <= 4; arm++) {
-                if (armSlaveCountsMap.has(arm) && armSlaveCountsMap.get(arm) > 0) {
-                    const option = document.createElement('option');
-                    option.value = arm;
-                    option.textContent = `Kol ${arm}`;
-                    dataArmSelect.appendChild(option);
+                const hasBatteries = armSlaveCountsMap.has(arm) && armSlaveCountsMap.get(arm) > 0;
+                
+                const option = document.createElement('option');
+                option.value = arm;
+                option.textContent = `Kol ${arm}`;
+                option.disabled = !hasBatteries; // Batarya yoksa tıklanamaz
+                
+                if (!hasBatteries) {
+                    option.style.color = '#999';
+                    option.style.fontStyle = 'italic';
                 }
+                
+                dataArmSelect.appendChild(option);
             }
         }
     }
