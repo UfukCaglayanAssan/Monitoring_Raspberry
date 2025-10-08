@@ -286,13 +286,16 @@ if (typeof window.DataRetrieval === 'undefined') {
     }
 
     async checkForSingleData(arm, address, value, commandTimestamp) {
+        console.log(`🔍 checkForSingleData çağrıldı: Kol ${arm}, Adres ${address}, Tip ${value}`);
         try {
             // Tekil veri alma için doğrudan batarya verilerini kontrol et
+            console.log('📡 /api/batteries API çağrısı yapılıyor...');
             const response = await fetch('/api/batteries', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({})
             });
+            console.log('📡 API yanıtı:', response.status);
             
             if (response.ok) {
                 const result = await response.json();
