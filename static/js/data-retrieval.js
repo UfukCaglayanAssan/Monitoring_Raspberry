@@ -806,7 +806,7 @@ if (typeof window.DataRetrieval === 'undefined') {
         
         console.log('📊 Tekil veri tablosu gösterildi');
     }
-
+    
     showDataTable() {
         // Veri tablosunu göster
         const operationsList = document.getElementById('operationsList');

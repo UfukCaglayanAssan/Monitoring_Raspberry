@@ -1972,13 +1972,13 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"⚠️ IP ataması kontrol hatası: {e}")
     
-    # Port parametresini al (varsayılan: 5000)
-    port = 5000
+    # Port parametresini al (varsayılan: 8080)
+    port = 8080
     if len(sys.argv) > 1:
         try:
             port = int(sys.argv[1])
         except ValueError:
-            print("Geçersiz port numarası, varsayılan port 5000 kullanılıyor")
+            print("Geçersiz port numarası, varsayılan port 8080 kullanılıyor")
     
     print(f"Flask web uygulaması başlatılıyor... (Port: {port})")
     with db_read_lock:
