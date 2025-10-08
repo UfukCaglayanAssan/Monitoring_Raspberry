@@ -299,6 +299,11 @@ if (typeof window.DataRetrieval === 'undefined') {
             
             if (response.ok) {
                 const result = await response.json();
+                console.log('📊 API sonucu:', result);
+                console.log('📊 result.success:', result.success);
+                console.log('📊 result.data var mı:', !!result.data);
+                console.log('📊 result.data uzunluğu:', result.data ? result.data.length : 'yok');
+                
                 if (result.success && result.data) {
                     // Gönderilen adresin 1 fazlasına bak (k-2 mantığı nedeniyle)
                     const targetAddress = parseInt(address) + 1;
