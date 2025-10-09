@@ -754,6 +754,13 @@ def db_worker():
                 dtype = int(data[2], 16)
                 k_value = int(data[1], 16)
                 
+                # 11 byte paket logla
+                print(f"📦 11 BYTE PAKET ALGILANDI")
+                print(f"📦 Ham Paket: {' '.join([f'0x{b:02X}' for b in [int(x, 16) for x in data]])}")
+                print(f"📊 Header: 0x{data[0]}, k: {k_value}, dtype: {dtype}, arm: {arm_value}")
+                print(f"📊 Veri bytes: {data[4:10]}")
+                print(f"📊 Checksum: 0x{data[10]}")
+                
                 # k_value 2 geldiğinde yeni periyot başlat (ard arda gelmemesi şartıyla)
                 if k_value == 2:
                     if get_last_k_value() != 2:  # Non-consecutive arm data
@@ -782,11 +789,8 @@ def db_worker():
                 # Sadece missing data geldiğinde reset sinyali gönderilir
                 
                 # Salt data hesapla
-                if dtype == 10 and k_value == 2:  # Akım verisi geldiğinde paketi logla
+                if dtype == 10 and k_value == 2:  # Akım verisi geldiğinde
                     print(f"🔋 AKIM VERİSİ PAKETİ ALGILANDI - 11 byte")
-                    print(f"📦 Ham Paket: {' '.join([f'0x{b:02X}' for b in [int(x, 16) for x in data]])}")
-                    print(f"📊 Header: 0x{data[0]}, k: {k_value}, dtype: {dtype}, arm: {arm_value}")
-                    print(f"📊 Veri bytes: {data[4:10]}")
                     
                     # Yeni periyot başlat (k=2 akım verisi geldiğinde)
                     if not period_active:
@@ -797,9 +801,6 @@ def db_worker():
                 
                 if dtype == 11 and k_value == 2:  # Nem hesapla
                     print(f"💧 NEM VERİSİ PAKETİ ALGILANDI - 11 byte")
-                    print(f"📦 Ham Paket: {' '.join([f'0x{b:02X}' for b in [int(x, 16) for x in data]])}")
-                    print(f"📊 Header: 0x{data[0]}, k: {k_value}, dtype: {dtype}, arm: {arm_value}")
-                    print(f"📊 Veri bytes: {data[5:9]}")
                     
                     onlar = int(data[5], 16)
                     birler = int(data[6], 16)

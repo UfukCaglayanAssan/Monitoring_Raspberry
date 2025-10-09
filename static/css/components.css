@@ -1352,20 +1352,20 @@
 /* Sidebar Logo */
 .logo-container {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     margin-bottom: 1rem;
     padding: 0.5rem;
 }
 
 .sidebar-logo {
-    max-width: 120px;
+    max-width: 160px;
     height: auto;
     filter: brightness(0) invert(1); /* Beyaz yapmak için */
 }
 
 .sidebar-header h3 {
     margin-top: 0.5rem;
-    text-align: center;
+    text-align: left;
 }
 
