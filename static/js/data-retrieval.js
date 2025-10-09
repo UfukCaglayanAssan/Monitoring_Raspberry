@@ -14,6 +14,7 @@ if (typeof window.DataRetrieval === 'undefined') {
         this.bindEvents();
         this.hideOperationsList();
         this.loadArmOptions();
+        this.initSelect2();
     }
 
     bindEvents() {
@@ -33,7 +34,7 @@ if (typeof window.DataRetrieval === 'undefined') {
 
         // Kol seçimi değiştiğinde batarya adresi sınırlaması
         document.getElementById('dataArmSelect').addEventListener('change', (e) => {
-            this.updateAddressInput(e.target.value);
+            this.updateAddressSelect(e.target.value);
         });
 
         // Form validasyonu
@@ -41,7 +42,7 @@ if (typeof window.DataRetrieval === 'undefined') {
             this.validateForm();
         });
 
-        document.getElementById('dataAddressInput').addEventListener('input', () => {
+        document.getElementById('dataAddressSelect').addEventListener('change', () => {
             this.updateDataTypeOptions();
             this.validateForm();
         });
@@ -52,7 +53,7 @@ if (typeof window.DataRetrieval === 'undefined') {
     }
 
     updateDataTypeOptions() {
-        const address = document.getElementById('dataAddressInput').value;
+        const address = document.getElementById('dataAddressSelect').value;
         const valueSelect = document.getElementById('dataValueSelect');
         
         // Mevcut seçimi temizle
@@ -95,7 +96,7 @@ if (typeof window.DataRetrieval === 'undefined') {
 
     validateForm() {
         const arm = document.getElementById('dataArmSelect').value;
-        const address = document.getElementById('dataAddressInput').value;
+        const address = document.getElementById('dataAddressSelect').value;
         const value = document.getElementById('dataValueSelect').value;
         
         const isValid = arm && address && value;
@@ -210,7 +211,7 @@ if (typeof window.DataRetrieval === 'undefined') {
         }
 
         const arm = document.getElementById('dataArmSelect').value;
-        const address = document.getElementById('dataAddressInput').value;
+        const address = document.getElementById('dataAddressSelect').value;
         const value = document.getElementById('dataValueSelect').value;
 
         this.showLoading('Veri alma komutu gönderiliyor...');
@@ -223,7 +224,7 @@ if (typeof window.DataRetrieval === 'undefined') {
                 },
                 body: JSON.stringify({
                     armValue: parseInt(arm),
-                    slaveAddress: parseInt(address),
+                    slaveAddress: parseInt(address) + 1, // Adrese 1 ekle
                     slaveCommand: parseInt(value)
                 })
             });
@@ -430,7 +431,7 @@ if (typeof window.DataRetrieval === 'undefined') {
     }
 
     getDataTypeText(value) {
-        const address = document.getElementById('dataAddressInput').value;
+        const address = document.getElementById('dataAddressSelect').value;
         
         if (address === '0') {
             // Kol verileri
@@ -571,18 +572,30 @@ if (typeof window.DataRetrieval === 'undefined') {
         }
     }
 
-    async updateAddressInput(selectedArm) {
-        const addressInput = document.getElementById('dataAddressInput');
+    initSelect2() {
+        // Batarya adresi select2'yi başlat
+        $('#dataAddressSelect').select2({
+            placeholder: 'Önce kol seçiniz',
+            allowClear: true,
+            width: '100%'
+        });
+    }
+
+    async updateAddressSelect(selectedArm) {
+        const addressSelect = document.getElementById('dataAddressSelect');
         
         if (!selectedArm) {
-            addressInput.placeholder = 'Önce kol seçiniz';
-            addressInput.min = 0;
-            addressInput.max = 0;
-            addressInput.disabled = true;
-            addressInput.value = '';
+            $('#dataAddressSelect').empty();
+            $('#dataAddressSelect').append('<option value="">Önce kol seçiniz</option>');
+            $('#dataAddressSelect').select2({
+                placeholder: 'Önce kol seçiniz',
+                allowClear: true,
+                width: '100%'
+            });
+            addressSelect.disabled = true;
             return;
         }
-        
+
         try {
             // active-arms'tan batarya sayısını al
             const response = await fetch('/api/active-arms');
@@ -593,21 +606,49 @@ if (typeof window.DataRetrieval === 'undefined') {
                 const batteryCount = selectedArmData ? selectedArmData.slave_count : 0;
                 
                 if (batteryCount > 0) {
-                    addressInput.placeholder = `0-${batteryCount} arası giriniz`;
-                    addressInput.min = 0;
-                    addressInput.max = batteryCount;
-                    addressInput.disabled = false;
+                    // Select2'yi temizle
+                    $('#dataAddressSelect').empty();
+                    
+                    // Seçiniz seçeneği ekle
+                    $('#dataAddressSelect').append('<option value="">Seçiniz</option>');
+                    
+                    // Kol başlığı ekle
+                    $('#dataAddressSelect').append(`<optgroup label="Kol ${selectedArm}">`);
+                    
+                    // Batarya adreslerini ekle
+                    for (let i = 0; i < batteryCount; i++) {
+                        $('#dataAddressSelect').append(`<option value="${i}">Batarya ${i}</option>`);
+                    }
+                    
+                    // Select2'yi yeniden başlat
+                    $('#dataAddressSelect').select2({
+                        placeholder: 'Batarya seçiniz',
+                        allowClear: true,
+                        width: '100%'
+                    });
+                    
+                    addressSelect.disabled = false;
                 } else {
-                    addressInput.placeholder = 'Bu kolda batarya yok';
-                    addressInput.min = 0;
-                    addressInput.max = 0;
-                    addressInput.disabled = true;
+                    $('#dataAddressSelect').empty();
+                    $('#dataAddressSelect').append('<option value="">Bu kolda batarya yok</option>');
+                    $('#dataAddressSelect').select2({
+                        placeholder: 'Bu kolda batarya yok',
+                        allowClear: true,
+                        width: '100%'
+                    });
+                    addressSelect.disabled = true;
                 }
             }
         } catch (error) {
             console.error('Batarya sayısı alma hatası:', error);
-            addressInput.placeholder = 'Hata oluştu';
-            addressInput.disabled = true;
+            $('#dataAddressSelect').empty();
+            $('#dataAddressSelect').append('<option value="">Hata oluştu</option>');
+            $('#dataAddressSelect').select2({
+                placeholder: 'Hata oluştu',
+                allowClear: true,
+                width: '100%'
+            });
+            addressSelect.disabled = true;
         }
     }
 
@@ -949,7 +990,7 @@ if (typeof window.DataRetrieval === 'undefined') {
 
     clearForm() {
         document.getElementById('dataArmSelect').value = '';
-        document.getElementById('dataAddressInput').value = '';
+        document.getElementById('dataAddressSelect').value = '';
         document.getElementById('dataValueSelect').value = '';
         document.getElementById('getDataBtn').disabled = true;
     }

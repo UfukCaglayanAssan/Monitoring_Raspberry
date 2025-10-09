@@ -21,6 +21,7 @@ if (typeof window.BatteryLogsPage === 'undefined') {
         console.log('🚀 BatteryLogsPage init() çağrıldı');
         this.bindEvents();
         this.setDefaultDates();
+        this.loadArmOptions();
         this.loadLogs();
     }
 
@@ -54,11 +55,12 @@ if (typeof window.BatteryLogsPage === 'undefined') {
         });
 
         // Filtre input'ları
-        document.getElementById('armFilter').addEventListener('input', (e) => {
+        document.getElementById('armFilter').addEventListener('change', (e) => {
             this.filters.arm = e.target.value;
+            this.updateBatteryOptions(e.target.value);
         });
 
-        document.getElementById('batteryFilter').addEventListener('input', (e) => {
+        document.getElementById('batteryFilter').addEventListener('change', (e) => {
             this.filters.battery = e.target.value;
         });
 
@@ -279,8 +281,78 @@ if (typeof window.BatteryLogsPage === 'undefined') {
         document.getElementById('batteryFilter').value = '';
         this.setDefaultDates();
         
+        // Batarya seçeneklerini sıfırla
+        this.updateBatteryOptions('');
+        
         this.currentPage = 1;
         this.loadLogs();
+    }
+
+    async loadArmOptions() {
+        try {
+            const response = await fetch('/api/active-arms', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.activeArms) {
+                    const armFilter = document.getElementById('armFilter');
+                    
+                    // Kol seçeneklerini güncelle
+                    armFilter.innerHTML = '<option value="">Tüm Kollar</option>';
+                    data.activeArms.forEach(arm => {
+                        if (arm.slave_count > 0) {
+                            const option = document.createElement('option');
+                            option.value = arm.arm;
+                            option.textContent = `Kol ${arm.arm}`;
+                            armFilter.appendChild(option);
+                        }
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Kol seçenekleri yükleme hatası:', error);
+        }
+    }
+    
+    async updateBatteryOptions(selectedArm) {
+        const batteryFilter = document.getElementById('batteryFilter');
+        
+        if (!selectedArm) {
+            batteryFilter.innerHTML = '<option value="">Önce kol seçiniz</option>';
+            batteryFilter.disabled = true;
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/active-arms');
+            const data = await response.json();
+            
+            if (data.success && data.activeArms) {
+                const selectedArmData = data.activeArms.find(arm => arm.arm == selectedArm);
+                const batteryCount = selectedArmData ? selectedArmData.slave_count : 0;
+                
+                if (batteryCount > 0) {
+                    batteryFilter.innerHTML = '<option value="">Tüm Bataryalar</option>';
+                    for (let i = 0; i < batteryCount; i++) {
+                        const option = document.createElement('option');
+                        option.value = i;
+                        option.textContent = `Batarya ${i}`;
+                        batteryFilter.appendChild(option);
+                    }
+                    batteryFilter.disabled = false;
+                } else {
+                    batteryFilter.innerHTML = '<option value="">Bu kolda batarya yok</option>';
+                    batteryFilter.disabled = true;
+                }
+            }
+        } catch (error) {
+            console.error('Batarya seçenekleri yükleme hatası:', error);
+            batteryFilter.innerHTML = '<option value="">Hata oluştu</option>';
+            batteryFilter.disabled = true;
+        }
     }
 
     exportLogs() {

@@ -1352,7 +1352,7 @@
 /* Sidebar Logo */
 .logo-container {
     display: flex;
-    justify-content: flex-start;
+    justify-content: center;
     align-items: center;
     margin-bottom: 1rem;
     padding: 0.5rem;

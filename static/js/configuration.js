@@ -580,7 +580,7 @@ if (typeof window.ConfigurationPage === 'undefined') {
                 },
                 body: JSON.stringify({
                     arm: parseInt(selectedArm),
-                    slave: selectedSlave  // String olarak gönder
+                    slave: selectedSlave + 1  // Adrese 1 ekle
                 })
             });
 
