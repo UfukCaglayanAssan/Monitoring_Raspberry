@@ -311,8 +311,8 @@ if (typeof window.DataRetrieval === 'undefined') {
                 console.log('📊 result.batteries uzunluğu:', result.batteries ? result.batteries.length : 'yok');
                 
                 if (result.success && result.batteries) {
-                    // Gönderilen adresin 1 fazlasına bak (k-2 mantığı nedeniyle)
-                    const targetAddress = parseInt(address) + 1;
+                       // Gönderilen adresin 1 fazlasına bak (k-2 mantığı nedeniyle)
+                       const targetAddress = parseInt(address) + 1;
                     
                     console.log(`🔍 Tekil veri arama: Kol ${arm}, Gönderilen adres ${address}, Aranan adres ${targetAddress}, Tip ${value}`);
                     console.log(`🕐 Komut zamanı: ${new Date(commandTimestamp).toLocaleString()}`);
@@ -613,22 +613,36 @@ if (typeof window.DataRetrieval === 'undefined') {
 
     scrollToDataTable() {
         // Tablo kısmına yumuşak kaydırma
-        const dataTable = document.getElementById('retrievedDataTable');
-        if (dataTable) {
-            dataTable.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-            });
-        } else {
-            // Eğer tablo henüz oluşmamışsa, operationsList'e kaydır
+        setTimeout(() => {
+            // Önce retrievedDataTable'ı kontrol et
+            const dataTable = document.getElementById('retrievedDataTable');
+            if (dataTable) {
+                dataTable.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+                return;
+            }
+            
+            // Sonra operationsList'i kontrol et
             const operationsList = document.getElementById('operationsList');
             if (operationsList) {
                 operationsList.scrollIntoView({ 
                     behavior: 'smooth', 
                     block: 'start' 
                 });
+                return;
             }
-        }
+            
+            // Son olarak data-table-container'ı kontrol et
+            const dataContainer = document.querySelector('.data-table-container');
+            if (dataContainer) {
+                dataContainer.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+            }
+        }, 100); // 100ms bekle ki DOM güncellensin
     }
 
     saveOperations() {
@@ -779,15 +793,15 @@ if (typeof window.DataRetrieval === 'undefined') {
         
         operationsList.innerHTML = `
             <div class="data-table-container">
-                <div class="single-data-table" id="singleDataTable">
-                    <table>
-                        <thead>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
                             <tr>
-                                <th>ZAMAN</th>
-                                <th>KOL</th>
-                                <th>BATARYA ADRESİ</th>
-                                <th>VERİ TİPİ</th>
-                                <th>DEĞER</th>
+                                <th scope="col">ZAMAN</th>
+                                <th scope="col">KOL</th>
+                                <th scope="col">BATARYA ADRESİ</th>
+                                <th scope="col">VERİ TİPİ</th>
+                                <th scope="col">DEĞER</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -796,7 +810,7 @@ if (typeof window.DataRetrieval === 'undefined') {
                                 <td>${singleData.arm}</td>
                                 <td>${singleData.address}</td>
                                 <td>${singleData.valueText}</td>
-                                <td>${singleData.data}</td>
+                                <td><strong>${singleData.data}</strong></td>
                             </tr>
                         </tbody>
                     </table>
