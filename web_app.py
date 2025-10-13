@@ -1759,7 +1759,7 @@ def send_dataget():
         config_data = {
             'type': 'dataget',
             'armValue': arm_value,
-            'slaveAddress': slave_address,
+            'slaveAddress': slave_address + 1,  # +1 eklenmiş değer
             'slaveCommand': slave_command,
             'packet': dataget_packet,
             'timestamp': int(time.time() * 1000)
