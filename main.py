@@ -627,7 +627,7 @@ def db_worker():
     """Veritabanı işlemleri"""
     batch = []
     last_insert = time.time()
-    global last_data_received, tumunu_oku_mode, tumunu_oku_arm
+    global last_data_received, tumunu_oku_mode, tumunu_oku_arm, read_all_mode, read_all_arm
     
     while True:
         try:

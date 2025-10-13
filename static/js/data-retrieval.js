@@ -312,8 +312,8 @@ if (typeof window.DataRetrieval === 'undefined') {
                 console.log('📊 result.batteries uzunluğu:', result.batteries ? result.batteries.length : 'yok');
                 
                 if (result.success && result.batteries) {
-                       // Gönderilen adresin 1 fazlasına bak (k-2 mantığı nedeniyle)
-                       const targetAddress = parseInt(address) + 1;
+                       // Gönderilen adres aynı kalacak
+                       const targetAddress = parseInt(address);
                     
                     console.log(`🔍 Tekil veri arama: Kol ${arm}, Gönderilen adres ${address}, Aranan adres ${targetAddress}, Tip ${value}`);
                     console.log(`🕐 Komut zamanı: ${new Date(commandTimestamp).toLocaleString()}`);
@@ -618,9 +618,9 @@ if (typeof window.DataRetrieval === 'undefined') {
                     // Kol başlığı ekle
                     $('#dataAddressSelect').append(`<optgroup label="Bataryalar">`);
                     
-                    // Batarya adreslerini ekle (1'den başla, değer 1 fazlası gidecek)
+                    // Batarya adreslerini ekle (1'den başla, değer aynı gidecek)
                     for (let i = 1; i <= batteryCount; i++) {
-                        $('#dataAddressSelect').append(`<option value="${i + 1}">Batarya ${i}</option>`);
+                        $('#dataAddressSelect').append(`<option value="${i}">Batarya ${i}</option>`);
                     }
                     
                     // Select2'yi yeniden başlat
