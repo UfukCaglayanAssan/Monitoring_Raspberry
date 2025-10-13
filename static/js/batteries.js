@@ -82,7 +82,7 @@ if (typeof window.BatteriesPage === 'undefined') {
                 
                 if (data.success) {
                     console.log('✅ Aktif kollar verisi alındı:', data.activeArms);
-                    this.updateArmButtons(data.activeArms);
+                    await this.updateArmButtons(data.activeArms);
                 } else {
                     console.error('❌ API başarısız:', data.message);
                 }
@@ -97,7 +97,7 @@ if (typeof window.BatteriesPage === 'undefined') {
         return Promise.resolve();
     }
 
-    updateArmButtons(activeArms) {
+    async updateArmButtons(activeArms) {
         // Kol butonlarını güncelle - tüm kolları göster, sadece aktif olanları enable et
         console.log('🔧 updateArmButtons çağrıldı');
         console.log('📋 Gelen aktif kollar:', activeArms);
@@ -157,7 +157,7 @@ if (typeof window.BatteriesPage === 'undefined') {
             const firstActiveArm = activeArmNumbers[0];
             console.log(`🏆 İlk aktif kol seçiliyor: Kol ${firstActiveArm}`);
             console.log(`📋 Seçim sırası: ${activeArmNumbers.join(', ')}`);
-            this.selectArm(firstActiveArm);
+            await this.selectArm(firstActiveArm);
         } else {
             console.log('⚠️ Hiç aktif kol bulunamadı!');
         }
@@ -182,11 +182,11 @@ if (typeof window.BatteriesPage === 'undefined') {
                     // Aktif alarmları Set'e ekle
                     this.activeAlarms.clear();
                     data.alarms.forEach(alarm => {
-                        if (alarm.battery === "Kol Alarmı") {
-                            // Kol alarmı
+                        if (!alarm.battery || alarm.battery === 0) {
+                            // Kol alarmı (battery yok veya 0)
                             this.activeAlarms.add(`arm-${alarm.arm}`);
-                        } else if (alarm.battery && alarm.battery !== "") {
-                            // Batarya alarmı
+                        } else {
+                            // Batarya alarmı (battery > 0)
                             this.activeAlarms.add(`arm-${alarm.arm}-battery-${alarm.battery}`);
                         }
                     });
@@ -202,7 +202,7 @@ if (typeof window.BatteriesPage === 'undefined') {
         }
     }
     
-    selectArm(arm) {
+    async selectArm(arm) {
         // Sadece aktif kollar seçilebilir
         const button = document.querySelector(`[data-arm="${arm}"]`);
         if (!button) {
@@ -223,7 +223,8 @@ if (typeof window.BatteriesPage === 'undefined') {
         });
         button.classList.add('active');
         
-        // Kol butonlarının alarm durumunu güncelle
+        // Alarm verilerini yeniden yükle ve kol butonlarının alarm durumunu güncelle
+        await this.loadActiveAlarms();
         this.updateArmButtonAlarmStatus();
         
         // Seçilen kol'u güncelle

@@ -377,19 +377,19 @@ def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False
         return False
     else:
         # Normal mod - tüm kolların son bataryası
-        last_arm, last_battery = get_last_battery_info()
-        
-        if not last_arm or not last_battery:
-            print(f"🔍 PERİYOT KONTROL: last_arm={last_arm}, last_battery={last_battery} - Kontrol edilemiyor")
-            return False
-        
-        # Debug: Periyot kontrol bilgilerini yazdır
-        print(f"🔍 PERİYOT KONTROL: Kol {arm_value}, k={k_value}, Beklenen son k: {last_battery}")
-        
-        # En son koldaki en son batarya verisi geldi mi?
-        if arm_value == last_arm and k_value == last_battery:
-            print(f"✅ PERİYOT TAMAMLANDI: En son batarya verisi geldi - Kol {arm_value}, Batarya {k_value}")
-            return True
+    last_arm, last_battery = get_last_battery_info()
+    
+    if not last_arm or not last_battery:
+        print(f"🔍 PERİYOT KONTROL: last_arm={last_arm}, last_battery={last_battery} - Kontrol edilemiyor")
+        return False
+    
+    # Debug: Periyot kontrol bilgilerini yazdır
+    print(f"🔍 PERİYOT KONTROL: Kol {arm_value}, k={k_value}, Beklenen son k: {last_battery}")
+    
+    # En son koldaki en son batarya verisi geldi mi?
+    if arm_value == last_arm and k_value == last_battery:
+        print(f"✅ PERİYOT TAMAMLANDI: En son batarya verisi geldi - Kol {arm_value}, Batarya {k_value}")
+        return True
     
     # Missing data geldi mi?
     if is_missing_data:

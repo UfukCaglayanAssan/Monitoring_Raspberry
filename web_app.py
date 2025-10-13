@@ -1927,10 +1927,10 @@ def get_retrieved_data():
             
             print(f"📊 {len(retrieved_data)} adet veri alındı (timestamp >= {start_timestamp})")
             
-        return jsonify({
-            'success': True,
-            'data': retrieved_data
-        })
+                return jsonify({
+                    'success': True,
+                    'data': retrieved_data
+            })
             
     except Exception as e:
         print(f"❌ Yakalanan verileri alma hatası: {e}")
@@ -1947,7 +1947,7 @@ def get_data_retrieval_status():
         if status:
             is_active = status.get('data_retrieval_mode', False)
         else:
-            is_active = main.is_data_retrieval_mode()
+        is_active = main.is_data_retrieval_mode()
         
         print(f"🔍 API VERİ ALMA MODU DURUMU: {is_active}")
         return jsonify({
