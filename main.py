@@ -1741,8 +1741,8 @@ def config_worker():
                         slave_command = config_data.get('slaveCommand')
                         packet = config_data.get('packet')
                         if packet:
-                        print(f"*** VERİ ALMA KOMUTU GÖNDERİLİYOR ***")
-                        print(f"Kol: {arm_value}, Adres: {slave_address}, Komut: {slave_command}, Paket: {packet} (Hex: {[hex(x) for x in packet]})")
+                            print(f"*** VERİ ALMA KOMUTU GÖNDERİLİYOR ***")
+                            print(f"Kol: {arm_value}, Adres: {slave_address}, Komut: {slave_command}, Paket: {packet} (Hex: {[hex(x) for x in packet]})")
                             wave_uart_send(pi, TX_PIN, packet, int(1e6 / BAUD_RATE))
                             print(f"✓ Veri alma komutu cihaza gönderildi")
                     
