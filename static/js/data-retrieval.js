@@ -612,12 +612,15 @@ if (typeof window.DataRetrieval === 'undefined') {
                     // Seçiniz seçeneği ekle
                     $('#dataAddressSelect').append('<option value="">Seçiniz</option>');
                     
-                    // Kol başlığı ekle
-                    $('#dataAddressSelect').append(`<optgroup label="Kol ${selectedArm}">`);
+                    // Kol seçeneği ekle (seçilebilir)
+                    $('#dataAddressSelect').append(`<option value="0">Kol ${selectedArm}</option>`);
                     
-                    // Batarya adreslerini ekle (1'den başla)
+                    // Kol başlığı ekle
+                    $('#dataAddressSelect').append(`<optgroup label="Bataryalar">`);
+                    
+                    // Batarya adreslerini ekle (1'den başla, değer 1 fazlası gidecek)
                     for (let i = 1; i <= batteryCount; i++) {
-                        $('#dataAddressSelect').append(`<option value="${i}">Batarya ${i}</option>`);
+                        $('#dataAddressSelect').append(`<option value="${i + 1}">Batarya ${i}</option>`);
                     }
                     
                     // Select2'yi yeniden başlat
