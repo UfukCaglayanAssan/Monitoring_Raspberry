@@ -1947,7 +1947,7 @@ def get_data_retrieval_status():
         if status:
             is_active = status.get('data_retrieval_mode', False)
         else:
-        is_active = main.is_data_retrieval_mode()
+            is_active = main.is_data_retrieval_mode()
         
         print(f"🔍 API VERİ ALMA MODU DURUMU: {is_active}")
         return jsonify({
