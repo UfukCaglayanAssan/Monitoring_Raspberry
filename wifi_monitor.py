@@ -15,7 +15,7 @@ import os
 from datetime import datetime
 
 # Logging ayarları
-log_file = '/var/log/wifi_monitor.log'
+log_file = '/home/bms/Desktop/Monitoring_Raspberry/wifi_monitor.log'
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
