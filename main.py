@@ -377,7 +377,7 @@ def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False
         return False
     else:
         # Normal mod - tüm kolların son bataryası
-    last_arm, last_battery = get_last_battery_info()
+        last_arm, last_battery = get_last_battery_info()
     
     if not last_arm or not last_battery:
         print(f"🔍 PERİYOT KONTROL: last_arm={last_arm}, last_battery={last_battery} - Kontrol edilemiyor")
