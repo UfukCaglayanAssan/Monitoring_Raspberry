@@ -224,7 +224,7 @@ if (typeof window.DataRetrieval === 'undefined') {
                 },
                 body: JSON.stringify({
                     armValue: parseInt(arm),
-                    slaveAddress: parseInt(address) + 1, // Adrese 1 ekle
+                    slaveAddress: parseInt(address), // Adres aynı kalacak
                     slaveCommand: parseInt(value)
                 })
             });
