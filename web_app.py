@@ -1752,14 +1752,13 @@ def send_dataget():
             return jsonify({'success': False, 'message': 'Eksik parametreler'}), 400
         
         # Veri alma paketini hazırla: 3 byte (arm, slave, command)
-        # Adrese 1 ekle (cihaz protokolü gereği)
-        dataget_packet = [arm_value, slave_address + 1, slave_command]
+        dataget_packet = [arm_value, slave_address, slave_command]
         
         # pending_config.json dosyasına komutu yaz
         config_data = {
             'type': 'dataget',
             'armValue': arm_value,
-            'slaveAddress': slave_address + 1,  # +1 eklenmiş değer
+            'slaveAddress': slave_address,
             'slaveCommand': slave_command,
             'packet': dataget_packet,
             'timestamp': int(time.time() * 1000)
