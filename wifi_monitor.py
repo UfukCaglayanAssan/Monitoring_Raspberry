@@ -201,11 +201,11 @@ class WiFiMonitor:
 
 def main():
     """Ana fonksiyon"""
-    # Root kontrolü
-    if os.geteuid() != 0:
-        print("❌ Bu script root yetkisi ile çalıştırılmalı!")
-        print("Kullanım: sudo python3 wifi_monitor.py")
-        sys.exit(1)
+    # Root kontrolü (opsiyonel - normal kullanıcı da çalışabilir)
+    # if os.geteuid() != 0:
+    #     print("❌ Bu script root yetkisi ile çalıştırılmalı!")
+    #     print("Kullanım: sudo python3 wifi_monitor.py")
+    #     sys.exit(1)
     
     # WiFi Monitor başlat
     monitor = WiFiMonitor()
