@@ -1927,9 +1927,9 @@ def get_retrieved_data():
             
             print(f"📊 {len(retrieved_data)} adet veri alındı (timestamp >= {start_timestamp})")
             
-            return jsonify({
-                'success': True,
-                'data': retrieved_data
+                return jsonify({
+                    'success': True,
+                    'data': retrieved_data
             })
             
     except Exception as e:
