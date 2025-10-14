@@ -840,26 +840,36 @@ if (typeof window.DataRetrieval === 'undefined') {
         const operationsList = document.getElementById('operationsList');
         const singleData = this.retrievedData[0];
         
+        // Zaman formatını düzelt
+        const formattedTime = new Date(singleData.timestamp).toLocaleString('tr-TR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        
         operationsList.innerHTML = `
             <div class="data-table-container">
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover">
+                <div class="table-responsive" style="overflow-x: auto;">
+                    <table class="table table-striped table-hover" style="min-width: 600px;">
                         <thead class="table-dark">
                             <tr>
-                                <th scope="col">ZAMAN</th>
-                                <th scope="col">KOL</th>
-                                <th scope="col">BATARYA ADRESİ</th>
-                                <th scope="col">VERİ TİPİ</th>
-                                <th scope="col">DEĞER</th>
+                                <th scope="col" style="min-width: 150px;">ZAMAN</th>
+                                <th scope="col" style="min-width: 80px;">KOL</th>
+                                <th scope="col" style="min-width: 120px;">BATARYA ADRESİ</th>
+                                <th scope="col" style="min-width: 150px;">VERİ TİPİ</th>
+                                <th scope="col" style="min-width: 100px;">DEĞER</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td>${singleData.formattedTime}</td>
-                                <td>${singleData.arm}</td>
-                                <td>${singleData.address}</td>
-                                <td>${singleData.valueText}</td>
-                                <td><strong>${singleData.data}</strong></td>
+                                <td style="font-family: monospace;">${formattedTime}</td>
+                                <td style="text-align: center; font-weight: bold;">${singleData.arm}</td>
+                                <td style="text-align: center; font-weight: bold;">${singleData.address}</td>
+                                <td style="font-weight: 500;">${singleData.valueText}</td>
+                                <td style="text-align: right; font-weight: bold; color: #28a745;">${singleData.data}</td>
                             </tr>
                         </tbody>
                     </table>
