@@ -320,10 +320,18 @@ if (typeof window.DataRetrieval === 'undefined') {
                     console.log(`🔍 Mevcut bataryalar:`, result.batteries.map(b => ({arm: b.arm, address: b.batteryAddress, timestamp: new Date(b.timestamp).toLocaleString()})));
                     
                     // Komut sonrası verileri filtrele
-                    const recentBatteries = result.batteries.filter(battery => 
-                        battery.timestamp >= commandTimestamp
-                    );
-                    console.log(`🔍 Komut sonrası bataryalar:`, recentBatteries.map(b => ({arm: b.arm, address: b.batteryAddress, timestamp: new Date(b.timestamp).toLocaleString()})));
+                    const recentBatteries = result.batteries.filter(battery => {
+                        // Timestamp'ları karşılaştırılabilir formata çevir
+                        const batteryTime = new Date(battery.timestamp).getTime();
+                        const commandTime = commandTimestamp;
+                        
+                        console.log(`🕐 Batarya zamanı: ${battery.timestamp} (${batteryTime})`);
+                        console.log(`🕐 Komut zamanı: ${new Date(commandTimestamp).toLocaleString()} (${commandTime})`);
+                        console.log(`🕐 Zaman farkı: ${batteryTime - commandTime}ms`);
+                        
+                        return batteryTime >= commandTime;
+                    });
+                    console.log(`🔍 Komut sonrası bataryalar:`, recentBatteries.map(b => ({arm: b.arm, address: b.batteryAddress, timestamp: b.timestamp})));
                     
                     // İlgili kol ve adrese sahip bataryayı ara
                     // Gelen k değerine göre filtreleme yap (gönderilen adres + 1)
