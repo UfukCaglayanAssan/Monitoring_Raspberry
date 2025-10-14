@@ -320,9 +320,10 @@ if (typeof window.DataRetrieval === 'undefined') {
                     console.log(`🔍 Mevcut bataryalar:`, result.batteries.map(b => ({arm: b.arm, address: b.batteryAddress})));
                     
                     // İlgili kol ve adrese sahip bataryayı ara
+                    // Gelen k değerine göre filtreleme yap (gönderilen adres + 1)
                     const targetBattery = result.batteries.find(battery => 
                         battery.arm == arm && 
-                        battery.batteryAddress == targetAddress
+                        battery.batteryAddress === (targetAddress + 1) // 2+1=3
                     );
                     
                     if (targetBattery) {
