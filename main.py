@@ -752,7 +752,7 @@ def db_worker():
             if len(data) == 11:
                 arm_value = int(data[3], 16)
                 dtype = int(data[2], 16)
-                k_value = int(data[1], 16) - 1  # Gelen k değerinden 1 çıkar
+                k_value = int(data[1], 16)  # K değerini olduğu gibi al
                 
                 # 11 byte paket logla
                 print(f"📦 11 BYTE PAKET ALGILANDI")
