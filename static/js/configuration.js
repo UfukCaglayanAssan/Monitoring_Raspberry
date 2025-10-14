@@ -472,6 +472,10 @@ if (typeof window.ConfigurationPage === 'undefined') {
 
         try {
             const akimMax = parseInt(document.getElementById('akimMax').value);
+            const nemMin = parseInt(document.getElementById('nemMin').value);
+            const nemMax = parseInt(document.getElementById('nemMax').value);
+            const tempMin = parseInt(document.getElementById('tempMin').value);
+            const tempMax = parseInt(document.getElementById('tempMax').value);
             
             // Maksimum akım kontrolü
             if (akimMax > 999) {
@@ -479,14 +483,38 @@ if (typeof window.ConfigurationPage === 'undefined') {
                 return;
             }
             
+            // Minimum nem kontrolü
+            if (nemMin < 0) {
+                this.showToast('Minimum nem değeri 0\'dan küçük olamaz!', 'warning');
+                return;
+            }
+            
+            // Maksimum nem kontrolü
+            if (nemMax > 100) {
+                this.showToast('Maksimum nem değeri 100\'den büyük olamaz!', 'warning');
+                return;
+            }
+            
+            // Minimum sıcaklık kontrolü
+            if (tempMin < 0) {
+                this.showToast('Minimum sıcaklık değeri 0\'dan küçük olamaz!', 'warning');
+                return;
+            }
+            
+            // Maksimum sıcaklık kontrolü
+            if (tempMax > 65) {
+                this.showToast('Maksimum sıcaklık değeri 65\'ten büyük olamaz!', 'warning');
+                return;
+            }
+            
             const configData = {
                 armValue: parseInt(armValue),
                 akimKats: parseInt(document.getElementById('akimKats').value),
                 akimMax: akimMax,
-                nemMin: parseInt(document.getElementById('nemMin').value),
-                nemMax: parseInt(document.getElementById('nemMax').value),
-                tempMin: parseInt(document.getElementById('tempMin').value),
-                tempMax: parseInt(document.getElementById('tempMax').value)
+                nemMin: nemMin,
+                nemMax: nemMax,
+                tempMin: tempMin,
+                tempMax: tempMax
             };
 
             console.log('Kol konfigürasyonu kaydediliyor:', configData);

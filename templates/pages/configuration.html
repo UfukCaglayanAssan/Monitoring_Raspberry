@@ -26,18 +26,18 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="Vmin">Vmin (V)</label>
-                        <input type="number" id="Vmin" step="0.01" value="10" class="form-input">
+                        <input type="number" id="Vmin" step="0.01" value="10" class="form-input" min="0">
                     </div>
                     <div class="form-group">
                         <label for="Vmax">Vmax (V)</label>
-                        <input type="number" id="Vmax" step="0.01" value="14" class="form-input">
+                        <input type="number" id="Vmax" step="0.01" value="14" class="form-input" min="0">
                     </div>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
                         <label for="Vnom">Nominal Gerilim (V)</label>
-                        <input type="number" id="Vnom" step="0.01" value="11.00" class="form-input">
+                        <input type="number" id="Vnom" step="0.01" value="11.00" class="form-input" min="0">
                     </div>
                     <div class="form-group">
                         <label for="Rintnom">Nominal İç Direnç (mΩ)</label>
@@ -57,33 +57,33 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="Tempmin_D">Modül Sıcaklık Min (°C)</label>
-                        <input type="number" id="Tempmin_D" value="15" class="form-input">
+                        <input type="number" id="Tempmin_D" value="15" class="form-input" min="0">
                     </div>
                     <div class="form-group">
                         <label for="Tempmax_D">Modül Sıcaklık Max (°C)</label>
-                        <input type="number" id="Tempmax_D" value="55" class="form-input">
+                        <input type="number" id="Tempmax_D" value="55" class="form-input" min="0">
                     </div>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
                         <label for="Tempmin_PN">Kutup Sıcaklık Min (°C)</label>
-                        <input type="number" id="Tempmin_PN" value="15" class="form-input">
+                        <input type="number" id="Tempmin_PN" value="15" class="form-input" min="0">
                     </div>
                     <div class="form-group">
                         <label for="Tempmax_PN">Kutup Sıcaklık Max (°C)</label>
-                        <input type="number" id="Tempmax_PN" value="65" class="form-input">
+                        <input type="number" id="Tempmax_PN" value="65" class="form-input" min="0">
                     </div>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
                         <label for="Socmin">SOC Min (%)</label>
-                        <input type="number" id="Socmin" value="30" class="form-input">
+                        <input type="number" id="Socmin" value="30" class="form-input" min="0">
                     </div>
                     <div class="form-group">
                         <label for="Sohmin">SOH Min (%)</label>
-                        <input type="number" id="Sohmin" value="30" class="form-input">
+                        <input type="number" id="Sohmin" value="30" class="form-input" min="0">
                     </div>
                 </div>
                 
@@ -116,33 +116,33 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="akimKats">Akım Katsayısı</label>
-                        <input type="number" id="akimKats" value="150" class="form-input">
+                        <input type="number" id="akimKats" value="150" class="form-input" min="0">
                     </div>
                     <div class="form-group">
                         <label for="akimMax">Maksimum Akım (A)</label>
-                        <input type="number" id="akimMax" value="999" max="999" class="form-input" oninput="validateAkimMax(this)">
+                        <input type="number" id="akimMax" value="999" max="999" min="0" class="form-input" oninput="validateAkimMax(this)">
                     </div>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
                         <label for="nemMin">Nem Min (%)</label>
-                        <input type="number" id="nemMin" value="0" class="form-input">
+                        <input type="number" id="nemMin" value="0" class="form-input" min="0" max="100">
                     </div>
                     <div class="form-group">
                         <label for="nemMax">Nem Max (%)</label>
-                        <input type="number" id="nemMax" value="100" class="form-input">
+                        <input type="number" id="nemMax" value="100" class="form-input" max="100" min="0">
                     </div>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
                         <label for="tempMin">Sıcaklık Min (°C)</label>
-                        <input type="number" id="tempMin" value="15" class="form-input">
+                        <input type="number" id="tempMin" value="15" class="form-input" min="0" max="65">
                     </div>
                     <div class="form-group">
                         <label for="tempMax">Sıcaklık Max (°C)</label>
-                        <input type="number" id="tempMax" value="65" class="form-input">
+                        <input type="number" id="tempMax" value="65" class="form-input" max="65" min="0">
                     </div>
                 </div>
                 
