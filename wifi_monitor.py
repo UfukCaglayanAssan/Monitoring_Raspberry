@@ -29,9 +29,12 @@ logger = logging.getLogger(__name__)
 class WiFiMonitor:
     def __init__(self):
         self.ping_host = "8.8.8.8"
-        self.check_interval = 60  # 3 dakika
+        self.check_interval = 60  # 60 saniye
         self.max_retries = 3
         self.retry_delay = 10  # 10 saniye
+        self.disconnection_count = 0
+        self.last_connection_time = None
+        self.start_time = time.time()
         
     def log(self, message, level="INFO"):
         """Log mesajı yaz"""
@@ -63,21 +66,6 @@ class WiFiMonitor:
             self.log(f"Komut hatası: {command} - {e}", "ERROR")
             return False, "", str(e)
     
-    def check_wifi_interface(self):
-        """WiFi interface'ini kontrol et"""
-        success, stdout, stderr = self.run_command("iwconfig wlan0")
-        if not success:
-            self.log("wlan0 interface bulunamadı", "ERROR")
-            return False
-            
-        if "ESSID" in stdout and "off/any" not in stdout:
-            # ESSID var ve bağlı
-            essid = stdout.split('ESSID:"')[1].split('"')[0] if 'ESSID:"' in stdout else "Unknown"
-            self.log(f"WiFi bağlı: {essid}")
-            return True
-        else:
-            self.log("WiFi bağlı değil", "WARNING")
-            return False
     
     def check_internet_ping(self):
         """Ping testi yap"""
@@ -154,64 +142,50 @@ class WiFiMonitor:
         if success:
             self.log(f"IP durumu: {stdout}")
     
-    def scan_and_connect_wifi(self):
-        """WiFi ağlarını tara ve bağlan"""
-        self.log("🔍 WiFi ağları taranıyor...")
+    def connect_to_default_wifi(self):
+        """Varsayılan WiFi ağına bağlan"""
+        self.log("🔍 Varsayılan WiFi ağına bağlanmaya çalışılıyor...")
         
-        # WiFi ağlarını listele
-        success, stdout, stderr = self.run_command("nmcli device wifi list")
+        # Önce kayıtlı bağlantıları kontrol et
+        success, stdout, stderr = self.run_command("nmcli connection show")
         if not success:
-            self.log("WiFi ağları taranamadı", "ERROR")
+            self.log("Kayıtlı bağlantılar alınamadı", "ERROR")
             return False
         
-        # Ağları parse et ve en güçlü sinyalli olanı bul
-        lines = stdout.split('\n')
-        available_networks = []
-        
-        for line in lines[1:]:  # İlk satır başlık
-            if line.strip() and 'SSID' in line:
+        # Aktif olmayan WiFi bağlantılarını bul
+        wifi_connections = []
+        for line in stdout.split('\n'):
+            if 'wifi' in line and '--' in line:  # Aktif olmayan WiFi bağlantıları
                 parts = line.split()
-                if len(parts) >= 4:
-                    ssid = parts[1] if parts[1] != '--' else parts[0]
-                    signal = parts[0] if parts[0].isdigit() else '0'
-                    security = parts[2] if len(parts) > 2 else 'Open'
-                    
-                    if ssid and ssid != '--':
-                        available_networks.append({
-                            'ssid': ssid,
-                            'signal': int(signal) if signal.isdigit() else 0,
-                            'security': security
-                        })
+                if len(parts) >= 2:
+                    connection_name = parts[0]
+                    wifi_connections.append(connection_name)
         
-        if not available_networks:
-            self.log("Kullanılabilir WiFi ağı bulunamadı", "WARNING")
+        if not wifi_connections:
+            self.log("Kayıtlı WiFi bağlantısı bulunamadı", "WARNING")
             return False
         
-        # Sinyal gücüne göre sırala
-        available_networks.sort(key=lambda x: x['signal'], reverse=True)
+        # İlk WiFi bağlantısını dene (genellikle varsayılan)
+        default_connection = wifi_connections[0]
+        self.log(f"Varsayılan bağlantı deneniyor: {default_connection}")
         
-        self.log(f"Bulunan ağlar: {[net['ssid'] for net in available_networks[:3]]}")
-        
-        # En güçlü sinyalli ağa bağlanmayı dene
-        best_network = available_networks[0]
-        self.log(f"En güçlü ağ: {best_network['ssid']} (Sinyal: {best_network['signal']}%)")
-        
-        # Bağlantıyı dene
-        if best_network['security'] == 'Open':
-            # Açık ağ
-            success, stdout, stderr = self.run_command(f"sudo nmcli device wifi connect '{best_network['ssid']}'")
-        else:
-            # Şifreli ağ - önce kayıtlı bağlantıları kontrol et
-            success, stdout, stderr = self.run_command(f"sudo nmcli connection up '{best_network['ssid']}'")
-            if not success:
-                self.log(f"Kayıtlı bağlantı bulunamadı: {best_network['ssid']}", "WARNING")
-                return False
+        success, stdout, stderr = self.run_command(f"sudo nmcli connection up '{default_connection}'")
         
         if success:
-            self.log(f"✅ WiFi bağlantısı başarılı: {best_network['ssid']}")
+            self.log(f"✅ WiFi bağlantısı başarılı: {default_connection}")
             return True
         else:
-            self.log(f"❌ WiFi bağlantısı başarısız: {best_network['ssid']}", "ERROR")
+            self.log(f"❌ WiFi bağlantısı başarısız: {default_connection}", "ERROR")
+            # Diğer bağlantıları da dene
+            for connection in wifi_connections[1:]:
+                self.log(f"Alternatif bağlantı deneniyor: {connection}")
+                success, stdout, stderr = self.run_command(f"sudo nmcli connection up '{connection}'")
+                if success:
+                    self.log(f"✅ WiFi bağlantısı başarılı: {connection}")
+                    return True
+                else:
+                    self.log(f"❌ WiFi bağlantısı başarısız: {connection}", "WARNING")
+            
             return False
     
     def monitor_loop(self):
@@ -227,29 +201,7 @@ class WiFiMonitor:
                 self.log("=" * 50)
                 self.log("WiFi kontrolü başlatılıyor...")
                 
-                # 1. WiFi interface kontrolü
-                wifi_connected = self.check_wifi_interface()
-                
-                if not wifi_connected:
-                    self.log("WiFi bağlı değil, yeniden bağlanmaya çalışılıyor...", "WARNING")
-                    self.restart_wifi()
-                    
-                    # Yeniden başlatma sonrası WiFi kontrolü
-                    time.sleep(10)
-                    wifi_connected = self.check_wifi_interface()
-                    
-                    if not wifi_connected:
-                        self.log("WiFi yeniden başlatma sonrası bağlantı yok, ağ tarama yapılıyor...", "WARNING")
-                        self.scan_and_connect_wifi()
-                        time.sleep(5)
-                        wifi_connected = self.check_wifi_interface()
-                    
-                    if not wifi_connected:
-                        consecutive_failures += 1
-                        time.sleep(10)
-                        continue
-                
-                # 2. Internet bağlantı kontrolü (ping)
+                # Internet bağlantı kontrolü (ping)
                 internet_ok = self.check_internet_ping()
                 
                 if not internet_ok:
@@ -262,19 +214,22 @@ class WiFiMonitor:
                     consecutive_failures = 0
                 else:
                     consecutive_failures += 1
-                    self.log(f"❌ Internet bağlantısı yok (Ardışık hata: {consecutive_failures})", "WARNING")
+                    self.disconnection_count += 1
+                    current_time = time.time()
+                    uptime = current_time - self.start_time
+                    disconnection_rate = (self.disconnection_count / (uptime / 60)) if uptime > 0 else 0
+                    
+                    self.log(f"❌ Internet bağlantısı yok (Ardışık hata: {consecutive_failures}, Kesilme #{self.disconnection_count}, Sıklık: {disconnection_rate:.2f}/dakika)", "WARNING")
                     
                     if consecutive_failures >= self.max_retries:
                         self.log(f"⚠️ {self.max_retries} ardışık hata, WiFi yeniden başlatılıyor...", "WARNING")
                         self.get_wifi_info()  # Debug için
                         self.restart_wifi()
                         
-                        # Yeniden başlatma sonrası ağ tarama
+                        # Varsayılan WiFi'ye bağlanmayı dene
                         time.sleep(10)
-                        wifi_connected = self.check_wifi_interface()
-                        if not wifi_connected:
-                            self.log("Yeniden başlatma sonrası bağlantı yok, ağ tarama yapılıyor...", "WARNING")
-                            self.scan_and_connect_wifi()
+                        self.log("Varsayılan WiFi'ye bağlanmaya çalışılıyor...")
+                        self.connect_to_default_wifi()
                         
                         consecutive_failures = 0
                         time.sleep(15)  # Yeniden başlatma sonrası bekle

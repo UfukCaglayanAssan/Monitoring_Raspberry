@@ -1,0 +1,20 @@
+[Unit]
+Description=WiFi Monitor Service
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=bms
+Group=bms
+WorkingDirectory=/home/bms/Desktop/Monitoring_Raspberry
+Environment=PATH=/home/bms/Desktop/myenv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStartPre=/bin/sleep 10
+ExecStart=/home/bms/Desktop/myenv/bin/python /home/bms/Desktop/Monitoring_Raspberry/wifi_monitor.py
+Restart=always
+RestartSec=30
+StandardOutput=append:/home/bms/Desktop/Monitoring_Raspberry/wifi_monitor.log
+StandardError=append:/home/bms/Desktop/Monitoring_Raspberry/wifi_monitor.log
+
+[Install]
+WantedBy=multi-user.target
