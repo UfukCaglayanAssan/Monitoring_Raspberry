@@ -255,7 +255,7 @@ if (typeof window.DataRetrieval === 'undefined') {
     }
 
     async waitForSingleData(arm, address, value, valueText, commandTimestamp) {
-        const maxAttempts = 2; // 2 deneme (3 saniye + 3 saniye)
+        const maxAttempts = 3; // 3 deneme (3 saniye + 3 saniye + 3 saniye)
         let attempt = 0;
         
         while (attempt < maxAttempts) {
