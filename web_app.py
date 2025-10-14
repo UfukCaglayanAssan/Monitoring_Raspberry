@@ -1752,8 +1752,7 @@ def send_dataget():
             return jsonify({'success': False, 'message': 'Eksik parametreler'}), 400
         
         # Veri alma paketini hazırla: 3 byte (arm, slave, command)
-        # Cihaz protokolü: k değeri = gönderilen değer + 1
-        dataget_packet = [arm_value, slave_address + 1, slave_command]
+        dataget_packet = [arm_value, slave_address, slave_command]
         
         # pending_config.json dosyasına komutu yaz
         config_data = {
@@ -1928,9 +1927,9 @@ def get_retrieved_data():
             
             print(f"📊 {len(retrieved_data)} adet veri alındı (timestamp >= {start_timestamp})")
             
-            return jsonify({
-                'success': True,
-                'data': retrieved_data
+                return jsonify({
+                    'success': True,
+                    'data': retrieved_data
             })
             
     except Exception as e:
@@ -1948,7 +1947,7 @@ def get_data_retrieval_status():
         if status:
             is_active = status.get('data_retrieval_mode', False)
         else:
-            is_active = main.is_data_retrieval_mode()
+        is_active = main.is_data_retrieval_mode()
         
         print(f"🔍 API VERİ ALMA MODU DURUMU: {is_active}")
         return jsonify({
