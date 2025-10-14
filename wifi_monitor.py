@@ -114,12 +114,7 @@ class WiFiMonitor:
         self.run_command("sudo nmcli connection up wlan0")
         time.sleep(5)
         
-        # Eğer bağlantı yoksa, otomatik bağlanmayı dene
-        success, stdout, stderr = self.run_command("nmcli device wifi list")
-        if success and "SSID" in stdout:
-            self.log("WiFi ağları taranıyor...")
-            # Ağ tarama fonksiyonunu çağır
-            self.scan_and_connect_wifi()
+        # WiFi yeniden başlatma tamamlandı
         
         self.log("WiFi yeniden başlatma tamamlandı")
     
@@ -152,32 +147,40 @@ class WiFiMonitor:
             self.log("Kayıtlı bağlantılar alınamadı", "ERROR")
             return False
         
-        # Aktif olmayan WiFi bağlantılarını bul
-        wifi_connections = []
+        # xIOT01 ağını öncelikli olarak ara
+        xiot_connection = None
+        other_connections = []
+        
         for line in stdout.split('\n'):
             if 'wifi' in line and '--' in line:  # Aktif olmayan WiFi bağlantıları
                 parts = line.split()
                 if len(parts) >= 2:
                     connection_name = parts[0]
-                    wifi_connections.append(connection_name)
+                    if 'xIOT' in connection_name or 'xIOT01' in connection_name:
+                        xiot_connection = connection_name
+                    else:
+                        other_connections.append(connection_name)
         
-        if not wifi_connections:
+        # Önce xIOT01'i dene
+        if xiot_connection:
+            self.log(f"xIOT01 bağlantısı deneniyor: {xiot_connection}")
+            success, stdout, stderr = self.run_command(f"sudo nmcli connection up '{xiot_connection}'")
+            if success:
+                self.log(f"✅ xIOT01 bağlantısı başarılı: {xiot_connection}")
+                return True
+            else:
+                self.log(f"❌ xIOT01 bağlantısı başarısız: {xiot_connection}", "WARNING")
+        
+        # xIOT01 başarısızsa diğer bağlantıları dene
+        all_connections = [xiot_connection] + other_connections if xiot_connection else other_connections
+        all_connections = [conn for conn in all_connections if conn]  # None'ları temizle
+        
+        if not all_connections:
             self.log("Kayıtlı WiFi bağlantısı bulunamadı", "WARNING")
             return False
         
-        # İlk WiFi bağlantısını dene (genellikle varsayılan)
-        default_connection = wifi_connections[0]
-        self.log(f"Varsayılan bağlantı deneniyor: {default_connection}")
-        
-        success, stdout, stderr = self.run_command(f"sudo nmcli connection up '{default_connection}'")
-        
-        if success:
-            self.log(f"✅ WiFi bağlantısı başarılı: {default_connection}")
-            return True
-        else:
-            self.log(f"❌ WiFi bağlantısı başarısız: {default_connection}", "ERROR")
-            # Diğer bağlantıları da dene
-            for connection in wifi_connections[1:]:
+        for connection in all_connections:
+            if connection != xiot_connection:  # xIOT01'i tekrar deneme
                 self.log(f"Alternatif bağlantı deneniyor: {connection}")
                 success, stdout, stderr = self.run_command(f"sudo nmcli connection up '{connection}'")
                 if success:
@@ -185,8 +188,8 @@ class WiFiMonitor:
                     return True
                 else:
                     self.log(f"❌ WiFi bağlantısı başarısız: {connection}", "WARNING")
-            
-            return False
+        
+        return False
     
     def monitor_loop(self):
         """Ana kontrol döngüsü"""
@@ -205,35 +208,27 @@ class WiFiMonitor:
                 internet_ok = self.check_internet_ping()
                 
                 if not internet_ok:
-                    # Curl ile tekrar dene
-                    self.log("Ping başarısız, curl ile tekrar deneniyor...")
-                    internet_ok = self.check_internet_curl()
-                
-                if internet_ok:
-                    self.log("✅ Internet bağlantısı OK")
-                    consecutive_failures = 0
-                else:
-                    consecutive_failures += 1
                     self.disconnection_count += 1
                     current_time = time.time()
                     uptime = current_time - self.start_time
                     disconnection_rate = (self.disconnection_count / (uptime / 60)) if uptime > 0 else 0
                     
-                    self.log(f"❌ Internet bağlantısı yok (Ardışık hata: {consecutive_failures}, Kesilme #{self.disconnection_count}, Sıklık: {disconnection_rate:.2f}/dakika)", "WARNING")
+                    self.log(f"❌ Internet bağlantısı yok (Kesilme #{self.disconnection_count}, Sıklık: {disconnection_rate:.2f}/dakika)", "WARNING")
                     
-                    if consecutive_failures >= self.max_retries:
-                        self.log(f"⚠️ {self.max_retries} ardışık hata, WiFi yeniden başlatılıyor...", "WARNING")
-                        self.get_wifi_info()  # Debug için
-                        self.restart_wifi()
-                        
-                        # Varsayılan WiFi'ye bağlanmayı dene
-                        time.sleep(10)
-                        self.log("Varsayılan WiFi'ye bağlanmaya çalışılıyor...")
-                        self.connect_to_default_wifi()
-                        
-                        consecutive_failures = 0
-                        time.sleep(15)  # Yeniden başlatma sonrası bekle
-                        continue
+                    # İlk başarısızlıkta hemen WiFi'yi yeniden başlat
+                    self.log("🔄 WiFi yeniden başlatılıyor...")
+                    self.get_wifi_info()  # Debug için
+                    self.restart_wifi()
+                    
+                    # Varsayılan WiFi'ye bağlanmayı dene
+                    time.sleep(10)
+                    self.log("Varsayılan WiFi'ye bağlanmaya çalışılıyor...")
+                    self.connect_to_default_wifi()
+                    
+                    time.sleep(15)  # Yeniden başlatma sonrası bekle
+                    continue
+                else:
+                    self.log("✅ Internet bağlantısı OK")
                 
                 # Başarılı kontrol sonrası bekle
                 self.log(f"Sonraki kontrol {self.check_interval} saniye sonra...")
