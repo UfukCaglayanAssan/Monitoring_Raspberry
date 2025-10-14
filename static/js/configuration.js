@@ -86,6 +86,62 @@ if (typeof window.ConfigurationPage === 'undefined') {
                 this.loadArmConfigForSelectedArm(parseInt(e.target.value));
             }
         });
+
+        // Input validasyon event listener'ları
+        this.addInputValidationListeners();
+    }
+
+    addInputValidationListeners() {
+        // Nem Max validasyonu
+        document.getElementById('nemMax').addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            if (value > 100) {
+                e.target.value = 100;
+                this.showToast('Maksimum nem değeri 100\'den büyük olamaz!', 'warning');
+            }
+            if (value < 0) {
+                e.target.value = 0;
+                this.showToast('Nem değeri 0\'dan küçük olamaz!', 'warning');
+            }
+        });
+
+        // Sıcaklık Max validasyonu
+        document.getElementById('tempMax').addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            if (value > 65) {
+                e.target.value = 65;
+                this.showToast('Maksimum sıcaklık değeri 65\'ten büyük olamaz!', 'warning');
+            }
+            if (value < 0) {
+                e.target.value = 0;
+                this.showToast('Sıcaklık değeri 0\'dan küçük olamaz!', 'warning');
+            }
+        });
+
+        // Akım Max validasyonu
+        document.getElementById('akimMax').addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            if (value > 999) {
+                e.target.value = 999;
+                this.showToast('Maksimum akım değeri 999\'dan büyük olamaz!', 'warning');
+            }
+            if (value < 0) {
+                e.target.value = 0;
+                this.showToast('Akım değeri 0\'dan küçük olamaz!', 'warning');
+            }
+        });
+
+        // Tüm number input'lar için genel validasyon
+        const numberInputs = document.querySelectorAll('input[type="number"]');
+        numberInputs.forEach(input => {
+            input.addEventListener('input', (e) => {
+                const value = parseFloat(e.target.value);
+                if (value < 0) {
+                    e.target.value = 0;
+                    this.showToast(`${e.target.id} değeri 0\'dan küçük olamaz!`, 'warning');
+                }
+            });
+        });
     }
 
     async loadArmOptions() {
@@ -492,6 +548,7 @@ if (typeof window.ConfigurationPage === 'undefined') {
             // Maksimum nem kontrolü
             if (nemMax > 100) {
                 this.showToast('Maksimum nem değeri 100\'den büyük olamaz!', 'warning');
+                document.getElementById('nemMax').value = 100;
                 return;
             }
             
@@ -504,6 +561,7 @@ if (typeof window.ConfigurationPage === 'undefined') {
             // Maksimum sıcaklık kontrolü
             if (tempMax > 65) {
                 this.showToast('Maksimum sıcaklık değeri 65\'ten büyük olamaz!', 'warning');
+                document.getElementById('tempMax').value = 65;
                 return;
             }
             

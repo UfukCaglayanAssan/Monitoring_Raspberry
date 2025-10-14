@@ -408,10 +408,9 @@ if (typeof window.DataRetrieval === 'undefined') {
 
     addSingleDataToTable(arm, address, value, valueText, data) {
         // Tekil veriyi tabloya ekle
-        const now = new Date();
         const singleData = {
-            timestamp: now.getTime(),
-            formattedTime: now.toLocaleString('tr-TR', {
+            timestamp: Date.now(),
+            formattedTime: new Date().toLocaleString('tr-TR', {
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit',
@@ -840,36 +839,26 @@ if (typeof window.DataRetrieval === 'undefined') {
         const operationsList = document.getElementById('operationsList');
         const singleData = this.retrievedData[0];
         
-        // Zaman formatını düzelt
-        const formattedTime = new Date(singleData.timestamp).toLocaleString('tr-TR', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
-        
         operationsList.innerHTML = `
             <div class="data-table-container">
-                <div class="table-responsive" style="overflow-x: auto;">
-                    <table class="table table-striped table-hover" style="min-width: 600px;">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped table-hover single-data-table">
                         <thead class="table-dark">
                             <tr>
-                                <th scope="col" style="min-width: 150px;">ZAMAN</th>
-                                <th scope="col" style="min-width: 80px;">KOL</th>
-                                <th scope="col" style="min-width: 120px;">BATARYA ADRESİ</th>
-                                <th scope="col" style="min-width: 150px;">VERİ TİPİ</th>
-                                <th scope="col" style="min-width: 100px;">DEĞER</th>
+                                <th scope="col">ZAMAN</th>
+                                <th scope="col">KOL</th>
+                                <th scope="col">BATARYA ADRESİ</th>
+                                <th scope="col">VERİ TİPİ</th>
+                                <th scope="col">DEĞER</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td style="font-family: monospace;">${formattedTime}</td>
-                                <td style="text-align: center; font-weight: bold;">${singleData.arm}</td>
-                                <td style="text-align: center; font-weight: bold;">${singleData.address}</td>
-                                <td style="font-weight: 500;">${singleData.valueText}</td>
-                                <td style="text-align: right; font-weight: bold; color: #28a745;">${singleData.data}</td>
+                                <td class="time-cell">${singleData.formattedTime}</td>
+                                <td class="center-cell">${singleData.arm}</td>
+                                <td class="center-cell">${singleData.address}</td>
+                                <td class="data-type-cell">${singleData.valueText}</td>
+                                <td class="value-cell">${singleData.data}</td>
                             </tr>
                         </tbody>
                     </table>

@@ -1467,3 +1467,86 @@
     text-align: left;
 }
 
+/* Tekil Veri Tablosu Stilleri */
+.single-data-table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    margin-bottom: 0 !important;
+}
+
+.single-data-table th,
+.single-data-table td {
+    border: 1px solid #dee2e6 !important;
+    padding: 12px 8px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+.single-data-table th {
+    background-color: #343a40 !important;
+    color: white !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+}
+
+.single-data-table td {
+    background-color: #fff !important;
+    font-size: 14px !important;
+}
+
+.single-data-table tbody tr:hover {
+    background-color: #f8f9fa !important;
+}
+
+/* Sütun genişlikleri - eşit dağılım */
+.single-data-table th:nth-child(1),
+.single-data-table td:nth-child(1) {
+    width: 20% !important; /* ZAMAN */
+}
+
+.single-data-table th:nth-child(2),
+.single-data-table td:nth-child(2) {
+    width: 15% !important; /* KOL */
+}
+
+.single-data-table th:nth-child(3),
+.single-data-table td:nth-child(3) {
+    width: 20% !important; /* BATARYA ADRESİ */
+}
+
+.single-data-table th:nth-child(4),
+.single-data-table td:nth-child(4) {
+    width: 25% !important; /* VERİ TİPİ */
+}
+
+.single-data-table th:nth-child(5),
+.single-data-table td:nth-child(5) {
+    width: 20% !important; /* DEĞER */
+}
+
+/* Hücre içerik stilleri */
+.time-cell {
+    font-family: 'Courier New', monospace !important;
+    font-size: 13px !important;
+    text-align: left !important;
+    padding-left: 12px !important;
+}
+
+.center-cell {
+    font-weight: bold !important;
+    color: #495057 !important;
+}
+
+.data-type-cell {
+    font-weight: 500 !important;
+    color: #6c757d !important;
+    text-align: left !important;
+    padding-left: 12px !important;
+}
+
+.value-cell {
+    font-weight: bold !important;
+    color: #28a745 !important;
+    font-size: 15px !important;
+}
+
