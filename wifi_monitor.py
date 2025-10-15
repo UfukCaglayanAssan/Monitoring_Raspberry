@@ -69,12 +69,9 @@ class WiFiMonitor:
     
     def check_internet_ping(self):
         """Ping testi yap"""
-        self.log(f"Ping testi başlatılıyor: {self.ping_host}")
-        
         success, stdout, stderr = self.run_command(f"ping -c 3 -W 5 {self.ping_host}")
         
         if success:
-            self.log(f"✅ Ping başarılı: {self.ping_host}")
             return True
         else:
             self.log(f"❌ Ping başarısız: {self.ping_host}", "WARNING")
@@ -201,9 +198,6 @@ class WiFiMonitor:
         
         while True:
             try:
-                self.log("=" * 50)
-                self.log("WiFi kontrolü başlatılıyor...")
-                
                 # Internet bağlantı kontrolü (ping)
                 internet_ok = self.check_internet_ping()
                 
@@ -227,11 +221,8 @@ class WiFiMonitor:
                     
                     time.sleep(15)  # Yeniden başlatma sonrası bekle
                     continue
-                else:
-                    self.log("✅ Internet bağlantısı OK")
                 
                 # Başarılı kontrol sonrası bekle
-                self.log(f"Sonraki kontrol {self.check_interval} saniye sonra...")
                 time.sleep(self.check_interval)
                 
             except KeyboardInterrupt:
