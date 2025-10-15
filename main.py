@@ -401,7 +401,7 @@ def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False
     return False
 
 def send_reset_system_signal():
-    """Reset system sinyali gönder (0x55 0x55 0x55) - 1 saat aralık kontrolü ile"""
+    """Reset system sinyali gönder (0x55 0x55 0x55) - 1 saat aralık kontrolü ile - PASIF MOD"""
     try:
         # Reset system gönderilebilir mi kontrol et (minimum 1 saat aralık)
         if not db.can_send_reset_system(min_interval_hours=1):
@@ -411,12 +411,11 @@ def send_reset_system_signal():
         # Reset öncesi missing data'ları kaydet
         save_missing_data_before_reset()
         
-        signal_data = [0x55, 0x55, 0x55]
-        wave_uart_send(pi, TX_PIN, signal_data, int(1e6 / BAUD_RATE))
-        print("🔄 Reset system sinyali gönderildi: 0x55 0x55 0x55")
+        # PASIF MOD: Sadece loglama, gerçek sinyal gönderilmiyor
+        print("🔄 Reset system sinyali (PASIF MOD): 0x55 0x55 0x55 - Sadece loglandı")
         
         # Reset system gönderimini logla
-        log_timestamp = db.log_reset_system("Missing data period completed")
+        log_timestamp = db.log_reset_system("Missing data period completed - PASIF MOD")
         if log_timestamp:
             print(f"📝 Reset system log kaydedildi: {log_timestamp}")
         

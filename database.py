@@ -451,7 +451,6 @@ class BatteryDatabase:
                 
                 # Commit
                 conn.commit()
-                print(f"✅ {len(batch)} veri batch olarak eklendi")
                 
             except Exception as e:
                 # Rollback on error
