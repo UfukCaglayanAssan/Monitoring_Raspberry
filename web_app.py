@@ -27,7 +27,7 @@ def get_db():
     if not hasattr(get_db, 'instance'):
         get_db.instance = BatteryDatabase()
         # Connection pool zaten WAL mode ve timeout ile yapılandırılmış
-        print("✅ Database instance oluşturuldu (WAL mode + timeout enabled)")
+        # Database instance oluşturuldu
     return get_db.instance
 
 # Authentication decorator'ları
@@ -326,7 +326,7 @@ def get_battery_logs():
     
     # Mevcut dili al
     language = request.headers.get('X-Language', 'tr')
-    print(f"DEBUG web_app.py battery-logs: Dil parametresi: {language}")
+    # Dil parametresi logları kaldırıldı
     
     try:
         # Veritabanından gruplandırılmış batarya log verilerini al
@@ -393,7 +393,7 @@ def get_arm_logs():
     
     # Mevcut dili al
     language = request.headers.get('X-Language', 'tr')
-    print(f"DEBUG web_app.py arm-logs: Dil parametresi: {language}")
+    # Dil parametresi logları kaldırıldı
     
     try:
         # Veritabanından gruplandırılmış kol log verilerini al
@@ -1851,23 +1851,17 @@ def get_retrieved_data():
         # Web app'teki timestamp'ı kullan
         global data_retrieval_period_start
         start_timestamp = data_retrieval_period_start
-        print(f"🔍 WEB APP'ten alınan timestamp: {start_timestamp}")
-        
         if not start_timestamp:
-            print("⚠️ Timestamp yok, boş veri döndürülüyor")
             return jsonify({'success': True, 'data': []})
         
         # Veritabanından timestamp'a göre veri çek
         db = get_db()
         with db_read_lock:
             # Timestamp'ı milisaniye cinsinden kullan (veritabanındaki format)
-            print(f"🔍 VERİ ALMA BAŞLANGIÇ TIMESTAMP: {start_timestamp}")
-            
             # Önce toplam veri sayısını kontrol et
             count_query = "SELECT COUNT(*) FROM battery_data"
             count_cursor = db.execute_query(count_query)
             total_count = count_cursor.fetchone()[0]
-            print(f"📊 Veritabanında toplam {total_count} adet veri var")
             
             # Bu tarihten sonraki verileri al (gruplama ile) - sadece batarya verileri (k > 2)
             query = """
@@ -1888,7 +1882,7 @@ def get_retrieved_data():
                 ORDER BY timestamp ASC, arm ASC, k ASC
             """
             
-            print(f"🔍 SQL Sorgusu: WHERE timestamp >= {start_timestamp}")
+            # SQL sorgusu logları kaldırıldı
             
             # Önce son birkaç veriyi kontrol et
             debug_query = "SELECT timestamp, arm, k, dtype, data FROM battery_data ORDER BY timestamp DESC LIMIT 5"
@@ -1966,11 +1960,9 @@ if __name__ == '__main__':
     try:
         from ip_manager import IPManager
         ip_manager = IPManager()
-        print("🔄 IP ataması kontrol ediliyor...")
         ip_manager.initialize_default_ip()
-        print("✅ IP ataması kontrolü tamamlandı")
     except Exception as e:
-        print(f"⚠️ IP ataması kontrol hatası: {e}")
+        # IP ataması kontrol hatası
     
     # Port parametresini al (varsayılan: 80)
     port = 80
@@ -1978,18 +1970,13 @@ if __name__ == '__main__':
         try:
             port = int(sys.argv[1])
         except ValueError:
-            print("Geçersiz port numarası, varsayılan port 80 kullanılıyor")
-    
-    print(f"Flask web uygulaması başlatılıyor... (Port: {port})")
-    with db_read_lock:
-        print(f"Veritabanı boyutu: {get_db().get_database_size():.2f} MB")
+            # Geçersiz port numarası, varsayılan port 80 kullanılıyor
     
     try:
         app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
     except OSError as e:
         if "Address already in use" in str(e):
-            print(f"❌ Port {port} zaten kullanımda!")
-            print(f"💡 Farklı port deneyin: python web_app.py {port + 1}")
-            print(f"💡 Veya mevcut uygulamayı durdurun: sudo lsof -i :{port}")
+            # Port zaten kullanımda
+            pass
         else:
-            print(f"❌ Hata: {e}")
+            # Hata oluştu

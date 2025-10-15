@@ -754,12 +754,7 @@ def db_worker():
                 dtype = int(data[2], 16)
                 k_value = int(data[1], 16)  # K değerini olduğu gibi al
                 
-                # 11 byte paket logla
-                print(f"📦 11 BYTE PAKET ALGILANDI")
-                print(f"📦 Ham Paket: {' '.join([f'0x{b:02X}' for b in [int(x, 16) for x in data]])}")
-                print(f"📊 Header: 0x{data[0]}, k: {k_value}, dtype: {dtype}, arm: {arm_value}")
-                print(f"📊 Veri bytes: {data[4:10]}")
-                print(f"📊 Checksum: 0x{data[10]}")
+                # 11 byte paket logla - KALDIRILDI
                 
                 # k_value 2 geldiğinde yeni periyot başlat (ard arda gelmemesi şartıyla)
                 if k_value == 2:
@@ -790,35 +785,20 @@ def db_worker():
                 
                 # Salt data hesapla
                 if dtype == 10 and k_value == 2:  # Akım verisi geldiğinde
-                    print(f"🔋 AKIM VERİSİ PAKETİ ALGILANDI - 11 byte")
-                    
                     # Yeni periyot başlat (k=2 akım verisi geldiğinde)
                     if not period_active:
                         get_period_timestamp()
-                        
-                        # Yeni periyot başladı
-                        print(f"ℹ️ YENİ PERİYOT BAŞLADI - Kol {arm_value}, k={k_value}")
                 
                 if dtype == 11 and k_value == 2:  # Nem hesapla
-                    print(f"💧 NEM VERİSİ PAKETİ ALGILANDI - 11 byte")
-                    
                     onlar = int(data[5], 16)
                     birler = int(data[6], 16)
                     kusurat1 = int(data[7], 16)
                     kusurat2 = int(data[8], 16)
                     
-                    print(f"🔢 Nem Hesaplama Detayları:")
-                    print(f"   Onlar: {onlar}, Birler: {birler}")
-                    print(f"   Küsürat1: {kusurat1}, Küsürat2: {kusurat2}")
-                    
                     tam_kisim = (onlar * 10 + birler)
                     kusurat_kisim = (kusurat1 * 0.1 + kusurat2 * 0.01)
                     salt_data = tam_kisim + kusurat_kisim
                     salt_data = round(salt_data, 4)
-                    
-                    print(f"   Tam kısım: {onlar}×10 + {birler} = {tam_kisim}")
-                    print(f"   Küsürat: {kusurat1}×0.1 + {kusurat2}×0.01 = {kusurat_kisim}")
-                    print(f"   Sonuç: {tam_kisim} + {kusurat_kisim} = {salt_data}%")
                 else:
                     # Normal hesaplama
                     saltData = int(data[4], 16) * 100 + int(data[5], 16) * 10 + int(data[6], 16) + int(data[7], 16) * 0.1 + int(data[8], 16) * 0.01 + int(data[9], 16) * 0.001
@@ -874,8 +854,7 @@ def db_worker():
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
                                 }
-                                print(f"📊 RAM Mapping: Arm k={k_value}, UART dtype={dtype} -> RAM dtype=1 (Akım)")
-                                print(f"🔋 DEŞARJ AKIMI ALGILANDI - Kol: {arm_value}, Akım: {salt_data} A")
+                                # RAM Mapping logları kaldırıldı
                             elif dtype == 11:  # Nem -> 2
                                 # Veritabanına kaydet
                                 nem_record = {
@@ -891,8 +870,7 @@ def db_worker():
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
                                 }
-                                print(f"📊 RAM Mapping: Arm k={k_value}, UART dtype={dtype} -> RAM dtype=2 (Nem)")
-                                print(f"💧 NEM VERİSİ ALGILANDI - Kol: {arm_value}, Nem: {salt_data}%")
+                                # RAM Mapping logları kaldırıldı
                             elif dtype == 12:  # Sıcaklık -> 3
                                 # Veritabanına kaydet
                                 sicaklik_record = {
@@ -908,8 +886,7 @@ def db_worker():
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
                                 }
-                                print(f"📊 RAM Mapping: Arm k={k_value}, UART dtype={dtype} -> RAM dtype=3 (Sıcaklık)")
-                                print(f"🌡️ SICAKLIK VERİSİ ALGILANDI - Kol: {arm_value}, Sıcaklık: {salt_data}°C")
+                                # RAM Mapping logları kaldırıldı
                         else:
                             # Batarya verisi için normal mapping: 1=Gerilim, 2=SOC, 3=RIMT, 4=SOH, 5=NTC1, 6=NTC2, 7=NTC3
                             if dtype == 10:  # Gerilim -> 1
@@ -917,7 +894,7 @@ def db_worker():
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
                                 }
-                                print(f"📊 RAM Mapping: UART dtype={dtype} -> RAM dtype=1 (Gerilim)")
+                                # RAM Mapping logları kaldırıldı
                             elif dtype == 11:  # SOH -> 4
                                 battery_data_ram[arm_value][k_value][4] = {
                                     'value': salt_data,
@@ -955,9 +932,7 @@ def db_worker():
                                 'value': soc_value,
                                 'timestamp': get_period_timestamp()
                             }
-                        print(f"RAM'e kaydedildi: Arm={arm_value}, k={k_value}, dtype={dtype}, value={salt_data}")
-                        if k_value != 2 and dtype == 10:
-                            print(f"RAM'e kaydedildi: Arm={arm_value}, k={k_value}, dtype=2 (SOC), value={soc_value}")
+                        # RAM kayıt logları kaldırıldı
                     
                     # Status güncelle (sadece missing data durumunda)
                     # Normal veri geldiğinde status güncelleme yapmıyoruz
@@ -967,7 +942,6 @@ def db_worker():
                 
                 elif dtype == 11:  # SOH veya Nem
                     if k_value == 2:  # Nem verisi
-                        print(f"*** VERİ ALGILANDI - Arm: {arm_value}, Data: {salt_data}% ***")
                         record = {
                             "Arm": arm_value,
                             "k": k_value,
@@ -988,8 +962,7 @@ def db_worker():
                                 'value': salt_data,
                                 'timestamp': get_period_timestamp()
                             }
-                            print(f"📊 RAM Mapping: Arm k={k_value}, UART dtype={dtype} -> RAM dtype=2 (Nem)")
-                            print(f"💧 NEM VERİSİ ALGILANDI - Kol: {arm_value}, Nem: {salt_data}%")
+                            # RAM Mapping logları kaldırıldı
                     else:  # SOH verisi
                         if int(data[4], 16) == 1:  # Eğer data[4] 1 ise SOH 100'dür
                             soh_value = 100.0
@@ -1077,8 +1050,7 @@ def db_worker():
                             'value': salt_data,
                             'timestamp': get_period_timestamp()
                         }
-                        print(f"📊 RAM Mapping: UART dtype={dtype} -> RAM dtype=3 (RIMT)")
-                        print(f"🌡️ RIMT VERİSİ ALGILANDI - Kol: {arm_value}, RIMT: {salt_data}°C")
+                        # RAM Mapping logları kaldırıldı
                     
                     # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
@@ -1340,13 +1312,9 @@ def db_worker():
                     arm_value = last_record.get('Arm')
                     k_value = last_record.get('k')
                     if arm_value and k_value:
-                        print(f"🔍 NORMAL VERİ PERİYOT KONTROL: Kol {arm_value}, k={k_value}")
-                        
-                        
                         # Normal periyot bitiş kontrolü
                         last_dtype = last_record.get('Dtype')
                         if is_period_complete(arm_value, k_value, dtype=last_dtype):
-                            print(f"🔄 PERİYOT BİTTİ - Son normal veri: Kol {arm_value}, Batarya {k_value}, dtype={last_dtype}")
                             # Periyot bitti, alarmları işle
                             alarm_processor.process_period_end()
                             
@@ -1354,18 +1322,11 @@ def db_worker():
                             if read_all_mode:
                                 read_all_mode = False
                                 read_all_arm = None
-                                print(f"🛑 TÜMÜNÜ OKU MODU KAPATILDI - Normal periyot akışına geçildi")
-                                
-                                # Veri alma modunu da durdur
-                                print(f"🔧 VERİ ALMA MODU DURDURULUYOR - Tümünü Oku periyot bitti")
                                 set_data_retrieval_mode(False, None)
-                                print(f"🛑 Veri alma modu durduruldu - Yeni durum: {is_data_retrieval_mode()}")
                             
                             # Veri alma modu aktifse durdur
                             if is_data_retrieval_mode():
-                                print(f"🔧 VERİ ALMA MODU DURDURULUYOR - Periyot bitti")
                                 set_data_retrieval_mode(False, None)
-                                print(f"🛑 Veri alma modu durduruldu - Yeni durum: {is_data_retrieval_mode()}")
                             
                             # Periyot bitti, yeni periyot k=2 (akım verisi) geldiğinde başlayacak
                             reset_period()
@@ -1374,7 +1335,7 @@ def db_worker():
                     db.insert_battery_data_batch(batch)
                 batch = []
                 last_insert = time.time()
-                print(f"✅ {batch_size} veri batch olarak eklendi")
+                # Batch kayıt logları kaldırıldı
 
             data_queue.task_done()
             
@@ -1390,20 +1351,15 @@ def db_worker():
                     arm_value = last_record.get('Arm')
                     k_value = last_record.get('k')
                     if arm_value and k_value:
-                        print(f"🔍 NORMAL VERİ PERİYOT KONTROL (Empty): Kol {arm_value}, k={k_value}")
-                        
                         # "Tümünü Oku" periyot bitiş kontrolü - sadece veri alma modu aktifken
                         if is_data_retrieval_mode():
                             config = get_data_retrieval_config()
                             if config and config.get('address') == 0:  # Tümünü Oku
                                 last_dtype = last_record.get('Dtype')
                                 if last_dtype and is_data_retrieval_period_complete(arm_value, k_value, last_dtype):
-                                    print(f"🔄 TÜMÜNÜ OKU PERİYOTU BİTTİ (Empty) - Kol {arm_value}, k={k_value}, dtype={last_dtype}")
                                     set_data_retrieval_mode(False, None)
-                                    print("🛑 Tümünü Oku modu durduruldu - Normal periyot akışına geçildi")
                                     # Normal periyot bitiş kontrolüne geç
                                     if is_period_complete(arm_value, k_value):
-                                        print(f"🔄 NORMAL PERİYOT BİTTİ (Empty) - Kol {arm_value}, Batarya {k_value}")
                                         alarm_processor.process_period_end()
                                         reset_period()
                                     return  # "Tümünü Oku" bitti, normal akışa geç
@@ -1411,28 +1367,23 @@ def db_worker():
                         # Normal periyot bitiş kontrolü
                         last_dtype = last_record.get('Dtype')
                         period_complete = is_period_complete(arm_value, k_value, dtype=last_dtype)
-                        print(f"🔍 PERİYOT TAMAMLANDI MI: {period_complete}")
                         if period_complete:
-                            print(f"🔄 PERİYOT BİTTİ - Son normal veri (Empty): Kol {arm_value}, Batarya {k_value}")
                             # Periyot bitti, alarmları işle
                             alarm_processor.process_period_end()
                             
                             # Veri alma modu aktifse durdur
                             if is_data_retrieval_mode():
-                                print(f"🔧 VERİ ALMA MODU DURDURULUYOR - Periyot bitti")
                                 set_data_retrieval_mode(False, None)
-                                print(f"🛑 Veri alma modu durduruldu - Yeni durum: {is_data_retrieval_mode()}")
                             
                             # Periyot bitti, yeni periyot k=2 (akım verisi) geldiğinde başlayacak
                             reset_period()
-                        else:
-                            print(f"⏳ PERİYOT DEVAM EDİYOR - Beklenen son k: {get_last_battery_info()[1]}")
+                        # Periyot devam ediyor logları kaldırıldı
                 
                 with db_lock:
                     db.insert_battery_data_batch(batch)
                 batch = []
                 last_insert = time.time()
-                print(f"✅ {batch_size} veri batch olarak eklendi")
+                # Batch kayıt logları kaldırıldı
         except Exception as e:
             print(f"\ndb_worker'da beklenmeyen hata: {e}")
             continue
