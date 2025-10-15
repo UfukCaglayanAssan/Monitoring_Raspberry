@@ -214,6 +214,10 @@ if (typeof window.DataRetrieval === 'undefined') {
         const address = document.getElementById('dataAddressSelect').value;
         const value = document.getElementById('dataValueSelect').value;
 
+        // Komut gönderilmeden ÖNCE timestamp al
+        const commandTimestamp = Date.now();
+        console.log(`🕐 Komut gönderilmeden önce timestamp: ${new Date(commandTimestamp).toLocaleString()}`);
+
         this.showLoading('Veri alma komutu gönderiliyor...');
 
         try {
@@ -233,8 +237,6 @@ if (typeof window.DataRetrieval === 'undefined') {
                 const valueText = this.getDataTypeText(value);
                 // Toast bildirimi kaldırıldı
                 
-                // Komut gönderildiği zamanı kaydet
-                const commandTimestamp = Date.now();
                 console.log(`🕐 Komut gönderildi: ${new Date(commandTimestamp).toLocaleString()}`);
                 
                 // Tekil veri alma - sadece 3 saniye bekle
@@ -255,7 +257,7 @@ if (typeof window.DataRetrieval === 'undefined') {
     }
 
     async waitForSingleData(arm, address, value, valueText, commandTimestamp) {
-        const maxAttempts = 3; // 3 deneme (3 saniye + 3 saniye + 3 saniye)
+        const maxAttempts = 2; // 2 deneme (3 saniye + 3 saniye)
         let attempt = 0;
         
         while (attempt < maxAttempts) {
