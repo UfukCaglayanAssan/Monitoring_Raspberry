@@ -334,10 +334,10 @@ if (typeof window.DataRetrieval === 'undefined') {
                     console.log(`🔍 Komut sonrası bataryalar:`, recentBatteries.map(b => ({arm: b.arm, address: b.batteryAddress, timestamp: b.timestamp})));
                     
                     // İlgili kol ve adrese sahip bataryayı ara
-                    // Gelen k değerine göre filtreleme yap (gönderilen adres + 1)
+                    // Gelen k değerine göre filtreleme yap (gönderilen adres + 2)
                     const targetBattery = recentBatteries.find(battery => 
                         battery.arm == arm && 
-                        battery.batteryAddress === (targetAddress + 1) // 2+1=3
+                        battery.batteryAddress === (targetAddress + 2) // 2+2=4
                     );
                     
                     if (targetBattery) {
