@@ -339,7 +339,7 @@ if (typeof window.BatteryLogsPage === 'undefined') {
                     for (let i = 0; i < batteryCount; i++) {
                         const option = document.createElement('option');
                         option.value = i;
-                        option.textContent = `Batarya ${i}`;
+                        option.textContent = `Batarya ${i + 1}`;
                         batteryFilter.appendChild(option);
                     }
                     batteryFilter.disabled = false;
