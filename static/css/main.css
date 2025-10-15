@@ -777,6 +777,15 @@ body {
     border-radius: 8px !important;
 }
 
+/* Pasif balans aktifken batarya ikonu rengi */
+.battery-card.passive-balance .battery-icon {
+    background: #1e40af !important; /* blue-800 - daha koyu mavi */
+}
+
+.battery-card.passive-balance .battery-icon i {
+    color: #fbbf24 !important; /* yellow-400 - altın sarısı */
+}
+
 @keyframes pulse-red {
     0% { box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3); }
     50% { box-shadow: 0 6px 20px rgba(220, 38, 38, 0.5); }
