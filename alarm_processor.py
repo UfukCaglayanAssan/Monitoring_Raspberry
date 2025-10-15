@@ -42,7 +42,7 @@ class AlarmProcessor:
         """Periyot bitiminde tüm bekleyen alarmları işle"""
         with self.lock:
             if not self.pending_alarms and not self.pending_resolves:
-                print("ℹ️ İşlenecek alarm/düzeltme yok")
+                # İşlenecek alarm/düzeltme yok logları kaldırıldı
                 return
             
             print(f"🔄 Periyot bitimi - {len(self.pending_alarms)} alarm, {len(self.pending_resolves)} düzeltme işleniyor...")

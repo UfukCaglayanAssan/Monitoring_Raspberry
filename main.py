@@ -101,8 +101,7 @@ def get_period_timestamp():
         current_period_timestamp = int(current_time * 1000)
         period_active = True
         last_data_received = current_time
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"🔄 PERİYOT BAŞLADI: {timestamp} - Timestamp: {current_period_timestamp}")
+        # Periyot başlama logları kaldırıldı
         
         # Tümünü Oku işlemi periyot bekliyorsa, şimdi aktif et
         if data_retrieval_waiting_for_period:
@@ -1245,7 +1244,7 @@ def db_worker():
                         updated_at = int(time.time() * 1000)
                         global program_start_time
                         if updated_at > program_start_time:
-                            slave_value = raw_bytes[1]
+                            slave_value = raw_bytes[1]  # Gerçek slave değeri (k_value)
                             arm_value = raw_bytes[3]
                             status_value = raw_bytes[4]
                             balance_timestamp = updated_at
