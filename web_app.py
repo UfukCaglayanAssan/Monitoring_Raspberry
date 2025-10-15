@@ -1751,8 +1751,8 @@ def send_dataget():
         if arm_value is None or slave_address is None or slave_command is None:
             return jsonify({'success': False, 'message': 'Eksik parametreler'}), 400
         
-        # Veri alma paketini hazırla: 3 byte (arm, slave, command)
-        dataget_packet = [arm_value, slave_address, slave_command]
+        # Veri alma paketini hazırla: 3 byte (arm, slave+1, command)
+        dataget_packet = [arm_value, slave_address + 1, slave_command]
         
         # pending_config.json dosyasına komutu yaz
         config_data = {
