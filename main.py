@@ -245,11 +245,8 @@ def is_data_retrieval_period_complete(arm_value, k_value, dtype):
             selected_arm = config['arm']
             last_battery = arm_slave_counts.get(selected_arm, 0)
             
-            print(f"🔍 VERİ ALMA PERİYOT KONTROL: Seçilen kol {selected_arm}, k={k_value}, dtype={dtype}, Son batarya: {last_battery}")
-            
             # Seçilen koldaki son batarya geldi mi?
             if k_value == last_battery:
-                print(f"✅ VERİ ALMA PERİYOTU TAMAMLANDI: Kol {selected_arm}, Son batarya {last_battery}, dtype={dtype}")
                 return True
             
             return False
@@ -348,8 +345,7 @@ def get_last_battery_info():
                 # k değerleri 3'ten başlar, son k değeri = armslavecount + 2
                 last_battery = db_arm_slave_counts[arm] + 2
         
-        print(f"📊 Veritabanından okunan arm_slave_counts: {db_arm_slave_counts}")
-        print(f"📊 Hesaplanan last_arm: {last_arm}, last_battery: {last_battery}")
+        # Veritabanı okuma logları kaldırıldı
         
         return last_arm, last_battery
         
@@ -364,15 +360,11 @@ def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False
     if read_all_mode and read_all_arm is not None:
         # "Tümünü Oku" modu aktifse - sadece o koldaki son bataryanın dtype=14'ine bak
         last_arm, last_battery = get_last_battery_info()
-        print(f"🔍 TÜMÜNÜ OKU PERİYOT KONTROL: Kol {read_all_arm}, k={k_value}, dtype={dtype}, Son batarya: {last_battery}")
-        
         # Sadece o koldaki son batarya geldi mi? (dtype kontrolü sadece 11 byte veri işlenirken yapılır)
         if arm_value == read_all_arm and k_value == last_battery:
             if dtype is not None and dtype != 14:
                 # 11 byte veri işlenirken dtype=14 değilse devam et
-                print(f"⏳ TÜMÜNÜ OKU PERİYOTU DEVAM EDİYOR: dtype={dtype} (14 bekleniyor)")
                 return False
-            print(f"✅ TÜMÜNÜ OKU PERİYOTU TAMAMLANDI: Kol {read_all_arm}, Son batarya {last_battery}, dtype={dtype}")
             return True
         return False
     else:
@@ -380,25 +372,18 @@ def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False
         last_arm, last_battery = get_last_battery_info()
     
     if not last_arm or not last_battery:
-        print(f"🔍 PERİYOT KONTROL: last_arm={last_arm}, last_battery={last_battery} - Kontrol edilemiyor")
         return False
-    
-    # Debug: Periyot kontrol bilgilerini yazdır
-    print(f"🔍 PERİYOT KONTROL: Kol {arm_value}, k={k_value}, Beklenen son k: {last_battery}")
     
     # En son koldaki en son batarya verisi geldi mi?
     if arm_value == last_arm and k_value == last_battery:
-        print(f"✅ PERİYOT TAMAMLANDI: En son batarya verisi geldi - Kol {arm_value}, Batarya {k_value}")
         return True
     
     # Missing data geldi mi?
     if is_missing_data:
-        print(f"✅ PERİYOT TAMAMLANDI: Missing data geldi - Kol {arm_value}, Batarya {k_value}")
         return True
     
     # Alarm geldi mi? (son batarya alarmından sonra periyot biter)
     if is_alarm and arm_value == last_arm and k_value == last_battery:
-        print(f"✅ PERİYOT TAMAMLANDI: Son batarya alarmı geldi - Kol {arm_value}, Batarya {k_value}")
         return True
     
     # Pasif balans kontrolü - son batarya pasif balansta mı?
@@ -410,12 +395,10 @@ def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False
                 # Aktif pasif balans durumunu kontrol et (status=0 ve slave=last_battery)
                 for balance in balance_data:
                     if balance['slave'] == last_battery and balance['status'] == 0:
-                        print(f"✅ PERİYOT TAMAMLANDI: Son batarya pasif balansta - Kol {arm_value}, Batarya {last_battery}")
                         return True
         except Exception as e:
             print(f"❌ Pasif balans kontrol hatası: {e}")
     
-    print(f"⏳ PERİYOT DEVAM EDİYOR: Kol {arm_value}, k={k_value} - Beklenen: Kol {last_arm}, k={last_battery}")
     return False
 
 def send_reset_system_signal():
