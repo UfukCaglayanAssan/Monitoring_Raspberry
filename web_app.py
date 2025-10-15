@@ -1963,6 +1963,7 @@ if __name__ == '__main__':
         ip_manager.initialize_default_ip()
     except Exception as e:
         # IP ataması kontrol hatası
+        pass
     
     # Port parametresini al (varsayılan: 80)
     port = 80
@@ -1971,6 +1972,7 @@ if __name__ == '__main__':
             port = int(sys.argv[1])
         except ValueError:
             # Geçersiz port numarası, varsayılan port 80 kullanılıyor
+            pass
     
     try:
         app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
@@ -1980,3 +1982,4 @@ if __name__ == '__main__':
             pass
         else:
             # Hata oluştu
+            pass
