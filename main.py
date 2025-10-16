@@ -1004,6 +1004,18 @@ def db_worker():
                             battery_data_ram[arm_value] = {}
                         if k_value not in battery_data_ram[arm_value]:
                             battery_data_ram[arm_value][k_value] = {}
+                        # NTC1 -> RAM[5]
+                        battery_data_ram[arm_value][k_value][5] = {
+                            'value': salt_data,
+                            'timestamp': get_period_timestamp()
+                        }
+                    
+                    # RAM'e yaz (Modbus/SNMP için)
+                    with data_lock:
+                        if arm_value not in battery_data_ram:
+                            battery_data_ram[arm_value] = {}
+                        if k_value not in battery_data_ram[arm_value]:
+                            battery_data_ram[arm_value][k_value] = {}
                         battery_data_ram[arm_value][k_value][dtype] = {
                             'value': salt_data,
                             'timestamp': get_period_timestamp()
@@ -1051,6 +1063,18 @@ def db_worker():
                             battery_data_ram[arm_value] = {}
                         if k_value not in battery_data_ram[arm_value]:
                             battery_data_ram[arm_value][k_value] = {}
+                        # NTC2 -> RAM[6]
+                        battery_data_ram[arm_value][k_value][6] = {
+                            'value': salt_data,
+                            'timestamp': get_period_timestamp()
+                        }
+                    
+                    # RAM'e yaz (Modbus/SNMP için)
+                    with data_lock:
+                        if arm_value not in battery_data_ram:
+                            battery_data_ram[arm_value] = {}
+                        if k_value not in battery_data_ram[arm_value]:
+                            battery_data_ram[arm_value][k_value] = {}
                         battery_data_ram[arm_value][k_value][dtype] = {
                             'value': salt_data,
                             'timestamp': get_period_timestamp()
@@ -1067,6 +1091,18 @@ def db_worker():
                         "timestamp": get_period_timestamp()
                     }
                     batch.append(record)
+                    
+                    # RAM'e yaz (Modbus/SNMP için)
+                    with data_lock:
+                        if arm_value not in battery_data_ram:
+                            battery_data_ram[arm_value] = {}
+                        if k_value not in battery_data_ram[arm_value]:
+                            battery_data_ram[arm_value][k_value] = {}
+                        # NTC3 -> RAM[7]
+                        battery_data_ram[arm_value][k_value][7] = {
+                            'value': salt_data,
+                            'timestamp': get_period_timestamp()
+                        }
                     
                     # RAM'e yaz (Modbus/SNMP için)
                     with data_lock:
