@@ -1900,19 +1900,19 @@ def get_dynamic_data_by_index(start_index, quantity):
                         if current_index >= start_index and len(result) < quantity:
                             print(f"DEBUG: BATARYA IF BLOĞU GİRİLDİ!")
                             if data_type == 5:  # Gerilim
-                                value = arm_data[k_value].get(10, {}).get('value', 0)  # dtype=10 (Gerilim)
+                                value = arm_data[k_value].get(1, {}).get('value', 0)  # RAM dtype=1 (Gerilim)
                             elif data_type == 6:  # SOC
-                                value = arm_data[k_value].get(11, {}).get('value', 0)  # dtype=11 (SOC)
+                                value = arm_data[k_value].get(2, {}).get('value', 0)  # RAM dtype=2 (SOC)
                             elif data_type == 7:  # RIMT
-                                value = arm_data[k_value].get(12, {}).get('value', 0)  # dtype=12 (RIMT)
+                                value = arm_data[k_value].get(3, {}).get('value', 0)  # RAM dtype=3 (RIMT)
                             elif data_type == 8:  # SOH
-                                value = arm_data[k_value].get(126, {}).get('value', 0)  # dtype=126 (SOH)
+                                value = arm_data[k_value].get(4, {}).get('value', 0)  # RAM dtype=4 (SOH)
                             elif data_type == 9:  # NTC1
-                                value = arm_data[k_value].get(13, {}).get('value', 0)  # dtype=13 (NTC1)
+                                value = arm_data[k_value].get(5, {}).get('value', 0)  # RAM dtype=5 (NTC1)
                             elif data_type == 10:  # NTC2
-                                value = arm_data[k_value].get(14, {}).get('value', 0)  # dtype=14 (NTC2)
+                                value = arm_data[k_value].get(6, {}).get('value', 0)  # RAM dtype=6 (NTC2)
                             elif data_type == 11:  # NTC3
-                                value = arm_data[k_value].get(15, {}).get('value', 0)  # dtype=15 (NTC3)
+                                value = arm_data[k_value].get(7, {}).get('value', 0)  # RAM dtype=7 (NTC3)
                             else:
                                 value = 0
                             result.append(float(value) if value else 0.0)
@@ -2459,19 +2459,19 @@ def get_dynamic_data_by_index(start_index, quantity):
                         if current_index >= start_index and len(result) < quantity:
                             print(f"DEBUG: BATARYA IF BLOĞU GİRİLDİ!")
                             if data_type == 5:  # Gerilim
-                                value = arm_data[k_value].get(10, {}).get('value', 0)  # dtype=10 (Gerilim)
+                                value = arm_data[k_value].get(1, {}).get('value', 0)  # RAM dtype=1 (Gerilim)
                             elif data_type == 6:  # SOC
-                                value = arm_data[k_value].get(11, {}).get('value', 0)  # dtype=11 (SOC)
+                                value = arm_data[k_value].get(2, {}).get('value', 0)  # RAM dtype=2 (SOC)
                             elif data_type == 7:  # RIMT
-                                value = arm_data[k_value].get(12, {}).get('value', 0)  # dtype=12 (RIMT)
+                                value = arm_data[k_value].get(3, {}).get('value', 0)  # RAM dtype=3 (RIMT)
                             elif data_type == 8:  # SOH
-                                value = arm_data[k_value].get(126, {}).get('value', 0)  # dtype=126 (SOH)
+                                value = arm_data[k_value].get(4, {}).get('value', 0)  # RAM dtype=4 (SOH)
                             elif data_type == 9:  # NTC1
-                                value = arm_data[k_value].get(13, {}).get('value', 0)  # dtype=13 (NTC1)
+                                value = arm_data[k_value].get(5, {}).get('value', 0)  # RAM dtype=5 (NTC1)
                             elif data_type == 10:  # NTC2
-                                value = arm_data[k_value].get(14, {}).get('value', 0)  # dtype=14 (NTC2)
+                                value = arm_data[k_value].get(6, {}).get('value', 0)  # RAM dtype=6 (NTC2)
                             elif data_type == 11:  # NTC3
-                                value = arm_data[k_value].get(15, {}).get('value', 0)  # dtype=15 (NTC3)
+                                value = arm_data[k_value].get(7, {}).get('value', 0)  # RAM dtype=7 (NTC3)
                             else:
                                 value = 0
                             result.append(float(value) if value else 0.0)

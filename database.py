@@ -1955,9 +1955,9 @@ class BatteryDatabase:
                 # Pasif balans kaydını kontrol et
                 cursor.execute('''
                     SELECT slave, status FROM passive_balance 
-                    WHERE arm = 0
+                    WHERE arm = ?
                     ORDER BY timestamp DESC LIMIT 1
-                ''')
+                ''', (arm,))
                 
                 result = cursor.fetchone()
                 if result:
