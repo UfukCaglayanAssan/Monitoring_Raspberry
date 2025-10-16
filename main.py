@@ -847,10 +847,44 @@ def db_worker():
                                 }
                                 batch.append(nem_record)
                                 
+                                # RAM'e kaydet (Modbus/SNMP için)
                                 battery_data_ram[arm_value][k_value][2] = {
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
                                 }
+                            elif dtype == 12:  # MODÜL SICAKLIĞI -> 3
+                                # Veritabanına kaydet
+                                module_temp_record = {
+                                    "Arm": arm_value,
+                                    "k": k_value,
+                                    "Dtype": 12,
+                                    "data": salt_data,
+                                    "timestamp": get_period_timestamp()
+                                }
+                                batch.append(module_temp_record)
+                                
+                                # RAM'e kaydet (Modbus/SNMP için)
+                                battery_data_ram[arm_value][k_value][3] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                            elif dtype == 13:  # ORTAM SICAKLIĞI -> 4
+                                # Veritabanına kaydet
+                                ambient_temp_record = {
+                                    "Arm": arm_value,
+                                    "k": k_value,
+                                    "Dtype": 13,
+                                    "data": salt_data,
+                                    "timestamp": get_period_timestamp()
+                                }
+                                batch.append(ambient_temp_record)
+                                
+                                # RAM'e kaydet (Modbus/SNMP için)
+                                battery_data_ram[arm_value][k_value][4] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                            # dtype 15 kaldırıldı - dtype 12 ve 13 kullanılıyor
                                 # RAM Mapping logları kaldırıldı
                             # dtype 12 (NTC2) ayrı bölümde işleniyor
                                 # RAM Mapping logları kaldırıldı
