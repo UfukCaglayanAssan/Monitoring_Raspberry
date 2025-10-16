@@ -115,13 +115,16 @@ def api_login():
             session['user_email'] = user['email']
             session['user_role'] = user['role']
             
+            print(f"✅ Başarılı giriş: {email}")
             # Başarılı giriş - ana sayfaya yönlendir
             return redirect(url_for('index'))
         else:
             # Hatalı giriş - login sayfasına geri dön
+            print(f"❌ Giriş hatası: {email} - Kullanıcı bulunamadı veya şifre hatalı")
             return redirect(url_for('login'))
             
     except Exception as e:
+        print(f"❌ Giriş exception hatası: {email} - {str(e)}")
         return jsonify({'success': False, 'message': f'Giriş hatası: {str(e)}'}), 500
 
 @app.route('/api/logout', methods=['POST'])

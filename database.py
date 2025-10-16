@@ -1344,6 +1344,7 @@ class BatteryDatabase:
     def authenticate_user_by_email(self, email, password):
         """Kullanıcı doğrulama (email ile) - bytescript ile"""
         try:
+            print(f"🔍 Kullanıcı doğrulama başlatıldı: {email}")
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute('''
@@ -1353,14 +1354,25 @@ class BatteryDatabase:
                 
                 user = cursor.fetchone()
                 if user:
-                    import bcrypt
-                    if bcrypt.checkpw(password.encode('utf-8'), user[3].encode('utf-8')):
-                        return {
-                            'id': user[0],
-                            'username': user[1],
-                            'email': user[2],
-                            'role': user[4]
-                        }
+                    print(f"👤 Kullanıcı bulundu: {user[1]} ({user[2]})")
+                    try:
+                        import bcrypt
+                        if bcrypt.checkpw(password.encode('utf-8'), user[3].encode('utf-8')):
+                            print(f"✅ Şifre doğru: {email}")
+                            return {
+                                'id': user[0],
+                                'username': user[1],
+                                'email': user[2],
+                                'role': user[4]
+                            }
+                        else:
+                            print(f"❌ Şifre hatalı: {email}")
+                    except ImportError:
+                        print(f"❌ bcrypt kütüphanesi bulunamadı: {email}")
+                    except Exception as bcrypt_error:
+                        print(f"❌ bcrypt hatası: {email} - {bcrypt_error}")
+                else:
+                    print(f"❌ Kullanıcı bulunamadı: {email}")
                 return None
         except Exception as e:
             print(f"❌ Email ile kullanıcı doğrulama hatası: {e}")
