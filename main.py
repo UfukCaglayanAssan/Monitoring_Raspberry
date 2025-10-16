@@ -1094,18 +1094,23 @@ def db_worker():
                         if k_value not in battery_data_ram[arm_value]:
                             battery_data_ram[arm_value][k_value] = {}
                         
-                        # Dtype mapping: 12=NTC1→5, 13=NTC2→6, 14=NTC3→7, 126=SOC→2
-                        if dtype == 12:  # NTC1 -> 5
+                        # Dtype mapping: 12=RIMT→3, 13=NTC1→5, 14=NTC2→6, 15=NTC3→7, 126=SOC→2
+                        if dtype == 12:  # RIMT -> 3
+                            battery_data_ram[arm_value][k_value][3] = {
+                                'value': salt_data,
+                                'timestamp': get_period_timestamp()
+                            }
+                        elif dtype == 13:  # NTC1 -> 5
                             battery_data_ram[arm_value][k_value][5] = {
                                 'value': salt_data,
                                 'timestamp': get_period_timestamp()
                             }
-                        elif dtype == 13:  # NTC2 -> 6
+                        elif dtype == 14:  # NTC2 -> 6
                             battery_data_ram[arm_value][k_value][6] = {
                                 'value': salt_data,
                                 'timestamp': get_period_timestamp()
                             }
-                        elif dtype == 14:  # NTC3 -> 7
+                        elif dtype == 15:  # NTC3 -> 7
                             battery_data_ram[arm_value][k_value][7] = {
                                 'value': salt_data,
                                 'timestamp': get_period_timestamp()
@@ -1907,7 +1912,13 @@ def get_dynamic_data_by_index(start_index, quantity):
         # Temiz log - sadece veri özeti
         print(f"DEBUG: Kol {target_arm} - {len(result)} register döndürüldü")
         if result and len(result) >= 8:
-            print(f"DEBUG: Veriler: Kol[Akım:{result[0]}, Nem:{result[1]}, Sıcaklık:{result[2]}] Batarya1[Gerilim:{result[4]}, SOC:{result[5]}, RIMT:{result[6]}, SOH:{result[7]}]")
+            print(f"DEBUG: Kol[Akım:{result[0]}, Nem:{result[1]}, Sıcaklık:{result[2]}]")
+            # Tüm bataryaları göster
+            battery_count = arm_slave_counts_ram.get(target_arm, 0)
+            for i in range(min(battery_count, 3)):  # İlk 3 bataryayı göster
+                start_idx = 4 + (i * 7)  # Her batarya 7 register
+                if start_idx + 6 < len(result):
+                    print(f"DEBUG: Batarya{i+1}[Gerilim:{result[start_idx]}, SOC:{result[start_idx+1]}, RIMT:{result[start_idx+2]}, SOH:{result[start_idx+3]}, NTC1:{result[start_idx+4]}, NTC2:{result[start_idx+5]}, NTC3:{result[start_idx+6]}]")
         return result
 
 def get_alarm_data_by_index(start_index, quantity):
@@ -2440,7 +2451,13 @@ def get_dynamic_data_by_index(start_index, quantity):
         # Temiz log - sadece veri özeti
         print(f"DEBUG: Kol {target_arm} - {len(result)} register döndürüldü")
         if result and len(result) >= 8:
-            print(f"DEBUG: Veriler: Kol[Akım:{result[0]}, Nem:{result[1]}, Sıcaklık:{result[2]}] Batarya1[Gerilim:{result[4]}, SOC:{result[5]}, RIMT:{result[6]}, SOH:{result[7]}]")
+            print(f"DEBUG: Kol[Akım:{result[0]}, Nem:{result[1]}, Sıcaklık:{result[2]}]")
+            # Tüm bataryaları göster
+            battery_count = arm_slave_counts_ram.get(target_arm, 0)
+            for i in range(min(battery_count, 3)):  # İlk 3 bataryayı göster
+                start_idx = 4 + (i * 7)  # Her batarya 7 register
+                if start_idx + 6 < len(result):
+                    print(f"DEBUG: Batarya{i+1}[Gerilim:{result[start_idx]}, SOC:{result[start_idx+1]}, RIMT:{result[start_idx+2]}, SOH:{result[start_idx+3]}, NTC1:{result[start_idx+4]}, NTC2:{result[start_idx+5]}, NTC3:{result[start_idx+6]}]")
         return result
 
 def get_alarm_data_by_index(start_address, quantity):
