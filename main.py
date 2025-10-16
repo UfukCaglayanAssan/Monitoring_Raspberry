@@ -852,21 +852,7 @@ def db_worker():
                                     'timestamp': get_period_timestamp()
                                 }
                                 # RAM Mapping logları kaldırıldı
-                            elif dtype == 12:  # Sıcaklık -> 3
-                                # Veritabanına kaydet
-                                sicaklik_record = {
-                                    "Arm": arm_value,
-                                    "k": k_value,
-                                    "Dtype": 12,
-                                    "data": salt_data,
-                                    "timestamp": get_period_timestamp()
-                                }
-                                batch.append(sicaklik_record)
-                                
-                                battery_data_ram[arm_value][k_value][3] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
+                            # dtype 12 (NTC2) ayrı bölümde işleniyor
                                 # RAM Mapping logları kaldırıldı
                         else:
                             # Batarya verisi için normal mapping: 1=Gerilim, 2=SOC, 3=RIMT, 4=SOH, 5=NTC1, 6=NTC2, 7=NTC3
@@ -881,11 +867,7 @@ def db_worker():
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
                                 }
-                            elif dtype == 12:  # RIMT -> 3
-                                battery_data_ram[arm_value][k_value][3] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
+                            # dtype 12 (NTC2) ayrı bölümde işleniyor
                             elif dtype == 126:  # SOC -> 2
                                 battery_data_ram[arm_value][k_value][2] = {
                                     'value': salt_data,
@@ -1019,7 +1001,7 @@ def db_worker():
                     
                     # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
-                elif dtype == 12:  # RIMT/Sıcaklık
+                elif dtype == 12:  # NTC2
                     record = {
                         "Arm": arm_value,
                         "k": k_value,
@@ -1035,11 +1017,11 @@ def db_worker():
                             battery_data_ram[arm_value] = {}
                         if k_value not in battery_data_ram[arm_value]:
                             battery_data_ram[arm_value][k_value] = {}
-                        battery_data_ram[arm_value][k_value][3] = {  # RIMT -> 3
+                        battery_data_ram[arm_value][k_value][6] = {  # NTC2 -> 6
                             'value': salt_data,
                             'timestamp': get_period_timestamp()
                         }
-                        # RAM Mapping logları kaldırıldı
+                        print(f"✓ NTC2 RAM'e kaydedildi: Kol{arm_value} Batarya{k_value-2} = {salt_data}°C")
                     
                     # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
@@ -1108,12 +1090,7 @@ def db_worker():
                         
                         # Dtype mapping: 12=NTC2→6, 13=NTC1→5, 14=NTC3→7, 126=SOC→2
                         print(f"🔍 DEBUG: dtype={dtype}, arm={arm_value}, k={k_value}, data={salt_data}")
-                        if dtype == 12:  # NTC2 -> 6
-                            battery_data_ram[arm_value][k_value][6] = {
-                                'value': salt_data,
-                                'timestamp': get_period_timestamp()
-                            }
-                            print(f"✓ NTC2 RAM'e kaydedildi: Kol{arm_value} Batarya{k_value-2} = {salt_data}°C")
+                        # dtype 12 (NTC2) ayrı bölümde işleniyor
                         elif dtype == 13:  # NTC1 -> 5
                             battery_data_ram[arm_value][k_value][5] = {
                                 'value': salt_data,
