@@ -1106,18 +1106,20 @@ def db_worker():
                         if k_value not in battery_data_ram[arm_value]:
                             battery_data_ram[arm_value][k_value] = {}
                         
-                        # Dtype mapping: 12=NTC1→5, 13=NTC2→6, 14=NTC3→7, 126=SOC→2
-                        if dtype == 12:  # NTC1 -> 5
-                            battery_data_ram[arm_value][k_value][5] = {
-                                'value': salt_data,
-                                'timestamp': get_period_timestamp()
-                            }
-                        elif dtype == 13:  # NTC2 -> 6
+                        # Dtype mapping: 12=NTC2→6, 13=NTC1→5, 14=NTC3→7, 126=SOC→2
+                        print(f"🔍 DEBUG: dtype={dtype}, arm={arm_value}, k={k_value}, data={salt_data}")
+                        if dtype == 12:  # NTC2 -> 6
                             battery_data_ram[arm_value][k_value][6] = {
                                 'value': salt_data,
                                 'timestamp': get_period_timestamp()
                             }
                             print(f"✓ NTC2 RAM'e kaydedildi: Kol{arm_value} Batarya{k_value-2} = {salt_data}°C")
+                        elif dtype == 13:  # NTC1 -> 5
+                            battery_data_ram[arm_value][k_value][5] = {
+                                'value': salt_data,
+                                'timestamp': get_period_timestamp()
+                            }
+                            print(f"✓ NTC1 RAM'e kaydedildi: Kol{arm_value} Batarya{k_value-2} = {salt_data}°C")
                         elif dtype == 14:  # NTC3 -> 7
                             battery_data_ram[arm_value][k_value][7] = {
                                 'value': salt_data,
