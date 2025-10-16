@@ -1837,20 +1837,12 @@ def get_dynamic_data_by_index(start_index, quantity):
             
             # Kol verileri (akım, nem, sıcaklık, sıcaklık2)
             for data_type in range(1, 5):
-                print(f"DEBUG: current_index={current_index}, start_index={start_index}, len(result)={len(result)}, quantity={quantity}")
                 if current_index >= start_index and len(result) < quantity:
-                    print(f"DEBUG: IF BLOĞU GİRİLDİ!")
-                    print(f"DEBUG: get_battery_data_ram({arm}) çağrılıyor...")
                     try:
-                        # data_lock zaten alınmış, direkt erişim
                         arm_data = dict(battery_data_ram.get(arm, {}))
-                        print(f"DEBUG: arm_data = {arm_data}")
-                        print(f"DEBUG: arm_data type = {type(arm_data)}")
                     except Exception as e:
-                        print(f"DEBUG: HATA! arm_data okuma hatası: {e}")
                         arm_data = None
                     if arm_data and 2 in arm_data:  # k=2 (kol verisi)
-                        print(f"DEBUG: k=2 verisi bulundu!")
                         if data_type == 1:  # Akım
                             value = arm_data[2].get(1, {}).get('value', 0)  # RAM dtype=1 (Akım)
                         elif data_type == 2:  # Nem
@@ -1862,15 +1854,10 @@ def get_dynamic_data_by_index(start_index, quantity):
                         else:
                             value = 0
                         result.append(float(value) if value else 0.0)
-                        print(f"DEBUG: current_index={current_index}, data_type={data_type}, value={value}")
                     else:
-                        print(f"DEBUG: k=2 verisi bulunamadı!")
                         result.append(0.0)
-                        print(f"DEBUG: current_index={current_index}, data_type={data_type}, value=0.0 (veri yok)")
                 else:
-                    print(f"DEBUG: IF BLOĞU GİRİLMEDİ!")
                     result.append(0.0)
-                    print(f"DEBUG: current_index={current_index}, data_type={data_type}, value=0.0 (IF girmedi)")
                 current_index += 1
                 
                 if len(result) >= quantity:
@@ -1919,8 +1906,8 @@ def get_dynamic_data_by_index(start_index, quantity):
                 
         # Temiz log - sadece veri özeti
         print(f"DEBUG: Kol {target_arm} - {len(result)} register döndürüldü")
-        if result:
-            print(f"DEBUG: İlk 8 değer: {result[:8]}")
+        if result and len(result) >= 8:
+            print(f"DEBUG: Veriler: Kol[Akım:{result[0]}, Nem:{result[1]}, Sıcaklık:{result[2]}] Batarya1[Gerilim:{result[4]}, SOC:{result[5]}, RIMT:{result[6]}, SOH:{result[7]}]")
         return result
 
 def get_alarm_data_by_index(start_index, quantity):
@@ -2244,7 +2231,6 @@ def handle_modbus_client(client_socket, client_address):
 def handle_read_holding_registers(transaction_id, unit_id, start_address, quantity):
     """Read Holding Registers (Function Code 3) işle"""
     try:
-        print(f"DEBUG: start_address={start_address}, quantity={quantity}")
         
         # Batarya verilerini hazırla
         registers = []
@@ -2384,20 +2370,12 @@ def get_dynamic_data_by_index(start_index, quantity):
             
             # Kol verileri (akım, nem, sıcaklık, sıcaklık2)
             for data_type in range(1, 5):
-                print(f"DEBUG: current_index={current_index}, start_index={start_index}, len(result)={len(result)}, quantity={quantity}")
                 if current_index >= start_index and len(result) < quantity:
-                    print(f"DEBUG: IF BLOĞU GİRİLDİ!")
-                    print(f"DEBUG: get_battery_data_ram({arm}) çağrılıyor...")
                     try:
-                        # data_lock zaten alınmış, direkt erişim
                         arm_data = dict(battery_data_ram.get(arm, {}))
-                        print(f"DEBUG: arm_data = {arm_data}")
-                        print(f"DEBUG: arm_data type = {type(arm_data)}")
                     except Exception as e:
-                        print(f"DEBUG: HATA! arm_data okuma hatası: {e}")
                         arm_data = None
                     if arm_data and 2 in arm_data:  # k=2 (kol verisi)
-                        print(f"DEBUG: k=2 verisi bulundu!")
                         if data_type == 1:  # Akım
                             value = arm_data[2].get(1, {}).get('value', 0)  # RAM dtype=1 (Akım)
                         elif data_type == 2:  # Nem
@@ -2409,15 +2387,10 @@ def get_dynamic_data_by_index(start_index, quantity):
                         else:
                             value = 0
                         result.append(float(value) if value else 0.0)
-                        print(f"DEBUG: current_index={current_index}, data_type={data_type}, value={value}")
                     else:
-                        print(f"DEBUG: k=2 verisi bulunamadı!")
                         result.append(0.0)
-                        print(f"DEBUG: current_index={current_index}, data_type={data_type}, value=0.0 (veri yok)")
                 else:
-                    print(f"DEBUG: IF BLOĞU GİRİLMEDİ!")
                     result.append(0.0)
-                    print(f"DEBUG: current_index={current_index}, data_type={data_type}, value=0.0 (IF girmedi)")
                 current_index += 1
                 
                 if len(result) >= quantity:
@@ -2466,8 +2439,8 @@ def get_dynamic_data_by_index(start_index, quantity):
                 
         # Temiz log - sadece veri özeti
         print(f"DEBUG: Kol {target_arm} - {len(result)} register döndürüldü")
-        if result:
-            print(f"DEBUG: İlk 8 değer: {result[:8]}")
+        if result and len(result) >= 8:
+            print(f"DEBUG: Veriler: Kol[Akım:{result[0]}, Nem:{result[1]}, Sıcaklık:{result[2]}] Batarya1[Gerilim:{result[4]}, SOC:{result[5]}, RIMT:{result[6]}, SOH:{result[7]}]")
         return result
 
 def get_alarm_data_by_index(start_address, quantity):
