@@ -846,51 +846,22 @@ def db_worker():
                                     "timestamp": get_period_timestamp()
                                 }
                                 batch.append(nem_record)
-                                
-                                # RAM'e kaydet (Modbus/SNMP için)
-                                battery_data_ram[arm_value][k_value][2] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 12:  # MODÜL SICAKLIĞI -> 3
-                                print(f"🔍 MODÜL SICAKLIĞI VERİSİ GELDİ: Kol{arm_value}, k={k_value}, dtype={dtype}, data={salt_data}")
+                            elif dtype == 15:  # Sıcaklık -> 3
                                 # Veritabanına kaydet
-                                module_temp_record = {
+                                sicaklik_record = {
                                     "Arm": arm_value,
                                     "k": k_value,
-                                    "Dtype": 12,
+                                    "Dtype": 15,
                                     "data": salt_data,
                                     "timestamp": get_period_timestamp()
                                 }
-                                batch.append(module_temp_record)
-                                print(f"✅ MODÜL SICAKLIĞI VERİTABANINA KAYDEDİLDİ: Kol{arm_value} = {salt_data}°C")
+                                batch.append(sicaklik_record)
                                 
                                 # RAM'e kaydet (Modbus/SNMP için)
                                 battery_data_ram[arm_value][k_value][3] = {
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
                                 }
-                                print(f"✅ MODÜL SICAKLIĞI RAM'E KAYDEDİLDİ: Kol{arm_value} = {salt_data}°C")
-                            elif dtype == 13:  # ORTAM SICAKLIĞI -> 4
-                                print(f"🔍 ORTAM SICAKLIĞI VERİSİ GELDİ: Kol{arm_value}, k={k_value}, dtype={dtype}, data={salt_data}")
-                                # Veritabanına kaydet
-                                ambient_temp_record = {
-                                    "Arm": arm_value,
-                                    "k": k_value,
-                                    "Dtype": 13,
-                                    "data": salt_data,
-                                    "timestamp": get_period_timestamp()
-                                }
-                                batch.append(ambient_temp_record)
-                                print(f"✅ ORTAM SICAKLIĞI VERİTABANINA KAYDEDİLDİ: Kol{arm_value} = {salt_data}°C")
-                                
-                                # RAM'e kaydet (Modbus/SNMP için)
-                                battery_data_ram[arm_value][k_value][4] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                                print(f"✅ ORTAM SICAKLIĞI RAM'E KAYDEDİLDİ: Kol{arm_value} = {salt_data}°C")
-                            # dtype 15 kaldırıldı - dtype 12 ve 13 kullanılıyor
                                 # RAM Mapping logları kaldırıldı
                             # dtype 12 (NTC2) ayrı bölümde işleniyor
                                 # RAM Mapping logları kaldırıldı
@@ -907,7 +878,22 @@ def db_worker():
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
                                 }
-                            # dtype 12 ve 13 kol verisi bölümünde işleniyor
+                            # dtype 12 (NTC2) ayrı bölümde işleniyor
+                            elif dtype == 126:  # SOC -> 2
+                                battery_data_ram[arm_value][k_value][2] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                            elif dtype == 13:  # NTC1 -> 5
+                                battery_data_ram[arm_value][k_value][5] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
+                            elif dtype == 14:  # NTC3 -> 7
+                                battery_data_ram[arm_value][k_value][7] = {
+                                    'value': salt_data,
+                                    'timestamp': get_period_timestamp()
+                                }
                         
                         # SOC hesapla ve 2'ye kaydet (sadece batarya verisi için)
                         if k_value != 2 and dtype == 10:  # Gerilim verisi geldiğinde SOC hesapla
