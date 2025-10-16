@@ -853,6 +853,7 @@ def db_worker():
                                     'timestamp': get_period_timestamp()
                                 }
                             elif dtype == 12:  # MODÜL SICAKLIĞI -> 3
+                                print(f"🔍 MODÜL SICAKLIĞI VERİSİ GELDİ: Kol{arm_value}, k={k_value}, dtype={dtype}, data={salt_data}")
                                 # Veritabanına kaydet
                                 module_temp_record = {
                                     "Arm": arm_value,
@@ -862,14 +863,16 @@ def db_worker():
                                     "timestamp": get_period_timestamp()
                                 }
                                 batch.append(module_temp_record)
+                                print(f"✅ MODÜL SICAKLIĞI VERİTABANINA KAYDEDİLDİ: Kol{arm_value} = {salt_data}°C")
                                 
                                 # RAM'e kaydet (Modbus/SNMP için)
                                 battery_data_ram[arm_value][k_value][3] = {
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
                                 }
-                                print(f"✓ MODÜL SICAKLIĞI RAM'e kaydedildi: Kol{arm_value} = {salt_data}°C")
+                                print(f"✅ MODÜL SICAKLIĞI RAM'E KAYDEDİLDİ: Kol{arm_value} = {salt_data}°C")
                             elif dtype == 13:  # ORTAM SICAKLIĞI -> 4
+                                print(f"🔍 ORTAM SICAKLIĞI VERİSİ GELDİ: Kol{arm_value}, k={k_value}, dtype={dtype}, data={salt_data}")
                                 # Veritabanına kaydet
                                 ambient_temp_record = {
                                     "Arm": arm_value,
@@ -879,13 +882,14 @@ def db_worker():
                                     "timestamp": get_period_timestamp()
                                 }
                                 batch.append(ambient_temp_record)
+                                print(f"✅ ORTAM SICAKLIĞI VERİTABANINA KAYDEDİLDİ: Kol{arm_value} = {salt_data}°C")
                                 
                                 # RAM'e kaydet (Modbus/SNMP için)
                                 battery_data_ram[arm_value][k_value][4] = {
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
                                 }
-                                print(f"✓ ORTAM SICAKLIĞI RAM'e kaydedildi: Kol{arm_value} = {salt_data}°C")
+                                print(f"✅ ORTAM SICAKLIĞI RAM'E KAYDEDİLDİ: Kol{arm_value} = {salt_data}°C")
                             # dtype 15 kaldırıldı - dtype 12 ve 13 kullanılıyor
                                 # RAM Mapping logları kaldırıldı
                             # dtype 12 (NTC2) ayrı bölümde işleniyor
