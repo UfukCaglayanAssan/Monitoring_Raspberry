@@ -1803,8 +1803,7 @@ def get_dynamic_data_by_index(start_index, quantity):
         result = []
         current_index = start_index  # start_index'ten başla
         
-        print(f"DEBUG: get_dynamic_data_by_index start={start_index}, quantity={quantity}")
-        print(f"DEBUG: arm_slave_counts_ram = {arm_slave_counts_ram}")
+        print(f"DEBUG: Modbus isteği - Adres: {start_index}, Miktar: {quantity}")
         
         # Aralık kontrolü
         if start_index < 1001 or start_index > 4994:
@@ -1828,15 +1827,13 @@ def get_dynamic_data_by_index(start_index, quantity):
             print(f"DEBUG: Geçersiz aralık! start_index={start_index}")
             return [0.0] * quantity
         
-        print(f"DEBUG: Hedef kol: {target_arm}, aralık: {arm_start}-{arm_start+993}")
+        print(f"DEBUG: Kol {target_arm} verileri işleniyor...")
         
         # Sadece hedef kolu işle
         for arm in range(1, 5):  # Kol 1-4
             if arm != target_arm:
                 continue  # Sadece hedef kolu işle
                 
-            print(f"DEBUG: Kol {arm} işleniyor...")
-            print(f"DEBUG: battery_data_ram[{arm}] = {battery_data_ram.get(arm, 'YOK')}")
             
             # Kol verileri (akım, nem, sıcaklık, sıcaklık2)
             for data_type in range(1, 5):
@@ -1884,21 +1881,14 @@ def get_dynamic_data_by_index(start_index, quantity):
                 
             # Batarya verileri
             battery_count = arm_slave_counts_ram.get(arm, 0)
-            print(f"DEBUG: Kol {arm} batarya sayısı: {battery_count}")
+            print(f"DEBUG: {battery_count} batarya işleniyor...")
             for battery_num in range(1, battery_count + 1):
-                print(f"DEBUG: Batarya {battery_num} işleniyor...")
                 k_value = battery_num + 2  # k=3,4,5,6...
-                print(f"DEBUG: k_value = {k_value}")
-                # data_lock zaten alınmış, direkt erişim
                 arm_data = dict(battery_data_ram.get(arm, {}))
-                print(f"DEBUG: arm_data = {arm_data}")
                 if arm_data and k_value in arm_data:
-                    print(f"DEBUG: k={k_value} verisi bulundu!")
                     # Her batarya için 7 veri tipi
                     for data_type in range(5, 12):  # 5-11 (gerilim, soc, rint, soh, ntc1, ntc2, ntc3)
-                        print(f"DEBUG: current_index={current_index}, start_index={start_index}, len(result)={len(result)}, quantity={quantity}")
                         if current_index >= start_index and len(result) < quantity:
-                            print(f"DEBUG: BATARYA IF BLOĞU GİRİLDİ!")
                             if data_type == 5:  # Gerilim
                                 value = arm_data[k_value].get(1, {}).get('value', 0)  # RAM dtype=1 (Gerilim)
                             elif data_type == 6:  # SOC
@@ -1916,15 +1906,10 @@ def get_dynamic_data_by_index(start_index, quantity):
                             else:
                                 value = 0
                             result.append(float(value) if value else 0.0)
-                            print(f"DEBUG: current_index={current_index}, arm={arm}, bat={battery_num}, data_type={data_type}, value={value}")
-                        else:
-                            print(f"DEBUG: BATARYA IF BLOĞU GİRİLMEDİ!")
                         current_index += 1
                         
                         if len(result) >= quantity:
                             break
-                else:
-                    print(f"DEBUG: k={k_value} verisi bulunamadı!")
                             
                 if len(result) >= quantity:
                     break
@@ -1932,7 +1917,10 @@ def get_dynamic_data_by_index(start_index, quantity):
             if len(result) >= quantity:
                 break
                 
-        print(f"DEBUG: Sonuç: {result}")
+        # Temiz log - sadece veri özeti
+        print(f"DEBUG: Kol {target_arm} - {len(result)} register döndürüldü")
+        if result:
+            print(f"DEBUG: İlk 8 değer: {result[:8]}")
         return result
 
 def get_alarm_data_by_index(start_index, quantity):
@@ -2362,8 +2350,7 @@ def get_dynamic_data_by_index(start_index, quantity):
         result = []
         current_index = start_index  # start_index'ten başla
         
-        print(f"DEBUG: get_dynamic_data_by_index start={start_index}, quantity={quantity}")
-        print(f"DEBUG: arm_slave_counts_ram = {arm_slave_counts_ram}")
+        print(f"DEBUG: Modbus isteği - Adres: {start_index}, Miktar: {quantity}")
         
         # Aralık kontrolü
         if start_index < 1001 or start_index > 4994:
@@ -2387,15 +2374,13 @@ def get_dynamic_data_by_index(start_index, quantity):
             print(f"DEBUG: Geçersiz aralık! start_index={start_index}")
             return [0.0] * quantity
         
-        print(f"DEBUG: Hedef kol: {target_arm}, aralık: {arm_start}-{arm_start+993}")
+        print(f"DEBUG: Kol {target_arm} verileri işleniyor...")
         
         # Sadece hedef kolu işle
         for arm in range(1, 5):  # Kol 1-4
             if arm != target_arm:
                 continue  # Sadece hedef kolu işle
                 
-            print(f"DEBUG: Kol {arm} işleniyor...")
-            print(f"DEBUG: battery_data_ram[{arm}] = {battery_data_ram.get(arm, 'YOK')}")
             
             # Kol verileri (akım, nem, sıcaklık, sıcaklık2)
             for data_type in range(1, 5):
@@ -2443,21 +2428,14 @@ def get_dynamic_data_by_index(start_index, quantity):
                 
             # Batarya verileri
             battery_count = arm_slave_counts_ram.get(arm, 0)
-            print(f"DEBUG: Kol {arm} batarya sayısı: {battery_count}")
+            print(f"DEBUG: {battery_count} batarya işleniyor...")
             for battery_num in range(1, battery_count + 1):
-                print(f"DEBUG: Batarya {battery_num} işleniyor...")
                 k_value = battery_num + 2  # k=3,4,5,6...
-                print(f"DEBUG: k_value = {k_value}")
-                # data_lock zaten alınmış, direkt erişim
                 arm_data = dict(battery_data_ram.get(arm, {}))
-                print(f"DEBUG: arm_data = {arm_data}")
                 if arm_data and k_value in arm_data:
-                    print(f"DEBUG: k={k_value} verisi bulundu!")
                     # Her batarya için 7 veri tipi
                     for data_type in range(5, 12):  # 5-11 (gerilim, soc, rint, soh, ntc1, ntc2, ntc3)
-                        print(f"DEBUG: current_index={current_index}, start_index={start_index}, len(result)={len(result)}, quantity={quantity}")
                         if current_index >= start_index and len(result) < quantity:
-                            print(f"DEBUG: BATARYA IF BLOĞU GİRİLDİ!")
                             if data_type == 5:  # Gerilim
                                 value = arm_data[k_value].get(1, {}).get('value', 0)  # RAM dtype=1 (Gerilim)
                             elif data_type == 6:  # SOC
@@ -2475,15 +2453,10 @@ def get_dynamic_data_by_index(start_index, quantity):
                             else:
                                 value = 0
                             result.append(float(value) if value else 0.0)
-                            print(f"DEBUG: current_index={current_index}, arm={arm}, bat={battery_num}, data_type={data_type}, value={value}")
-                        else:
-                            print(f"DEBUG: BATARYA IF BLOĞU GİRİLMEDİ!")
                         current_index += 1
                         
                         if len(result) >= quantity:
                             break
-                else:
-                    print(f"DEBUG: k={k_value} verisi bulunamadı!")
                             
                 if len(result) >= quantity:
                     break
@@ -2491,7 +2464,10 @@ def get_dynamic_data_by_index(start_index, quantity):
             if len(result) >= quantity:
                 break
                 
-        print(f"DEBUG: Sonuç: {result}")
+        # Temiz log - sadece veri özeti
+        print(f"DEBUG: Kol {target_arm} - {len(result)} register döndürüldü")
+        if result:
+            print(f"DEBUG: İlk 8 değer: {result[:8]}")
         return result
 
 def get_alarm_data_by_index(start_address, quantity):
