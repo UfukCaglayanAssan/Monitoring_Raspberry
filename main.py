@@ -978,12 +978,12 @@ def db_worker():
                 
                 elif dtype == 13:  # NTC1
                     record = {
-                            "Arm": arm_value,
-                            "k": k_value,
+                        "Arm": arm_value,
+                        "k": k_value,
                         "Dtype": 13,
                         "data": salt_data,
-                            "timestamp": get_period_timestamp()
-                        }
+                        "timestamp": get_period_timestamp()
+                    }
                     batch.append(record)
                     
                     # RAM'e yaz (Modbus/SNMP için)
@@ -992,23 +992,19 @@ def db_worker():
                             battery_data_ram[arm_value] = {}
                         if k_value not in battery_data_ram[arm_value]:
                             battery_data_ram[arm_value][k_value] = {}
-                        # NTC1 -> RAM[5]
-                        battery_data_ram[arm_value][k_value][5] = {
-                            'value': salt_data,
-                            'timestamp': get_period_timestamp()
-                        }
-                        print(f"✓ NTC1 RAM'e kaydedildi: Kol{arm_value} Batarya{k_value-2} = {salt_data}°C")
-                    
-                    # RAM'e yaz (Modbus/SNMP için)
-                    with data_lock:
-                        if arm_value not in battery_data_ram:
-                            battery_data_ram[arm_value] = {}
-                        if k_value not in battery_data_ram[arm_value]:
-                            battery_data_ram[arm_value][k_value] = {}
-                        battery_data_ram[arm_value][k_value][dtype] = {
-                            'value': salt_data,
-                            'timestamp': get_period_timestamp()
-                        }
+                        
+                        if k_value == 2:  # Kol verisi
+                            battery_data_ram[arm_value][k_value][4] = {  # ORTAM SICAKLIĞI -> 4
+                                'value': salt_data,
+                                'timestamp': get_period_timestamp()
+                            }
+                            print(f"✓ ORTAM SICAKLIĞI RAM'e kaydedildi: Kol{arm_value} = {salt_data}°C")
+                        else:  # Batarya verisi
+                            battery_data_ram[arm_value][k_value][5] = {  # NTC1 -> 5
+                                'value': salt_data,
+                                'timestamp': get_period_timestamp()
+                            }
+                            print(f"✓ NTC1 RAM'e kaydedildi: Kol{arm_value} Batarya{k_value-2} = {salt_data}°C")
                     
                     # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
@@ -1028,11 +1024,19 @@ def db_worker():
                             battery_data_ram[arm_value] = {}
                         if k_value not in battery_data_ram[arm_value]:
                             battery_data_ram[arm_value][k_value] = {}
-                        battery_data_ram[arm_value][k_value][6] = {  # NTC2 -> 6
-                            'value': salt_data,
-                            'timestamp': get_period_timestamp()
-                        }
-                        print(f"✓ NTC2 RAM'e kaydedildi: Kol{arm_value} Batarya{k_value-2} = {salt_data}°C")
+                        
+                        if k_value == 2:  # Kol verisi
+                            battery_data_ram[arm_value][k_value][3] = {  # MODÜL SICAKLIĞI -> 3
+                                'value': salt_data,
+                                'timestamp': get_period_timestamp()
+                            }
+                            print(f"✓ MODÜL SICAKLIĞI RAM'e kaydedildi: Kol{arm_value} = {salt_data}°C")
+                        else:  # Batarya verisi
+                            battery_data_ram[arm_value][k_value][6] = {  # NTC2 -> 6
+                                'value': salt_data,
+                                'timestamp': get_period_timestamp()
+                            }
+                            print(f"✓ NTC2 RAM'e kaydedildi: Kol{arm_value} Batarya{k_value-2} = {salt_data}°C")
                     
                     # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
