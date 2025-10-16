@@ -1926,7 +1926,30 @@ if __name__ == '__main__':
             pass
     
     try:
-        app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
+        # Flask logging'i tamamen devre dışı bırak
+        import logging
+        import sys
+        
+        # Werkzeug logger'ı kapat
+        werkzeug_logger = logging.getLogger('werkzeug')
+        werkzeug_logger.setLevel(logging.ERROR)
+        werkzeug_logger.disabled = True
+        
+        # Flask logger'ı kapat
+        flask_logger = logging.getLogger('flask')
+        flask_logger.setLevel(logging.ERROR)
+        flask_logger.disabled = True
+        
+        # stdout'u geçici olarak kapat
+        original_stdout = sys.stdout
+        sys.stdout = open('/dev/null', 'w')
+        
+        try:
+            app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
+        finally:
+            # stdout'u geri aç
+            sys.stdout.close()
+            sys.stdout = original_stdout
     except OSError as e:
         if "Address already in use" in str(e):
             # Port zaten kullanımda

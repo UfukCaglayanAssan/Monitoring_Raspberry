@@ -1891,7 +1891,6 @@ class BatteryDatabase:
                 
                 # Sadece en son verileri kullan
                 for dtype, data, name, unit, translated_name in data_rows:
-                    print(f"DEBUG: dtype={dtype}, name={name}, translated_name={translated_name}")
                     if dtype == 10:  # Gerilim
                         battery_data['voltage'] = data
                         battery_data['voltage_name'] = translated_name or name
@@ -2394,7 +2393,6 @@ class BatteryDatabase:
     
     def get_grouped_battery_logs(self, page=1, page_size=50, filters=None, language='tr'):
         """Gruplandırılmış batarya log verilerini getir"""
-        print(f"DEBUG database.py: get_grouped_battery_logs çağrıldı - page={page}, page_size={page_size}, filters={filters}, language={language}")
         if filters is None:
             filters = {}
         

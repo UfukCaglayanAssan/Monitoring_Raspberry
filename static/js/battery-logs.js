@@ -338,7 +338,7 @@ if (typeof window.BatteryLogsPage === 'undefined') {
                     batteryFilter.innerHTML = '<option value="">Tüm Bataryalar</option>';
                     for (let i = 0; i < batteryCount; i++) {
                         const option = document.createElement('option');
-                        option.value = i;
+                        option.value = i + 1;  // 1'den başla
                         option.textContent = `Batarya ${i + 1}`;
                         batteryFilter.appendChild(option);
                     }
