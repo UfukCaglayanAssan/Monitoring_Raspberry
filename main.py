@@ -868,6 +868,7 @@ def db_worker():
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
                                 }
+                                print(f"✓ MODÜL SICAKLIĞI RAM'e kaydedildi: Kol{arm_value} = {salt_data}°C")
                             elif dtype == 13:  # ORTAM SICAKLIĞI -> 4
                                 # Veritabanına kaydet
                                 ambient_temp_record = {
@@ -884,6 +885,7 @@ def db_worker():
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
                                 }
+                                print(f"✓ ORTAM SICAKLIĞI RAM'e kaydedildi: Kol{arm_value} = {salt_data}°C")
                             # dtype 15 kaldırıldı - dtype 12 ve 13 kullanılıyor
                                 # RAM Mapping logları kaldırıldı
                             # dtype 12 (NTC2) ayrı bölümde işleniyor
@@ -901,22 +903,7 @@ def db_worker():
                                     'value': salt_data,
                                     'timestamp': get_period_timestamp()
                                 }
-                            # dtype 12 (NTC2) ayrı bölümde işleniyor
-                            elif dtype == 126:  # SOC -> 2
-                                battery_data_ram[arm_value][k_value][2] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 13:  # NTC1 -> 5
-                                battery_data_ram[arm_value][k_value][5] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
-                            elif dtype == 14:  # NTC3 -> 7
-                                battery_data_ram[arm_value][k_value][7] = {
-                                    'value': salt_data,
-                                    'timestamp': get_period_timestamp()
-                                }
+                            # dtype 12 ve 13 kol verisi bölümünde işleniyor
                         
                         # SOC hesapla ve 2'ye kaydet (sadece batarya verisi için)
                         if k_value != 2 and dtype == 10:  # Gerilim verisi geldiğinde SOC hesapla
