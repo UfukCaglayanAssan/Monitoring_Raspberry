@@ -1117,6 +1117,7 @@ def db_worker():
                                 'value': salt_data,
                                 'timestamp': get_period_timestamp()
                             }
+                            print(f"✓ NTC2 RAM'e kaydedildi: Kol{arm_value} Batarya{k_value-2} = {salt_data}°C")
                         elif dtype == 14:  # NTC3 -> 7
                             battery_data_ram[arm_value][k_value][7] = {
                                 'value': salt_data,
