@@ -1084,28 +1084,6 @@ def db_worker():
                     
                     # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
-                elif dtype == 15:  # NTC3
-                    record = {
-                        "Arm": arm_value,
-                        "k": k_value,
-                        "Dtype": 15,
-                        "data": salt_data,
-                        "timestamp": get_period_timestamp()
-                    }
-                    batch.append(record)
-                    
-                    # RAM'e yaz (Modbus/SNMP için)
-                    with data_lock:
-                        if arm_value not in battery_data_ram:
-                            battery_data_ram[arm_value] = {}
-                        if k_value not in battery_data_ram[arm_value]:
-                            battery_data_ram[arm_value][k_value] = {}
-                        # NTC3 -> RAM[7]
-                        battery_data_ram[arm_value][k_value][7] = {
-                            'value': salt_data,
-                            'timestamp': get_period_timestamp()
-                        }
-                        print(f"✓ NTC3 RAM'e kaydedildi: Kol{arm_value} Batarya{k_value-2} = {salt_data}°C")
                     
                     # RAM'e yaz (Modbus/SNMP için)
                     with data_lock:
@@ -1133,23 +1111,18 @@ def db_worker():
                         if k_value not in battery_data_ram[arm_value]:
                             battery_data_ram[arm_value][k_value] = {}
                         
-                        # Dtype mapping: 12=RIMT→3, 13=NTC1→5, 14=NTC2→6, 15=NTC3→7, 126=SOC→2
-                        if dtype == 12:  # RIMT -> 3
-                            battery_data_ram[arm_value][k_value][3] = {
-                                'value': salt_data,
-                                'timestamp': get_period_timestamp()
-                            }
-                        elif dtype == 13:  # NTC1 -> 5
+                        # Dtype mapping: 12=NTC1→5, 13=NTC2→6, 14=NTC3→7, 126=SOC→2
+                        if dtype == 12:  # NTC1 -> 5
                             battery_data_ram[arm_value][k_value][5] = {
                                 'value': salt_data,
                                 'timestamp': get_period_timestamp()
                             }
-                        elif dtype == 14:  # NTC2 -> 6
+                        elif dtype == 13:  # NTC2 -> 6
                             battery_data_ram[arm_value][k_value][6] = {
                                 'value': salt_data,
                                 'timestamp': get_period_timestamp()
                             }
-                        elif dtype == 15:  # NTC3 -> 7
+                        elif dtype == 14:  # NTC3 -> 7
                             battery_data_ram[arm_value][k_value][7] = {
                                 'value': salt_data,
                                 'timestamp': get_period_timestamp()
