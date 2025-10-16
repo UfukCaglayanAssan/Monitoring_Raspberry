@@ -1091,7 +1091,7 @@ def db_worker():
                         # Dtype mapping: 12=NTC2→6, 13=NTC1→5, 14=NTC3→7, 126=SOC→2
                         print(f"🔍 DEBUG: dtype={dtype}, arm={arm_value}, k={k_value}, data={salt_data}")
                         # dtype 12 (NTC2) ayrı bölümde işleniyor
-                        elif dtype == 13:  # NTC1 -> 5
+                        if dtype == 13:  # NTC1 -> 5
                             battery_data_ram[arm_value][k_value][5] = {
                                 'value': salt_data,
                                 'timestamp': get_period_timestamp()
