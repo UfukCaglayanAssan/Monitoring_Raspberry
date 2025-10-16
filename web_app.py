@@ -326,7 +326,6 @@ def get_battery_logs():
     
     # Mevcut dili al
     language = request.headers.get('X-Language', 'tr')
-    # Dil parametresi logları kaldırıldı
     
     try:
         # Veritabanından gruplandırılmış batarya log verilerini al
@@ -393,7 +392,6 @@ def get_arm_logs():
     
     # Mevcut dili al
     language = request.headers.get('X-Language', 'tr')
-    # Dil parametresi logları kaldırıldı
     
     try:
         # Veritabanından gruplandırılmış kol log verilerini al
@@ -453,7 +451,6 @@ def get_batteries():
         
         # Mevcut dili al (localStorage'dan veya varsayılan olarak 'tr')
         language = request.headers.get('X-Language', 'tr')
-        print(f"DEBUG web_app.py: Dil parametresi: {language}")
         
         # Read-only işlem için read lock kullan (daha hızlı)
         def get_batteries_data():
@@ -864,24 +861,16 @@ def get_alarm_history():
 def get_summary():
     """Özet sayfası için veri getir"""
     try:
-        print(f"🔄 /api/summary endpoint'i çağrıldı - {datetime.now()}")
-        
         # Veritabanından özet verileri oku
-        start_time = time.time()
         db_instance = get_db()
         with db_read_lock:
             summary_data = db_instance.get_summary_data()
-        end_time = time.time()
-        
-        print(f"⏱️ Veritabanı sorgu süresi: {end_time - start_time:.3f}s")
-        print(f"📊 {len(summary_data)} kol verisi döndürüldü")
         
         return jsonify({
             'success': True,
             'summary': summary_data
         })
     except Exception as e:
-        print(f"💥 /api/summary hatası: {e}")
         return jsonify({
             'success': False,
             'message': str(e)
@@ -901,7 +890,6 @@ def get_mail_recipients():
             'recipients': recipients
         })
     except Exception as e:
-        print(f"💥 /api/mail-recipients GET hatası: {e}")
         return jsonify({
             'success': False,
             'message': str(e)
@@ -927,7 +915,6 @@ def add_mail_recipient():
         
         return jsonify(result)
     except Exception as e:
-        print(f"💥 /api/mail-recipients POST hatası: {e}")
         return jsonify({
             'success': False,
             'message': str(e)
@@ -954,7 +941,6 @@ def update_mail_recipient():
         
         return jsonify(result)
     except Exception as e:
-        print(f"💥 /api/mail-recipients PUT hatası: {e}")
         return jsonify({
             'success': False,
             'message': str(e)
@@ -970,7 +956,6 @@ def delete_mail_recipient(recipient_id):
         
         return jsonify(result)
     except Exception as e:
-        print(f"💥 /api/mail-recipients DELETE hatası: {e}")
         return jsonify({
             'success': False,
             'message': str(e)
@@ -1260,7 +1245,6 @@ def get_current_ip():
             'ip': current_ip
         })
     except Exception as e:
-        print(f"❌ Mevcut IP alınırken hata: {e}")
         return jsonify({
             'success': False,
             'ip': 'Hata'
@@ -1300,7 +1284,6 @@ def get_all_ips():
             }), 500
             
     except Exception as e:
-        print(f"❌ Tüm IP'ler alınırken hata: {e}")
         return jsonify({
             'success': False,
             'message': f'Hata: {str(e)}'
@@ -1332,7 +1315,6 @@ def get_ip_config():
 def save_ip_config():
     """IP konfigürasyonunu kaydet"""
     try:
-        print(f"🔄 IP konfigürasyonu kaydediliyor... {request.get_json()}")
         data = request.get_json()
         
         # IP method kontrolü
@@ -1343,7 +1325,6 @@ def save_ip_config():
             required_fields = ['ip_address']
             for field in required_fields:
                 if field not in data or not data[field]:
-                    print(f"❌ Eksik alan: {field}")
                     return jsonify({
                         'success': False,
                         'message': f'{field} alanı zorunludur'
@@ -1373,18 +1354,14 @@ def save_ip_config():
                         use_dhcp=False
                     )
         
-        print("💾 Veritabanına kaydediliyor...")
         success = db_operation_with_retry(save_config)
-        print(f"✅ Veritabanı kayıt sonucu: {success}")
         
         if success:
             # IP ataması yap
             try:
-                print("🌐 IP Manager başlatılıyor...")
                 from ip_manager import IPManager
                 ip_manager = IPManager()
                 
-                print("🔄 IP konfigürasyonu güncelleniyor...")
                 # IP konfigürasyonunu güncelle
                 if use_dhcp:
                     update_success = ip_manager.update_ip_config(use_dhcp=True)
@@ -1396,7 +1373,6 @@ def save_ip_config():
                         dns_servers=data.get('dns_servers', '8.8.8.8,8.8.4.4'),
                         use_dhcp=False
                     )
-                print(f"✅ IP güncelleme sonucu: {update_success}")
                 
                 if update_success:
                     return jsonify({
@@ -1410,7 +1386,6 @@ def save_ip_config():
                     }), 500
                     
             except Exception as e:
-                print(f"IP ataması hatası: {e}")
                 return jsonify({
                     'success': False,
                     'message': f'IP ataması hatası: {str(e)}. Manuel olarak yeniden başlatma gerekebilir.'
@@ -1422,9 +1397,6 @@ def save_ip_config():
             }), 500
             
     except Exception as e:
-        print(f"❌ IP konfigürasyonu kaydedilirken hata: {e}")
-        import traceback
-        print(f"❌ Detaylı hata: {traceback.format_exc()}")
         return jsonify({
             'success': False,
             'message': f'IP konfigürasyonu kaydedilirken hata: {str(e)}'
@@ -1476,7 +1448,6 @@ def send_manual_set_command():
             with open("pending_config.json", "w") as f:
                 json.dump(config_data, f)
             
-            print(f"🔄 Manuel set komutu pending_config.json'a yazıldı: {manual_set_command}")
             
             return jsonify({
                 'success': True,
@@ -1484,7 +1455,6 @@ def send_manual_set_command():
             })
                 
         except Exception as e:
-            print(f"❌ Manuel set komutu gönderilirken hata: {e}")
             return jsonify({
                 'success': False,
                 'message': f'Manuel set komutu gönderilirken hata: {str(e)}'
@@ -1726,7 +1696,6 @@ def send_command():
         with open('pending_config.json', 'w', encoding='utf-8') as f:
             json.dump(config_data, f, indent=2, ensure_ascii=False)
         
-        print(f"✅ Komut gönderildi: {command} - Kol {arm} - Paket: {[hex(x) for x in command_packet]}")
         
         return jsonify({
             'success': True, 
@@ -1735,7 +1704,6 @@ def send_command():
         })
         
     except Exception as e:
-        print(f"❌ Komut gönderme hatası: {e}")
         return jsonify({'success': False, 'message': 'Komut gönderilemedi'}), 500
 
 @app.route('/api/datagets', methods=['POST'])
@@ -1767,7 +1735,6 @@ def send_dataget():
         with open('pending_config.json', 'w', encoding='utf-8') as f:
             json.dump(config_data, f, indent=2, ensure_ascii=False)
         
-        print(f"✅ Dataget gönderildi: Kol {arm_value}, Adres {slave_address}, Komut {slave_command} - Paket: {[hex(x) for x in dataget_packet]}")
         
         return jsonify({
             'success': True, 
@@ -1776,7 +1743,6 @@ def send_dataget():
         })
         
     except Exception as e:
-        print(f"❌ Dataget gönderme hatası: {e}")
         return jsonify({'success': False, 'message': 'Veri alma komutu gönderilemedi'}), 500
 
 @app.route('/api/start-data-retrieval', methods=['POST'])
@@ -1808,7 +1774,6 @@ def start_data_retrieval():
         # Web app tarafında da periyot başlangıcını kaydet
         global data_retrieval_period_start
         data_retrieval_period_start = int(time.time() * 1000)  # Milisaniye
-        print(f"🕐 WEB APP PERİYOT BAŞLANGIÇ: {data_retrieval_period_start}")
         
         return jsonify({
             'success': True,
@@ -1817,7 +1782,6 @@ def start_data_retrieval():
         })
         
     except Exception as e:
-        print(f"❌ Veri alma modu başlatma hatası: {e}")
         return jsonify({'success': False, 'message': 'Veri alma modu başlatılamadı'}), 500
 
 @app.route('/api/stop-data-retrieval', methods=['POST'])
@@ -1832,7 +1796,6 @@ def stop_data_retrieval():
         # Web app tarafında periyot başlangıcını temizle
         global data_retrieval_period_start
         data_retrieval_period_start = None
-        print(f"🕐 WEB APP PERİYOT BAŞLANGIÇ TEMİZLENDİ")
         
         return jsonify({
             'success': True,
@@ -1840,7 +1803,6 @@ def stop_data_retrieval():
         })
         
     except Exception as e:
-        print(f"❌ Veri alma modu durdurma hatası: {e}")
         return jsonify({'success': False, 'message': 'Veri alma modu durdurulamadı'}), 500
 
 @app.route('/api/get-retrieved-data', methods=['GET'])
@@ -1884,17 +1846,8 @@ def get_retrieved_data():
             
             # SQL sorgusu logları kaldırıldı
             
-            # Önce son birkaç veriyi kontrol et
-            debug_query = "SELECT timestamp, arm, k, dtype, data FROM battery_data ORDER BY timestamp DESC LIMIT 5"
-            debug_cursor = db.execute_query(debug_query)
-            debug_data = debug_cursor.fetchall()
-            print(f"🔍 SON 5 VERİ:")
-            for row in debug_data:
-                print(f"  - {row[0]} | Kol:{row[1]} | k:{row[2]} | dtype:{row[3]} | data:{row[4]}")
-            
             data_cursor = db.execute_query(query, (start_timestamp,))
             data = data_cursor.fetchall()
-            print(f"🔍 SQL sonucu: {len(data)} adet veri")
             
             # Verileri formatla (gruplama ile)
             retrieved_data = []
@@ -1919,15 +1872,12 @@ def get_retrieved_data():
                 }
                 retrieved_data.append(data_row)
             
-            print(f"📊 {len(retrieved_data)} adet veri alındı (timestamp >= {start_timestamp})")
-            
             return jsonify({
                 'success': True,
                 'data': retrieved_data
             })
             
     except Exception as e:
-        print(f"❌ Yakalanan verileri alma hatası: {e}")
         return jsonify({'success': False, 'message': 'Veriler alınamadı'}), 500
 
 @app.route('/api/data-retrieval-status', methods=['GET'])
@@ -1943,14 +1893,12 @@ def get_data_retrieval_status():
         else:
             is_active = main.is_data_retrieval_mode()
         
-        print(f"🔍 API VERİ ALMA MODU DURUMU: {is_active}")
         return jsonify({
             'success': True,
             'is_active': is_active
         })
         
     except Exception as e:
-        print(f"❌ Veri alma modu durumu kontrol hatası: {e}")
         return jsonify({'success': False, 'message': 'Durum kontrol edilemedi'}), 500
 
 if __name__ == '__main__':
