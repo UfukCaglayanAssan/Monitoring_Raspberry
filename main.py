@@ -1009,6 +1009,7 @@ def db_worker():
                             'value': salt_data,
                             'timestamp': get_period_timestamp()
                         }
+                        print(f"✓ NTC1 RAM'e kaydedildi: Kol{arm_value} Batarya{k_value-2} = {salt_data}°C")
                     
                     # RAM'e yaz (Modbus/SNMP için)
                     with data_lock:
@@ -1068,6 +1069,7 @@ def db_worker():
                             'value': salt_data,
                             'timestamp': get_period_timestamp()
                         }
+                        print(f"✓ NTC2 RAM'e kaydedildi: Kol{arm_value} Batarya{k_value-2} = {salt_data}°C")
                     
                     # RAM'e yaz (Modbus/SNMP için)
                     with data_lock:
@@ -1103,6 +1105,7 @@ def db_worker():
                             'value': salt_data,
                             'timestamp': get_period_timestamp()
                         }
+                        print(f"✓ NTC3 RAM'e kaydedildi: Kol{arm_value} Batarya{k_value-2} = {salt_data}°C")
                     
                     # RAM'e yaz (Modbus/SNMP için)
                     with data_lock:
@@ -1945,16 +1948,17 @@ def get_dynamic_data_by_index(start_index, quantity):
             if len(result) >= quantity:
                 break
                 
-        # Temiz log - sadece veri özeti
-        print(f"DEBUG: Kol {target_arm} - {len(result)} register döndürüldü")
-        if result and len(result) >= 8:
-            print(f"DEBUG: Kol[Akım:{result[0]}, Nem:{result[1]}, Sıcaklık:{result[2]}]")
+        # Temiz log - dönen verileri göster
+        print(f"📊 Modbus Response: {len(result)} register döndürüldü")
+        if result:
+            print(f"🏭 Kol {target_arm}: Akım={result[0]:.1f}A, Nem={result[1]:.1f}%, Sıcaklık={result[2]:.1f}°C")
+            
             # Tüm bataryaları göster
             battery_count = arm_slave_counts_ram.get(target_arm, 0)
-            for i in range(min(battery_count, 3)):  # İlk 3 bataryayı göster
+            for i in range(min(battery_count, 5)):  # İlk 5 bataryayı göster
                 start_idx = 4 + (i * 7)  # Her batarya 7 register
                 if start_idx + 6 < len(result):
-                    print(f"DEBUG: Batarya{i+1}[Gerilim:{result[start_idx]}, SOC:{result[start_idx+1]}, RIMT:{result[start_idx+2]}, SOH:{result[start_idx+3]}, NTC1:{result[start_idx+4]}, NTC2:{result[start_idx+5]}, NTC3:{result[start_idx+6]}]")
+                    print(f"🔋 Batarya{i+1}: {result[start_idx]:.3f}V, SOC:{result[start_idx+1]:.1f}%, RIMT:{result[start_idx+2]:.1f}°C, SOH:{result[start_idx+3]:.1f}%, NTC1:{result[start_idx+4]:.1f}°C, NTC2:{result[start_idx+5]:.1f}°C, NTC3:{result[start_idx+6]:.1f}°C")
         return result
 
 def get_alarm_data_by_index(start_index, quantity):
@@ -2484,16 +2488,17 @@ def get_dynamic_data_by_index(start_index, quantity):
             if len(result) >= quantity:
                 break
                 
-        # Temiz log - sadece veri özeti
-        print(f"DEBUG: Kol {target_arm} - {len(result)} register döndürüldü")
-        if result and len(result) >= 8:
-            print(f"DEBUG: Kol[Akım:{result[0]}, Nem:{result[1]}, Sıcaklık:{result[2]}]")
+        # Temiz log - dönen verileri göster
+        print(f"📊 Modbus Response: {len(result)} register döndürüldü")
+        if result:
+            print(f"🏭 Kol {target_arm}: Akım={result[0]:.1f}A, Nem={result[1]:.1f}%, Sıcaklık={result[2]:.1f}°C")
+            
             # Tüm bataryaları göster
             battery_count = arm_slave_counts_ram.get(target_arm, 0)
-            for i in range(min(battery_count, 3)):  # İlk 3 bataryayı göster
+            for i in range(min(battery_count, 5)):  # İlk 5 bataryayı göster
                 start_idx = 4 + (i * 7)  # Her batarya 7 register
                 if start_idx + 6 < len(result):
-                    print(f"DEBUG: Batarya{i+1}[Gerilim:{result[start_idx]}, SOC:{result[start_idx+1]}, RIMT:{result[start_idx+2]}, SOH:{result[start_idx+3]}, NTC1:{result[start_idx+4]}, NTC2:{result[start_idx+5]}, NTC3:{result[start_idx+6]}]")
+                    print(f"🔋 Batarya{i+1}: {result[start_idx]:.3f}V, SOC:{result[start_idx+1]:.1f}%, RIMT:{result[start_idx+2]:.1f}°C, SOH:{result[start_idx+3]:.1f}%, NTC1:{result[start_idx+4]:.1f}°C, NTC2:{result[start_idx+5]:.1f}°C, NTC3:{result[start_idx+6]:.1f}°C")
         return result
 
 def get_alarm_data_by_index(start_address, quantity):
