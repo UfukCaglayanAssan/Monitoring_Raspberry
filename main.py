@@ -1911,6 +1911,10 @@ def get_dynamic_data_by_index(start_index, quantity):
             if len(result) >= quantity:
                 break
                 
+        # Eksik registerler için 0.0 ekle
+        while len(result) < quantity:
+            result.append(0.0)
+                
         # Temiz log - dönen verileri göster
         print(f"📊 Modbus Response: {len(result)} register döndürüldü")
         if result:
@@ -2450,6 +2454,10 @@ def get_dynamic_data_by_index(start_index, quantity):
                     
             if len(result) >= quantity:
                 break
+                
+        # Eksik registerler için 0.0 ekle
+        while len(result) < quantity:
+            result.append(0.0)
                 
         # Temiz log - dönen verileri göster
         print(f"📊 Modbus Response: {len(result)} register döndürüldü")
