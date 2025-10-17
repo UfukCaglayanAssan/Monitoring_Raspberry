@@ -1836,6 +1836,9 @@ def get_dynamic_data_by_index(start_index, quantity):
         current_index = 1  # Register 1'den başla (kol verileri)
         
         print(f"DEBUG: Kol {target_arm} verileri işleniyor...")
+        print(f"DEBUG: Başlangıç değerleri - start_index: {start_index}, current_index: {current_index}, target_arm: {target_arm}")
+        print(f"DEBUG: battery_data_ram içeriği: {dict(battery_data_ram)}")
+        print(f"DEBUG: arm_slave_counts_ram: {dict(arm_slave_counts_ram)}")
         
         # Sadece hedef kolu işle
         for arm in range(1, 5):  # Kol 1-4
@@ -1848,19 +1851,28 @@ def get_dynamic_data_by_index(start_index, quantity):
                 if current_index >= start_index and len(result) < quantity:
                     try:
                         arm_data = dict(battery_data_ram.get(arm, {}))
+                        print(f"DEBUG: arm_data for arm {arm}: {arm_data}")
                     except Exception as e:
                         arm_data = None
+                        print(f"DEBUG: arm_data error for arm {arm}: {e}")
                     if arm_data and 2 in arm_data:  # k=2 (kol verisi)
+                        print(f"DEBUG: Kol verisi bulundu: {arm_data[2]}")
                         if data_type == 1:  # Akım
                             value = arm_data[2].get(1, {}).get('value', 0)  # RAM dtype=1 (Akım)
+                            print(f"DEBUG: Akım verisi - data_type: {data_type}, value: {value}")
                         elif data_type == 2:  # Nem
                             value = arm_data[2].get(2, {}).get('value', 0)  # RAM dtype=2 (Nem)
+                            print(f"DEBUG: Nem verisi - data_type: {data_type}, value: {value}")
                         elif data_type == 3:  # Sıcaklık
                             value = arm_data[2].get(3, {}).get('value', 0)  # RAM dtype=3 (Sıcaklık)
+                            print(f"DEBUG: Sıcaklık verisi - data_type: {data_type}, value: {value}")
                         elif data_type == 4:  # Sıcaklık2
                             value = arm_data[2].get(4, {}).get('value', 0)  # RAM dtype=4 (Sıcaklık2)
+                            print(f"DEBUG: Sıcaklık2 verisi - data_type: {data_type}, value: {value}")
                         else:
                             value = 0
+                            print(f"DEBUG: Bilinmeyen data_type: {data_type}")
+                        print(f"DEBUG: Son değer - value: {value}, result'a eklenecek: {float(value) if value else 0.0}")
                         result.append(float(value) if value else 0.0)
                     else:
                         result.append(0.0)
@@ -2385,6 +2397,9 @@ def get_dynamic_data_by_index(start_index, quantity):
         current_index = 1  # Register 1'den başla (kol verileri)
         
         print(f"DEBUG: Kol {target_arm} verileri işleniyor...")
+        print(f"DEBUG: Başlangıç değerleri - start_index: {start_index}, current_index: {current_index}, target_arm: {target_arm}")
+        print(f"DEBUG: battery_data_ram içeriği: {dict(battery_data_ram)}")
+        print(f"DEBUG: arm_slave_counts_ram: {dict(arm_slave_counts_ram)}")
         
         # Sadece hedef kolu işle
         for arm in range(1, 5):  # Kol 1-4
@@ -2397,19 +2412,28 @@ def get_dynamic_data_by_index(start_index, quantity):
                 if current_index >= start_index and len(result) < quantity:
                     try:
                         arm_data = dict(battery_data_ram.get(arm, {}))
+                        print(f"DEBUG: arm_data for arm {arm}: {arm_data}")
                     except Exception as e:
                         arm_data = None
+                        print(f"DEBUG: arm_data error for arm {arm}: {e}")
                     if arm_data and 2 in arm_data:  # k=2 (kol verisi)
+                        print(f"DEBUG: Kol verisi bulundu: {arm_data[2]}")
                         if data_type == 1:  # Akım
                             value = arm_data[2].get(1, {}).get('value', 0)  # RAM dtype=1 (Akım)
+                            print(f"DEBUG: Akım verisi - data_type: {data_type}, value: {value}")
                         elif data_type == 2:  # Nem
                             value = arm_data[2].get(2, {}).get('value', 0)  # RAM dtype=2 (Nem)
+                            print(f"DEBUG: Nem verisi - data_type: {data_type}, value: {value}")
                         elif data_type == 3:  # Sıcaklık
                             value = arm_data[2].get(3, {}).get('value', 0)  # RAM dtype=3 (Sıcaklık)
+                            print(f"DEBUG: Sıcaklık verisi - data_type: {data_type}, value: {value}")
                         elif data_type == 4:  # Sıcaklık2
                             value = arm_data[2].get(4, {}).get('value', 0)  # RAM dtype=4 (Sıcaklık2)
+                            print(f"DEBUG: Sıcaklık2 verisi - data_type: {data_type}, value: {value}")
                         else:
                             value = 0
+                            print(f"DEBUG: Bilinmeyen data_type: {data_type}")
+                        print(f"DEBUG: Son değer - value: {value}, result'a eklenecek: {float(value) if value else 0.0}")
                         result.append(float(value) if value else 0.0)
                     else:
                         result.append(0.0)
