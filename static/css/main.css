@@ -395,14 +395,19 @@ body {
 .battery-icon {
     background: #059669;
     border-radius: 50%;
-    padding: 4px;
+    padding: 8px;  /* 4px'den 8px'e çıkarıldı */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     margin-bottom: 6px;
+    width: 32px;   /* Sabit genişlik eklendi */
+    height: 32px;  /* Sabit yükseklik eklendi */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .battery-icon i {
-    width: 16px;
-    height: 16px;
+    width: 20px;   /* 16px'den 20px'e çıkarıldı */
+    height: 20px;  /* 16px'den 20px'e çıkarıldı */
     color: white;
 }
 
