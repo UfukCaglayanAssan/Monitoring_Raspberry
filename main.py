@@ -1833,7 +1833,7 @@ def get_dynamic_data_by_index(start_index, quantity):
             print(f"DEBUG: Geçersiz aralık! start_index={start_index}")
             return [0.0] * quantity
         
-        current_index = arm_start  # Kol başlangıç adresinden başla
+        current_index = 1  # Register 1'den başla (kol verileri)
         
         print(f"DEBUG: Kol {target_arm} verileri işleniyor...")
         
@@ -2382,7 +2382,7 @@ def get_dynamic_data_by_index(start_index, quantity):
             print(f"DEBUG: Geçersiz aralık! start_index={start_index}")
             return [0.0] * quantity
         
-        current_index = arm_start  # Kol başlangıç adresinden başla
+        current_index = 1  # Register 1'den başla (kol verileri)
         
         print(f"DEBUG: Kol {target_arm} verileri işleniyor...")
         
