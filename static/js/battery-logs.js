@@ -418,9 +418,11 @@ function initBatteryLogsPage() {
         console.log('🆕 Yeni BatteryLogsPage instance oluşturuluyor');
         window.batteryLogsPage = new BatteryLogsPage();
     } else {
-        // Mevcut instance varsa sadece veri yükle, init() çağırma
-        console.log('🔄 Mevcut BatteryLogsPage instance kullanılıyor, sadece veri yükleniyor');
-        // Her zaman loadLogs() çağır
+        // Mevcut instance varsa kol seçeneklerini yenile ve veri yükle
+        console.log('🔄 Mevcut BatteryLogsPage instance kullanılıyor, kol seçenekleri yenileniyor');
+        // Kol seçeneklerini yenile
+        window.batteryLogsPage.loadArmOptions();
+        // Veri yükle
         window.batteryLogsPage.loadLogs();
     }
 }
