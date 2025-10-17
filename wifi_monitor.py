@@ -211,16 +211,16 @@ class WiFiMonitor:
                     
                     # İlk başarısızlıkta hemen WiFi'yi yeniden başlat
                     self.log("🔄 WiFi yeniden başlatılıyor...")
-                        self.get_wifi_info()  # Debug için
-                        self.restart_wifi()
+                    self.get_wifi_info()  # Debug için
+                    self.restart_wifi()
                     
                     # Varsayılan WiFi'ye bağlanmayı dene
                     time.sleep(10)
                     self.log("Varsayılan WiFi'ye bağlanmaya çalışılıyor...")
                     self.connect_to_default_wifi()
                     
-                        time.sleep(15)  # Yeniden başlatma sonrası bekle
-                        continue
+                    time.sleep(15)  # Yeniden başlatma sonrası bekle
+                    continue
                 
                 # Başarılı kontrol sonrası bekle
                 time.sleep(self.check_interval)
