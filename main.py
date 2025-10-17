@@ -998,13 +998,11 @@ def db_worker():
                             'value': salt_data,
                             'timestamp': get_period_timestamp()
                         }
-                            print(f"✓ ORTAM SICAKLIĞI RAM'e kaydedildi: Kol{arm_value} = {salt_data}°C")
                         else:  # Batarya verisi
                             battery_data_ram[arm_value][k_value][5] = {  # NTC1 -> 5
                                 'value': salt_data,
                                 'timestamp': get_period_timestamp()
                             }
-                            print(f"✓ NTC1 RAM'e kaydedildi: Kol{arm_value} Batarya{k_value-2} = {salt_data}°C")
                     
                     # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
@@ -1030,13 +1028,11 @@ def db_worker():
                             'value': salt_data,
                             'timestamp': get_period_timestamp()
                         }
-                            print(f"✓ MODÜL SICAKLIĞI RAM'e kaydedildi: Kol{arm_value} = {salt_data}°C")
                         else:  # Batarya verisi
                             battery_data_ram[arm_value][k_value][6] = {  # NTC2 -> 6
                                 'value': salt_data,
                                 'timestamp': get_period_timestamp()
                             }
-                            print(f"✓ NTC2 RAM'e kaydedildi: Kol{arm_value} Batarya{k_value-2} = {salt_data}°C")
                     
                     # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
@@ -1061,7 +1057,6 @@ def db_worker():
                             'value': salt_data,
                             'timestamp': get_period_timestamp()
                         }
-                        print(f"✓ NTC3 RAM'e kaydedildi: Kol{arm_value} Batarya{k_value-2} = {salt_data}°C")
                     
                     # RAM'e yaz (Modbus/SNMP için)
                     with data_lock:
@@ -1104,14 +1099,12 @@ def db_worker():
                             battery_data_ram[arm_value][k_value] = {}
                         
                         # Dtype mapping: 12=NTC2→6, 13=NTC1→5, 14=NTC3→7, 126=SOC→2
-                        print(f"🔍 DEBUG: dtype={dtype}, arm={arm_value}, k={k_value}, data={salt_data}")
                         # dtype 12 (NTC2) ayrı bölümde işleniyor
                         if dtype == 13:  # NTC1 -> 5
                             battery_data_ram[arm_value][k_value][5] = {
                                 'value': salt_data,
                                 'timestamp': get_period_timestamp()
                             }
-                            print(f"✓ NTC1 RAM'e kaydedildi: Kol{arm_value} Batarya{k_value-2} = {salt_data}°C")
                         elif dtype == 14:  # NTC3 -> 7
                             battery_data_ram[arm_value][k_value][7] = {
                                 'value': salt_data,
@@ -1809,7 +1802,6 @@ def get_dynamic_data_by_index(start_index, quantity):
     with data_lock:
         result = []
         
-        print(f"DEBUG: Modbus isteği - Adres: {start_index}, Miktar: {quantity}")
         
         # Aralık kontrolü
         if start_index < 1001 or start_index > 4994:
@@ -1835,10 +1827,6 @@ def get_dynamic_data_by_index(start_index, quantity):
         
         current_index = 1  # Register 1'den başla (kol verileri)
         
-        print(f"DEBUG: Kol {target_arm} verileri işleniyor...")
-        print(f"DEBUG: Başlangıç değerleri - start_index: {start_index}, current_index: {current_index}, target_arm: {target_arm}")
-        print(f"DEBUG: battery_data_ram içeriği: {dict(battery_data_ram)}")
-        print(f"DEBUG: arm_slave_counts_ram: {dict(arm_slave_counts_ram)}")
         
         # Sadece hedef kolu işle
         for arm in range(1, 5):  # Kol 1-4
@@ -1851,28 +1839,19 @@ def get_dynamic_data_by_index(start_index, quantity):
                 if current_index >= start_index and len(result) < quantity:
                     try:
                         arm_data = dict(battery_data_ram.get(arm, {}))
-                        print(f"DEBUG: arm_data for arm {arm}: {arm_data}")
                     except Exception as e:
                         arm_data = None
-                        print(f"DEBUG: arm_data error for arm {arm}: {e}")
                     if arm_data and 2 in arm_data:  # k=2 (kol verisi)
-                        print(f"DEBUG: Kol verisi bulundu: {arm_data[2]}")
                         if data_type == 1:  # Akım
                             value = arm_data[2].get(1, {}).get('value', 0)  # RAM dtype=1 (Akım)
-                            print(f"DEBUG: Akım verisi - data_type: {data_type}, value: {value}")
                         elif data_type == 2:  # Nem
                             value = arm_data[2].get(2, {}).get('value', 0)  # RAM dtype=2 (Nem)
-                            print(f"DEBUG: Nem verisi - data_type: {data_type}, value: {value}")
                         elif data_type == 3:  # Sıcaklık
                             value = arm_data[2].get(3, {}).get('value', 0)  # RAM dtype=3 (Sıcaklık)
-                            print(f"DEBUG: Sıcaklık verisi - data_type: {data_type}, value: {value}")
                         elif data_type == 4:  # Sıcaklık2
                             value = arm_data[2].get(4, {}).get('value', 0)  # RAM dtype=4 (Sıcaklık2)
-                            print(f"DEBUG: Sıcaklık2 verisi - data_type: {data_type}, value: {value}")
                         else:
                             value = 0
-                            print(f"DEBUG: Bilinmeyen data_type: {data_type}")
-                        print(f"DEBUG: Son değer - value: {value}, result'a eklenecek: {float(value) if value else 0.0}")
                         result.append(float(value) if value else 0.0)
                     else:
                         result.append(0.0)
@@ -1888,7 +1867,6 @@ def get_dynamic_data_by_index(start_index, quantity):
                 
             # Batarya verileri
             battery_count = arm_slave_counts_ram.get(arm, 0)
-            print(f"DEBUG: {battery_count} batarya işleniyor...")
             for battery_num in range(1, battery_count + 1):
                 k_value = battery_num + 2  # k=3,4,5,6...
                 arm_data = dict(battery_data_ram.get(arm, {}))
@@ -2310,7 +2288,6 @@ def handle_read_holding_registers(transaction_id, unit_id, start_address, quanti
                 int_value = int(value * 100)  # 2 decimal place precision
                 response += struct.pack('>H', int_value)
             
-            print(f"DEBUG: Response hazırlandı, {len(registers)} register")
             return response
         
         return None
@@ -2370,7 +2347,6 @@ def get_dynamic_data_by_index(start_index, quantity):
     with data_lock:
         result = []
         
-        print(f"DEBUG: Modbus isteği - Adres: {start_index}, Miktar: {quantity}")
         
         # Aralık kontrolü
         if start_index < 1001 or start_index > 4994:
@@ -2396,10 +2372,6 @@ def get_dynamic_data_by_index(start_index, quantity):
         
         current_index = 1  # Register 1'den başla (kol verileri)
         
-        print(f"DEBUG: Kol {target_arm} verileri işleniyor...")
-        print(f"DEBUG: Başlangıç değerleri - start_index: {start_index}, current_index: {current_index}, target_arm: {target_arm}")
-        print(f"DEBUG: battery_data_ram içeriği: {dict(battery_data_ram)}")
-        print(f"DEBUG: arm_slave_counts_ram: {dict(arm_slave_counts_ram)}")
         
         # Sadece hedef kolu işle
         for arm in range(1, 5):  # Kol 1-4
@@ -2412,28 +2384,19 @@ def get_dynamic_data_by_index(start_index, quantity):
                 if current_index >= start_index and len(result) < quantity:
                     try:
                         arm_data = dict(battery_data_ram.get(arm, {}))
-                        print(f"DEBUG: arm_data for arm {arm}: {arm_data}")
                     except Exception as e:
                         arm_data = None
-                        print(f"DEBUG: arm_data error for arm {arm}: {e}")
                     if arm_data and 2 in arm_data:  # k=2 (kol verisi)
-                        print(f"DEBUG: Kol verisi bulundu: {arm_data[2]}")
                         if data_type == 1:  # Akım
                             value = arm_data[2].get(1, {}).get('value', 0)  # RAM dtype=1 (Akım)
-                            print(f"DEBUG: Akım verisi - data_type: {data_type}, value: {value}")
                         elif data_type == 2:  # Nem
                             value = arm_data[2].get(2, {}).get('value', 0)  # RAM dtype=2 (Nem)
-                            print(f"DEBUG: Nem verisi - data_type: {data_type}, value: {value}")
                         elif data_type == 3:  # Sıcaklık
                             value = arm_data[2].get(3, {}).get('value', 0)  # RAM dtype=3 (Sıcaklık)
-                            print(f"DEBUG: Sıcaklık verisi - data_type: {data_type}, value: {value}")
                         elif data_type == 4:  # Sıcaklık2
                             value = arm_data[2].get(4, {}).get('value', 0)  # RAM dtype=4 (Sıcaklık2)
-                            print(f"DEBUG: Sıcaklık2 verisi - data_type: {data_type}, value: {value}")
                         else:
                             value = 0
-                            print(f"DEBUG: Bilinmeyen data_type: {data_type}")
-                        print(f"DEBUG: Son değer - value: {value}, result'a eklenecek: {float(value) if value else 0.0}")
                         result.append(float(value) if value else 0.0)
                     else:
                         result.append(0.0)
@@ -2449,7 +2412,6 @@ def get_dynamic_data_by_index(start_index, quantity):
                 
             # Batarya verileri
             battery_count = arm_slave_counts_ram.get(arm, 0)
-            print(f"DEBUG: {battery_count} batarya işleniyor...")
             for battery_num in range(1, battery_count + 1):
                 k_value = battery_num + 2  # k=3,4,5,6...
                 arm_data = dict(battery_data_ram.get(arm, {}))
