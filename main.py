@@ -1808,7 +1808,7 @@ def get_dynamic_data_by_index(start_index, quantity):
     """Dinamik veri indeksine göre veri döndür"""
     with data_lock:
         result = []
-        current_index = 1  # Register 1'den başla
+        current_index = arm_start  # Kol başlangıç adresinden başla
         
         print(f"DEBUG: Modbus isteği - Adres: {start_index}, Miktar: {quantity}")
         
@@ -2352,7 +2352,7 @@ def get_dynamic_data_by_index(start_index, quantity):
     """Dinamik veri indeksine göre veri döndür"""
     with data_lock:
         result = []
-        current_index = 1  # Register 1'den başla
+        current_index = arm_start  # Kol başlangıç adresinden başla
         
         print(f"DEBUG: Modbus isteği - Adres: {start_index}, Miktar: {quantity}")
         
