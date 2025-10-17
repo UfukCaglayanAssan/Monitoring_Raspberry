@@ -978,12 +978,12 @@ def db_worker():
                 
                 elif dtype == 13:  # NTC1
                     record = {
-                        "Arm": arm_value,
-                        "k": k_value,
+                            "Arm": arm_value,
+                            "k": k_value,
                         "Dtype": 13,
                         "data": salt_data,
-                        "timestamp": get_period_timestamp()
-                    }
+                            "timestamp": get_period_timestamp()
+                        }
                     batch.append(record)
                     
                     # RAM'e yaz (Modbus/SNMP için)
@@ -995,9 +995,9 @@ def db_worker():
                         
                         if k_value == 2:  # Kol verisi
                             battery_data_ram[arm_value][k_value][4] = {  # ORTAM SICAKLIĞI -> 4
-                                'value': salt_data,
-                                'timestamp': get_period_timestamp()
-                            }
+                            'value': salt_data,
+                            'timestamp': get_period_timestamp()
+                        }
                             print(f"✓ ORTAM SICAKLIĞI RAM'e kaydedildi: Kol{arm_value} = {salt_data}°C")
                         else:  # Batarya verisi
                             battery_data_ram[arm_value][k_value][5] = {  # NTC1 -> 5
@@ -1027,9 +1027,9 @@ def db_worker():
                         
                         if k_value == 2:  # Kol verisi
                             battery_data_ram[arm_value][k_value][3] = {  # MODÜL SICAKLIĞI -> 3
-                                'value': salt_data,
-                                'timestamp': get_period_timestamp()
-                            }
+                            'value': salt_data,
+                            'timestamp': get_period_timestamp()
+                        }
                             print(f"✓ MODÜL SICAKLIĞI RAM'e kaydedildi: Kol{arm_value} = {salt_data}°C")
                         else:  # Batarya verisi
                             battery_data_ram[arm_value][k_value][6] = {  # NTC2 -> 6
@@ -1742,7 +1742,7 @@ def main():
         print("Config worker thread'i başlatıldı.")
 
         # Modbus TCP sunucu
-        modbus_thread = threading.Thread(target=modbus_tcp_server, daemon=True)
+        modbus_thread = threading.Thread(target=modbus_tcp_server, daemon=False)
         modbus_thread.start()
         print("Modbus TCP sunucu thread'i başlatıldı.")
 
@@ -2201,7 +2201,7 @@ def modbus_tcp_server():
                 client_thread = threading.Thread(
                     target=handle_modbus_client,
                     args=(client_socket, client_address),
-                    daemon=True
+                    daemon=False
                 )
                 client_thread.start()
                 
@@ -2287,7 +2287,7 @@ def handle_read_holding_registers(transaction_id, unit_id, start_address, quanti
         elif start_address >= 1:  # Dinamik veri okuma
             # Dinamik veri sistemi kullan
             try:
-                registers = get_dynamic_data_by_index(start_address, quantity)
+            registers = get_dynamic_data_by_index(start_address, quantity)
             except Exception as e:
                 print(f"get_dynamic_data_by_index hatası: {e}")
                 registers = [0.0] * quantity
