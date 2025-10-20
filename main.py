@@ -1802,6 +1802,7 @@ def get_dynamic_data_by_index(start_index, quantity):
     with data_lock:
         result = []
         
+        print(f"DEBUG: Modbus isteği - Adres: {start_index}, Miktar: {quantity}")
         
         # Aralık kontrolü
         if start_index < 1001 or start_index > 4994:
@@ -1826,6 +1827,11 @@ def get_dynamic_data_by_index(start_index, quantity):
             return [0.0] * quantity
         
         current_index = 1  # Register 1'den başla (kol verileri)
+        
+        print(f"DEBUG: Kol {target_arm} verileri işleniyor...")
+        print(f"DEBUG: Başlangıç değerleri - start_index: {start_index}, current_index: {current_index}, target_arm: {target_arm}")
+        print(f"DEBUG: battery_data_ram içeriği: {dict(battery_data_ram)}")
+        print(f"DEBUG: arm_slave_counts_ram: {dict(arm_slave_counts_ram)}")
         
         
         # Sadece hedef kolu işle
@@ -1867,6 +1873,7 @@ def get_dynamic_data_by_index(start_index, quantity):
                 
             # Batarya verileri
             battery_count = arm_slave_counts_ram.get(arm, 0)
+            print(f"DEBUG: {battery_count} batarya işleniyor...")
             for battery_num in range(1, battery_count + 1):
                 k_value = battery_num + 2  # k=3,4,5,6...
                 arm_data = dict(battery_data_ram.get(arm, {}))
@@ -1891,6 +1898,7 @@ def get_dynamic_data_by_index(start_index, quantity):
                             else:
                                 value = 0
                             result.append(float(value) if value else 0.0)
+                            print(f"DEBUG: Batarya{k_value-2} data_type={data_type} value={value}")
                         current_index += 1
                         
                         if len(result) >= quantity:
@@ -2264,11 +2272,11 @@ def handle_read_holding_registers(transaction_id, unit_id, start_address, quanti
             registers = get_status_data_by_index(start_address, quantity)
         elif start_address >= 1:  # Dinamik veri okuma
             # Dinamik veri sistemi kullan
-            try:
-                registers = get_dynamic_data_by_index(start_address, quantity)
-            except Exception as e:
-                print(f"get_dynamic_data_by_index hatası: {e}")
-                registers = [0.0] * quantity
+        try:
+            registers = get_dynamic_data_by_index_new(start_address, quantity)
+        except Exception as e:
+            print(f"get_dynamic_data_by_index_new hatası: {e}")
+            registers = [0.0] * quantity
         
         # Modbus TCP response hazırla
         if registers:
@@ -2347,6 +2355,7 @@ def get_dynamic_data_by_index(start_index, quantity):
     with data_lock:
         result = []
         
+        print(f"DEBUG: Modbus isteği - Adres: {start_index}, Miktar: {quantity}")
         
         # Aralık kontrolü
         if start_index < 1001 or start_index > 4994:
@@ -2371,6 +2380,11 @@ def get_dynamic_data_by_index(start_index, quantity):
             return [0.0] * quantity
         
         current_index = 1  # Register 1'den başla (kol verileri)
+        
+        print(f"DEBUG: Kol {target_arm} verileri işleniyor...")
+        print(f"DEBUG: Başlangıç değerleri - start_index: {start_index}, current_index: {current_index}, target_arm: {target_arm}")
+        print(f"DEBUG: battery_data_ram içeriği: {dict(battery_data_ram)}")
+        print(f"DEBUG: arm_slave_counts_ram: {dict(arm_slave_counts_ram)}")
         
         
         # Sadece hedef kolu işle
@@ -2412,6 +2426,7 @@ def get_dynamic_data_by_index(start_index, quantity):
                 
             # Batarya verileri
             battery_count = arm_slave_counts_ram.get(arm, 0)
+            print(f"DEBUG: {battery_count} batarya işleniyor...")
             for battery_num in range(1, battery_count + 1):
                 k_value = battery_num + 2  # k=3,4,5,6...
                 arm_data = dict(battery_data_ram.get(arm, {}))
@@ -2436,6 +2451,7 @@ def get_dynamic_data_by_index(start_index, quantity):
                             else:
                                 value = 0
                             result.append(float(value) if value else 0.0)
+                            print(f"DEBUG: Batarya{k_value-2} data_type={data_type} value={value}")
                         current_index += 1
                         
                         if len(result) >= quantity:
@@ -2998,6 +3014,134 @@ def snmp_server():
         print(f"❌ SNMP sunucu hatası: {e}")
         import traceback
         traceback.print_exc()
+
+def get_dynamic_data_by_index_new(start_index, quantity):
+    """Dinamik veri indeksine göre veri döndür - YENİ MANTIK"""
+    with data_lock:
+        result = []
+        
+        print(f"DEBUG: Modbus isteği - Adres: {start_index}, Miktar: {quantity}")
+        
+        # Aralık kontrolü
+        if start_index < 1001 or start_index > 4994:
+            print(f"DEBUG: Geçersiz aralık! start_index={start_index} (1001-4994 arası olmalı)")
+            return [0.0] * quantity
+        
+        # Hangi kol aralığında olduğunu belirle
+        if 1001 <= start_index <= 1994:
+            target_arm = 1
+            arm_start = 1001
+        elif 2001 <= start_index <= 2994:
+            target_arm = 2
+            arm_start = 2001
+        elif 3001 <= start_index <= 3994:
+            target_arm = 3
+            arm_start = 3001
+        elif 4001 <= start_index <= 4994:
+            target_arm = 4
+            arm_start = 4001
+        else:
+            print(f"DEBUG: Geçersiz aralık! start_index={start_index}")
+            return [0.0] * quantity
+        
+        # YENİ MANTIK: Register mapping hesaplaması
+        register_offset = start_index - arm_start  # Kol içindeki offset
+        print(f"DEBUG: register_offset = {start_index} - {arm_start} = {register_offset}")
+        
+        print(f"DEBUG: Kol {target_arm} verileri işleniyor...")
+        print(f"DEBUG: Başlangıç değerleri - start_index: {start_index}, arm_start: {arm_start}, target_arm: {target_arm}")
+        print(f"DEBUG: battery_data_ram içeriği: {dict(battery_data_ram)}")
+        print(f"DEBUG: arm_slave_counts_ram: {dict(arm_slave_counts_ram)}")
+        
+        # Sadece hedef kolu işle
+        arm = target_arm
+        
+        # Kol verileri (Register 1-3: Akım, Nem, Sıcaklık)
+        for i in range(quantity):
+            current_register = start_index + i
+            current_offset = current_register - arm_start
+            
+            print(f"DEBUG: İşlenen register: {current_register}, offset: {current_offset}")
+            
+            if current_offset <= 2:  # Kol verileri (0,1,2)
+                # Kol verisi al
+                try:
+                    arm_data = dict(battery_data_ram.get(arm, {}))
+                except Exception as e:
+                    arm_data = None
+                    
+                if arm_data and 2 in arm_data:  # k=2 (kol verisi)
+                    if current_offset == 0:  # Akım
+                        value = arm_data[2].get(1, {}).get('value', 0)  # RAM dtype=1 (Akım)
+                        print(f"DEBUG: Kol Akım: {value}")
+                    elif current_offset == 1:  # Nem
+                        value = arm_data[2].get(2, {}).get('value', 0)  # RAM dtype=2 (Nem)
+                        print(f"DEBUG: Kol Nem: {value}")
+                    elif current_offset == 2:  # Sıcaklık
+                        value = arm_data[2].get(3, {}).get('value', 0)  # RAM dtype=3 (Sıcaklık)
+                        print(f"DEBUG: Kol Sıcaklık: {value}")
+                    else:
+                        value = 0
+                    result.append(float(value) if value else 0.0)
+                else:
+                    result.append(0.0)
+            else:  # Batarya verileri (Register 4+)
+                # Batarya hesaplaması
+                battery_offset = current_offset - 3  # Kol verilerini atla
+                battery_num = (battery_offset // 7) + 1  # Hangi batarya
+                data_type_offset = battery_offset % 7  # Hangi veri tipi
+                
+                print(f"DEBUG: Batarya hesaplaması - battery_offset: {battery_offset}, battery_num: {battery_num}, data_type_offset: {data_type_offset}")
+                
+                # Batarya sayısı kontrolü
+                battery_count = arm_slave_counts_ram.get(arm, 0)
+                if battery_num > battery_count:
+                    result.append(0.0)
+                    print(f"DEBUG: Batarya {battery_num} mevcut değil (toplam: {battery_count})")
+                    continue
+                
+                # Batarya verisi al
+                k_value = battery_num + 2  # k=3,4,5,6...
+                try:
+                    arm_data = dict(battery_data_ram.get(arm, {}))
+                except Exception as e:
+                    arm_data = None
+                    
+                if arm_data and k_value in arm_data:
+                    if data_type_offset == 0:  # Gerilim
+                        value = arm_data[k_value].get(1, {}).get('value', 0)  # RAM dtype=1 (Gerilim)
+                    elif data_type_offset == 1:  # SOC
+                        value = arm_data[k_value].get(2, {}).get('value', 0)  # RAM dtype=2 (SOC)
+                    elif data_type_offset == 2:  # RIMT
+                        value = arm_data[k_value].get(3, {}).get('value', 0)  # RAM dtype=3 (RIMT)
+                    elif data_type_offset == 3:  # SOH
+                        value = arm_data[k_value].get(4, {}).get('value', 0)  # RAM dtype=4 (SOH)
+                    elif data_type_offset == 4:  # NTC1
+                        value = arm_data[k_value].get(5, {}).get('value', 0)  # RAM dtype=5 (NTC1)
+                    elif data_type_offset == 5:  # NTC2
+                        value = arm_data[k_value].get(6, {}).get('value', 0)  # RAM dtype=6 (NTC2)
+                    elif data_type_offset == 6:  # NTC3
+                        value = arm_data[k_value].get(7, {}).get('value', 0)  # RAM dtype=7 (NTC3)
+                    else:
+                        value = 0
+                    result.append(float(value) if value else 0.0)
+                    print(f"DEBUG: Batarya{battery_num} data_type_offset={data_type_offset} value={value}")
+                else:
+                    result.append(0.0)
+                    print(f"DEBUG: Batarya{battery_num} verisi bulunamadı")
+        
+        # Temiz log - dönen verileri göster
+        print(f"📊 Modbus Response: {len(result)} register döndürüldü")
+        if result:
+            print(f"🏭 Kol {target_arm}: Akım={result[0]:.1f}A, Nem={result[1]:.1f}%, Sıcaklık={result[2]:.1f}°C")
+            
+            # Tüm bataryaları göster
+            battery_count = arm_slave_counts_ram.get(target_arm, 0)
+            for i in range(min(battery_count, 5)):  # İlk 5 bataryayı göster
+                start_idx = 4 + (i * 7)  # Her batarya 7 register
+                if start_idx + 6 < len(result):
+                    print(f"🔋 Batarya{i+1}: {result[start_idx]:.3f}V, SOC:{result[start_idx+1]:.1f}%, RIMT:{result[start_idx+2]:.1f}°C, SOH:{result[start_idx+3]:.1f}%, NTC1:{result[start_idx+4]:.1f}°C, NTC2:{result[start_idx+5]:.1f}°C, NTC3:{result[start_idx+6]:.1f}°C")
+        return result
 
 if __name__ == '__main__':
     print("Program başlatıldı ==>")
