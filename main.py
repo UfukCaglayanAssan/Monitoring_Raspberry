@@ -1000,9 +1000,9 @@ def db_worker():
                         }
                         else:  # Batarya verisi
                             battery_data_ram[arm_value][k_value][5] = {  # NTC1 -> 5
-                                'value': salt_data,
-                                'timestamp': get_period_timestamp()
-                            }
+                            'value': salt_data,
+                            'timestamp': get_period_timestamp()
+                        }
                     
                     # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 

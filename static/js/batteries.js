@@ -245,20 +245,12 @@ if (typeof window.BatteriesPage === 'undefined') {
             // Alarm sınıflarını temizle
             button.classList.remove('arm-alarm', 'battery-alarm');
             
-            // Kol alarmı var mı kontrol et
+            // SADECE kol alarmı var mı kontrol et
             if (this.activeAlarms.has(`arm-${arm}`)) {
                 button.classList.add('arm-alarm');
                 console.log(`🚨 Kol ${arm} alarm durumu: KOL ALARMI`);
-            } else {
-                // Bu kolda batarya alarmı var mı kontrol et
-                const hasBatteryAlarm = Array.from(this.activeAlarms).some(alarm => 
-                    alarm.startsWith(`arm-${arm}-battery-`)
-                );
-                if (hasBatteryAlarm) {
-                    button.classList.add('battery-alarm');
-                    console.log(`🚨 Kol ${arm} alarm durumu: BATARYA ALARMI`);
-                }
             }
+            // Batarya alarmları kol kartını kırmızı yapmaz - sadece batarya kartları kırmızı olur
         });
     }
 

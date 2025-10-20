@@ -748,8 +748,42 @@ body {
 
 .battery-card.battery-alarm {
     background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%) !important; /* red-50 to red-100 */
+    border: 2px solid #f87171 !important; /* border-red-400 */
+    border-radius: 20px !important; /* Daha oval border */
     box-shadow: 0 4px 15px rgba(220, 38, 38, 0.2) !important;
     animation: pulse-card 2s infinite;
+    outline: none !important; /* Beyaz border'ı kaldır */
+}
+
+/* Alarm durumunda child elementler */
+.battery-card.battery-alarm * {
+    background: transparent !important;
+}
+
+.battery-card.battery-alarm .battery-card-content {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%) !important; /* red-50 to red-100 */
+    border-radius: 18px !important; /* İçerik de oval olsun */
+}
+
+/* Alarm durumunda arka yüz */
+.battery-card.battery-alarm .card-back {
+    background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%) !important; /* red-700 to red-600 */
+    border: 2px solid #ef4444 !important; /* red-500 */
+}
+
+.battery-card.battery-alarm .card-back .data-item {
+    background: rgba(239, 68, 68, 0.3) !important; /* red-500 with opacity */
+    border: 1px solid rgba(239, 68, 68, 0.5) !important;
+    border-radius: 8px !important;
+}
+
+/* Alarm durumunda batarya ikonu rengi */
+.battery-card.battery-alarm .battery-icon {
+    background: #7f1d1d !important; /* red-900 - daha koyu kırmızı */
+}
+
+.battery-card.battery-alarm .battery-icon i {
+    color: #fbbf24 !important; /* yellow-400 - altın sarısı (uyarı rengi) */
 }
 
 .battery-card.passive-balance {
