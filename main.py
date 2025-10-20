@@ -2272,11 +2272,11 @@ def handle_read_holding_registers(transaction_id, unit_id, start_address, quanti
             registers = get_status_data_by_index(start_address, quantity)
         elif start_address >= 1:  # Dinamik veri okuma
             # Dinamik veri sistemi kullan
-        try:
-            registers = get_dynamic_data_by_index_new(start_address, quantity)
-        except Exception as e:
-            print(f"get_dynamic_data_by_index_new hatası: {e}")
-            registers = [0.0] * quantity
+            try:
+                registers = get_dynamic_data_by_index_new(start_address, quantity)
+            except Exception as e:
+                print(f"get_dynamic_data_by_index_new hatası: {e}")
+                registers = [0.0] * quantity
         
         # Modbus TCP response hazırla
         if registers:
