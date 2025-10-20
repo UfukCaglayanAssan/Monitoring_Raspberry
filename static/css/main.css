@@ -783,7 +783,7 @@ body {
 }
 
 .battery-card.battery-alarm .battery-icon i {
-    color: #fbbf24 !important; /* yellow-400 - altın sarısı (uyarı rengi) */
+    color: #ffffff !important; /* Beyaz - Fenerbahçe dostu renk */
 }
 
 .battery-card.passive-balance {

@@ -262,7 +262,7 @@ if (typeof window.AlarmsPage === 'undefined') {
                                 <tr>
                                     <td>${this.formatTimestamp(alarm.timestamp)}</td>
                                     <td>${alarm.arm}</td>
-                                    <td>${alarm.battery || 'Kol Alarmı'}</td>
+                                    <td>${alarm.batteryDisplay || 'Kol Alarmı'}</td>
                                     <td>${alarm.description}</td>
                                     <td>
                                         <span class="status-badge ${statusClass}">
@@ -402,7 +402,7 @@ if (typeof window.AlarmsPage === 'undefined') {
         
         // Batarya
         const batteryCell = document.createElement('td');
-        batteryCell.textContent = alarm.battery || 'Kol Alarmı';
+        batteryCell.textContent = alarm.batteryDisplay || 'Kol Alarmı';
         row.appendChild(batteryCell);
         
         // Açıklama
@@ -436,7 +436,7 @@ if (typeof window.AlarmsPage === 'undefined') {
         
         // Batarya
         const batteryCell = document.createElement('td');
-        batteryCell.textContent = alarm.battery || 'Kol Alarmı';
+        batteryCell.textContent = alarm.batteryDisplay || 'Kol Alarmı';
         row.appendChild(batteryCell);
         
         // Açıklama

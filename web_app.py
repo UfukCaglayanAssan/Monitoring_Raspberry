@@ -977,6 +977,7 @@ def process_alarm_data(alarm):
         
         # Ortak alarm kontrol fonksiyonunu kullan
         if not is_valid_alarm(error_msb, error_lsb):
+            print(f"⚠️ Geçersiz alarm filtrelendi: arm={arm}, battery={battery}, MSB={error_msb}, LSB={error_lsb}")
             return None
         
         alarm_type = get_alarm_type(error_msb, error_lsb)
@@ -984,17 +985,21 @@ def process_alarm_data(alarm):
         if alarm_type == 'arm':  # Kol alarmı
             description = get_arm_alarm_description(error_msb)
             battery_display = "Kol Alarmı"
+            battery_key = 0  # JavaScript için kol alarmı key'i
         else:  # Batarya alarmı
             description = get_battery_alarm_description(error_msb, error_lsb)
             # Batarya alarmlarında k değeri varsa göster (2 eksik), yoksa boş bırak
             if battery == 0:
                 battery_display = ""
+                battery_key = 0
             else:
-                battery_display = str(battery - 2)  # k değerinden 2 çıkar
+                battery_display = str(battery - 2)  # k değerinden 2 çıkar (ekranda gösterilecek)
+                battery_key = battery  # Orijinal k değeri (JavaScript için)
         
         return {
             'arm': arm,
-            'battery': battery_display,
+            'battery': battery_key,  # JavaScript için orijinal k değeri
+            'batteryDisplay': battery_display,  # Ekranda gösterilecek değer
             'description': description,
             'status': "Devam Ediyor",
             'timestamp': timestamp,
