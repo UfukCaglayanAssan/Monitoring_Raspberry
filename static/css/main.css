@@ -395,20 +395,27 @@ body {
 .battery-icon {
     background: #059669;
     border-radius: 50%;
-    padding: 8px;  /* 4px'den 8px'e çıkarıldı */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     margin-bottom: 6px;
-    width: 32px;   /* Sabit genişlik eklendi */
-    height: 32px;  /* Sabit yükseklik eklendi */
+    width: 40px;   /* Biraz daha büyük */
+    height: 40px;  /* Biraz daha büyük */
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .battery-icon i {
-    width: 20px;   /* 16px'den 20px'e çıkarıldı */
-    height: 20px;  /* 16px'den 20px'e çıkarıldı */
-    color: white;
+    width: 20px;
+    height: 20px;
+    color: white !important;
+    fill: white !important;  /* SVG ikonlar için */
+    display: block;  /* İkon tam ortalanması için */
+}
+
+.battery-icon i::before,
+.battery-icon i::after {
+    color: white !important;
+    fill: white !important;
 }
 
 .card-info {
@@ -765,10 +772,29 @@ body {
     border-radius: 18px !important; /* İçerik de oval olsun */
 }
 
+.battery-card.battery-alarm .card-front {
+    border: none !important; /* Gri border'ı kaldır */
+}
+
 /* Alarm durumunda arka yüz */
 .battery-card.battery-alarm .card-back {
     background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%) !important; /* red-700 to red-600 */
     border: 2px solid #ef4444 !important; /* red-500 */
+}
+
+.battery-card.battery-alarm .card-back .battery-icon {
+    background: #7f1d1d !important; /* red-900 - daha koyu kırmızı */
+}
+
+.battery-card.battery-alarm .card-back .battery-icon i {
+    color: #ffffff !important; /* Beyaz - Fenerbahçe dostu renk */
+    fill: #ffffff !important;
+}
+
+.battery-card.battery-alarm .card-back .battery-icon i::before,
+.battery-card.battery-alarm .card-back .battery-icon i::after {
+    color: #ffffff !important;
+    fill: #ffffff !important;
 }
 
 .battery-card.battery-alarm .card-back .data-item {
@@ -782,8 +808,30 @@ body {
     background: #7f1d1d !important; /* red-900 - daha koyu kırmızı */
 }
 
+.battery-card.battery-alarm .card-front .battery-icon {
+    background: #7f1d1d !important; /* red-900 - daha koyu kırmızı */
+}
+
 .battery-card.battery-alarm .battery-icon i {
     color: #ffffff !important; /* Beyaz - Fenerbahçe dostu renk */
+    fill: #ffffff !important;
+}
+
+.battery-card.battery-alarm .battery-icon i::before,
+.battery-card.battery-alarm .battery-icon i::after {
+    color: #ffffff !important;
+    fill: #ffffff !important;
+}
+
+.battery-card.battery-alarm .card-front .battery-icon i {
+    color: #ffffff !important; /* Beyaz - Fenerbahçe dostu renk */
+    fill: #ffffff !important;
+}
+
+.battery-card.battery-alarm .card-front .battery-icon i::before,
+.battery-card.battery-alarm .card-front .battery-icon i::after {
+    color: #ffffff !important;
+    fill: #ffffff !important;
 }
 
 .battery-card.passive-balance {
@@ -802,6 +850,10 @@ body {
 .battery-card.passive-balance .battery-card-content {
     background: #dbeafe !important; /* bg-blue-100 */
     border-radius: 18px !important; /* İçerik de oval olsun */
+}
+
+.battery-card.passive-balance .card-front {
+    border: none !important; /* Gri border'ı kaldır */
 }
 
 /* Pasif balans arka yüzde bant */
