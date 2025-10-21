@@ -2681,62 +2681,6 @@ def get_dynamic_data_by_index(start_index, quantity):
                     print(f"🔋 Batarya{i+1}: {result[start_idx]:.3f}V, SOC:{result[start_idx+1]:.1f}%, RIMT:{result[start_idx+2]:.1f}°C, SOH:{result[start_idx+3]:.1f}%, NTC1:{result[start_idx+4]:.1f}°C, NTC2:{result[start_idx+5]:.1f}°C, NTC3:{result[start_idx+6]:.1f}°C")
         return result
 
-def get_alarm_data_by_index(start_address, quantity):
-    """Alarm verilerini indekse göre döndür"""
-    try:
-        print(f"DEBUG: get_alarm_data_by_index start_address={start_address}, quantity={quantity}")
-        
-        result = []
-        current_address = start_address
-        
-        # Alarm adres aralıkları: 5001-5844
-        # 5001-5004: Kol 1 alarmları (akım, nem, ortam sıcaklığı, kol sıcaklığı)
-        # 5005-5844: Batarya alarmları (7 alarm türü x 120 batarya x 4 kol)
-        
-        for i in range(quantity):
-            if current_address >= 5001 and current_address <= 5844:
-                # Kol alarmları (5001-5004)
-                if 5001 <= current_address <= 5004:
-                    arm = 1
-                    alarm_type = current_address - 5000  # 1, 2, 3, 4
-                    
-                    with data_lock:
-                        if arm in alarm_ram and 0 in alarm_ram[arm]:
-                            alarm_status = alarm_ram[arm][0].get(alarm_type, False)
-                            result.append(1.0 if alarm_status else 0.0)
-                        else:
-                            result.append(0.0)
-                
-                # Batarya alarmları (5005-5844)
-                elif 5005 <= current_address <= 5844:
-                    # Hesaplama: (current_address - 5005) / 7 = batarya numarası
-                    battery_offset = current_address - 5005
-                    battery_num = (battery_offset // 7) + 1
-                    alarm_type = (battery_offset % 7) + 1
-                    
-                    # Hangi kola ait olduğunu hesapla
-                    arm = 1  # Basit hesaplama, gerçekte daha karmaşık olabilir
-                    
-                    with data_lock:
-                        if arm in alarm_ram and battery_num in alarm_ram[arm]:
-                            alarm_status = alarm_ram[arm][battery_num].get(alarm_type, False)
-                            result.append(1.0 if alarm_status else 0.0)
-                        else:
-                            result.append(0.0)
-                else:
-                    result.append(0.0)
-            else:
-                result.append(0.0)
-            
-            current_address += 1
-            
-        print(f"DEBUG: Alarm sonuç: {result}")
-        return result
-        
-    except Exception as e:
-        print(f"get_alarm_data_by_index hatası: {e}")
-        return []
-
 def get_snmp_data(oid):
     """SNMP OID'ine göre veri döndür"""
     try:
