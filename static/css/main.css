@@ -396,12 +396,12 @@ body {
     background: #059669;
     border-radius: 50%;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    margin-bottom: 6px;
-    width: 40px;   /* Biraz daha büyük */
-    height: 40px;  /* Biraz daha büyük */
+    width: 35px;   
+    height: 35px;  
     display: flex;
     align-items: center;
     justify-content: center;
+    padding : 3px 0  0 3px;
 }
 
 .battery-icon i {

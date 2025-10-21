@@ -21,6 +21,7 @@ if (typeof window.BatteryLogsPage === 'undefined') {
         console.log('🚀 BatteryLogsPage init() çağrıldı');
         this.bindEvents();
         this.setDefaultDates();
+        this.initSelect2();
         this.loadArmOptions();
         this.loadLogs();
     }
@@ -60,8 +61,9 @@ if (typeof window.BatteryLogsPage === 'undefined') {
             this.updateBatteryOptions(e.target.value);
         });
 
-        document.getElementById('batteryFilter').addEventListener('change', (e) => {
-            this.filters.battery = e.target.value;
+        // Select2 için jQuery event kullan
+        $('#batteryFilter').on('change', (e) => {
+            this.filters.battery = $(e.target).val();
         });
 
         document.getElementById('startDate').addEventListener('change', (e) => {
@@ -259,7 +261,7 @@ if (typeof window.BatteryLogsPage === 'undefined') {
     applyFilters() {
         // Filtre değerlerini güncelle
         this.filters.arm = document.getElementById('armFilter').value;
-        this.filters.battery = document.getElementById('batteryFilter').value;
+        this.filters.battery = $('#batteryFilter').val();
         this.filters.startDate = document.getElementById('startDate').value;
         this.filters.endDate = document.getElementById('endDate').value;
         
@@ -278,7 +280,7 @@ if (typeof window.BatteryLogsPage === 'undefined') {
         };
         
         document.getElementById('armFilter').value = '';
-        document.getElementById('batteryFilter').value = '';
+        $('#batteryFilter').val('').trigger('change');
         this.setDefaultDates();
         
         // Batarya seçeneklerini sıfırla
@@ -299,6 +301,7 @@ if (typeof window.BatteryLogsPage === 'undefined') {
                 const data = await response.json();
                 if (data.success && data.activeArms) {
                     const armFilter = document.getElementById('armFilter');
+                    const currentArmValue = armFilter.value; // Mevcut seçimi sakla
                     
                     // Kol seçeneklerini güncelle
                     armFilter.innerHTML = '<option value="">Tüm Kollar</option>';
@@ -310,6 +313,26 @@ if (typeof window.BatteryLogsPage === 'undefined') {
                             armFilter.appendChild(option);
                         }
                     });
+                    
+                    // Eğer daha önce bir kol seçilmişse, onu geri yükle ve batarya seçeneklerini güncelle
+                    if (currentArmValue) {
+                        armFilter.value = currentArmValue;
+                        this.filters.arm = currentArmValue;
+                        
+                        // Batarya seçimini de sakla
+                        const currentBatteryValue = $('#batteryFilter').val();
+                        
+                        await this.updateBatteryOptions(currentArmValue);
+                        
+                        // Batarya seçimini geri yükle
+                        if (currentBatteryValue) {
+                            $('#batteryFilter').val(currentBatteryValue).trigger('change');
+                            this.filters.battery = currentBatteryValue;
+                        }
+                    } else {
+                        // Kol seçilmemişse batarya seçeneğini devre dışı bırak
+                        await this.updateBatteryOptions('');
+                    }
                 }
             }
         } catch (error) {
@@ -317,11 +340,26 @@ if (typeof window.BatteryLogsPage === 'undefined') {
         }
     }
     
+    initSelect2() {
+        // Batarya select2'yi başlat
+        $('#batteryFilter').select2({
+            placeholder: 'Önce kol seçiniz',
+            allowClear: true,
+            width: '100%'
+        });
+    }
+
     async updateBatteryOptions(selectedArm) {
         const batteryFilter = document.getElementById('batteryFilter');
         
         if (!selectedArm) {
-            batteryFilter.innerHTML = '<option value="">Önce kol seçiniz</option>';
+            $('#batteryFilter').empty();
+            $('#batteryFilter').append('<option value="">Önce kol seçiniz</option>');
+            $('#batteryFilter').select2({
+                placeholder: 'Önce kol seçiniz',
+                allowClear: true,
+                width: '100%'
+            });
             batteryFilter.disabled = true;
             return;
         }
@@ -335,22 +373,45 @@ if (typeof window.BatteryLogsPage === 'undefined') {
                 const batteryCount = selectedArmData ? selectedArmData.slave_count : 0;
                 
                 if (batteryCount > 0) {
-                    batteryFilter.innerHTML = '<option value="">Tüm Bataryalar</option>';
-                    for (let i = 0; i < batteryCount; i++) {
-                        const option = document.createElement('option');
-                        option.value = i + 1;  // 1'den başla
-                        option.textContent = `Batarya ${i + 1}`;
-                        batteryFilter.appendChild(option);
+                    // Select2'yi temizle
+                    $('#batteryFilter').empty();
+                    
+                    // Tüm Bataryalar seçeneği ekle
+                    $('#batteryFilter').append('<option value="">Tüm Bataryalar</option>');
+                    
+                    // Batarya seçeneklerini ekle (1'den başla)
+                    for (let i = 1; i <= batteryCount; i++) {
+                        $('#batteryFilter').append(`<option value="${i}">Batarya ${i}</option>`);
                     }
+                    
+                    // Select2'yi yeniden başlat
+                    $('#batteryFilter').select2({
+                        placeholder: 'Batarya seçiniz',
+                        allowClear: true,
+                        width: '100%'
+                    });
+                    
                     batteryFilter.disabled = false;
                 } else {
-                    batteryFilter.innerHTML = '<option value="">Bu kolda batarya yok</option>';
+                    $('#batteryFilter').empty();
+                    $('#batteryFilter').append('<option value="">Bu kolda batarya yok</option>');
+                    $('#batteryFilter').select2({
+                        placeholder: 'Bu kolda batarya yok',
+                        allowClear: true,
+                        width: '100%'
+                    });
                     batteryFilter.disabled = true;
                 }
             }
         } catch (error) {
             console.error('Batarya seçenekleri yükleme hatası:', error);
-            batteryFilter.innerHTML = '<option value="">Hata oluştu</option>';
+            $('#batteryFilter').empty();
+            $('#batteryFilter').append('<option value="">Hata oluştu</option>');
+            $('#batteryFilter').select2({
+                placeholder: 'Hata oluştu',
+                allowClear: true,
+                width: '100%'
+            });
             batteryFilter.disabled = true;
         }
     }
