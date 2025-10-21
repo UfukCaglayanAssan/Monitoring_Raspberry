@@ -15,6 +15,10 @@ from collections import defaultdict
 from database import BatteryDatabase
 from alarm_processor import alarm_processor
 
+# Unbuffered output - logların hemen görünmesi için
+sys.stdout.reconfigure(line_buffering=True)
+sys.stderr.reconfigure(line_buffering=True)
+
 # SNMP imports
 from pysnmp.entity import engine, config
 from pysnmp.entity.rfc3413 import cmdrsp, context
@@ -2087,36 +2091,70 @@ def get_alarm_data_by_index(start_index, quantity):
         
         print(f"DEBUG: Hedef kol: {target_arm}, aralık: {arm_start}-{arm_start+843}")
         
-        # Kol alarmları (4 adet)
-        for alarm_type in range(1, 5):  # 1-4
-            if current_index >= start_index and len(result) < quantity:
-                alarm_value = alarm_ram.get(target_arm, {}).get(0, {}).get(alarm_type, False)
+        # Başlangıç register'ından itibaren istenen miktarda alarm dön
+        current_register = start_index
+        max_battery_found = False  # Maksimum batarya sayısını geçtik mi?
+        
+        for i in range(quantity):
+            # Hangi kolda olduğumuzu belirle (kol değişebilir)
+            if 5001 <= current_register <= 5844:
+                current_arm = 1
+                current_arm_start = 5001
+            elif 5845 <= current_register <= 6688:
+                current_arm = 2
+                current_arm_start = 5845
+                max_battery_found = False  # Yeni kola geçtik, reset
+            elif 6689 <= current_register <= 7532:
+                current_arm = 3
+                current_arm_start = 6689
+                max_battery_found = False  # Yeni kola geçtik, reset
+            elif 7533 <= current_register <= 8376:
+                current_arm = 4
+                current_arm_start = 7533
+                max_battery_found = False  # Yeni kola geçtik, reset
+            else:
+                # Geçersiz aralık
+                result.append(0)
+                current_register += 1
+                continue
+            
+            offset = current_register - current_arm_start  # Kol başlangıcından offset
+            
+            if 0 <= offset <= 3:
+                # Kol alarmları (0-3 = alarm tip 1-4)
+                alarm_type = offset + 1
+                alarm_value = alarm_ram.get(current_arm, {}).get(0, {}).get(alarm_type, False)
                 result.append(1 if alarm_value else 0)
-                print(f"DEBUG: Kol {target_arm} alarm {alarm_type}: {alarm_value}")
-            current_index += 1
-            
-            if len(result) >= quantity:
-                break
-        
-        # Batarya alarmları (120 × 7 = 840 adet)
-        battery_count = arm_slave_counts_ram.get(target_arm, 0)
-        for battery_num in range(1, battery_count + 1):
-            for alarm_type in range(1, 8):  # 1-7
-                if current_index >= start_index and len(result) < quantity:
-                    alarm_value = alarm_ram.get(target_arm, {}).get(battery_num, {}).get(alarm_type, False)
-                    result.append(1 if alarm_value else 0)
-                    print(f"DEBUG: Kol {target_arm} Batarya {battery_num} alarm {alarm_type}: {alarm_value}")
-                current_index += 1
+                print(f"DEBUG: Register {current_register}: Kol {current_arm} alarm tip {alarm_type} = {alarm_value}")
+            elif 4 <= offset <= 843:
+                # Batarya alarmları (4-843 = 120 batarya × 7 alarm)
+                battery_offset = offset - 4  # Kol alarmlarını atla (0'dan başla)
+                battery_num = (battery_offset // 7) + 1  # Hangi batarya (1-120)
+                alarm_type_index = battery_offset % 7    # 0-6 arası
+                alarm_type = alarm_type_index + 1        # 1-7 arası alarm tipi
                 
-                if len(result) >= quantity:
-                    break
+                # Optimizasyon: Eğer maksimum batarya aşıldıysa direkt 0 dön
+                if max_battery_found:
+                    result.append(0)
+                    print(f"DEBUG: Register {current_register}: Kol {current_arm} Batarya {battery_num} - maksimum aşıldı, 0")
+                else:
+                    # RAM'de bu batarya var mı kontrol et
+                    if battery_num in alarm_ram.get(current_arm, {}):
+                        # RAM'de var - alarm değerini al
+                        alarm_value = alarm_ram[current_arm][battery_num].get(alarm_type, False)
+                        result.append(1 if alarm_value else 0)
+                        print(f"DEBUG: Register {current_register}: Kol {current_arm} Batarya {battery_num} alarm tip {alarm_type} = {alarm_value}")
+                    else:
+                        # RAM'de yok - takılı değil - 0 dön ve flag set et
+                        result.append(0)
+                        max_battery_found = True  # Sonraki bataryalar da yok
+                        print(f"DEBUG: Register {current_register}: Kol {current_arm} Batarya {battery_num} takılı değil - sonrakiler de yok")
+            else:
+                # Geçersiz offset - 0 dön
+                result.append(0)
+                print(f"DEBUG: Register {current_register}: Geçersiz offset {offset} - alarm = 0")
             
-            if len(result) >= quantity:
-                break
-        
-        # Eksik veriler için 0 ekle
-        while len(result) < quantity:
-            result.append(0)
+            current_register += 1
         
         print(f"DEBUG: Alarm sonuç: {result}")
         return result
@@ -2153,31 +2191,66 @@ def get_status_data_by_index(start_index, quantity):
         
         print(f"DEBUG: Hedef kol: {target_arm}, aralık: {arm_start}-{arm_start+120}")
         
-        # Kol statusu (1 adet)
-        if current_index >= start_index and len(result) < quantity:
-            status_value = status_ram.get(target_arm, {}).get(0, True)  # Kol statusu
-            result.append(1 if status_value else 0)
-            print(f"DEBUG: Kol {target_arm} status: {status_value}")
-        current_index += 1
+        # Başlangıç register'ından itibaren istenen miktarda status dön
+        current_register = start_index
+        max_battery_found = False  # Maksimum batarya sayısını geçtik mi?
         
-        if len(result) >= quantity:
-            return result
-        
-        # Batarya statusları (120 adet)
-        battery_count = arm_slave_counts_ram.get(target_arm, 0)
-        for battery_num in range(1, battery_count + 1):
-            if current_index >= start_index and len(result) < quantity:
-                status_value = status_ram.get(target_arm, {}).get(battery_num, True)
-                result.append(1 if status_value else 0)
-                print(f"DEBUG: Kol {target_arm} Batarya {battery_num} status: {status_value}")
-            current_index += 1
+        for i in range(quantity):
+            # Hangi kolda olduğumuzu belirle (kol değişebilir)
+            if 9001 <= current_register <= 9121:
+                current_arm = 1
+                current_arm_start = 9001
+            elif 9122 <= current_register <= 9242:
+                current_arm = 2
+                current_arm_start = 9122
+                max_battery_found = False  # Yeni kola geçtik, reset
+            elif 9243 <= current_register <= 9363:
+                current_arm = 3
+                current_arm_start = 9243
+                max_battery_found = False  # Yeni kola geçtik, reset
+            elif 9364 <= current_register <= 9484:
+                current_arm = 4
+                current_arm_start = 9364
+                max_battery_found = False  # Yeni kola geçtik, reset
+            else:
+                # Geçersiz aralık
+                result.append(0)
+                current_register += 1
+                continue
             
-            if len(result) >= quantity:
-                break
-        
-        # Eksik alanları 0 ile doldur
-        while len(result) < quantity:
-            result.append(0)
+            offset = current_register - current_arm_start  # Kol başlangıcından offset
+            
+            if offset == 0:
+                # Kol statusu
+                status_value = status_ram.get(current_arm, {}).get(0, True)
+                result.append(1 if status_value else 0)
+                print(f"DEBUG: Register {current_register}: Kol {current_arm} status = {status_value}")
+            elif 1 <= offset <= 120:
+                # Batarya statusu (offset = batarya numarası)
+                battery_num = offset
+                
+                # Optimizasyon: Eğer önceki batarya yoktu ve aynı koldaysak, direkt 0 dön
+                if max_battery_found:
+                    result.append(0)
+                    print(f"DEBUG: Register {current_register}: Kol {current_arm} Batarya {battery_num} - maksimum aşıldı, 0")
+                else:
+                    # RAM'de bu batarya var mı kontrol et
+                    if battery_num in status_ram.get(current_arm, {}):
+                        # RAM'de var - değerini al
+                        status_value = status_ram[current_arm][battery_num]
+                        result.append(1 if status_value else 0)
+                        print(f"DEBUG: Register {current_register}: Kol {current_arm} Batarya {battery_num} status = {status_value}")
+                    else:
+                        # RAM'de yok - takılı değil - 0 dön ve flag set et
+                        result.append(0)
+                        max_battery_found = True  # Sonraki bataryalar da yok
+                        print(f"DEBUG: Register {current_register}: Kol {current_arm} Batarya {battery_num} takılı değil - sonrakiler de yok")
+            else:
+                # Geçersiz offset - 0 dön
+                result.append(0)
+                print(f"DEBUG: Register {current_register}: Geçersiz offset {offset} - status = 0")
+            
+            current_register += 1
         
         print(f"DEBUG: Status sonuç: {result}")
         return result
