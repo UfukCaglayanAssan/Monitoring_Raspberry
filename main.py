@@ -630,13 +630,14 @@ def db_worker():
                 
                 # Batkon alarm verisi işleme
                 arm_value = int(data[3], 16)
-                battery = int(data[1], 16)  # 2. byte batarya numarası
+                k_value = int(data[1], 16)  # 2. byte k değeri (3-122 arası)
+                battery = k_value - 2  # Batarya numarası (1-120 arası)
                 error_msb = int(data[4], 16)
                 error_lsb = int(data[5], 16)
                 
                 # Detaylı console log
                 print(f"\n*** BATKON ALARM VERİSİ ALGILANDI - {timestamp} ***")
-                print(f"Arm: {arm_value}, Battery: {battery}, Error MSB: {error_msb}, Error LSB: {error_lsb}")
+                print(f"Arm: {arm_value}, k: {k_value}, Battery: {battery}, Error MSB: {error_msb}, Error LSB: {error_lsb}")
                 print(f"Ham Veri: {data}")
                 alarm_timestamp = int(time.time() * 1000)
                 
