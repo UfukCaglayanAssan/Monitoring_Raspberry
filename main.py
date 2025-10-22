@@ -432,11 +432,12 @@ def send_reset_system_signal():
         print(f"❌ Reset system sinyali gönderilirken hata: {e}")
         return False
 
-def add_missing_data(arm_value, battery_value):
-    """Missing data ekle"""
+def add_missing_data(arm_value, k_value):
+    """Missing data ekle - k_value (3-122) ile çalışır"""
+    battery_value = k_value - 2  # Batarya numarası (1-120)
     with missing_data_lock:
-        missing_data_tracker.add((arm_value, battery_value))
-        print(f"📝 Missing data eklendi: Kol {arm_value}, Batarya {battery_value}")
+        missing_data_tracker.add((arm_value, k_value))
+        print(f"📝 Missing data eklendi: Kol {arm_value}, k: {k_value}, Batarya {battery_value}")
 
 
 def clear_missing_data():
@@ -445,12 +446,13 @@ def clear_missing_data():
         missing_data_tracker.clear()
         print("🧹 Missing data listesi temizlendi")
 
-def resolve_missing_data(arm_value, battery_value):
-    """Missing data'yı düzelt (veri geldiğinde)"""
+def resolve_missing_data(arm_value, k_value):
+    """Missing data'yı düzelt (veri geldiğinde) - k_value (3-122) ile çalışır"""
+    battery_value = k_value - 2  # Batarya numarası (1-120)
     with missing_data_lock:
-        if (arm_value, battery_value) in missing_data_tracker:
-            missing_data_tracker.remove((arm_value, battery_value))
-            print(f"✅ Missing data düzeltildi: Kol {arm_value}, Batarya {battery_value}")
+        if (arm_value, k_value) in missing_data_tracker:
+            missing_data_tracker.remove((arm_value, k_value))
+            print(f"✅ Missing data düzeltildi: Kol {arm_value}, k: {k_value}, Batarya {battery_value}")
             return True
         return False
 
@@ -462,16 +464,17 @@ def save_missing_data_before_reset():
             missing_data_before_reset.update(missing_data_tracker)
             print(f"📝 Reset öncesi missing data'lar kaydedildi: {len(missing_data_before_reset)} adet")
 
-def check_missing_data_after_reset(arm_value, battery_value):
+def check_missing_data_after_reset(arm_value, k_value):
     """Reset sonrası missing data kontrolü - status 0 gelirse alarm oluştur"""
+    battery_value = k_value - 2  # Batarya numarası (1-120)
     with missing_data_before_reset_lock:
-        if (arm_value, battery_value) in missing_data_before_reset:
+        if (arm_value, k_value) in missing_data_before_reset:
             # Bu batarya reset öncesi missing data'daydı, şimdi tekrar status 0 gelirse alarm
-            print(f"🚨 VERİ GELMİYOR ALARMI: Kol {arm_value}, Batarya {battery_value} - Reset sonrası hala veri gelmiyor")
-            # "Veri gelmiyor" alarmı oluştur
-            alarm_processor.add_alarm(arm_value, battery_value, 0, 0, int(time.time() * 1000))  # error_msb=0, error_lsb=0 = veri gelmiyor
-            print(f"📝 Veri gelmiyor alarmı eklendi - Arm: {arm_value}, Battery: {battery_value}")
-            # Status'u 0 yap (veri yok)
+            print(f"🚨 VERİ GELMİYOR ALARMI: Kol {arm_value}, k: {k_value}, Batarya {battery_value} - Reset sonrası hala veri gelmiyor")
+            # "Veri gelmiyor" alarmı oluştur - k_value kaydet
+            alarm_processor.add_alarm(arm_value, k_value, 0, 0, int(time.time() * 1000))  # error_msb=0, error_lsb=0 = veri gelmiyor
+            print(f"📝 Veri gelmiyor alarmı eklendi - Arm: {arm_value}, k: {k_value}, Battery: {battery_value}")
+            # Status'u 0 yap (veri yok) - battery_value kullan (RAM için)
             update_status(arm_value, battery_value, False)
             return True
     return False
@@ -648,11 +651,11 @@ def db_worker():
                 # Eğer errorlsb=1 ve errormsb=1 ise, mevcut alarmı düzelt
                 if error_lsb == 1 and error_msb == 1:
                     # Periyot bitiminde işlenecek şekilde düzeltme ekle
-                    alarm_processor.add_resolve(arm_value, battery)
-                    print(f"📝 Batkon alarm düzeltme eklendi (beklemede) - Arm: {arm_value}, Battery: {battery}")
+                    alarm_processor.add_resolve(arm_value, k_value)  # k_value kaydet (3-122)
+                    print(f"📝 Batkon alarm düzeltme eklendi (beklemede) - Arm: {arm_value}, k: {k_value}, Battery: {battery}")
                 else:
                     # Periyot bitiminde işlenecek şekilde alarm ekle
-                    alarm_processor.add_alarm(arm_value, battery, error_msb, error_lsb, alarm_timestamp)
+                    alarm_processor.add_alarm(arm_value, k_value, error_msb, error_lsb, alarm_timestamp)  # k_value kaydet (3-122)
                     print("📝 Yeni Batkon alarm eklendi (beklemede)")
                 
                 # Periyot tamamlandı mı kontrol et (son batarya alarmından sonra)
@@ -681,26 +684,27 @@ def db_worker():
                 
                 # Missing data kaydı hazırla
                 arm_value = raw_bytes[3]
-                slave_value = raw_bytes[1]
+                k_value = raw_bytes[1]  # k değeri (3-122)
+                battery_value = k_value - 2  # Batarya numarası (1-120)
                 status_value = raw_bytes[4]
                 missing_timestamp = int(time.time() * 1000)
                 
-                print(f"Missing data: Kol {arm_value}, Batarya {slave_value}, Status: {status_value}")
+                print(f"Missing data: Kol {arm_value}, k: {k_value}, Batarya: {battery_value}, Status: {status_value}")
                 
                 # Status 0 = Veri gelmiyor, Status 1 = Veri geliyor (düzeltme)
                 if status_value == 0:
-                    # Veri gelmiyor - missing data ekle
-                    add_missing_data(arm_value, slave_value)
-                    print(f"🆕 VERİ GELMİYOR: Kol {arm_value}, Batarya {slave_value}")
+                    # Veri gelmiyor - missing data ekle (k_value kaydet)
+                    add_missing_data(arm_value, k_value)
+                    print(f"🆕 VERİ GELMİYOR: Kol {arm_value}, Batarya {battery_value}")
                     
-                    # Status güncelle (veri yok)
-                    update_status(arm_value, slave_value, False)
+                    # Status güncelle (veri yok) - battery_value kullan (RAM için)
+                    update_status(arm_value, battery_value, False)
                     
-                    # Reset sonrası kontrol - eğer bu batarya reset öncesi missing data'daydı ve hala status 0 geliyorsa alarm
-                    check_missing_data_after_reset(arm_value, slave_value)
+                    # Reset sonrası kontrol - k_value kaydet
+                    check_missing_data_after_reset(arm_value, k_value)
                     
-                    # Periyot tamamlandı mı kontrol et
-                    if is_period_complete(arm_value, slave_value, is_missing_data=True):
+                    # Periyot tamamlandı mı kontrol et - battery_value kullan
+                    if is_period_complete(arm_value, battery_value, is_missing_data=True):
                         # Periyot bitti, alarmları işle
                         alarm_processor.process_period_end()
                         # Veri alma modunu durdur
@@ -715,22 +719,22 @@ def db_worker():
                             print("⏰ Reset system gönderilemedi, periyot devam ediyor")
                         
                 elif status_value == 1:
-                    # Veri geliyor - missing data düzelt
-                    if resolve_missing_data(arm_value, slave_value):
-                        print(f"✅ VERİ GELDİ: Kol {arm_value}, Batarya {slave_value} - Missing data düzeltildi")
-                        # Status güncelle (veri var)
-                        update_status(arm_value, slave_value, True)
-                        # Alarm düzeltme işlemi
-                        alarm_processor.add_resolve(arm_value, slave_value)
-                        print(f"📝 Missing data alarm düzeltme eklendi - Arm: {arm_value}, Battery: {slave_value}")
+                    # Veri geliyor - missing data düzelt (k_value kaydet)
+                    if resolve_missing_data(arm_value, k_value):
+                        print(f"✅ VERİ GELDİ: Kol {arm_value}, Batarya {battery_value} - Missing data düzeltildi")
+                        # Status güncelle (veri var) - battery_value kullan (RAM için)
+                        update_status(arm_value, battery_value, True)
+                        # Alarm düzeltme işlemi - k_value kaydet
+                        alarm_processor.add_resolve(arm_value, k_value)
+                        print(f"📝 Missing data alarm düzeltme eklendi - Arm: {arm_value}, k: {k_value}, Battery: {battery_value}")
                     else:
-                        print(f"ℹ️ VERİ GELDİ: Kol {arm_value}, Batarya {slave_value} - Missing data zaten yoktu")
-                        # Status güncelle (veri var)
-                        update_status(arm_value, slave_value, True)
+                        print(f"ℹ️ VERİ GELDİ: Kol {arm_value}, Batarya {battery_value} - Missing data zaten yoktu")
+                        # Status güncelle (veri var) - battery_value kullan (RAM için)
+                        update_status(arm_value, battery_value, True)
                 
-                # SQLite'ye kaydet
+                # SQLite'ye kaydet - k_value kaydet
                 with db_lock:
-                    db.insert_missing_data(arm_value, slave_value, status_value, missing_timestamp)
+                    db.insert_missing_data(arm_value, k_value, status_value, missing_timestamp)
                 print("✓ Missing data SQLite'ye kaydedildi")
                 continue
 
@@ -1248,14 +1252,15 @@ def db_worker():
                         updated_at = int(time.time() * 1000)
                         global program_start_time
                         if updated_at > program_start_time:
-                            slave_value = raw_bytes[1]  # Gerçek slave değeri (k_value)
+                            k_value = raw_bytes[1]  # k değeri (3-122 arası)
+                            battery_value = k_value - 2  # Batarya numarası (1-120)
                             arm_value = raw_bytes[3]
                             status_value = raw_bytes[4]
                             balance_timestamp = updated_at
                             
                             with db_lock:
-                                db.update_or_insert_passive_balance(arm_value, slave_value, status_value, balance_timestamp)
-                            print(f"✓ Balans güncellendi: Arm={arm_value}, Slave={slave_value}, Status={status_value}")
+                                db.update_or_insert_passive_balance(arm_value, k_value, status_value, balance_timestamp)  # k_value kaydet
+                            print(f"✓ Balans güncellendi: Arm={arm_value}, k={k_value}, Battery={battery_value}, Status={status_value}")
                             program_start_time = updated_at
                     except Exception as e:
                         print(f"Balans kayıt hatası: {e}")
@@ -2125,7 +2130,7 @@ def get_alarm_data_by_index(start_index, quantity):
                 # Kol alarmları (0-3 = alarm tip 1-4)
                 alarm_type = offset + 1
                 alarm_value = alarm_ram.get(current_arm, {}).get(0, {}).get(alarm_type, False)
-                result.append(1 if alarm_value else 0)
+                    result.append(1 if alarm_value else 0)
                 print(f"DEBUG: Register {current_register}: Kol {current_arm} alarm tip {alarm_type} = {alarm_value}")
             elif 4 <= offset <= 843:
                 # Batarya alarmları (4-843 = 120 batarya × 7 alarm)
@@ -2136,7 +2141,7 @@ def get_alarm_data_by_index(start_index, quantity):
                 
                 # Optimizasyon: Eğer maksimum batarya aşıldıysa direkt 0 dön
                 if max_battery_found:
-                    result.append(0)
+            result.append(0)
                     print(f"DEBUG: Register {current_register}: Kol {current_arm} Batarya {battery_num} - maksimum aşıldı, 0")
                 else:
                     # RAM'de bu batarya var mı kontrol et
@@ -2232,7 +2237,7 @@ def get_status_data_by_index(start_index, quantity):
                 
                 # Optimizasyon: Eğer önceki batarya yoktu ve aynı koldaysak, direkt 0 dön
                 if max_battery_found:
-                    result.append(0)
+            result.append(0)
                     print(f"DEBUG: Register {current_register}: Kol {current_arm} Batarya {battery_num} - maksimum aşıldı, 0")
                 else:
                     # RAM'de bu batarya var mı kontrol et
@@ -2667,7 +2672,7 @@ def get_dynamic_data_by_index(start_index, quantity):
                 
         # Eksik registerler için 0.0 ekle
         while len(result) < quantity:
-            result.append(0.0)
+                            result.append(0.0)
                 
         # Temiz log - dönen verileri göster
         print(f"📊 Modbus Response: {len(result)} register döndürüldü")
