@@ -302,8 +302,13 @@ if (typeof window.BatteryLogsPage === 'undefined') {
                 const data = await response.json();
                 if (data.success && data.activeArms) {
                     const armFilter = document.getElementById('armFilter');
-                    const currentArmValue = armFilter.value; // Mevcut seçimi sakla
-                    console.log('📌 Mevcut kol seçimi:', currentArmValue);
+                    const currentArmValue = this.filters.arm || armFilter.value; // filters'tan veya element'ten al
+                    console.log('📌 Mevcut kol seçimi (filters):', this.filters.arm);
+                    console.log('📌 Mevcut kol seçimi (element):', armFilter.value);
+                    console.log('📌 Kullanılacak kol seçimi:', currentArmValue);
+                    
+                    // Event listener'ı kaldır (yeniden bağlanacak)
+                    const oldArmFilter = armFilter.cloneNode(false);
                     
                     // Kol seçeneklerini güncelle
                     armFilter.innerHTML = '<option value="">Tüm Kollar</option>';
@@ -316,6 +321,13 @@ if (typeof window.BatteryLogsPage === 'undefined') {
                         }
                     });
                     
+                    // Event listener'ı yeniden bağla
+                    armFilter.addEventListener('change', (e) => {
+                        console.log('🔔 Kol seçimi değişti:', e.target.value);
+                        this.filters.arm = e.target.value;
+                        this.updateBatteryOptions(e.target.value);
+                    });
+                    
                     // Eğer daha önce bir kol seçilmişse, onu geri yükle ve batarya seçeneklerini güncelle
                     if (currentArmValue) {
                         console.log('✅ Kol seçimi geri yükleniyor:', currentArmValue);
@@ -323,7 +335,7 @@ if (typeof window.BatteryLogsPage === 'undefined') {
                         this.filters.arm = currentArmValue;
                         
                         // Batarya seçimini de sakla
-                        const currentBatteryValue = $('#batteryFilter').val();
+                        const currentBatteryValue = this.filters.battery || $('#batteryFilter').val();
                         console.log('📌 Mevcut batarya seçimi:', currentBatteryValue);
                         
                         await this.updateBatteryOptions(currentArmValue);

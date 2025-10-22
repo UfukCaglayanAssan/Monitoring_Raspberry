@@ -135,31 +135,18 @@ if (typeof window.SummaryPage === 'undefined') {
             ${detailsList}
         `;
         
-        // Kol kartına tıklama özelliği ekle
-        card.addEventListener('click', () => {
-            this.selectArm(armData.arm);
-        });
+        // Kol kartına tıklama özelliği YOK - sadece bilgi gösterimi
         
         return card;
     }
 
-    selectArm(armNumber) {
-        console.log(`Kol ${armNumber} seçildi`);
-        // Kol seçimini localStorage'a kaydet
-        localStorage.setItem('selectedArm', armNumber);
-        
-        // Bataryalar sayfasına yönlendir
-        if (window.app && window.app.loadPage) {
-            window.app.loadPage('batteries');
-        }
-    }
 
     createMainMetric(armData) {
         const currentValue = armData.current || 0;
         return `
             <div class="arm-main-metric">
                 <div class="metric-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect width="16" height="10" x="2" y="7" rx="2" ry="2"></rect>
                         <line x1="22" x2="22" y1="11" y2="13"></line>
                     </svg>
@@ -171,6 +158,11 @@ if (typeof window.SummaryPage === 'undefined') {
     }
 
     createDetailsList(armData) {
+        // Toplam gerilimi hesapla (avg_voltage * battery_count)
+        const totalVoltage = armData.avg_voltage && armData.battery_count 
+            ? (armData.avg_voltage * armData.battery_count).toFixed(2) 
+            : null;
+        
         const details = [
             {
                 icon: 'battery',
@@ -189,6 +181,12 @@ if (typeof window.SummaryPage === 'undefined') {
                 label: 'Batarya Sayısı:',
                 value: armData.battery_count || 0,
                 color: 'text-purple-400'
+            },
+            {
+                icon: 'zap',
+                label: 'Toplam Gerilim:',
+                value: totalVoltage ? `${totalVoltage} V` : '--',
+                color: 'text-yellow-400'
             },
             {
                 icon: 'zap',
