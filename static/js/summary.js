@@ -120,6 +120,8 @@ if (typeof window.SummaryPage === 'undefined') {
         const card = document.createElement('div');
         card.className = 'arm-card';
         
+        console.log('🎨 Kol kartı oluşturuluyor:', armData.arm);
+        
         // Ana metrik (Deşarj Akımı - 0 A)
         const mainMetric = this.createMainMetric(armData);
         
@@ -137,8 +139,11 @@ if (typeof window.SummaryPage === 'undefined') {
         
         // Kol kartına tıklama - Bataryalar sayfasına git ve kolu seç
         card.addEventListener('click', () => {
+            console.log('🖱️ Kol kartına tıklandı:', armData.arm);
             this.selectArmAndNavigate(armData.arm);
         });
+        
+        console.log('✅ Event listener eklendi, kart döndürülüyor');
         
         return card;
     }

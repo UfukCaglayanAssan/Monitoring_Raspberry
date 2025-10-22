@@ -604,6 +604,7 @@
     width: 22rem;
     font-family: sans-serif;
     position: relative;
+    cursor: pointer;
     display: flex;
     flex-direction: column;
 }
@@ -641,14 +642,18 @@
 .metric-icon {
     background: #2563eb;
     border-radius: 50%;
-    padding: 0.5rem;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     margin-bottom: 0.25rem;
 }
 
 .metric-icon svg {
-    width: 2rem;
-    height: 2rem;
+    width: 32px;
+    height: 32px;
     color: white;
 }
 
