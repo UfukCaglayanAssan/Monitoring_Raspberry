@@ -151,13 +151,19 @@ if (typeof window.BatteriesPage === 'undefined') {
             }
         });
         
-        // İlk aktif kolu seç (sıralı olarak)
+        // localStorage'dan veya ilk aktif kolu seç
         console.log('🎯 Kol seçimi yapılıyor...');
         if (activeArmNumbers.length > 0) {
-            const firstActiveArm = activeArmNumbers[0];
-            console.log(`🏆 İlk aktif kol seçiliyor: Kol ${firstActiveArm}`);
-            console.log(`📋 Seçim sırası: ${activeArmNumbers.join(', ')}`);
-            await this.selectArm(firstActiveArm);
+            // localStorage'dan seçili kolu al
+            const savedArm = parseInt(localStorage.getItem('selectedArm'));
+            
+            // Eğer kaydedilmiş kol aktifse onu seç, değilse ilk aktif kolu seç
+            const armToSelect = (savedArm && activeArmNumbers.includes(savedArm)) 
+                ? savedArm 
+                : activeArmNumbers[0];
+            
+            console.log(`🏆 Kol seçiliyor: Kol ${armToSelect} (Kaydedilmiş: ${savedArm || 'yok'}, Aktif kollar: ${activeArmNumbers.join(', ')})`);
+            await this.selectArm(armToSelect);
         } else {
             console.log('⚠️ Hiç aktif kol bulunamadı!');
         }

@@ -135,11 +135,25 @@ if (typeof window.SummaryPage === 'undefined') {
             ${detailsList}
         `;
         
-        // Kol kartına tıklama özelliği YOK - sadece bilgi gösterimi
+        // Kol kartına tıklama - Bataryalar sayfasına git ve kolu seç
+        card.addEventListener('click', () => {
+            this.selectArmAndNavigate(armData.arm);
+        });
         
         return card;
     }
 
+    selectArmAndNavigate(armNumber) {
+        console.log(`Kol ${armNumber} seçildi, Bataryalar sayfasına yönlendiriliyor`);
+        
+        // Kol seçimini localStorage'a kaydet
+        localStorage.setItem('selectedArm', armNumber);
+        
+        // Bataryalar sayfasına yönlendir
+        if (window.app && window.app.loadPage) {
+            window.app.loadPage('batteries');
+        }
+    }
 
     createMainMetric(armData) {
         const currentValue = armData.current || 0;

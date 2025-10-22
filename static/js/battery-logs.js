@@ -272,6 +272,7 @@ if (typeof window.BatteryLogsPage === 'undefined') {
     }
 
     clearFilters() {
+        console.log('🧹 clearFilters() çağrıldı');
         this.filters = {
             arm: '',
             battery: '',
@@ -288,10 +289,10 @@ if (typeof window.BatteryLogsPage === 'undefined') {
         
         this.currentPage = 1;
         this.loadLogs();
+        console.log('✅ Filtreler temizlendi');
     }
 
     async loadArmOptions() {
-        console.log('🔄 loadArmOptions() çağrıldı');
         try {
             const response = await fetch('/api/active-arms', {
                 method: 'GET',
@@ -302,10 +303,7 @@ if (typeof window.BatteryLogsPage === 'undefined') {
                 const data = await response.json();
                 if (data.success && data.activeArms) {
                     const armFilter = document.getElementById('armFilter');
-                    const currentArmValue = this.filters.arm || armFilter.value; // filters'tan veya element'ten al
-                    console.log('📌 Mevcut kol seçimi (filters):', this.filters.arm);
-                    console.log('📌 Mevcut kol seçimi (element):', armFilter.value);
-                    console.log('📌 Kullanılacak kol seçimi:', currentArmValue);
+                    const currentArmValue = this.filters.arm || armFilter.value;
                     
                     // Event listener'ı kaldır (yeniden bağlanacak)
                     const oldArmFilter = armFilter.cloneNode(false);
@@ -323,31 +321,26 @@ if (typeof window.BatteryLogsPage === 'undefined') {
                     
                     // Event listener'ı yeniden bağla
                     armFilter.addEventListener('change', (e) => {
-                        console.log('🔔 Kol seçimi değişti:', e.target.value);
                         this.filters.arm = e.target.value;
                         this.updateBatteryOptions(e.target.value);
                     });
                     
                     // Eğer daha önce bir kol seçilmişse, onu geri yükle ve batarya seçeneklerini güncelle
                     if (currentArmValue) {
-                        console.log('✅ Kol seçimi geri yükleniyor:', currentArmValue);
                         armFilter.value = currentArmValue;
                         this.filters.arm = currentArmValue;
                         
                         // Batarya seçimini de sakla
                         const currentBatteryValue = this.filters.battery || $('#batteryFilter').val();
-                        console.log('📌 Mevcut batarya seçimi:', currentBatteryValue);
                         
                         await this.updateBatteryOptions(currentArmValue);
                         
                         // Batarya seçimini geri yükle
                         if (currentBatteryValue) {
-                            console.log('✅ Batarya seçimi geri yükleniyor:', currentBatteryValue);
                             $('#batteryFilter').val(currentBatteryValue).trigger('change');
                             this.filters.battery = currentBatteryValue;
                         }
                     } else {
-                        console.log('ℹ️ Kol seçimi yok, batarya dropdown devre dışı');
                         // Kol seçilmemişse batarya seçeneğini devre dışı bırak
                         await this.updateBatteryOptions('');
                     }
@@ -368,11 +361,9 @@ if (typeof window.BatteryLogsPage === 'undefined') {
     }
 
     async updateBatteryOptions(selectedArm) {
-        console.log('🔄 updateBatteryOptions() çağrıldı, selectedArm:', selectedArm);
         const batteryFilter = document.getElementById('batteryFilter');
         
         if (!selectedArm) {
-            console.log('⚠️ Kol seçilmedi, batarya dropdown devre dışı bırakılıyor');
             $('#batteryFilter').empty();
             $('#batteryFilter').append('<option value="">Önce kol seçiniz</option>');
             $('#batteryFilter').select2({
@@ -391,7 +382,6 @@ if (typeof window.BatteryLogsPage === 'undefined') {
             if (data.success && data.activeArms) {
                 const selectedArmData = data.activeArms.find(arm => arm.arm == selectedArm);
                 const batteryCount = selectedArmData ? selectedArmData.slave_count : 0;
-                console.log('📊 Kol', selectedArm, 'için batarya sayısı:', batteryCount);
                 
                 if (batteryCount > 0) {
                     // Select2'yi temizle
@@ -405,8 +395,6 @@ if (typeof window.BatteryLogsPage === 'undefined') {
                         $('#batteryFilter').append(`<option value="${i}">Batarya ${i}</option>`);
                     }
                     
-                    console.log('✅ Batarya seçenekleri eklendi (1-' + batteryCount + ')');
-                    
                     // Select2'yi yeniden başlat
                     $('#batteryFilter').select2({
                         placeholder: 'Batarya seçiniz',
@@ -414,9 +402,7 @@ if (typeof window.BatteryLogsPage === 'undefined') {
                         width: '100%'
                     });
                     
-                    console.log('✅ Batarya dropdown aktif edildi, disabled:', batteryFilter.disabled);
                     batteryFilter.disabled = false;
-                    console.log('✅ Batarya dropdown disabled değeri:', batteryFilter.disabled);
                 } else {
                     $('#batteryFilter').empty();
                     $('#batteryFilter').append('<option value="">Bu kolda batarya yok</option>');
