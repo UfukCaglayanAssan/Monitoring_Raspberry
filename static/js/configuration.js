@@ -660,7 +660,7 @@ if (typeof window.ConfigurationPage === 'undefined') {
             
             // Manuel set komutu gönder (0x81 0xkol_no 0xk_value 0x78)
             // k_value = batarya numarası + 2 (Batarya 1 -> k=3, Batarya 4 -> k=6)
-            const k_value = parseInt(selectedSlave) + 2;
+            const k_value = parseInt(selectedSlave) + 1;
             
             const response = await fetch('/api/send-manual-set-command', {
                 method: 'POST',
