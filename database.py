@@ -594,16 +594,16 @@ class BatteryDatabase:
             conn.commit()
 
     def update_or_insert_passive_balance(self, arm, slave, status, timestamp):
-        """Passive balance verisini güncelle veya ekle - Tüm kollar için tek kayıt"""
+        """Passive balance verisini güncelle veya ekle - Her kol için ayrı kayıt"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             
-            # Tüm kollar için tek kayıt kontrol et
+            # Bu kol için kayıt kontrol et
             cursor.execute('''
                 SELECT id, slave, status FROM passive_balance 
-                WHERE arm = 0
+                WHERE arm = ?
                 ORDER BY timestamp DESC LIMIT 1
-            ''')
+            ''', (arm,))
             
             existing_record = cursor.fetchone()
             
@@ -637,9 +637,9 @@ class BatteryDatabase:
                 if status == 0:
                     cursor.execute('''
                         INSERT INTO passive_balance (arm, slave, status, timestamp)
-                        VALUES (0, ?, ?, ?)
-                    ''', (slave, status, timestamp))
-                    print(f"✓ Pasif balans BAŞLADI: Kol {arm}, Batarya: {slave}")
+                        VALUES (?, ?, ?, ?)
+                    ''', (arm, slave, status, timestamp))
+                    print(f"✓ Pasif balans BAŞLADI (YENİ): Kol {arm}, Batarya: {slave}")
                 else:
                     print(f"ℹ️ Pasif balans BİTTİ: Kol {arm}, Batarya: {slave} - Kayıt yok, işlem yapılmadı")
             
