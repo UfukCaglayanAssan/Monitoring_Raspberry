@@ -594,37 +594,25 @@ class BatteryDatabase:
             conn.commit()
 
     def update_or_insert_passive_balance(self, arm, slave, status, timestamp):
-        """Passive balance verisini güncelle veya ekle - Gelen değer direkt kaydedilir"""
+        """Passive balance verisini güncelle veya ekle - Tek kayıt, ne gelirse güncellenir"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             
-            # Bu kol için kayıt kontrol et
+            # Önce güncellemeyi dene (tüm kayıtları günceller)
             cursor.execute('''
-                SELECT id FROM passive_balance 
-                WHERE arm = ?
-                ORDER BY timestamp DESC LIMIT 1
-            ''', (arm,))
+                UPDATE passive_balance 
+                SET arm = ?, slave = ?, status = ?, timestamp = ?, created_at = CURRENT_TIMESTAMP
+            ''', (arm, slave, status, timestamp))
             
-            existing_record = cursor.fetchone()
-            
-            if existing_record:
-                existing_id = existing_record[0]
-                
-                # Mevcut kayıt varsa direkt güncelle
-                cursor.execute('''
-                    UPDATE passive_balance 
-                    SET slave = ?, status = ?, timestamp = ?, created_at = CURRENT_TIMESTAMP
-                    WHERE id = ?
-                ''', (slave, status, timestamp, existing_id))
-                print(f"✓ Pasif balans güncellendi: Kol {arm}, Batarya: {slave}, Status: {status}")
-                
-            else:
-                # Yeni kayıt ekle
+            # Eğer hiç kayıt yoksa insert yap
+            if cursor.rowcount == 0:
                 cursor.execute('''
                     INSERT INTO passive_balance (arm, slave, status, timestamp)
                     VALUES (?, ?, ?, ?)
                 ''', (arm, slave, status, timestamp))
-                print(f"✓ Pasif balans eklendi (YENİ): Kol {arm}, Batarya: {slave}, Status: {status}")
+                print(f"✓ Pasif balans eklendi: Kol {arm}, Batarya: {slave}, Status: {status}")
+            else:
+                print(f"✓ Pasif balans güncellendi: Kol {arm}, Batarya: {slave}, Status: {status}")
             
             conn.commit()
     
