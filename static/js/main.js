@@ -189,6 +189,8 @@ class App {
                 pageUrl = '/mail-server-config';
             } else if (page === 'interface-ip-settings') {
                 pageUrl = '/interface-ip-settings';
+            } else if (page === 'ftp-settings') {
+                pageUrl = '/ftp-settings';
             } else {
                 pageUrl = `/pages/${page}.html`;
             }
