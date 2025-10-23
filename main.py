@@ -377,7 +377,11 @@ def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False
         return False
     
     # En son koldaki en son batarya verisi geldi mi?
+    # SADECE dtype=14 (NTC3) geldiğinde periyot biter!
     if arm_value == last_arm and k_value == last_battery:
+        if dtype is not None and dtype != 14:
+            # Son batarya ama dtype=14 değil, periyot devam ediyor
+            return False
         return True
     
     # Missing data geldi mi?
