@@ -542,6 +542,8 @@ body {
     justify-content: center;
     padding: 60px 20px;
     color: #666;
+    width: 100%;
+    text-align: center;
 }
 
 .spinner {
