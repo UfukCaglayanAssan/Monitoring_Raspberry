@@ -69,6 +69,21 @@ def send_database_to_ftp():
         print(f"✅ FTP bağlantısı başarılı!")
         print(f"📂 Mevcut dizin: {ftp.pwd()}")
         
+        # Hedef klasöre git (varsa)
+        try:
+            ftp.cwd('bms_backup')  # Klasör adı
+            print(f"📂 Hedef klasöre geçildi: {ftp.pwd()}")
+        except ftplib.error_perm:
+            # Klasör yoksa oluşturmayı dene
+            try:
+                print(f"📁 Klasör bulunamadı, oluşturuluyor: bms_backup")
+                ftp.mkd('bms_backup')
+                ftp.cwd('bms_backup')
+                print(f"✅ Klasör oluşturuldu ve geçildi")
+            except ftplib.error_perm:
+                # İzin yoksa ana dizinde kal
+                print(f"⚠️ Klasör oluşturma izni yok, ana dizine kaydedilecek: {ftp.pwd()}")
+        
         # Dosya adı (tarih ile)
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         remote_filename = f'battery_data_{timestamp}.db'

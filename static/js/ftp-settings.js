@@ -33,7 +33,7 @@ class FTPSettings {
             this.sendDatabaseNow();
         });
 
-        console.log('✅ [FTP Settings] Event listener'lar bağlandı');
+        console.log('✅ [FTP Settings] Event listenerlar bağlandı');
     }
 
     togglePasswordVisibility() {
