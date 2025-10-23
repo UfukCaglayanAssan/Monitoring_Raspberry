@@ -105,7 +105,7 @@ def get_period_timestamp():
         current_period_timestamp = int(current_time * 1000)
         period_active = True
         last_data_received = current_time
-        # Periyot başlama logları kaldırıldı
+        print(f"🆕 YENİ PERİYOT BAŞLADI: Timestamp={current_period_timestamp}")
         
         # Tümünü Oku işlemi periyot bekliyorsa, şimdi aktif et
         if data_retrieval_waiting_for_period:
@@ -122,8 +122,7 @@ def reset_period():
     old_timestamp = current_period_timestamp
     period_active = False
     current_period_timestamp = None
-    # Sadece debug için - periyot sıfırlandı
-    # print(f"🔄 PERİYOT SIFIRLANDI: Eski Timestamp: {old_timestamp}")
+    print(f"🔄 PERİYOT BİTTİ: Eski Timestamp={old_timestamp}")
 
 def update_last_k_value(new_value):
     """Thread-safe olarak last_k_value güncelle"""
@@ -744,13 +743,18 @@ def db_worker():
                 dtype = int(data[2], 16)
                 k_value = int(data[1], 16)  # K değerini olduğu gibi al
                 
-                # 11 byte paket logla - KALDIRILDI
+                # Paket geldiği anı logla
+                packet_arrival_time = int(time.time() * 1000)
+                print(f"📦 PAKET GELDİ: Kol={arm_value}, k={k_value}, Dtype={dtype}, Zaman={packet_arrival_time}")
                 
                 # k_value 2 geldiğinde yeni periyot başlat (ard arda gelmemesi şartıyla)
                 if k_value == 2:
                     if get_last_k_value() != 2:  # Non-consecutive arm data
+                        print(f"🔁 K=2 ALGILANDI (Kol verisi): Kol={arm_value}, Dtype={dtype} - Periyot sıfırlanıyor")
                         reset_period()
                         get_period_timestamp()
+                    else:
+                        print(f"⏭️ K=2 TEKRARI ALGILANDI (Ardışık): Kol={arm_value}, Dtype={dtype} - Periyot sıfırlanmıyor")
                     update_last_k_value(2)
                 else:  # Battery data
                     update_last_k_value(k_value)
@@ -986,14 +990,16 @@ def db_worker():
                 
                 
                 elif dtype == 13:  # NTC1
+                    period_ts = get_period_timestamp()
                     record = {
                             "Arm": arm_value,
                             "k": k_value,
                         "Dtype": 13,
                         "data": salt_data,
-                            "timestamp": get_period_timestamp()
+                            "timestamp": period_ts
                         }
                     batch.append(record)
+                    print(f"📝 NTC1 kaydedildi: Kol={arm_value}, k={k_value}, Timestamp={period_ts}, Data={salt_data}")
                     
                     # RAM'e yaz (Modbus/SNMP için)
                     with data_lock:
@@ -1016,14 +1022,16 @@ def db_worker():
                     # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
                 elif dtype == 12:  # NTC2
+                    period_ts = get_period_timestamp()
                     record = {
                         "Arm": arm_value,
                         "k": k_value,
                         "Dtype": 12,
                         "data": salt_data,
-                        "timestamp": get_period_timestamp()
+                        "timestamp": period_ts
                     }
                     batch.append(record)
+                    print(f"📝 NTC2 kaydedildi: Kol={arm_value}, k={k_value}, Timestamp={period_ts}, Data={salt_data}")
                     
                     # RAM'e yaz (Modbus/SNMP için)
                     with data_lock:
@@ -1046,14 +1054,16 @@ def db_worker():
                     # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
                 elif dtype == 14:  # NTC3
+                    period_ts = get_period_timestamp()
                     record = {
                         "Arm": arm_value,
                         "k": k_value,
                         "Dtype": 14,
                         "data": salt_data,
-                        "timestamp": get_period_timestamp()
+                        "timestamp": period_ts
                     }
                     batch.append(record)
+                    print(f"📝 NTC3 kaydedildi: Kol={arm_value}, k={k_value}, Timestamp={period_ts}, Data={salt_data}")
                     
                     # RAM'e yaz (Modbus/SNMP için)
                     with data_lock:
