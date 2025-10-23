@@ -4,7 +4,7 @@ if (typeof window.BatteriesPage === 'undefined') {
     window.BatteriesPage = class BatteriesPage {
     constructor() {
         this.currentPage = 1;
-        this.pageSize = 30;
+        this.pageSize = 120; // Tüm bataryaları göster (maksimum)
         this.totalPages = 1;
         this.batteriesData = [];
         this.selectedArm = parseInt(localStorage.getItem('selectedArm')) || 3; // localStorage'dan al, yoksa varsayılan: Kol 3
