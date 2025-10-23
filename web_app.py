@@ -1790,7 +1790,10 @@ def start_data_retrieval():
         })
         
     except Exception as e:
-        return jsonify({'success': False, 'message': 'Veri alma modu başlatılamadı'}), 500
+        print(f"❌ Veri alma modu başlatma hatası: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Veri alma modu başlatılamadı: {str(e)}'}), 500
 
 @app.route('/api/stop-data-retrieval', methods=['POST'])
 @login_required
