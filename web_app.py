@@ -1663,6 +1663,145 @@ def get_trap_stats():
         }), 500
 
 # ========================================
+# FTP AYARLARI API ENDPOINT'LERİ
+# ========================================
+
+@app.route('/ftp-settings')
+@login_required
+def ftp_settings():
+    """FTP ayarları sayfası"""
+    return render_template('pages/ftp-settings.html')
+
+@app.route('/api/ftp-config', methods=['GET'])
+@login_required
+def get_ftp_config():
+    """FTP konfigürasyonunu getir"""
+    try:
+        db = get_db()
+        config = db_operation_with_retry(lambda: db.get_ftp_config())
+        
+        # Şifreyi frontend'e gönderme, sadece varlığını belirt
+        if config and config.get('ftp_password'):
+            config['ftp_password'] = '********'
+        
+        return jsonify({
+            'success': True,
+            'config': config
+        })
+    except Exception as e:
+        print(f"FTP config getirme hatası: {e}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/ftp-config', methods=['POST'])
+@login_required
+def save_ftp_config():
+    """FTP konfigürasyonunu kaydet"""
+    try:
+        data = request.get_json()
+        ftp_host = data.get('ftp_host')
+        ftp_port = data.get('ftp_port', 21)
+        ftp_username = data.get('ftp_username')
+        ftp_password = data.get('ftp_password')
+        is_active = data.get('is_active', False)
+        
+        if not ftp_host or not ftp_username:
+            return jsonify({
+                'success': False,
+                'message': 'FTP sunucu adresi ve kullanıcı adı gerekli'
+            }), 400
+        
+        # Şifre girilmemişse mevcut şifreyi koru
+        db = get_db()
+        if not ftp_password:
+            existing_config = db_operation_with_retry(lambda: db.get_ftp_config())
+            if existing_config:
+                ftp_password = existing_config.get('ftp_password')
+        
+        result = db_operation_with_retry(lambda: db.save_ftp_config(
+            ftp_host, ftp_port, ftp_username, ftp_password, is_active
+        ))
+        
+        return jsonify(result)
+    except Exception as e:
+        print(f"FTP config kaydetme hatası: {e}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/ftp-test', methods=['POST'])
+@login_required
+def test_ftp_connection():
+    """FTP bağlantısını test et"""
+    try:
+        import ftplib
+        
+        data = request.get_json()
+        ftp_host = data.get('ftp_host')
+        ftp_port = data.get('ftp_port', 21)
+        ftp_username = data.get('ftp_username')
+        ftp_password = data.get('ftp_password')
+        
+        # Base64 decode (eğer veritabanından geliyorsa)
+        import base64
+        try:
+            ftp_password = base64.b64decode(ftp_password.encode()).decode()
+        except:
+            pass  # Zaten düz metin
+        
+        # FTP bağlantısı test et
+        ftp = ftplib.FTP()
+        ftp.connect(ftp_host, ftp_port, timeout=10)
+        ftp.login(ftp_username, ftp_password)
+        ftp.quit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'FTP bağlantısı başarılı'
+        })
+    except Exception as e:
+        print(f"FTP test hatası: {e}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/ftp-send-now', methods=['POST'])
+@login_required
+def send_database_now():
+    """Veritabanını şimdi FTP'ye gönder"""
+    try:
+        import subprocess
+        
+        # FTP gönderim script'ini çalıştır
+        result = subprocess.run(
+            ['python3', '/home/bms/Desktop/Monitoring_Raspberry/ftp_backup.py'],
+            capture_output=True,
+            text=True,
+            timeout=60
+        )
+        
+        if result.returncode == 0:
+            return jsonify({
+                'success': True,
+                'message': 'Veritabanı başarıyla gönderildi'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': f'Gönderim hatası: {result.stderr}'
+            }), 500
+    except Exception as e:
+        print(f"FTP gönderim hatası: {e}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+# ========================================
 # VERİ ALMA API ENDPOINT'LERİ
 # ========================================
 

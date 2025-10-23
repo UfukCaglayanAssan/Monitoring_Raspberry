@@ -296,6 +296,23 @@ class BatteryDatabase:
                 ''')
                 print("✓ arm_slave_counts tablosu oluşturuldu")
                 
+                # FTP konfigürasyon tablosu
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS ftp_config (
+                        id INTEGER PRIMARY KEY DEFAULT 1,
+                        ftp_host TEXT,
+                        ftp_port INTEGER DEFAULT 21,
+                        ftp_username TEXT,
+                        ftp_password TEXT,
+                        is_active BOOLEAN DEFAULT 0,
+                        last_sent_at DATETIME,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        CONSTRAINT single_config CHECK (id = 1)
+                    )
+                ''')
+                print("✓ ftp_config tablosu oluşturuldu")
+                
                 # Trap hedefleri tablosu
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS trap_targets (
@@ -3201,6 +3218,79 @@ class BatteryDatabase:
         except Exception as e:
             print(f"Trap hedefi silinirken hata: {e}")
             return {'success': False, 'message': str(e)}
+    
+    # FTP Configuration Methods
+    def get_ftp_config(self):
+        """FTP konfigürasyonunu getir"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT ftp_host, ftp_port, ftp_username, ftp_password, is_active, last_sent_at
+                    FROM ftp_config WHERE id = 1
+                ''')
+                row = cursor.fetchone()
+                if row:
+                    return {
+                        'ftp_host': row[0],
+                        'ftp_port': row[1],
+                        'ftp_username': row[2],
+                        'ftp_password': row[3],
+                        'is_active': bool(row[4]),
+                        'last_sent_at': row[5]
+                    }
+                return None
+        except Exception as e:
+            print(f"FTP config getirilirken hata: {e}")
+            return None
+    
+    def save_ftp_config(self, ftp_host, ftp_port, ftp_username, ftp_password, is_active):
+        """FTP konfigürasyonunu kaydet veya güncelle"""
+        try:
+            import base64
+            # Şifreyi base64 ile encode et (basit güvenlik)
+            encoded_password = base64.b64encode(ftp_password.encode()).decode() if ftp_password else None
+            
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                # Önce var mı kontrol et
+                cursor.execute('SELECT id FROM ftp_config WHERE id = 1')
+                exists = cursor.fetchone()
+                
+                if exists:
+                    # Güncelle
+                    cursor.execute('''
+                        UPDATE ftp_config 
+                        SET ftp_host = ?, ftp_port = ?, ftp_username = ?, ftp_password = ?, 
+                            is_active = ?, updated_at = CURRENT_TIMESTAMP
+                        WHERE id = 1
+                    ''', (ftp_host, ftp_port, ftp_username, encoded_password, is_active))
+                else:
+                    # Yeni kayıt
+                    cursor.execute('''
+                        INSERT INTO ftp_config (id, ftp_host, ftp_port, ftp_username, ftp_password, is_active)
+                        VALUES (1, ?, ?, ?, ?, ?)
+                    ''', (ftp_host, ftp_port, ftp_username, encoded_password, is_active))
+                
+                conn.commit()
+                return {'success': True, 'message': 'FTP ayarları kaydedildi'}
+        except Exception as e:
+            print(f"FTP config kaydedilirken hata: {e}")
+            return {'success': False, 'message': str(e)}
+    
+    def update_ftp_last_sent(self):
+        """FTP son gönderim zamanını güncelle"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    UPDATE ftp_config 
+                    SET last_sent_at = CURRENT_TIMESTAMP
+                    WHERE id = 1
+                ''')
+                conn.commit()
+        except Exception as e:
+            print(f"FTP last_sent güncellenirken hata: {e}")
     
     def toggle_trap_target(self, target_id):
         """Trap hedefini aktif/pasif yap"""

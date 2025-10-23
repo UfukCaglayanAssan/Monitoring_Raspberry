@@ -1,0 +1,93 @@
+<!-- FTP Ayarları Sayfası İçeriği -->
+<div class="ftp-settings-page">
+    <div class="page-header">
+        <h2>📤 FTP Ayarları</h2>
+        <p>Veritabanı yedekleme için FTP konfigürasyonunu yönetin</p>
+    </div>
+
+    <div class="config-container full-width">
+        <div class="config-card">
+            <div class="config-header">
+                <h3>FTP Konfigürasyonu</h3>
+                <div class="status-indicator">
+                    <span id="ftpStatus" class="status-inactive">Pasif</span>
+                </div>
+            </div>
+
+            <div class="current-ftp-info">
+                <h4>Son Gönderim</h4>
+                <div class="ftp-display">
+                    <span id="lastSentAt" class="ftp-info">Henüz gönderim yapılmadı</span>
+                    <button id="testFtp" class="btn btn-sm btn-secondary">
+                        <i class="fas fa-plug"></i> Bağlantıyı Test Et
+                    </button>
+                </div>
+            </div>
+
+            <form id="ftpConfigForm" class="config-form">
+                <div class="form-group">
+                    <label for="ftpHost">FTP Sunucu Adresi *</label>
+                    <input type="text" id="ftpHost" name="ftp_host" placeholder="ftp.example.com veya 192.168.1.100" required>
+                    <small class="form-help">FTP sunucusunun IP adresi veya domain adı</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="ftpPort">FTP Port *</label>
+                    <input type="number" id="ftpPort" name="ftp_port" value="21" min="1" max="65535" required>
+                    <small class="form-help">Varsayılan FTP portu: 21</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="ftpUsername">Kullanıcı Adı *</label>
+                    <input type="text" id="ftpUsername" name="ftp_username" placeholder="kullanici_adi" required>
+                    <small class="form-help">FTP sunucusuna giriş için kullanıcı adı</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="ftpPassword">Şifre *</label>
+                    <div class="password-input-group">
+                        <input type="password" id="ftpPassword" name="ftp_password" placeholder="••••••••" required>
+                        <button type="button" id="togglePassword" class="btn-toggle-password">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <small class="form-help">FTP sunucusuna giriş için şifre (güvenli şekilde saklanır)</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Otomatik Gönderim</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="ftpActive" name="is_active">
+                            <span class="checkbox-text">Her gün saat 00:00'da otomatik olarak veritabanını gönder</span>
+                        </label>
+                    </div>
+                    <small class="form-help">Aktif edildiğinde, battery_data.db dosyası her gece otomatik olarak FTP sunucusuna yedeklenecektir</small>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" id="sendNow" class="btn btn-secondary">
+                        <i class="fas fa-paper-plane"></i> Şimdi Gönder
+                    </button>
+                    <button type="button" id="saveFtpConfig" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Ayarları Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="info-card">
+        <div class="info-icon">
+            <i class="fas fa-info-circle"></i>
+        </div>
+        <div class="info-content">
+            <h4>ℹ️ Bilgi</h4>
+            <p>Veritabanı dosyası (<code>/home/bms/Desktop/battery_data.db</code>) FTP sunucusuna gönderilecektir.</p>
+            <p>Gönderim işlemi arka planda çalışır ve sistem performansını etkilemez.</p>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/ftp-settings.js') }}"></script>
+
