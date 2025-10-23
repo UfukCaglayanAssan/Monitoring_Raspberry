@@ -659,8 +659,9 @@ if (typeof window.ConfigurationPage === 'undefined') {
             this.showToast(`Kol ${selectedArm}, Batarya ${selectedSlave} manuel set komutu gönderiliyor...`, 'info');
             
             // Manuel set komutu gönder (0x81 0xkol_no 0xslave 0x78)
-            // Girilen değer direkt gönderilir
-            const slave_value = parseInt(selectedSlave);
+            // Girilen batarya adresine +2 ekleyerek k_value hesapla
+            // Örnek: Batarya 1 -> k_value = 3
+            const slave_value = parseInt(selectedSlave) + 2;
             
             const response = await fetch('/api/send-manual-set-command', {
                 method: 'POST',
@@ -669,7 +670,7 @@ if (typeof window.ConfigurationPage === 'undefined') {
                 },
                 body: JSON.stringify({
                     arm: parseInt(selectedArm),
-                    slave: slave_value  // slave değeri gönder
+                    slave: slave_value  // k_value gönder (batarya + 2)
                 })
             });
 

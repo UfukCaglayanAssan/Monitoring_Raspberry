@@ -350,6 +350,10 @@ body {
 .batteries-container {
     position: relative;
     min-height: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
 }
 
 .batteries-grid {
