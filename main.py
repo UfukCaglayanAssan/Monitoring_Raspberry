@@ -2130,7 +2130,7 @@ def get_alarm_data_by_index(start_index, quantity):
                 # Kol alarmları (0-3 = alarm tip 1-4)
                 alarm_type = offset + 1
                 alarm_value = alarm_ram.get(current_arm, {}).get(0, {}).get(alarm_type, False)
-                result.append(1 if alarm_value else 0)
+                    result.append(1 if alarm_value else 0)
                 print(f"DEBUG: Register {current_register}: Kol {current_arm} alarm tip {alarm_type} = {alarm_value}")
             elif 4 <= offset <= 843:
                 # Batarya alarmları (4-843 = 120 batarya × 7 alarm)
@@ -2141,7 +2141,7 @@ def get_alarm_data_by_index(start_index, quantity):
                 
                 # Optimizasyon: Eğer maksimum batarya aşıldıysa direkt 0 dön
                 if max_battery_found:
-                    result.append(0)
+            result.append(0)
                     print(f"DEBUG: Register {current_register}: Kol {current_arm} Batarya {battery_num} - maksimum aşıldı, 0")
                 else:
                     # RAM'de bu batarya var mı kontrol et
@@ -2237,7 +2237,7 @@ def get_status_data_by_index(start_index, quantity):
                 
                 # Optimizasyon: Eğer önceki batarya yoktu ve aynı koldaysak, direkt 0 dön
                 if max_battery_found:
-                    result.append(0)
+            result.append(0)
                     print(f"DEBUG: Register {current_register}: Kol {current_arm} Batarya {battery_num} - maksimum aşıldı, 0")
                 else:
                     # RAM'de bu batarya var mı kontrol et
