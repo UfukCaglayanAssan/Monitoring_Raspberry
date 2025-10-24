@@ -16,7 +16,7 @@ real_user = os.environ.get('SUDO_USER') or os.environ.get('USER') or 'bms'
 USER_HOME = pwd.getpwnam(real_user).pw_dir
 SCRIPT_DIR = os.path.join(USER_HOME, 'Desktop', 'Monitoring_Raspberry')
 
-# Proje dizinini path'e ekle
+# Proje dizinini path'e ekleme
 sys.path.insert(0, SCRIPT_DIR)
 os.chdir(SCRIPT_DIR)
 
