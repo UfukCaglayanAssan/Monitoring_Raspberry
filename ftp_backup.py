@@ -107,6 +107,43 @@ def send_database_to_sftp():
         
         print(f"✅ Dosya başarıyla gönderildi: {remote_filename}")
         
+        # Eski yedekleri temizle (en fazla 7 yedek)
+        try:
+            print(f"🧹 Eski yedekler kontrol ediliyor...")
+            
+            # Mevcut dizindeki tüm battery_data_*.db dosyalarını listele
+            files = []
+            for filename in sftp.listdir():
+                if filename.startswith('battery_data_') and filename.endswith('.db'):
+                    file_stat = sftp.stat(filename)
+                    files.append({
+                        'name': filename,
+                        'mtime': file_stat.st_mtime
+                    })
+            
+            # Tarihe göre sırala (en yeni en üstte)
+            files.sort(key=lambda x: x['mtime'], reverse=True)
+            
+            # 7'den fazlaysa eskilerini sil
+            if len(files) > 7:
+                files_to_delete = files[7:]
+                print(f"🗑️ {len(files_to_delete)} eski yedek silinecek...")
+                
+                for file_info in files_to_delete:
+                    try:
+                        sftp.remove(file_info['name'])
+                        print(f"   ✅ Silindi: {file_info['name']}")
+                    except Exception as e:
+                        print(f"   ❌ Silinemedi {file_info['name']}: {e}")
+                
+                print(f"✅ Eski yedekler temizlendi. Toplam yedek: 7")
+            else:
+                print(f"✅ Toplam yedek sayısı: {len(files)} (7'den az, silme gerekmiyor)")
+        
+        except Exception as e:
+            print(f"⚠️ Eski yedek temizleme hatası: {e}")
+            # Hata olsa da devam et
+        
         # Bağlantıyı kapat
         sftp.close()
         ssh.close()

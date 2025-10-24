@@ -87,25 +87,48 @@ class FTPSettings {
             document.getElementById('ftpPassword').placeholder = '••••••••';
         }
 
-        document.getElementById('ftpActive').checked = config.is_active || false;
-
-        // Status güncelle
+        // Status güncelle (otomatik gönderim yok artık)
         const statusElement = document.getElementById('ftpStatus');
-        if (config.is_active) {
-            statusElement.textContent = 'Aktif';
-            statusElement.classList.remove('status-inactive');
-            statusElement.classList.add('status-active');
-        } else {
-            statusElement.textContent = 'Pasif';
-            statusElement.classList.remove('status-active');
-            statusElement.classList.add('status-inactive');
-        }
+        statusElement.textContent = 'Manuel';
+        statusElement.classList.remove('status-active');
+        statusElement.classList.add('status-inactive');
 
         // Son gönderim zamanı
         if (config.last_sent_at) {
             const lastSent = new Date(config.last_sent_at);
             document.getElementById('lastSentAt').textContent = lastSent.toLocaleString('tr-TR');
         }
+    }
+
+    showToast(message, type = 'success') {
+        // Toast container oluştur (yoksa)
+        let toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container';
+            document.body.appendChild(toastContainer);
+        }
+
+        // Toast elementi oluştur
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        
+        const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+        toast.innerHTML = `
+            <span class="toast-icon">${icon}</span>
+            <span class="toast-message">${message}</span>
+        `;
+
+        toastContainer.appendChild(toast);
+
+        // Animasyon için timeout
+        setTimeout(() => toast.classList.add('show'), 10);
+
+        // 3 saniye sonra kaldır
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     }
 
     async saveFTPConfig() {
@@ -117,7 +140,7 @@ class FTPSettings {
 
             // Validasyon
             if (!ftpHost || !ftpUsername) {
-                alert('⚠️ Lütfen tüm zorunlu alanları doldurun!');
+                this.showToast('Lütfen tüm zorunlu alanları doldurun', 'error');
                 return;
             }
 
@@ -147,14 +170,14 @@ class FTPSettings {
             const result = await response.json();
 
             if (result.success) {
-                alert('✅ SFTP ayarları başarıyla kaydedildi!');
+                this.showToast('SFTP ayarları başarıyla kaydedildi', 'success');
                 this.loadFTPConfig(); // Formu yeniden yükle
             } else {
-                alert(`❌ Hata: ${result.message}`);
+                this.showToast(`Hata: ${result.message}`, 'error');
             }
         } catch (error) {
             console.error('❌ [SFTP Settings] Kaydetme hatası:', error);
-            alert('❌ SFTP ayarları kaydedilemedi!');
+            this.showToast('SFTP ayarları kaydedilemedi', 'error');
         }
     }
 
@@ -165,7 +188,7 @@ class FTPSettings {
             const ftpPassword = document.getElementById('ftpPassword').value;
 
             if (!ftpHost || !ftpUsername || !ftpPassword) {
-                alert('⚠️ Lütfen tüm alanları doldurun!');
+                this.showToast('Lütfen tüm alanları doldurun', 'error');
                 return;
             }
 
@@ -191,16 +214,16 @@ class FTPSettings {
             const result = await response.json();
 
             if (result.success) {
-                alert('✅ SFTP bağlantısı başarılı!');
+                this.showToast('SFTP bağlantısı başarılı', 'success');
             } else {
-                alert(`❌ SFTP bağlantısı başarısız: ${result.message}`);
+                this.showToast(`SFTP bağlantısı başarısız: ${result.message}`, 'error');
             }
 
             testBtn.disabled = false;
             testBtn.innerHTML = '<i class="fas fa-plug"></i> Bağlantıyı Test Et';
         } catch (error) {
             console.error('❌ [SFTP Settings] Test hatası:', error);
-            alert('❌ SFTP bağlantısı test edilemedi!');
+            this.showToast('SFTP bağlantısı test edilemedi', 'error');
             
             const testBtn = document.getElementById('testFtp');
             testBtn.disabled = false;
@@ -209,7 +232,7 @@ class FTPSettings {
     }
 
     async sendDatabaseNow() {
-        if (!confirm('🚀 Veritabanı şimdi SFTP sunucusuna gönderilecek. Devam etmek istiyor musunuz?')) {
+        if (!confirm('Veritabanı şimdi SFTP sunucusuna gönderilecek. Devam etmek istiyor musunuz?')) {
             return;
         }
 
@@ -230,17 +253,17 @@ class FTPSettings {
             const result = await response.json();
 
             if (result.success) {
-                alert('✅ Veritabanı başarıyla gönderildi!');
+                this.showToast('Veritabanı başarıyla gönderildi', 'success');
                 this.loadFTPConfig(); // Son gönderim zamanını güncelle
             } else {
-                alert(`❌ Gönderim başarısız: ${result.message}`);
+                this.showToast(`Gönderim başarısız: ${result.message}`, 'error');
             }
 
             sendBtn.disabled = false;
             sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Şimdi Gönder';
         } catch (error) {
             console.error('❌ [SFTP Settings] Gönderim hatası:', error);
-            alert('❌ Veritabanı gönderilemedi!');
+            this.showToast('Veritabanı gönderilemedi', 'error');
             
             const sendBtn = document.getElementById('sendNow');
             sendBtn.disabled = false;

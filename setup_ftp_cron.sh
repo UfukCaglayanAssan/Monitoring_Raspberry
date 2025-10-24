@@ -15,14 +15,14 @@ if grep -q "ftp_backup.py" /tmp/current_cron; then
     echo "📋 Mevcut cron job'ları:"
     grep "ftp_backup.py" /tmp/current_cron
 else
-    # Her gün saat 00:00'da çalışacak cron job ekle
-    echo "0 0 * * * /usr/bin/python3 /home/bms/Desktop/Monitoring_Raspberry/ftp_backup.py >> /home/bms/Desktop/Monitoring_Raspberry/ftp_backup.log 2>&1" >> /tmp/current_cron
+    # Her gün saat 11:00'da çalışacak cron job ekle (Türkiye saati)
+    echo "0 11 * * * /usr/bin/python3 /home/bms/Desktop/Monitoring_Raspberry/ftp_backup.py >> /home/bms/Desktop/Monitoring_Raspberry/ftp_backup.log 2>&1" >> /tmp/current_cron
     
     # Yeni crontab'ı yükle
     crontab /tmp/current_cron
     
     echo "✅ FTP backup cron job'u eklendi!"
-    echo "⏰ Her gün saat 00:00'da çalışacak"
+    echo "⏰ Her gün saat 11:00'da çalışacak (Türkiye saati)"
     echo "📝 Loglar: /home/bms/Desktop/Monitoring_Raspberry/ftp_backup.log"
 fi
 
