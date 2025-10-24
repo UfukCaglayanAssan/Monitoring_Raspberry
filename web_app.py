@@ -1343,10 +1343,10 @@ def save_ip_config():
             with db_lock:
                 if use_dhcp:
                     return db_instance.save_ip_config(
-                        ip_address="DHCP",
-                        subnet_mask="",
-                        gateway="",
-                        dns_servers="",
+                        ip_address=None,
+                        subnet_mask=None,
+                        gateway=None,
+                        dns_servers=None,
                         is_assigned=True,
                         is_active=True,
                         use_dhcp=True

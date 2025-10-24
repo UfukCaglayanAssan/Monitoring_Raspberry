@@ -383,18 +383,18 @@ class IPManager:
             if use_dhcp:
                 print("🔄 DHCP IP konfigürasyonu güncelleniyor...")
                 
-                # Veritabanını güncelle (DHCP için)
+                # Veritabanını güncelle (DHCP için - statik IP bilgilerini temizle)
                 try:
                     self.db.save_ip_config(
-                        ip_address="DHCP",
-                        subnet_mask="",
-                        gateway="",
-                        dns_servers="",
+                        ip_address=None,
+                        subnet_mask=None,
+                        gateway=None,
+                        dns_servers=None,
                         is_assigned=True,
                         is_active=True,
                         use_dhcp=True
                     )
-                    print("✅ Veritabanı güncellendi (DHCP)")
+                    print("✅ Veritabanı güncellendi (DHCP - statik IP bilgileri temizlendi)")
                 except Exception as e:
                     print(f"❌ Veritabanı güncelleme hatası: {e}")
                     return False

@@ -114,7 +114,6 @@ class FTPSettings {
             const ftpHost = document.getElementById('ftpHost').value.trim();
             const ftpUsername = document.getElementById('ftpUsername').value.trim();
             const ftpPassword = document.getElementById('ftpPassword').value;
-            const isActive = document.getElementById('ftpActive').checked;
 
             // Validasyon
             if (!ftpHost || !ftpUsername) {
@@ -127,7 +126,7 @@ class FTPSettings {
                 ftp_host: ftpHost,
                 ftp_port: 22,  // SFTP sabit port
                 ftp_username: ftpUsername,
-                is_active: isActive
+                is_active: false  // Otomatik gönderim yok
             };
 
             // Şifre girilmişse ekle
