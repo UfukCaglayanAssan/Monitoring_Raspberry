@@ -296,12 +296,12 @@ class BatteryDatabase:
                 ''')
                 print("✓ arm_slave_counts tablosu oluşturuldu")
                 
-                # FTP konfigürasyon tablosu
+                # SFTP konfigürasyon tablosu
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS ftp_config (
                         id INTEGER PRIMARY KEY DEFAULT 1,
                         ftp_host TEXT,
-                        ftp_port INTEGER DEFAULT 21,
+                        ftp_port INTEGER DEFAULT 22,
                         ftp_username TEXT,
                         ftp_password TEXT,
                         is_active BOOLEAN DEFAULT 0,

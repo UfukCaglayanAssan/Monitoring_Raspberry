@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-FTP Backup Script
-Veritabanını FTP sunucusuna yedekler
+SFTP Backup Script
+Veritabanını SFTP sunucusuna yedekler (Güvenli)
 """
 
 import sys
 import os
-import ftplib
+import paramiko
 import base64
 from datetime import datetime
 
@@ -16,35 +16,35 @@ os.chdir('/home/bms/Desktop/Monitoring_Raspberry')
 
 from database import BatteryDatabase
 
-def send_database_to_ftp():
-    """Veritabanını FTP sunucusuna gönder"""
+def send_database_to_sftp():
+    """Veritabanını SFTP sunucusuna gönder (Güvenli)"""
     try:
-        print(f"[{datetime.now()}] FTP yedekleme başlatılıyor...")
+        print(f"[{datetime.now()}] SFTP yedekleme başlatılıyor...")
         
-        # Veritabanından FTP ayarlarını al
+        # Veritabanından SFTP ayarlarını al
         db = BatteryDatabase()
         config = db.get_ftp_config()
         
         if not config:
-            print("❌ FTP konfigürasyonu bulunamadı!")
+            print("❌ SFTP konfigürasyonu bulunamadı!")
             return False
         
         if not config.get('is_active'):
-            print("⚠️ FTP otomatik yedekleme pasif!")
+            print("⚠️ SFTP otomatik yedekleme pasif!")
             return False
         
-        ftp_host = config.get('ftp_host')
-        ftp_port = config.get('ftp_port', 21)
-        ftp_username = config.get('ftp_username')
-        ftp_password = config.get('ftp_password')
+        sftp_host = config.get('ftp_host')
+        sftp_port = config.get('ftp_port', 22)  # SFTP default port 22
+        sftp_username = config.get('ftp_username')
+        sftp_password = config.get('ftp_password')
         
-        if not all([ftp_host, ftp_username, ftp_password]):
-            print("❌ FTP ayarları eksik!")
+        if not all([sftp_host, sftp_username, sftp_password]):
+            print("❌ SFTP ayarları eksik!")
             return False
         
         # Şifreyi decode et
         try:
-            ftp_password = base64.b64decode(ftp_password.encode()).decode()
+            sftp_password = base64.b64decode(sftp_password.encode()).decode()
         except:
             pass  # Zaten düz metin
         
@@ -60,29 +60,42 @@ def send_database_to_ftp():
         file_size_mb = file_size / (1024 * 1024)
         print(f"📦 Dosya boyutu: {file_size_mb:.2f} MB")
         
-        # FTP bağlantısı
-        print(f"🔌 FTP sunucusuna bağlanılıyor: {ftp_host}:{ftp_port}")
-        ftp = ftplib.FTP()
-        ftp.connect(ftp_host, ftp_port, timeout=30)
-        ftp.login(ftp_username, ftp_password)
+        # SFTP bağlantısı
+        print(f"🔌 SFTP sunucusuna bağlanılıyor: {sftp_host}:{sftp_port}")
         
-        print(f"✅ FTP bağlantısı başarılı!")
-        print(f"📂 Mevcut dizin: {ftp.pwd()}")
+        # SSH client oluştur
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        
+        # Bağlan
+        ssh.connect(
+            hostname=sftp_host,
+            port=sftp_port,
+            username=sftp_username,
+            password=sftp_password,
+            timeout=30
+        )
+        
+        # SFTP client aç
+        sftp = ssh.open_sftp()
+        
+        print(f"✅ SFTP bağlantısı başarılı!")
+        print(f"📂 Mevcut dizin: {sftp.getcwd() or '/'}")
         
         # Hedef klasöre git (varsa)
         try:
-            ftp.cwd('bms_backup')  # Klasör adı
-            print(f"📂 Hedef klasöre geçildi: {ftp.pwd()}")
-        except ftplib.error_perm:
+            sftp.chdir('bms_backup')
+            print(f"📂 Hedef klasöre geçildi: {sftp.getcwd()}")
+        except IOError:
             # Klasör yoksa oluşturmayı dene
             try:
                 print(f"📁 Klasör bulunamadı, oluşturuluyor: bms_backup")
-                ftp.mkd('bms_backup')
-                ftp.cwd('bms_backup')
+                sftp.mkdir('bms_backup')
+                sftp.chdir('bms_backup')
                 print(f"✅ Klasör oluşturuldu ve geçildi")
-            except ftplib.error_perm:
+            except IOError:
                 # İzin yoksa ana dizinde kal
-                print(f"⚠️ Klasör oluşturma izni yok, ana dizine kaydedilecek: {ftp.pwd()}")
+                print(f"⚠️ Klasör oluşturma izni yok, ana dizine kaydedilecek")
         
         # Dosya adı (tarih ile)
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -90,22 +103,25 @@ def send_database_to_ftp():
         
         # Dosyayı gönder
         print(f"📤 Dosya gönderiliyor: {remote_filename}")
-        with open(db_file, 'rb') as file:
-            ftp.storbinary(f'STOR {remote_filename}', file)
+        sftp.put(db_file, remote_filename)
         
         print(f"✅ Dosya başarıyla gönderildi: {remote_filename}")
         
         # Bağlantıyı kapat
-        ftp.quit()
+        sftp.close()
+        ssh.close()
         
         # Son gönderim zamanını güncelle
         db.update_ftp_last_sent()
         
-        print(f"[{datetime.now()}] FTP yedekleme tamamlandı!")
+        print(f"[{datetime.now()}] SFTP yedekleme tamamlandı!")
         return True
         
-    except ftplib.all_errors as e:
-        print(f"❌ FTP hatası: {e}")
+    except paramiko.AuthenticationException as e:
+        print(f"❌ SFTP kimlik doğrulama hatası: {e}")
+        return False
+    except paramiko.SSHException as e:
+        print(f"❌ SFTP SSH hatası: {e}")
         return False
     except Exception as e:
         print(f"❌ Genel hata: {e}")
@@ -114,6 +130,6 @@ def send_database_to_ftp():
         return False
 
 if __name__ == '__main__':
-    success = send_database_to_ftp()
+    success = send_database_to_sftp()
     sys.exit(0 if success else 1)
 

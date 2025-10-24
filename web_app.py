@@ -1735,35 +1735,43 @@ def save_ftp_config():
 @app.route('/api/ftp-test', methods=['POST'])
 @login_required
 def test_ftp_connection():
-    """FTP bağlantısını test et"""
+    """SFTP bağlantısını test et"""
     try:
-        import ftplib
+        import paramiko
         
         data = request.get_json()
-        ftp_host = data.get('ftp_host')
-        ftp_port = data.get('ftp_port', 21)
-        ftp_username = data.get('ftp_username')
-        ftp_password = data.get('ftp_password')
+        sftp_host = data.get('ftp_host')
+        sftp_port = data.get('ftp_port', 22)  # SFTP default port 22
+        sftp_username = data.get('ftp_username')
+        sftp_password = data.get('ftp_password')
         
         # Base64 decode (eğer veritabanından geliyorsa)
         import base64
         try:
-            ftp_password = base64.b64decode(ftp_password.encode()).decode()
-        except:
+            if sftp_password:
+                sftp_password = base64.b64decode(sftp_password.encode()).decode()
+        except Exception as e:
+            print(f"⚠️ Şifre decode hatası: {e}")
             pass  # Zaten düz metin
         
-        # FTP bağlantısı test et
-        ftp = ftplib.FTP()
-        ftp.connect(ftp_host, ftp_port, timeout=10)
-        ftp.login(ftp_username, ftp_password)
-        ftp.quit()
+        # SFTP bağlantısı test et
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(
+            hostname=sftp_host,
+            port=sftp_port,
+            username=sftp_username,
+            password=sftp_password,
+            timeout=10
+        )
+        ssh.close()
         
         return jsonify({
             'success': True,
-            'message': 'FTP bağlantısı başarılı'
+            'message': 'SFTP bağlantısı başarılı'
         })
     except Exception as e:
-        print(f"FTP test hatası: {e}")
+        print(f"SFTP test hatası: {e}")
         return jsonify({
             'success': False,
             'message': str(e)

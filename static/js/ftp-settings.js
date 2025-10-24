@@ -1,5 +1,5 @@
-// FTP Settings Page JavaScript
-console.log('🎯 [FTP Settings] Script yüklendi');
+// SFTP Settings Page JavaScript
+console.log('🎯 [SFTP Settings] Script yüklendi');
 
 class FTPSettings {
     constructor() {
@@ -7,7 +7,7 @@ class FTPSettings {
     }
 
     init() {
-        console.log('🔧 [FTP Settings] Başlatılıyor...');
+        console.log('🔧 [SFTP Settings] Başlatılıyor...');
         this.bindEvents();
         this.loadFTPConfig();
     }
@@ -33,7 +33,7 @@ class FTPSettings {
             this.sendDatabaseNow();
         });
 
-        console.log('✅ [FTP Settings] Event listenerlar bağlandı');
+        console.log('✅ [SFTP Settings] Event listenerlar bağlandı');
     }
 
     togglePasswordVisibility() {
@@ -54,7 +54,7 @@ class FTPSettings {
 
     async loadFTPConfig() {
         try {
-            console.log('📥 [FTP Settings] Konfigürasyon yükleniyor...');
+            console.log('📥 [SFTP Settings] Konfigürasyon yükleniyor...');
             const response = await fetch('/api/ftp-config', {
                 method: 'GET',
                 headers: {
@@ -64,23 +64,23 @@ class FTPSettings {
 
             if (response.ok) {
                 const data = await response.json();
-                console.log('✅ [FTP Settings] Konfigürasyon yüklendi:', data);
+                console.log('✅ [SFTP Settings] Konfigürasyon yüklendi:', data);
 
                 if (data.success && data.config) {
                     this.populateForm(data.config);
                 }
             } else {
-                console.error('❌ [FTP Settings] Konfigürasyon yüklenemedi:', response.status);
+                console.error('❌ [SFTP Settings] Konfigürasyon yüklenemedi:', response.status);
             }
         } catch (error) {
-            console.error('❌ [FTP Settings] Hata:', error);
+            console.error('❌ [SFTP Settings] Hata:', error);
         }
     }
 
     populateForm(config) {
         // Form alanlarını doldur
         document.getElementById('ftpHost').value = config.ftp_host || '';
-        document.getElementById('ftpPort').value = config.ftp_port || 21;
+        document.getElementById('ftpPort').value = config.ftp_port || 22;
         document.getElementById('ftpUsername').value = config.ftp_username || '';
         
         // Şifre varsa placeholder göster
@@ -142,7 +142,7 @@ class FTPSettings {
                 configData.ftp_password = ftpPassword;
             }
 
-            console.log('💾 [FTP Settings] Kaydediliyor...', configData);
+            console.log('💾 [SFTP Settings] Kaydediliyor...', configData);
 
             const response = await fetch('/api/ftp-config', {
                 method: 'POST',
@@ -155,14 +155,14 @@ class FTPSettings {
             const result = await response.json();
 
             if (result.success) {
-                alert('✅ FTP ayarları başarıyla kaydedildi!');
+                alert('✅ SFTP ayarları başarıyla kaydedildi!');
                 this.loadFTPConfig(); // Formu yeniden yükle
             } else {
                 alert(`❌ Hata: ${result.message}`);
             }
         } catch (error) {
-            console.error('❌ [FTP Settings] Kaydetme hatası:', error);
-            alert('❌ FTP ayarları kaydedilemedi!');
+            console.error('❌ [SFTP Settings] Kaydetme hatası:', error);
+            alert('❌ SFTP ayarları kaydedilemedi!');
         }
     }
 
@@ -178,7 +178,7 @@ class FTPSettings {
                 return;
             }
 
-            console.log('🔌 [FTP Settings] Bağlantı test ediliyor...');
+            console.log('🔌 [SFTP Settings] Bağlantı test ediliyor...');
             
             const testBtn = document.getElementById('testFtp');
             testBtn.disabled = true;
@@ -200,16 +200,16 @@ class FTPSettings {
             const result = await response.json();
 
             if (result.success) {
-                alert('✅ FTP bağlantısı başarılı!');
+                alert('✅ SFTP bağlantısı başarılı!');
             } else {
-                alert(`❌ FTP bağlantısı başarısız: ${result.message}`);
+                alert(`❌ SFTP bağlantısı başarısız: ${result.message}`);
             }
 
             testBtn.disabled = false;
             testBtn.innerHTML = '<i class="fas fa-plug"></i> Bağlantıyı Test Et';
         } catch (error) {
-            console.error('❌ [FTP Settings] Test hatası:', error);
-            alert('❌ FTP bağlantısı test edilemedi!');
+            console.error('❌ [SFTP Settings] Test hatası:', error);
+            alert('❌ SFTP bağlantısı test edilemedi!');
             
             const testBtn = document.getElementById('testFtp');
             testBtn.disabled = false;
@@ -218,12 +218,12 @@ class FTPSettings {
     }
 
     async sendDatabaseNow() {
-        if (!confirm('🚀 Veritabanı şimdi FTP sunucusuna gönderilecek. Devam etmek istiyor musunuz?')) {
+        if (!confirm('🚀 Veritabanı şimdi SFTP sunucusuna gönderilecek. Devam etmek istiyor musunuz?')) {
             return;
         }
 
         try {
-            console.log('📤 [FTP Settings] Veritabanı gönderiliyor...');
+            console.log('📤 [SFTP Settings] Veritabanı gönderiliyor...');
             
             const sendBtn = document.getElementById('sendNow');
             sendBtn.disabled = true;
@@ -248,7 +248,7 @@ class FTPSettings {
             sendBtn.disabled = false;
             sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Şimdi Gönder';
         } catch (error) {
-            console.error('❌ [FTP Settings] Gönderim hatası:', error);
+            console.error('❌ [SFTP Settings] Gönderim hatası:', error);
             alert('❌ Veritabanı gönderilemedi!');
             
             const sendBtn = document.getElementById('sendNow');
