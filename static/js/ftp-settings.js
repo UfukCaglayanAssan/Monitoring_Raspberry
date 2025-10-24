@@ -80,7 +80,6 @@ class FTPSettings {
     populateForm(config) {
         // Form alanlarını doldur
         document.getElementById('ftpHost').value = config.ftp_host || '';
-        document.getElementById('ftpPort').value = config.ftp_port || 22;
         document.getElementById('ftpUsername').value = config.ftp_username || '';
         
         // Şifre varsa placeholder göster
@@ -113,7 +112,6 @@ class FTPSettings {
         try {
             // Form verilerini al
             const ftpHost = document.getElementById('ftpHost').value.trim();
-            const ftpPort = parseInt(document.getElementById('ftpPort').value);
             const ftpUsername = document.getElementById('ftpUsername').value.trim();
             const ftpPassword = document.getElementById('ftpPassword').value;
             const isActive = document.getElementById('ftpActive').checked;
@@ -124,15 +122,10 @@ class FTPSettings {
                 return;
             }
 
-            if (ftpPort < 1 || ftpPort > 65535) {
-                alert('⚠️ Geçersiz port numarası!');
-                return;
-            }
-
             // Şifre boşsa ve placeholder varsa, mevcut şifreyi koru
             const configData = {
                 ftp_host: ftpHost,
-                ftp_port: ftpPort,
+                ftp_port: 22,  // SFTP sabit port
                 ftp_username: ftpUsername,
                 is_active: isActive
             };
@@ -169,7 +162,6 @@ class FTPSettings {
     async testFTPConnection() {
         try {
             const ftpHost = document.getElementById('ftpHost').value.trim();
-            const ftpPort = parseInt(document.getElementById('ftpPort').value);
             const ftpUsername = document.getElementById('ftpUsername').value.trim();
             const ftpPassword = document.getElementById('ftpPassword').value;
 
@@ -191,7 +183,7 @@ class FTPSettings {
                 },
                 body: JSON.stringify({
                     ftp_host: ftpHost,
-                    ftp_port: ftpPort,
+                    ftp_port: 22,  // SFTP sabit port
                     ftp_username: ftpUsername,
                     ftp_password: ftpPassword
                 })

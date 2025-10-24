@@ -18,9 +18,6 @@
                 <h4>Son Gönderim</h4>
                 <div class="ftp-display">
                     <span id="lastSentAt" class="ftp-info">Henüz gönderim yapılmadı</span>
-                    <button id="testFtp" class="btn btn-sm btn-secondary">
-                        <i class="fas fa-plug"></i> Bağlantıyı Test Et
-                    </button>
                 </div>
             </div>
 
@@ -29,12 +26,6 @@
                     <label for="ftpHost">SFTP Sunucu Adresi *</label>
                     <input type="text" id="ftpHost" name="ftp_host" placeholder="sftp.example.com veya 192.168.1.100" required>
                     <small class="form-help">SFTP sunucusunun IP adresi veya domain adı</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="ftpPort">SFTP Port *</label>
-                    <input type="number" id="ftpPort" name="ftp_port" value="22" min="1" max="65535" required>
-                    <small class="form-help">Varsayılan SFTP portu: 22 (SSH)</small>
                 </div>
 
                 <div class="form-group">
@@ -59,14 +50,16 @@
                     <div class="checkbox-group">
                         <label class="checkbox-label">
                             <input type="checkbox" id="ftpActive" name="is_active">
-                            <span class="checkbox-text">Her gün saat 00:00'da otomatik olarak veritabanını gönder</span>
+                            <span class="checkbox-text">Her gün saat 00:00'da otomatik yedekleme</span>
                         </label>
                     </div>
-                    <small class="form-help">Aktif edildiğinde, battery_data.db dosyası her gece otomatik olarak SFTP sunucusuna güvenli şekilde yedeklenecektir</small>
                 </div>
 
                 <div class="form-actions">
-                    <button type="button" id="sendNow" class="btn btn-secondary">
+                    <button type="button" id="testFtp" class="btn btn-info">
+                        <i class="fas fa-plug"></i> Bağlantıyı Test Et
+                    </button>
+                    <button type="button" id="sendNow" class="btn btn-warning">
                         <i class="fas fa-paper-plane"></i> Şimdi Gönder
                     </button>
                     <button type="button" id="saveFtpConfig" class="btn btn-primary">
