@@ -9,10 +9,11 @@ import os
 import paramiko
 import base64
 from datetime import datetime
-from pathlib import Path
+import pwd
 
-# Kullanıcı home dizinini otomatik al
-USER_HOME = str(Path.home())
+# Gerçek kullanıcı adını al (sudo ile çalışsa bile)
+real_user = os.environ.get('SUDO_USER') or os.environ.get('USER') or 'bms'
+USER_HOME = pwd.getpwnam(real_user).pw_dir
 SCRIPT_DIR = os.path.join(USER_HOME, 'Desktop', 'Monitoring_Raspberry')
 
 # Proje dizinini path'e ekle
