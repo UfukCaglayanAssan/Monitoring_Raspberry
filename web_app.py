@@ -1801,6 +1801,8 @@ def send_database_now():
         )
         
         print(f"📤 SFTP script çıktısı:\n{result.stdout}")
+        print(f"📤 SFTP script stderr:\n{result.stderr}")
+        print(f"📤 Return code: {result.returncode}")
         
         if result.returncode == 0:
             return jsonify({
@@ -1809,9 +1811,12 @@ def send_database_now():
             })
         else:
             print(f"❌ SFTP hatası:\n{result.stderr}")
+            error_msg = result.stderr.strip() if result.stderr else result.stdout.strip()
+            if not error_msg:
+                error_msg = f"Script başarısız oldu (exit code: {result.returncode})"
             return jsonify({
                 'success': False,
-                'message': f'Gönderim hatası: {result.stderr}'
+                'message': f'Gönderim hatası: {error_msg}'
             }), 500
     except Exception as e:
         print(f"❌ SFTP gönderim hatası: {e}")
