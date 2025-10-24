@@ -9,10 +9,15 @@ import os
 import paramiko
 import base64
 from datetime import datetime
+from pathlib import Path
+
+# Kullanıcı home dizinini otomatik al
+USER_HOME = str(Path.home())
+SCRIPT_DIR = os.path.join(USER_HOME, 'Desktop', 'Monitoring_Raspberry')
 
 # Proje dizinini path'e ekle
-sys.path.insert(0, '/home/bms/Desktop/Monitoring_Raspberry')
-os.chdir('/home/bms/Desktop/Monitoring_Raspberry')
+sys.path.insert(0, SCRIPT_DIR)
+os.chdir(SCRIPT_DIR)
 
 from database import BatteryDatabase
 
@@ -49,7 +54,7 @@ def send_database_to_sftp():
             pass  # Zaten düz metin
         
         # Veritabanı dosyası
-        db_file = '/home/bms/Desktop/battery_data.db'
+        db_file = os.path.join(USER_HOME, 'Desktop', 'battery_data.db')
         
         if not os.path.exists(db_file):
             print(f"❌ Veritabanı dosyası bulunamadı: {db_file}")

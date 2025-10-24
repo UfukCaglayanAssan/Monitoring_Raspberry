@@ -1780,17 +1780,26 @@ def test_ftp_connection():
 @app.route('/api/ftp-send-now', methods=['POST'])
 @login_required
 def send_database_now():
-    """Veritabanını şimdi FTP'ye gönder"""
+    """Veritabanını şimdi SFTP'ye gönder"""
     try:
         import subprocess
+        from pathlib import Path
         
-        # FTP gönderim script'ini çalıştır
+        # Kullanıcı home dizinini otomatik al
+        user_home = str(Path.home())
+        script_path = os.path.join(user_home, 'Desktop', 'Monitoring_Raspberry', 'ftp_backup.py')
+        
+        print(f"🚀 SFTP gönderimi başlatılıyor: {script_path}")
+        
+        # SFTP gönderim script'ini çalıştır
         result = subprocess.run(
-            ['python3', '/home/bms/Desktop/Monitoring_Raspberry/ftp_backup.py'],
+            ['python3', script_path],
             capture_output=True,
             text=True,
             timeout=60
         )
+        
+        print(f"📤 SFTP script çıktısı:\n{result.stdout}")
         
         if result.returncode == 0:
             return jsonify({
@@ -1798,12 +1807,15 @@ def send_database_now():
                 'message': 'Veritabanı başarıyla gönderildi'
             })
         else:
+            print(f"❌ SFTP hatası:\n{result.stderr}")
             return jsonify({
                 'success': False,
                 'message': f'Gönderim hatası: {result.stderr}'
             }), 500
     except Exception as e:
-        print(f"FTP gönderim hatası: {e}")
+        print(f"❌ SFTP gönderim hatası: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
             'success': False,
             'message': str(e)
