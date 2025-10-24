@@ -1031,6 +1031,33 @@ class BatteryDatabase:
                 else:
                     print("✅ trap_targets tablosu mevcut")
                 
+                # ftp_config tablosu var mı kontrol et
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='ftp_config'
+                """)
+                
+                if not cursor.fetchone():
+                    print("🔄 ftp_config tablosu eksik, oluşturuluyor...")
+                    cursor.execute('''
+                        CREATE TABLE IF NOT EXISTS ftp_config (
+                            id INTEGER PRIMARY KEY DEFAULT 1,
+                            ftp_host TEXT,
+                            ftp_port INTEGER DEFAULT 22,
+                            ftp_username TEXT,
+                            ftp_password TEXT,
+                            is_active BOOLEAN DEFAULT 0,
+                            last_sent_at DATETIME,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            CONSTRAINT single_config CHECK (id = 1)
+                        )
+                    ''')
+                    conn.commit()
+                    print("✅ ftp_config tablosu oluşturuldu")
+                else:
+                    print("✅ ftp_config tablosu mevcut")
+                
                 # batconfigs tablosu var mı kontrol et
                 cursor.execute("""
                     SELECT name FROM sqlite_master 
