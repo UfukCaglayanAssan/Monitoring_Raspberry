@@ -1783,10 +1783,11 @@ def send_database_now():
     """Veritabanını şimdi SFTP'ye gönder"""
     try:
         import subprocess
-        from pathlib import Path
+        import pwd
         
-        # Kullanıcı home dizinini otomatik al
-        user_home = str(Path.home())
+        # Gerçek kullanıcı adını al (sudo ile çalışsa bile)
+        real_user = os.environ.get('SUDO_USER') or os.environ.get('USER') or 'bms'
+        user_home = pwd.getpwnam(real_user).pw_dir
         script_path = os.path.join(user_home, 'Desktop', 'Monitoring_Raspberry', 'ftp_backup.py')
         
         print(f"🚀 SFTP gönderimi başlatılıyor: {script_path}")

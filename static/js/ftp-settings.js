@@ -232,7 +232,8 @@ class FTPSettings {
     }
 
     async sendDatabaseNow() {
-        if (!confirm('Veritabanı şimdi SFTP sunucusuna gönderilecek. Devam etmek istiyor musunuz?')) {
+        // Onay modalı göster
+        if (!await this.showConfirmDialog('Veritabanı şimdi SFTP sunucusuna gönderilecek. Devam etmek istiyor musunuz?')) {
             return;
         }
 
@@ -269,6 +270,48 @@ class FTPSettings {
             sendBtn.disabled = false;
             sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Şimdi Gönder';
         }
+    }
+
+    showConfirmDialog(message) {
+        return new Promise((resolve) => {
+            // Modal oluştur
+            const modal = document.createElement('div');
+            modal.className = 'confirm-modal';
+            modal.innerHTML = `
+                <div class="confirm-modal-overlay"></div>
+                <div class="confirm-modal-content">
+                    <div class="confirm-modal-icon">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <div class="confirm-modal-message">${message}</div>
+                    <div class="confirm-modal-buttons">
+                        <button class="btn btn-secondary confirm-cancel">İptal</button>
+                        <button class="btn btn-warning confirm-ok">Gönder</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Animasyon için timeout
+            setTimeout(() => modal.classList.add('show'), 10);
+
+            // Buton event'leri
+            const cancelBtn = modal.querySelector('.confirm-cancel');
+            const okBtn = modal.querySelector('.confirm-ok');
+
+            const closeModal = (result) => {
+                modal.classList.remove('show');
+                setTimeout(() => {
+                    modal.remove();
+                    resolve(result);
+                }, 300);
+            };
+
+            cancelBtn.addEventListener('click', () => closeModal(false));
+            okBtn.addEventListener('click', () => closeModal(true));
+            modal.querySelector('.confirm-modal-overlay').addEventListener('click', () => closeModal(false));
+        });
     }
 }
 
