@@ -145,9 +145,9 @@ def set_data_retrieval_mode(enabled, config=None):
         
         # Tümünü Oku işlemi için özel flag
         if enabled and config and config.get('address') == 0:
-            # Eğer aktif periyot varsa, onu bitir ve yeni periyot başlat
+            # Eğer aktif periyot varsa, onu bitir ve yeni periyot başlatma
             if period_active:
-                print(f"🔄 TÜMÜNÜ OKU: Aktif periyot bitiriliyor, yeni periyot başlatılıyor")
+                print(f"🔄 TÜMÜNÜ OKU: Aktif periyot bitiriliyor, yeni periyot başlatılıyor.")
                 reset_period()
                 get_period_timestamp()
                 data_retrieval_waiting_for_period = False
@@ -2237,7 +2237,7 @@ def get_status_data_by_index(start_index, quantity):
                 
                 # Optimizasyon: Eğer önceki batarya yoktu ve aynı koldaysak, direkt 0 dön
                 if max_battery_found:
-            result.append(0)
+                    result.append(0)
                     print(f"DEBUG: Register {current_register}: Kol {current_arm} Batarya {battery_num} - maksimum aşıldı, 0")
                 else:
                     # RAM'de bu batarya var mı kontrol et
