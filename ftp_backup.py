@@ -35,10 +35,6 @@ def send_database_to_sftp():
             print("❌ SFTP konfigürasyonu bulunamadı!")
             return False
         
-        if not config.get('is_active'):
-            print("⚠️ SFTP otomatik yedekleme pasif!")
-            return False
-        
         sftp_host = config.get('ftp_host')
         sftp_port = config.get('ftp_port', 22)  # SFTP default port 22
         sftp_username = config.get('ftp_username')
