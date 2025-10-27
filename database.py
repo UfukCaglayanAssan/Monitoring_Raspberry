@@ -1651,128 +1651,178 @@ class BatteryDatabase:
         if filters is None:
             filters = {}
         
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            
-            # Basit SQL ile gruplandırılmış verileri getir
-            query = '''
-                SELECT 
-                    timestamp,
-                    arm,
-                    k as batteryAddress,
-                    MAX(CASE WHEN dtype = 10 THEN data END) as voltage,
-                    MAX(CASE WHEN dtype = 11 THEN data END) as health_status,
-                    MAX(CASE WHEN dtype = 12 THEN data END) as temperature,
-                    MAX(CASE WHEN dtype = 13 THEN data END) as positive_pole_temp,
-                    MAX(CASE WHEN dtype = 14 THEN data END) as negative_pole_temp,
-                    MAX(CASE WHEN dtype = 126 THEN data END) as charge_status
-                FROM battery_data 
-                WHERE k > 2
-            '''
-            
-            params = []
-            
-            # Filtreler
-            if filters.get('arm'):
-                query += ' AND arm = ?'
-                params.append(filters['arm'])
-            
-            if filters.get('battery'):
-                query += ' AND k = ?'
-                params.append(filters['battery'])
-            
-            if filters.get('start_date'):
-                start_timestamp = int(datetime.strptime(filters['start_date'], '%Y-%m-%d').timestamp() * 1000)
-                query += ' AND timestamp >= ?'
-                params.append(start_timestamp)
-            
-            if filters.get('end_date'):
-                end_timestamp = int(datetime.strptime(filters['end_date'], '%Y-%m-%d').timestamp() * 1000) + (24 * 60 * 60 * 1000) - 1
-                query += ' AND timestamp <= ?'
-                params.append(end_timestamp)
-            
-            query += ' GROUP BY timestamp, arm, k ORDER BY timestamp DESC, k ASC'
-            
-            cursor.execute(query, params)
-            rows = cursor.fetchall()
-            
-            # CSV formatı - Gruplandırılmış veriler için (UTF-8 BOM ile)
-            csv_content = "\ufeffZAMAN,KOL,BATARYA ADRESİ,GERİLİM,ŞARJ DURUMU,MODÜL SICAKLIĞI,POZİTİF KUTUP SICAKLIĞI,NEGATİF KUTUP SICAKLIĞI,SAĞLIK DURUMU\n"
-            
-            for row in rows:
-                timestamp = datetime.fromtimestamp(row[0] / 1000).strftime('%Y-%m-%d %H:%M:%S')
-                battery_address = row[2] - 2  # k - 2 olarak göster
-                
-                # 0.0 değerlerini de göster, sadece None değerleri için - kullan
-                voltage = row[3] if row[3] is not None else '-'
-                health_status = row[4] if row[4] is not None else '-'
-                temperature = row[5] if row[5] is not None else '-'
-                positive_pole_temp = row[6] if row[6] is not None else '-'
-                negative_pole_temp = row[7] if row[7] is not None else '-'
-                charge_status = row[8] if row[8] is not None else '-'
-                
-                csv_content += f"{timestamp},{row[1]},{battery_address},{voltage},{health_status},{temperature},{positive_pole_temp},{negative_pole_temp},{charge_status}\n"
-            
-            return csv_content
+        retry_count = 0
+        max_retries = 3
+        
+        while retry_count < max_retries:
+            try:
+                with self.get_connection() as conn:
+                    # Read-only mode için optimizasyon
+                    conn.execute("PRAGMA query_only = ON")
+                    cursor = conn.cursor()
+                    
+                    # Basit SQL ile gruplandırılmış verileri getir
+                    query = '''
+                        SELECT 
+                            timestamp,
+                            arm,
+                            k as batteryAddress,
+                            MAX(CASE WHEN dtype = 10 THEN data END) as voltage,
+                            MAX(CASE WHEN dtype = 11 THEN data END) as health_status,
+                            MAX(CASE WHEN dtype = 12 THEN data END) as temperature,
+                            MAX(CASE WHEN dtype = 13 THEN data END) as positive_pole_temp,
+                            MAX(CASE WHEN dtype = 14 THEN data END) as negative_pole_temp,
+                            MAX(CASE WHEN dtype = 126 THEN data END) as charge_status
+                        FROM battery_data 
+                        WHERE k > 2
+                    '''
+                    
+                    params = []
+                    
+                    # Filtreler
+                    if filters.get('arm'):
+                        query += ' AND arm = ?'
+                        params.append(filters['arm'])
+                    
+                    if filters.get('battery'):
+                        query += ' AND k = ?'
+                        params.append(filters['battery'])
+                    
+                    if filters.get('start_date'):
+                        start_timestamp = int(datetime.strptime(filters['start_date'], '%Y-%m-%d').timestamp() * 1000)
+                        query += ' AND timestamp >= ?'
+                        params.append(start_timestamp)
+                    
+                    if filters.get('end_date'):
+                        end_timestamp = int(datetime.strptime(filters['end_date'], '%Y-%m-%d').timestamp() * 1000) + (24 * 60 * 60 * 1000) - 1
+                        query += ' AND timestamp <= ?'
+                        params.append(end_timestamp)
+                    
+                    query += ' GROUP BY timestamp, arm, k ORDER BY timestamp DESC, k ASC'
+                    
+                    cursor.execute(query, params)
+                    
+                    # CSV formatı - Gruplandırılmış veriler için (UTF-8 BOM ile)
+                    csv_content = "\ufeffZAMAN,KOL,BATARYA ADRESİ,GERİLİM,ŞARJ DURUMU,MODÜL SICAKLIĞI,POZİTİF KUTUP SICAKLIĞI,NEGATİF KUTUP SICAKLIĞI,SAĞLIK DURUMU\n"
+                    
+                    # Chunk olarak işle (memory efficient)
+                    while True:
+                        rows = cursor.fetchmany(1000)  # 1000 satır chunk
+                        if not rows:
+                            break
+                        
+                        for row in rows:
+                            timestamp = datetime.fromtimestamp(row[0] / 1000).strftime('%Y-%m-%d %H:%M:%S')
+                            battery_address = row[2] - 2  # k - 2 olarak göster
+                            
+                            # 0.0 değerlerini de göster, sadece None değerleri için - kullan
+                            voltage = row[3] if row[3] is not None else '-'
+                            health_status = row[4] if row[4] is not None else '-'
+                            temperature = row[5] if row[5] is not None else '-'
+                            positive_pole_temp = row[6] if row[6] is not None else '-'
+                            negative_pole_temp = row[7] if row[7] is not None else '-'
+                            charge_status = row[8] if row[8] is not None else '-'
+                            
+                            csv_content += f"{timestamp},{row[1]},{battery_address},{voltage},{health_status},{temperature},{positive_pole_temp},{negative_pole_temp},{charge_status}\n"
+                    
+                    # Query-only mode'u kapat
+                    conn.execute("PRAGMA query_only = OFF")
+                    return csv_content
+                    
+            except sqlite3.OperationalError as e:
+                if "locked" in str(e).lower() and retry_count < max_retries - 1:
+                    retry_count += 1
+                    print(f"⚠️ Veritabanı kilitli, yeniden deneniyor ({retry_count}/{max_retries})...")
+                    time.sleep(0.5)  # 500ms bekle
+                else:
+                    raise
+            except Exception as e:
+                print(f"❌ Log export hatası: {e}")
+                raise
     
     def export_arm_logs_to_csv(self, filters=None):
         """Kol log verilerini CSV formatında export et"""
         if filters is None:
             filters = {}
         
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            
-            # Basit SQL ile sadece gerekli verileri getir
-            query = '''
-                SELECT 
-                    timestamp,
-                    arm,
-                    MAX(CASE WHEN dtype = 10 THEN data END) as current,
-                    MAX(CASE WHEN dtype = 11 THEN data END) as humidity,
-                    MAX(CASE WHEN dtype = 12 THEN data END) as module_temperature,
-                    MAX(CASE WHEN dtype = 13 THEN data END) as ambient_temperature
-                FROM battery_data 
-                WHERE k = 2
-            '''
-            
-            params = []
-            
-            # Filtreler
-            if filters.get('arm'):
-                query += ' AND arm = ?'
-                params.append(filters['arm'])
-            
-            if filters.get('start_date'):
-                start_timestamp = int(datetime.strptime(filters['start_date'], '%Y-%m-%d').timestamp() * 1000)
-                query += ' AND timestamp >= ?'
-                params.append(start_timestamp)
-            
-            if filters.get('end_date'):
-                end_timestamp = int(datetime.strptime(filters['end_date'], '%Y-%m-%d').timestamp() * 1000) + (24 * 60 * 60 * 1000) - 1
-                query += ' AND timestamp <= ?'
-                params.append(end_timestamp)
-            
-            query += ' GROUP BY timestamp, arm, k ORDER BY timestamp DESC, arm ASC'
-            
-            cursor.execute(query, params)
-            rows = cursor.fetchall()
-            
-            # CSV formatı - Sadece gerekli alanlar (UTF-8 BOM ile)
-            csv_content = "\ufeffKOL,ZAMAN,AKIM,NEM,MODÜL SICAKLIĞI,ORTAM SICAKLIĞI\n"
-            
-            for row in rows:
-                timestamp = datetime.fromtimestamp(row[0] / 1000).strftime('%Y-%m-%d %H:%M:%S')
-                
-                # 0.0 değerlerini de göster, sadece None değerleri için - kullan
-                current = row[2] if row[2] is not None else '-'
-                humidity = row[3] if row[3] is not None else '-'
-                module_temp = row[4] if row[4] is not None else '-'
-                ambient_temp = row[5] if row[5] is not None else '-'
-                
-                csv_content += f"{row[1]},{timestamp},{current},{humidity},{module_temp},{ambient_temp}\n"
-            
-            return csv_content
+        retry_count = 0
+        max_retries = 3
+        
+        while retry_count < max_retries:
+            try:
+                with self.get_connection() as conn:
+                    # Read-only mode için optimizasyon
+                    conn.execute("PRAGMA query_only = ON")
+                    cursor = conn.cursor()
+                    
+                    # Basit SQL ile sadece gerekli verileri getir
+                    query = '''
+                        SELECT 
+                            timestamp,
+                            arm,
+                            MAX(CASE WHEN dtype = 10 THEN data END) as current,
+                            MAX(CASE WHEN dtype = 11 THEN data END) as humidity,
+                            MAX(CASE WHEN dtype = 12 THEN data END) as module_temperature,
+                            MAX(CASE WHEN dtype = 13 THEN data END) as ambient_temperature
+                        FROM battery_data 
+                        WHERE k = 2
+                    '''
+                    
+                    params = []
+                    
+                    # Filtreler
+                    if filters.get('arm'):
+                        query += ' AND arm = ?'
+                        params.append(filters['arm'])
+                    
+                    if filters.get('start_date'):
+                        start_timestamp = int(datetime.strptime(filters['start_date'], '%Y-%m-%d').timestamp() * 1000)
+                        query += ' AND timestamp >= ?'
+                        params.append(start_timestamp)
+                    
+                    if filters.get('end_date'):
+                        end_timestamp = int(datetime.strptime(filters['end_date'], '%Y-%m-%d').timestamp() * 1000) + (24 * 60 * 60 * 1000) - 1
+                        query += ' AND timestamp <= ?'
+                        params.append(end_timestamp)
+                    
+                    query += ' GROUP BY timestamp, arm, k ORDER BY timestamp DESC, arm ASC'
+                    
+                    cursor.execute(query, params)
+                    
+                    # CSV formatı - Sadece gerekli alanlar (UTF-8 BOM ile)
+                    csv_content = "\ufeffKOL,ZAMAN,AKIM,NEM,MODÜL SICAKLIĞI,ORTAM SICAKLIĞI\n"
+                    
+                    # Chunk olarak işle (memory efficient)
+                    while True:
+                        rows = cursor.fetchmany(1000)  # 1000 satır chunk
+                        if not rows:
+                            break
+                        
+                        for row in rows:
+                            timestamp = datetime.fromtimestamp(row[0] / 1000).strftime('%Y-%m-%d %H:%M:%S')
+                            
+                            # 0.0 değerlerini de göster, sadece None değerleri için - kullan
+                            current = row[2] if row[2] is not None else '-'
+                            humidity = row[3] if row[3] is not None else '-'
+                            module_temp = row[4] if row[4] is not None else '-'
+                            ambient_temp = row[5] if row[5] is not None else '-'
+                            
+                            csv_content += f"{row[1]},{timestamp},{current},{humidity},{module_temp},{ambient_temp}\n"
+                    
+                    # Query-only mode'u kapat
+                    conn.execute("PRAGMA query_only = OFF")
+                    return csv_content
+                    
+            except sqlite3.OperationalError as e:
+                if "locked" in str(e).lower() and retry_count < max_retries - 1:
+                    retry_count += 1
+                    print(f"⚠️ Veritabanı kilitli, yeniden deneniyor ({retry_count}/{max_retries})...")
+                    time.sleep(0.5)  # 500ms bekle
+                else:
+                    raise
+            except Exception as e:
+                print(f"❌ Arm log export hatası: {e}")
+                raise
 
     def get_batteries_for_display(self, page=1, page_size=30, selected_arm=0, language='tr'):
         """Batteries sayfası için batarya verilerini getir"""

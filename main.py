@@ -641,36 +641,68 @@ def db_worker():
                 print(f"\n*** BATKON ALARM VERİSİ ALGILANDI - {timestamp} ***")
                 print(f"Arm: {arm_value}, k: {k_value}, Battery: {battery}, Error MSB: {error_msb}, Error LSB: {error_lsb}")
                 print(f"Ham Veri: {data}")
-                alarm_timestamp = int(time.time() * 1000)
                 
-                # Alarm koşullarını kontrol et ve RAM'e kaydet
-                alarm_data = {'error_msb': error_msb, 'error_lsb': error_lsb}
-                check_alarm_conditions(arm_value, battery, alarm_data)
+                # Validasyon: Geçersiz alarm kontrolü
+                is_valid_alarm = True
                 
-                # Eğer errorlsb=1 ve errormsb=1 ise, mevcut alarmı düzelt
-                if error_lsb == 1 and error_msb == 1:
-                    # Periyot bitiminde işlenecek şekilde düzeltme ekle
-                    alarm_processor.add_resolve(arm_value, k_value)  # k_value kaydet (3-122)
-                    print(f"📝 Batkon alarm düzeltme eklendi (beklemede) - Arm: {arm_value}, k: {k_value}, Battery: {battery}")
+                # 1. Arm kontrolü (1-4 arası olmalı)
+                if arm_value not in [1, 2, 3, 4]:
+                    print(f"⚠️ GEÇERSİZ ALARM: Hatalı arm değeri ({arm_value}) - Veritabanına kaydedilmedi")
+                    is_valid_alarm = False
+                
+                # 2. LSB=0 ve MSB=0 kontrolü (alarm yoksa kaydetme)
+                if error_lsb == 0 and error_msb == 0:
+                    print(f"⚠️ GEÇERSİZ ALARM: LSB=0 ve MSB=0 (alarm yok) - Veritabanına kaydedilmedi")
+                    is_valid_alarm = False
+                
+                # 3. Batarya mevcut mu kontrolü (arm_slave_counts_ram'den)
+                if is_valid_alarm:
+                    max_battery = arm_slave_counts_ram.get(arm_value, 0)
+                    if battery > max_battery:
+                        print(f"⚠️ GEÇERSİZ ALARM: Batarya {battery} mevcut değil (Kol {arm_value} max: {max_battery}) - Veritabanına kaydedilmedi")
+                        is_valid_alarm = False
+                    
+                    # k_value kontrolü (3 ile max_battery+2 arası olmalı)
+                    min_k = 3
+                    max_k = max_battery + 2
+                    if k_value < min_k or k_value > max_k:
+                        print(f"⚠️ GEÇERSİZ ALARM: Hatalı k_value ({k_value}) - Kol {arm_value} için geçerli aralık: {min_k}-{max_k} - Veritabanına kaydedilmedi")
+                        is_valid_alarm = False
+                
+                # Geçerli alarm ise işle
+                if is_valid_alarm:
+                    alarm_timestamp = int(time.time() * 1000)
+                    
+                    # Alarm koşullarını kontrol et ve RAM'e kaydet
+                    alarm_data = {'error_msb': error_msb, 'error_lsb': error_lsb}
+                    check_alarm_conditions(arm_value, battery, alarm_data)
+                    
+                    # Eğer errorlsb=1 ve errormsb=1 ise, mevcut alarmı düzelt
+                    if error_lsb == 1 and error_msb == 1:
+                        # Periyot bitiminde işlenecek şekilde düzeltme ekle
+                        alarm_processor.add_resolve(arm_value, k_value)  # k_value kaydet (3-122)
+                        print(f"📝 Batkon alarm düzeltme eklendi (beklemede) - Arm: {arm_value}, k: {k_value}, Battery: {battery}")
+                    else:
+                        # Periyot bitiminde işlenecek şekilde alarm ekle
+                        alarm_processor.add_alarm(arm_value, k_value, error_msb, error_lsb, alarm_timestamp)  # k_value kaydet (3-122)
+                        print("📝 Yeni Batkon alarm eklendi (beklemede)")
+                    
+                    # Periyot tamamlandı mı kontrol et (son batarya alarmından sonra)
+                    if is_period_complete(arm_value, battery, is_alarm=True):
+                        print(f"🔄 PERİYOT BİTTİ - Son batarya alarmı: Kol {arm_value}, Batarya {battery}")
+                        # Periyot bitti, alarmları işle
+                        alarm_processor.process_period_end()
+                        # Veri alma modunu durdur
+                        if is_data_retrieval_mode():
+                            set_data_retrieval_mode(False, None)
+                            print("🛑 Veri alma modu durduruldu - Periyot bitti")
+                        # Normal alarm verisi geldiğinde reset sinyali gönderme
+                        # Reset sinyali sadece missing data durumunda gönderilir
+                        # Yeni periyot başlat
+                        reset_period()
+                        get_period_timestamp()
                 else:
-                    # Periyot bitiminde işlenecek şekilde alarm ekle
-                    alarm_processor.add_alarm(arm_value, k_value, error_msb, error_lsb, alarm_timestamp)  # k_value kaydet (3-122)
-                    print("📝 Yeni Batkon alarm eklendi (beklemede)")
-                
-                # Periyot tamamlandı mı kontrol et (son batarya alarmından sonra)
-                if is_period_complete(arm_value, battery, is_alarm=True):
-                    print(f"🔄 PERİYOT BİTTİ - Son batarya alarmı: Kol {arm_value}, Batarya {battery}")
-                    # Periyot bitti, alarmları işle
-                    alarm_processor.process_period_end()
-                    # Veri alma modunu durdur
-                    if is_data_retrieval_mode():
-                        set_data_retrieval_mode(False, None)
-                        print("🛑 Veri alma modu durduruldu - Periyot bitti")
-                    # Normal alarm verisi geldiğinde reset sinyali gönderme
-                    # Reset sinyali sadece missing data durumunda gönderilir
-                    # Yeni periyot başlat
-                    reset_period()
-                    get_period_timestamp()
+                    print(f"❌ Geçersiz alarm atlandı - Veritabanına kaydedilmedi")
                 
                 continue
 
