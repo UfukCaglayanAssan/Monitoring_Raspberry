@@ -12,8 +12,8 @@ app = Flask(__name__)
 app.secret_key = 'tescom_bms_secret_key_2024'  # Session için secret key
 
 # Thread-safe database erişimi için lock'lar
-# database.py içinde connection pool zaten thread-safe olduğu için
-# burada lock kullanmaya gerek yok - tüm db_lock kullanımları kaldırıldı
+db_lock = threading.Lock()  # Write işlemleri için
+db_read_lock = threading.RLock()  # Read işlemleri için (multiple readers allowed)
 
 # Retry mekanizması için
 import time as time_module
@@ -246,8 +246,8 @@ def get_page_html(page_name):
 def get_data_types():
     language = request.args.get('lang', 'tr')  # Varsayılan Türkçe
     db_instance = get_db()
-    # database.py zaten thread-safe
-    data_types = db_instance.get_data_types_by_language(language)
+    with db_read_lock:
+        data_types = db_instance.get_data_types_by_language(language)
     return jsonify(data_types)
 
 @app.route('/api/alarm_count')
@@ -255,8 +255,8 @@ def get_alarm_count():
     """Aktif alarm sayısını getir"""
     try:
         db_instance = get_db()
-        # database.py zaten thread-safe
-        count = db_instance.get_active_alarm_count()
+        with db_read_lock:
+            count = db_instance.get_active_alarm_count()
         return jsonify({
             'success': True,
             'count': count
@@ -285,8 +285,8 @@ def get_recent_data():
         dtype = int(dtype)
     
     db_instance = get_db()
-    # database.py zaten thread-safe
-    data = db_instance.get_recent_data_with_translations(
+    with db_read_lock:
+        data = db_instance.get_recent_data_with_translations(
         minutes=minutes, 
         arm=arm, 
         battery=battery, 
@@ -311,8 +311,8 @@ def get_data_by_date():
         dtype = int(dtype)
     
     db_instance = get_db()
-    # database.py zaten thread-safe
-    data = db_instance.get_data_by_date_range_with_translations(
+    with db_read_lock:
+        data = db_instance.get_data_by_date_range_with_translations(
         start_date, end_date, arm, dtype, language
     )
     return jsonify(data)
@@ -333,7 +333,7 @@ def get_battery_logs():
     try:
         # Veritabanından gruplandırılmış batarya log verilerini al
         db_instance = get_db()
-        with db_lock:
+        with db_read_lock:
             logs_data = db_instance.get_grouped_battery_logs(
             page=page,
             page_size=page_size,
@@ -370,7 +370,7 @@ def get_battery_detail_charts():
     
     try:
         db_instance = get_db()
-        with db_lock:
+        with db_read_lock:
             # 1 saat aralıklarla en son 7 saatlik veri getir
             charts_data = db_instance.get_battery_detail_charts(arm, battery)
         
@@ -399,7 +399,7 @@ def get_arm_logs():
     try:
         # Veritabanından gruplandırılmış kol log verilerini al
         db_instance = get_db()
-        with db_lock:
+        with db_read_lock:
             logs_data = db_instance.get_grouped_arm_logs(
             page=page,
             page_size=page_size,
@@ -429,8 +429,7 @@ def export_logs():
         filters = data.get('filters', {})
         
         db_instance = get_db()
-        # main.py'deki veri yazma işlemiyle çakışmaması için aynı lock'u kullan
-        with db_lock:
+        with db_read_lock:
             csv_content = db_instance.export_logs_to_csv(filters)
         
         response = app.response_class(
@@ -459,7 +458,7 @@ def get_batteries():
         # Read-only işlem için read lock kullan (daha hızlı)
         def get_batteries_data():
             db_instance = get_db()
-            with db_lock:
+            with db_read_lock:
                 return db_instance.get_batteries_for_display(page, page_size, selected_arm, language)
         
         batteries_data = db_operation_with_retry(get_batteries_data)
@@ -482,7 +481,7 @@ def get_active_arms():
     """Aktif kolları getir (armslavecount > 0)"""
     try:
         db_instance = get_db()
-        with db_lock:
+        with db_read_lock:
             active_arms = db_instance.get_active_arms()
         return jsonify({
             'success': True,
@@ -503,7 +502,7 @@ def get_passive_balance():
             arm = int(arm)
         
         db_instance = get_db()
-        with db_lock:
+        with db_read_lock:
             balance_data = db_instance.get_passive_balance(arm)
         return jsonify({
             'success': True,
@@ -519,10 +518,9 @@ def get_passive_balance():
 def export_batteries():
     """Batarya verilerini CSV olarak export et"""
     try:
+        # Lock kullanmadan doğrudan çağır - database.py içinde optimize edilecek
         db_instance = get_db()
-        # main.py'deki veri yazma işlemiyle çakışmaması için aynı lock'u kullan
-        with db_lock:
-            csv_content = db_instance.export_batteries_to_csv()
+        csv_content = db_instance.export_batteries_to_csv()
         
         response = app.response_class(
             response=csv_content,
@@ -542,10 +540,9 @@ def export_battery_logs():
         data = request.get_json()
         filters = data.get('filters', {}) if data else {}
         
+        # Lock kullanmadan doğrudan çağır - database.py içinde optimize edilmiş
         db_instance = get_db()
-        # main.py'deki veri yazma işlemiyle çakışmaması için aynı lock'u kullan
-        with db_lock:
-            csv_content = db_instance.export_logs_to_csv(filters)
+        csv_content = db_instance.export_logs_to_csv(filters)
         
         response = app.response_class(
             response=csv_content,
@@ -565,10 +562,9 @@ def export_arm_logs():
         data = request.get_json()
         filters = data.get('filters', {}) if data else {}
         
+        # Lock kullanmadan doğrudan çağır - database.py içinde optimize edilmiş
         db_instance = get_db()
-        # main.py'deki veri yazma işlemiyle çakışmaması için aynı lock'u kullan
-        with db_lock:
-            csv_content = db_instance.export_arm_logs_to_csv(filters)
+        csv_content = db_instance.export_arm_logs_to_csv(filters)
         
         response = app.response_class(
             response=csv_content,
@@ -753,7 +749,7 @@ def get_batconfigs():
     try:
         # Veritabanından konfigürasyonları oku
         db_instance = get_db()
-        with db_lock:
+        with db_read_lock:
             configs = db_instance.get_batconfigs()
         return jsonify({
             'success': True,
@@ -771,7 +767,7 @@ def get_armconfigs():
     try:
         # Veritabanından konfigürasyonları oku
         db_instance = get_db()
-        with db_lock:
+        with db_read_lock:
             configs = db_instance.get_armconfigs()
         return jsonify({
             'success': True,
@@ -795,7 +791,7 @@ def get_alarms():
         # Veritabanından sayfalanmış alarmları oku
         def get_alarms_data():
             db_instance = get_db()
-            with db_lock:
+            with db_read_lock:
                 return db_instance.get_paginated_alarms(
                     show_resolved=show_resolved,
                     page=page,
@@ -835,7 +831,7 @@ def get_alarm_history():
         # Veritabanından sadece çözülmüş alarmları oku
         def get_alarm_history_data():
             db_instance = get_db()
-            with db_lock:
+            with db_read_lock:
                 return db_instance.get_paginated_alarms(
                     show_resolved=True,  # Sadece çözülmüş alarmlar
                     page=page,
@@ -870,7 +866,7 @@ def get_summary():
     try:
         # Veritabanından özet verileri oku
         db_instance = get_db()
-        with db_lock:
+        with db_read_lock:
             summary_data = db_instance.get_summary_data()
         
         return jsonify({
@@ -889,7 +885,7 @@ def get_mail_recipients():
     """Mail alıcılarını getir"""
     try:
         db_instance = get_db()
-        with db_lock:
+        with db_read_lock:
             recipients = db_instance.get_mail_recipients()
         
         return jsonify({
@@ -1109,7 +1105,7 @@ def get_mail_server_config():
     try:
         def get_config():
             db_instance = get_db()
-            with db_lock:
+            with db_read_lock:
                 return db_instance.get_mail_server_config()
         
         config = db_operation_with_retry(get_config)
@@ -1307,7 +1303,7 @@ def get_ip_config():
     try:
         def get_config():
             db_instance = get_db()
-            with db_lock:
+            with db_read_lock:
                 return db_instance.get_ip_config()
         
         config = db_operation_with_retry(get_config)
@@ -1998,7 +1994,7 @@ def get_retrieved_data():
         
         # Veritabanından timestamp'a göre veri çek
         db = get_db()
-        with db_lock:
+        with db_read_lock:
             # Timestamp'ı milisaniye cinsinden kullan (veritabanındaki format)
             # Önce toplam veri sayısını kontrol et
             count_query = "SELECT COUNT(*) FROM battery_data"

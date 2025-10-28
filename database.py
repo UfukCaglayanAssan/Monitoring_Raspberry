@@ -1652,13 +1652,14 @@ class BatteryDatabase:
             filters = {}
         
         retry_count = 0
-        max_retries = 3
+        max_retries = 5  # Retry sayısını artır
         
         while retry_count < max_retries:
             try:
                 with self.get_connection() as conn:
-                    # Read-only mode için optimizasyon
+                    # Read-only mode için optimizasyonlar
                     conn.execute("PRAGMA query_only = ON")
+                    conn.execute("PRAGMA read_uncommitted = 1")  # Uncommitted read için (write lock beklemez)
                     cursor = conn.cursor()
                     
                     # Basit SQL ile gruplandırılmış verileri getir
@@ -1732,8 +1733,9 @@ class BatteryDatabase:
             except sqlite3.OperationalError as e:
                 if "locked" in str(e).lower() and retry_count < max_retries - 1:
                     retry_count += 1
-                    print(f"⚠️ Veritabanı kilitli, yeniden deneniyor ({retry_count}/{max_retries})...")
-                    time.sleep(0.5)  # 500ms bekle
+                    wait_time = 0.2 * (2 ** retry_count)  # Exponential backoff: 0.4s, 0.8s, 1.6s, 3.2s
+                    print(f"⚠️ Veritabanı kilitli, yeniden deneniyor ({retry_count}/{max_retries}) {wait_time}s sonra...")
+                    time.sleep(wait_time)
                 else:
                     raise
             except Exception as e:
@@ -1746,13 +1748,14 @@ class BatteryDatabase:
             filters = {}
         
         retry_count = 0
-        max_retries = 3
+        max_retries = 5  # Retry sayısını artır
         
         while retry_count < max_retries:
             try:
                 with self.get_connection() as conn:
-                    # Read-only mode için optimizasyon
+                    # Read-only mode için optimizasyonlar
                     conn.execute("PRAGMA query_only = ON")
+                    conn.execute("PRAGMA read_uncommitted = 1")  # Uncommitted read için (write lock beklemez)
                     cursor = conn.cursor()
                     
                     # Basit SQL ile sadece gerekli verileri getir
@@ -1816,8 +1819,9 @@ class BatteryDatabase:
             except sqlite3.OperationalError as e:
                 if "locked" in str(e).lower() and retry_count < max_retries - 1:
                     retry_count += 1
-                    print(f"⚠️ Veritabanı kilitli, yeniden deneniyor ({retry_count}/{max_retries})...")
-                    time.sleep(0.5)  # 500ms bekle
+                    wait_time = 0.2 * (2 ** retry_count)  # Exponential backoff: 0.4s, 0.8s, 1.6s, 3.2s
+                    print(f"⚠️ Veritabanı kilitli, yeniden deneniyor ({retry_count}/{max_retries}) {wait_time}s sonra...")
+                    time.sleep(wait_time)
                 else:
                     raise
             except Exception as e:
@@ -2039,43 +2043,65 @@ class BatteryDatabase:
     def export_batteries_to_csv(self):
         """Batarya verilerini CSV formatında export et"""
         
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            
-            # Her batarya için en son veri zamanını bul
-            base_query = '''
-                SELECT 
-                    bd.arm,
-                    bd.k as batteryAddress,
-                    MAX(bd.timestamp) as latest_timestamp
-                FROM battery_data bd
-                WHERE bd.k != 2
-                GROUP BY bd.arm, bd.k 
-                ORDER BY bd.arm, bd.k
-            '''
-            
-            cursor.execute(base_query)
-            battery_groups = cursor.fetchall()
-            
-            # CSV formatı
-            csv_content = "KOL,BATARYA ADRESİ,SON GÜNCELLEME,GERİLİM (V),SICAKLIK (°C),SAĞLIK DURUMU (%),ŞARJ DURUMU (%)\n"
-            
-            for group in battery_groups:
-                arm, battery_address, latest_timestamp = group
-                
-                # Her batarya için sadece en son verileri getir
-                battery_data = self.get_latest_battery_data(arm, battery_address)
-                
-                if battery_data:
-                    timestamp = datetime.fromtimestamp(latest_timestamp / 1000).strftime('%Y-%m-%d %H:%M:%S')
+        retry_count = 0
+        max_retries = 5  # Retry sayısını artır
+        
+        while retry_count < max_retries:
+            try:
+                with self.get_connection() as conn:
+                    # Read-only mode için optimizasyonlar
+                    conn.execute("PRAGMA query_only = ON")
+                    conn.execute("PRAGMA read_uncommitted = 1")  # Uncommitted read için (write lock beklemez)
+                    cursor = conn.cursor()
                     
-                    csv_content += f"{arm},{battery_address},{timestamp},"
-                    csv_content += f"{battery_data['voltage'] or '--'},"
-                    csv_content += f"{battery_data['temperature'] or '--'},"
-                    csv_content += f"{battery_data['charge'] or '--'},"
-                    csv_content += f"{battery_data['health'] or '--'}\n"
-            
-            return csv_content
+                    # Her batarya için en son veri zamanını bul
+                    base_query = '''
+                        SELECT 
+                            bd.arm,
+                            bd.k as batteryAddress,
+                            MAX(bd.timestamp) as latest_timestamp
+                        FROM battery_data bd
+                        WHERE bd.k != 2
+                        GROUP BY bd.arm, bd.k 
+                        ORDER BY bd.arm, bd.k
+                    '''
+                    
+                    cursor.execute(base_query)
+                    battery_groups = cursor.fetchall()
+                    
+                    # CSV formatı (UTF-8 BOM ile)
+                    csv_content = "\ufeffKOL,BATARYA ADRESİ,SON GÜNCELLEME,GERİLİM (V),SICAKLIK (°C),SAĞLIK DURUMU (%),ŞARJ DURUMU (%)\n"
+                    
+                    for group in battery_groups:
+                        arm, battery_address, latest_timestamp = group
+                        
+                        # Her batarya için sadece en son verileri getir
+                        battery_data = self.get_latest_battery_data(arm, battery_address)
+                        
+                        if battery_data:
+                            timestamp = datetime.fromtimestamp(latest_timestamp / 1000).strftime('%Y-%m-%d %H:%M:%S')
+                            
+                            csv_content += f"{arm},{battery_address},{timestamp},"
+                            csv_content += f"{battery_data['voltage'] or '--'},"
+                            csv_content += f"{battery_data['temperature'] or '--'},"
+                            csv_content += f"{battery_data['charge'] or '--'},"
+                            csv_content += f"{battery_data['health'] or '--'}\n"
+                    
+                    # Query-only mode'u kapat
+                    conn.execute("PRAGMA query_only = OFF")
+                    return csv_content
+                    
+            except sqlite3.OperationalError as e:
+                if "locked" in str(e).lower() and retry_count < max_retries - 1:
+                    retry_count += 1
+                    wait_time = 0.2 * (2 ** retry_count)  # Exponential backoff: 0.4s, 0.8s, 1.6s, 3.2s
+                    print(f"⚠️ Veritabanı kilitli, yeniden deneniyor ({retry_count}/{max_retries}) {wait_time}s sonra...")
+                    time.sleep(wait_time)
+                else:
+                    raise
+            except Exception as e:
+                print(f"❌ Batteries export hatası: {e}")
+                raise
     
     def get_database_size(self):
         """Veritabanı boyutunu MB cinsinden döndür"""

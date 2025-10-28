@@ -325,8 +325,9 @@ def is_valid_arm_data(arm_value, k_value):
 def get_last_battery_info():
     """En son batarya bilgisini döndür (arm, k) - veritabanından oku"""
     try:
-        # Veritabanından oku (database.py zaten thread-safe)
-        db_arm_slave_counts = db.get_arm_slave_counts()
+        # Veritabanından oku
+        with db_lock:
+            db_arm_slave_counts = db.get_arm_slave_counts()
         
         if not db_arm_slave_counts:
             print("⚠️ Veritabanından arm_slave_counts okunamadı")
@@ -391,12 +392,12 @@ def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False
     if arm_value == last_arm and k_value == last_battery - 1:
         # Son bataryadan bir önceki batarya geldi, son batarya pasif balansta mı kontrol et
         try:
-            # database.py zaten thread-safe
-            balance_data = db.get_passive_balance(arm=arm_value)
-            # Aktif pasif balans durumunu kontrol et (status=0 ve slave=last_battery)
-            for balance in balance_data:
-                if balance['slave'] == last_battery and balance['status'] == 0:
-                    return True
+            with db_lock:
+                balance_data = db.get_passive_balance(arm=arm_value)
+                # Aktif pasif balans durumunu kontrol et (status=0 ve slave=last_battery)
+                for balance in balance_data:
+                    if balance['slave'] == last_battery and balance['status'] == 0:
+                        return True
         except Exception as e:
             print(f"❌ Pasif balans kontrol hatası: {e}")
     
@@ -762,8 +763,9 @@ def db_worker():
                         # Status güncelle (veri var) - battery_value kullan (RAM için)
                         update_status(arm_value, battery_value, True)
                 
-                # SQLite'ye kaydet - k_value kaydet (database.py zaten thread-safe)
-                db.insert_missing_data(arm_value, k_value, status_value, missing_timestamp)
+                # SQLite'ye kaydet - k_value kaydet
+                with db_lock:
+                    db.insert_missing_data(arm_value, k_value, status_value, missing_timestamp)
                 print("✓ Missing data SQLite'ye kaydedildi")
                 continue
 
@@ -1223,14 +1225,15 @@ def db_worker():
                     print(f"✓ Modbus/SNMP RAM'e kaydedildi: {arm_slave_counts_ram}")
                     print(f"ℹ️ Not: Periyot kontrolü veritabanından yapılacak")
                     
-                    # Veritabanına kaydet (database.py zaten thread-safe)
+                    # Veritabanına kaydet
                     try:
                         updated_at = int(time.time() * 1000)
                         # Her arm için ayrı kayıt oluştur
-                        db.insert_arm_slave_counts(1, arm1)
-                        db.insert_arm_slave_counts(2, arm2)
-                        db.insert_arm_slave_counts(3, arm3)
-                        db.insert_arm_slave_counts(4, arm4)
+                        with db_lock:
+                            db.insert_arm_slave_counts(1, arm1)
+                            db.insert_arm_slave_counts(2, arm2)
+                            db.insert_arm_slave_counts(3, arm3)
+                            db.insert_arm_slave_counts(4, arm4)
                         print("✓ Armslavecounts SQLite'ye kaydedildi")
                         
                     except Exception as e:
@@ -1260,14 +1263,15 @@ def db_worker():
                         alarm_processor.add_alarm(arm_value, 0, error_msb, error_lsb, alarm_timestamp)  # 0 = kol alarmı
                         print("📝 Yeni Hatkon alarm eklendi (beklemede)")
                     
-                    # Veritabanına kaydet (database.py zaten thread-safe)
+                    # Veritabanına kaydet
                     try:
                         updated_at = int(time.time() * 1000)
                         # Her arm için ayrı kayıt oluştur
-                        db.insert_arm_slave_counts(1, arm1)
-                        db.insert_arm_slave_counts(2, arm2)
-                        db.insert_arm_slave_counts(3, arm3)
-                        db.insert_arm_slave_counts(4, arm4)
+                        with db_lock:
+                            db.insert_arm_slave_counts(1, arm1)
+                            db.insert_arm_slave_counts(2, arm2)
+                            db.insert_arm_slave_counts(3, arm3)
+                            db.insert_arm_slave_counts(4, arm4)
                         print("✓ Armslavecounts SQLite'ye kaydedildi")
                         
                     except Exception as e:
@@ -1286,8 +1290,8 @@ def db_worker():
                             status_value = raw_bytes[4]
                             balance_timestamp = updated_at
                             
-                            # database.py zaten thread-safe
-                            db.update_or_insert_passive_balance(arm_value, k_value, status_value, balance_timestamp)  # k_value kaydet
+                            with db_lock:
+                                db.update_or_insert_passive_balance(arm_value, k_value, status_value, balance_timestamp)  # k_value kaydet
                             print(f"✓ Balans güncellendi: Arm={arm_value}, k={k_value}, Battery={battery_value}, Status={status_value}")
                             program_start_time = updated_at
                     except Exception as e:
@@ -1304,15 +1308,17 @@ def db_worker():
                     error_lsb = 9
                     alarm_timestamp = int(time.time() * 1000)
                     
-                    # Eğer error_msb=1 veya error_msb=0 ise, mevcut alarmı düzelt (database.py zaten thread-safe)
+                    # Eğer error_msb=1 veya error_msb=0 ise, mevcut alarmı düzelt
                     if error_msb == 1 or error_msb == 0:
-                        if db.resolve_alarm(arm_value, 2):  # Hatkon alarmları için battery=2
-                            print(f"✓ Hatkon alarm düzeltildi - Arm: {arm_value} (error_msb: {error_msb})")
-                        else:
-                            print(f"⚠ Düzeltilecek aktif Hatkon alarm bulunamadı - Arm: {arm_value}")
+                        with db_lock:
+                            if db.resolve_alarm(arm_value, 2):  # Hatkon alarmları için battery=2
+                                print(f"✓ Hatkon alarm düzeltildi - Arm: {arm_value} (error_msb: {error_msb})")
+                            else:
+                                print(f"⚠ Düzeltilecek aktif Hatkon alarm bulunamadı - Arm: {arm_value}")
                     else:
                         # Yeni alarm ekle
-                        db.insert_alarm(arm_value, 2, error_msb, error_lsb, alarm_timestamp)
+                        with db_lock:
+                            db.insert_alarm(arm_value, 2, error_msb, error_lsb, alarm_timestamp)
                         print("✓ Yeni Hatkon alarm SQLite'ye kaydedildi")
                     continue
 
@@ -1348,8 +1354,8 @@ def db_worker():
                             # Periyot bitti, yeni periyot k=2 (akım verisi) geldiğinde başlayacak
                             reset_period()
                 
-                # db_lock kaldırıldı - database.py zaten thread-safe
-                db.insert_battery_data_batch(batch)
+                with db_lock:
+                    db.insert_battery_data_batch(batch)
                 batch = []
                 last_insert = time.time()
                 # Batch kayıt logları kaldırıldı
@@ -1396,8 +1402,8 @@ def db_worker():
                             reset_period()
                         # Periyot devam ediyor logları kaldırıldı
                 
-                # db_lock kaldırıldı - database.py zaten thread-safe
-                db.insert_battery_data_batch(batch)
+                with db_lock:
+                    db.insert_battery_data_batch(batch)
                 batch = []
                 last_insert = time.time()
                 # Batch kayıt logları kaldırıldı
@@ -1470,21 +1476,22 @@ def send_batconfig_to_device(config_data):
         wave_uart_send(pi, TX_PIN, config_packet, int(1e6 / BAUD_RATE))
         print(f"✓ Kol {config_data['armValue']} batarya konfigürasyonu cihaza gönderildi")
         
-        # Veritabanına kaydet (database.py zaten thread-safe)
+        # Veritabanına kaydet
         try:
-            db.insert_batconfig(
-                arm=config_data['armValue'],
-                vnom=config_data['Vnom'],
-                vmax=config_data['Vmax'],
-                vmin=config_data['Vmin'],
-                rintnom=config_data['Rintnom'],
-                tempmin_d=config_data['Tempmin_D'],
-                tempmax_d=config_data['Tempmax_D'],
-                tempmin_pn=config_data['Tempmin_PN'],
-                tempmax_pn=config_data['Tempmax_PN'],
-                socmin=config_data['Socmin'],
-                sohmin=config_data['Sohmin']
-            )
+            with db_lock:
+                db.insert_batconfig(
+                    arm=config_data['armValue'],
+                    vnom=config_data['Vnom'],
+                    vmax=config_data['Vmax'],
+                    vmin=config_data['Vmin'],
+                    rintnom=config_data['Rintnom'],
+                    tempmin_d=config_data['Tempmin_D'],
+                    tempmax_d=config_data['Tempmax_D'],
+                    tempmin_pn=config_data['Tempmin_PN'],
+                    tempmax_pn=config_data['Tempmax_PN'],
+                    socmin=config_data['Socmin'],
+                    sohmin=config_data['Sohmin']
+                )
             print(f"✓ Kol {config_data['armValue']} batarya konfigürasyonu veritabanına kaydedildi")
         except Exception as e:
             print(f"❌ Veritabanı kayıt hatası: {e}")
@@ -1548,15 +1555,16 @@ def send_armconfig_to_device(config_data):
         wave_uart_send(pi, TX_PIN, config_packet, int(1e6 / BAUD_RATE))
         print(f"✓ Kol {config_data['armValue']} konfigürasyonu cihaza gönderildi")
         
-        # Veritabanına kaydet (database.py zaten thread-safe)
+        # Veritabanına kaydet
         try:
-            db.insert_armconfig(
-                arm=config_data['armValue'],
-                nem_max=config_data['nemMax'],
-                nem_min=config_data['nemMin'],
-                temp_max=config_data['tempMax'],
-                temp_min=config_data['tempMin']
-            )
+            with db_lock:
+                db.insert_armconfig(
+                    arm=config_data['armValue'],
+                    nem_max=config_data['nemMax'],
+                    nem_min=config_data['nemMin'],
+                    temp_max=config_data['tempMax'],
+                    temp_min=config_data['tempMin']
+                )
             print(f"✓ Kol {config_data['armValue']} konfigürasyonu veritabanına kaydedildi")
         except Exception as e:
             print(f"❌ Veritabanı kayıt hatası: {e}")
@@ -2301,21 +2309,21 @@ def initialize_alarm_ram():
 def load_arm_slave_counts_from_db():
     """DB'den arm_slave_counts değerlerini çekip RAM'e aktar"""
     try:
-        # database.py zaten thread-safe, db_lock gereksiz
-        with db.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT arm, slave_count FROM arm_slave_counts ORDER BY arm")
-            rows = cursor.fetchall()
-            
-            if rows:
-                for arm, slave_count in rows:
-                    arm_slave_counts_ram[arm] = slave_count
-                    print(f"✓ DB'den yüklendi - Kol {arm}: {slave_count} batarya")
-            else:
-                # DB'de veri yoksa varsayılan değerler
-                for arm in range(1, 5):
-                    arm_slave_counts_ram[arm] = 0
-                    print(f"⚠️ DB'de veri yok - Kol {arm}: 0 batarya (varsayılan)")
+        with db_lock:
+            with db.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT arm, slave_count FROM arm_slave_counts ORDER BY arm")
+                rows = cursor.fetchall()
+                
+                if rows:
+                    for arm, slave_count in rows:
+                        arm_slave_counts_ram[arm] = slave_count
+                        print(f"✓ DB'den yüklendi - Kol {arm}: {slave_count} batarya")
+                else:
+                    # DB'de veri yoksa varsayılan değerler
+                    for arm in range(1, 5):
+                        arm_slave_counts_ram[arm] = 0
+                        print(f"⚠️ DB'de veri yok - Kol {arm}: 0 batarya (varsayılan)")
                         
     except Exception as e:
         print(f"❌ DB'den arm_slave_counts yükleme hatası: {e}")
@@ -2339,12 +2347,12 @@ def initialize_status_ram():
 def load_trap_targets_to_ram():
     """Trap hedeflerini veritabanından RAM'e yükle"""
     try:
-        # database.py zaten thread-safe
-        targets = db.get_trap_targets()
-        with trap_targets_lock:
-            trap_targets_ram.clear()
-            trap_targets_ram.extend(targets)
-        print(f"✓ {len(targets)} trap hedefi RAM'e yüklendi")
+        with db_lock:
+            targets = db.get_trap_targets()
+            with trap_targets_lock:
+                trap_targets_ram.clear()
+                trap_targets_ram.extend(targets)
+            print(f"✓ {len(targets)} trap hedefi RAM'e yüklendi")
     except Exception as e:
         print(f"❌ Trap hedefleri yüklenirken hata: {e}")
 
@@ -2867,17 +2875,17 @@ def snmp_server():
                 oid = '.'.join([str(x) for x in name])
                 print(f"🔍 SNMP OID sorgusu: {oid}")
                 
-                # .0 ile biten OID'leri normalize et (sonundaki .0'ı kaldır)
-                if oid.endswith('.0'):
-                    oid = oid[:-2]  # Son .0'ı kaldır
-                    print(f"🔍 Normalize edildi (.0 kaldırıldı): {oid}")
+                # .0 olmadan gelen OID'leri .0 ile normalize et
+                if not oid.endswith('.0'):
+                    oid = oid + '.0'
+                    print(f"🔍 Normalize edildi: {oid}")
                 
                 # Sistem bilgileri
-                if oid == "1.3.6.5.1":
+                if oid == "1.3.6.5.1.0":
                     return self.getSyntax().clone(
                         f"Python {sys.version} running on a {sys.platform} platform"
                     )
-                elif oid == "1.3.6.5.2":  # totalBatteryCount
+                elif oid == "1.3.6.5.2.0":  # totalBatteryCount
                     data = get_battery_data_ram()
                     battery_count = 0
                     for arm in data.keys():
@@ -2885,30 +2893,30 @@ def snmp_server():
                             if k > 2:  # k>2 olanlar batarya verisi
                                 battery_count += 1
                     return self.getSyntax().clone(str(battery_count if battery_count > 0 else 0))
-                elif oid == "1.3.6.5.3":  # totalArmCount
+                elif oid == "1.3.6.5.3.0":  # totalArmCount
                     data = get_battery_data_ram()
                     return self.getSyntax().clone(str(len(data) if data else 0))
-                elif oid == "1.3.6.5.4":  # systemStatus
+                elif oid == "1.3.6.5.4.0":  # systemStatus
                     return self.getSyntax().clone("1")
-                elif oid == "1.3.6.5.5":  # lastUpdateTime
+                elif oid == "1.3.6.5.5.0":  # lastUpdateTime
                     return self.getSyntax().clone(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-                elif oid == "1.3.6.5.6":  # dataCount
+                elif oid == "1.3.6.5.6.0":  # dataCount
                     data = get_battery_data_ram()
                     total_data = 0
                     for arm in data.values():
                         for k in arm.values():
                             total_data += len(k)
                     return self.getSyntax().clone(str(total_data if total_data > 0 else 0))
-                elif oid == "1.3.6.5.7":  # arm1SlaveCount
+                elif oid == "1.3.6.5.7.0":  # arm1SlaveCount
                     with data_lock:
                         return self.getSyntax().clone(str(arm_slave_counts_ram.get(1, 0)))
-                elif oid == "1.3.6.5.8":  # arm2SlaveCount
+                elif oid == "1.3.6.5.8.0":  # arm2SlaveCount
                     with data_lock:
                         return self.getSyntax().clone(str(arm_slave_counts_ram.get(2, 0)))
-                elif oid == "1.3.6.5.9":  # arm3SlaveCount
+                elif oid == "1.3.6.5.9.0":  # arm3SlaveCount
                     with data_lock:
                         return self.getSyntax().clone(str(arm_slave_counts_ram.get(3, 0)))
-                elif oid == "1.3.6.5.10":  # arm4SlaveCount
+                elif oid == "1.3.6.5.10.0":  # arm4SlaveCount
                     with data_lock:
                         return self.getSyntax().clone(str(arm_slave_counts_ram.get(4, 0)))
                 else:
@@ -2917,10 +2925,10 @@ def snmp_server():
                         parts = oid.split('.')
                         
                         # Batarya verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.5.k.dtype)
-                        if len(parts) >= 10 and parts[8] == "5":  # 1.3.6.1.4.1.1001.arm.5.k.dtype
+                        if len(parts) >= 11 and parts[8] == "5":  # 1.3.6.1.4.1.1001.arm.5.k.dtype.0
                             arm = int(parts[7])    # 1.3.6.1.4.1.1001.{arm}
                             k = int(parts[9])      # 1.3.6.1.4.1.1001.arm.5.{k}
-                            dtype = int(parts[10]) if len(parts) > 10 else 0  # 1.3.6.1.4.1.1001.arm.5.k.{dtype}
+                            dtype = int(parts[10])  # 1.3.6.1.4.1.1001.arm.5.k.{dtype}
                             
                             print(f"🔍 Batarya OID parsing: arm={arm}, k={k}, dtype={dtype}")
                             
@@ -2940,9 +2948,9 @@ def snmp_server():
                                 return self.getSyntax().clone("0")
                         
                         # Kol verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.dtype)
-                        elif len(parts) >= 8:  # 1.3.6.1.4.1.1001.arm.dtype
+                        elif len(parts) >= 9:  # 1.3.6.1.4.1.1001.arm.dtype.0
                             arm = int(parts[7])    # 1.3.6.1.4.1.1001.{arm}
-                            dtype = int(parts[8]) if len(parts) > 8 else 0  # 1.3.6.1.4.1.1001.arm.{dtype}
+                            dtype = int(parts[8])  # 1.3.6.1.4.1.1001.arm.{dtype}
                             
                             print(f"🔍 Kol OID parsing: arm={arm}, dtype={dtype}")
                             
@@ -2968,9 +2976,9 @@ def snmp_server():
                                     return self.getSyntax().clone("0")
                         
                         # Status verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.6.battery)
-                        elif len(parts) >= 9 and parts[8] == "6":  # 1.3.6.1.4.1.1001.arm.6.battery
+                        elif len(parts) >= 10:  # 1.3.6.1.4.1.1001.arm.6.battery.0
                             arm = int(parts[7])    # 1.3.6.1.4.1.1001.{arm}
-                            battery = int(parts[9]) if len(parts) > 9 else 0  # 1.3.6.1.4.1.1001.arm.6.{battery}
+                            battery = int(parts[9])  # 1.3.6.1.4.1.1001.arm.6.{battery}
                             
                             print(f"🔍 Status OID parsing: arm={arm}, battery={battery}")
                             
@@ -2991,10 +2999,10 @@ def snmp_server():
                                     return self.getSyntax().clone("0")
                         
                         # Alarm verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.7.battery.alarm_type)
-                        elif len(parts) >= 10 and parts[8] == "7":  # 1.3.6.1.4.1.1001.arm.7.battery.alarm_type
+                        elif len(parts) >= 12:  # 1.3.6.1.4.1.1001.arm.7.battery.alarm_type.0
                             arm = int(parts[7])    # 1.3.6.1.4.1.1001.{arm}
-                            battery = int(parts[9]) if len(parts) > 9 else 0  # 1.3.6.1.4.1.1001.arm.7.{battery}
-                            alarm_type = int(parts[10]) if len(parts) > 10 else 0  # 1.3.6.1.4.1.1001.arm.7.battery.{alarm_type}
+                            battery = int(parts[9])  # 1.3.6.1.4.1.1001.arm.7.{battery}
+                            alarm_type = int(parts[10])  # 1.3.6.1.4.1.1001.arm.7.battery.{alarm_type}
                             
                             print(f"🔍 Alarm OID parsing: arm={arm}, battery={battery}, alarm_type={alarm_type}")
                             
@@ -3131,49 +3139,49 @@ def snmp_server():
         print(f"🚀 SNMP Agent başlatılıyor...")
         print(f"📡 Port {SNMP_PORT}'de dinleniyor...")
         print("=" * 50)
-        print("SNMP Test OID'leri (MIB dosyasında .0 olmadan tanımlı - istek .0 ile veya .0 olmadan yapılabilir):")
-        print("1.3.6.5.1  - Python bilgisi")
-        print("1.3.6.5.2  - Batarya sayısı")
-        print("1.3.6.5.3  - Kol sayısı")
-        print("1.3.6.5.4  - Sistem durumu")
-        print("1.3.6.5.5  - Son güncelleme zamanı")
-        print("1.3.6.5.6  - Veri sayısı")
-        print("1.3.6.5.7  - Kol 1 batarya sayısı")
-        print("1.3.6.5.8  - Kol 2 batarya sayısı")
-        print("1.3.6.5.9  - Kol 3 batarya sayısı")
-        print("1.3.6.5.10 - Kol 4 batarya sayısı")
+        print("SNMP Test OID'leri:")
+        print("1.3.6.5.1.0  - Python bilgisi")
+        print("1.3.6.5.2.0  - Batarya sayısı")
+        print("1.3.6.5.3.0  - Kol sayısı")
+        print("1.3.6.5.4.0  - Sistem durumu")
+        print("1.3.6.5.5.0  - Son güncelleme zamanı")
+        print("1.3.6.5.6.0  - Veri sayısı")
+        print("1.3.6.5.7.0  - Kol 1 batarya sayısı")
+        print("1.3.6.5.8.0  - Kol 2 batarya sayısı")
+        print("1.3.6.5.9.0  - Kol 3 batarya sayısı")
+        print("1.3.6.5.10.0 - Kol 4 batarya sayısı")
         print("")
         print("Kol verileri (MIB formatı):")
-        print("1.3.6.1.4.1.1001.3.1 - Kol 3 Akım")
-        print("1.3.6.1.4.1.1001.3.2 - Kol 3 Nem")
-        print("1.3.6.1.4.1.1001.3.3 - Kol 3 NTC1")
-        print("1.3.6.1.4.1.1001.3.4 - Kol 3 NTC2")
+        print("1.3.6.1.4.1.1001.3.1.0 - Kol 3 Akım")
+        print("1.3.6.1.4.1.1001.3.2.0 - Kol 3 Nem")
+        print("1.3.6.1.4.1.1001.3.3.0 - Kol 3 NTC1")
+        print("1.3.6.1.4.1.1001.3.4.0 - Kol 3 NTC2")
         print("")
         print("Status verileri (MIB formatı):")
-        print("1.3.6.1.4.1.1001.3.6.0 - Kol 3 Status")
-        print("1.3.6.1.4.1.1001.3.6.3 - Kol 3 Batarya 3 Status")
-        print("1.3.6.1.4.1.1001.3.6.4 - Kol 3 Batarya 4 Status")
+        print("1.3.6.1.4.1.1001.3.6.0.0 - Kol 3 Status")
+        print("1.3.6.1.4.1.1001.3.6.3.0 - Kol 3 Batarya 3 Status")
+        print("1.3.6.1.4.1.1001.3.6.4.0 - Kol 3 Batarya 4 Status")
         print("")
         print("Alarm verileri (MIB formatı):")
-        print("1.3.6.1.4.1.1001.3.7.0.1 - Kol 3 Akım Alarmı")
-        print("1.3.6.1.4.1.1001.3.7.3.1 - Kol 3 Batarya 3 LVoltageWarn")
-        print("1.3.6.1.4.1.1001.3.7.3.2 - Kol 3 Batarya 3 LVoltageAlarm")
-        print("1.3.6.1.4.1.1001.3.7.3.3 - Kol 3 Batarya 3 OVoltageWarn")
-        print("1.3.6.1.4.1.1001.3.7.3.4 - Kol 3 Batarya 3 OVoltageAlarm")
-        print("1.3.6.1.4.1.1001.3.7.3.5 - Kol 3 Batarya 3 OvertempD")
-        print("1.3.6.1.4.1.1001.3.7.3.6 - Kol 3 Batarya 3 OvertempP")
-        print("1.3.6.1.4.1.1001.3.7.3.7 - Kol 3 Batarya 3 OvertempN")
+        print("1.3.6.1.4.1.1001.3.7.0.1.0 - Kol 3 Akım Alarmı")
+        print("1.3.6.1.4.1.1001.3.7.3.1.0 - Kol 3 Batarya 3 LVoltageWarn")
+        print("1.3.6.1.4.1.1001.3.7.3.2.0 - Kol 3 Batarya 3 LVoltageAlarm")
+        print("1.3.6.1.4.1.1001.3.7.3.3.0 - Kol 3 Batarya 3 OVoltageWarn")
+        print("1.3.6.1.4.1.1001.3.7.3.4.0 - Kol 3 Batarya 3 OVoltageAlarm")
+        print("1.3.6.1.4.1.1001.3.7.3.5.0 - Kol 3 Batarya 3 OvertempD")
+        print("1.3.6.1.4.1.1001.3.7.3.6.0 - Kol 3 Batarya 3 OvertempP")
+        print("1.3.6.1.4.1.1001.3.7.3.7.0 - Kol 3 Batarya 3 OvertempN")
         print("")
         print("Batarya verileri (MIB formatı):")
-        print("1.3.6.1.4.1.1001.3.5.3.1 - Kol 3 Batarya 3 Gerilim")
-        print("1.3.6.1.4.1.1001.3.5.3.2 - Kol 3 Batarya 3 SOC")
-        print("1.3.6.1.4.1.1001.3.5.4.1 - Kol 3 Batarya 4 Gerilim")
-        print("1.3.6.1.4.1.1001.3.5.4.2 - Kol 3 Batarya 4 SOC")
+        print("1.3.6.1.4.1.1001.3.5.3.1.0 - Kol 3 Batarya 3 Gerilim")
+        print("1.3.6.1.4.1.1001.3.5.3.2.0 - Kol 3 Batarya 3 SOC")
+        print("1.3.6.1.4.1.1001.3.5.4.1.0 - Kol 3 Batarya 4 Gerilim")
+        print("1.3.6.1.4.1.1001.3.5.4.2.0 - Kol 3 Batarya 4 SOC")
         print("=" * 50)
-        print("SNMP Test komutları (.0 ile veya .0 olmadan çalışır):")
-        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.5.2")
+        print("SNMP Test komutları:")
+        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.5.2.0")
         print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.5.9.0")
-        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.3.5.3.1")
+        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.3.5.3.1.0")
         print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.3.5.3.2.0")
         print(f"snmpwalk -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001")
         print("=" * 50)
