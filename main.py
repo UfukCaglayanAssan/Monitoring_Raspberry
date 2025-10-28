@@ -2306,16 +2306,16 @@ def load_arm_slave_counts_from_db():
             cursor = conn.cursor()
             cursor.execute("SELECT arm, slave_count FROM arm_slave_counts ORDER BY arm")
             rows = cursor.fetchall()
-                
-                if rows:
-                    for arm, slave_count in rows:
-                        arm_slave_counts_ram[arm] = slave_count
-                        print(f"✓ DB'den yüklendi - Kol {arm}: {slave_count} batarya")
-                else:
-                    # DB'de veri yoksa varsayılan değerler
-                    for arm in range(1, 5):
-                        arm_slave_counts_ram[arm] = 0
-                        print(f"⚠️ DB'de veri yok - Kol {arm}: 0 batarya (varsayılan)")
+            
+            if rows:
+                for arm, slave_count in rows:
+                    arm_slave_counts_ram[arm] = slave_count
+                    print(f"✓ DB'den yüklendi - Kol {arm}: {slave_count} batarya")
+            else:
+                # DB'de veri yoksa varsayılan değerler
+                for arm in range(1, 5):
+                    arm_slave_counts_ram[arm] = 0
+                    print(f"⚠️ DB'de veri yok - Kol {arm}: 0 batarya (varsayılan)")
                         
     except Exception as e:
         print(f"❌ DB'den arm_slave_counts yükleme hatası: {e}")
