@@ -1,0 +1,220 @@
+TESCOM-BMS-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+    Integer32, Counter32, Gauge32, enterprises
+        FROM SNMPv2-SMI
+    DisplayString, TimeStamp
+        FROM SNMPv2-TC
+    MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
+        FROM SNMPv2-CONF;
+
+--
+-- Module Identity
+--
+tescomBmsMIB MODULE-IDENTITY
+    LAST-UPDATED "202410280000Z"
+    ORGANIZATION "TESCOM A.Ş."
+    CONTACT-INFO
+        "TESCOM A.Ş.
+         E-mail: support@tescom.com.tr"
+    DESCRIPTION
+        "TESCOM Battery Management System MIB"
+    REVISION "202410280000Z"
+    DESCRIPTION
+        "İlk versiyon - Batarya yönetim sistemi için SNMP MIB tanımları"
+    ::= { enterprises 1001 }
+
+--
+-- Temel Tanımlar
+--
+tescomBmsSystem     OBJECT IDENTIFIER ::= { tescomBmsMIB 1 }
+tescomBmsArms       OBJECT IDENTIFIER ::= { tescomBmsMIB 2 }
+tescomBmsTraps      OBJECT IDENTIFIER ::= { tescomBmsMIB 3 }
+
+-- ============================================
+-- Sistem Bilgileri (1.3.6.1.4.1.1001.1.x)
+-- ============================================
+
+systemInfo OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Sistem bilgisi - Python versiyonu ve platform"
+    ::= { tescomBmsSystem 1 }
+
+totalBatteryCount OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Sistemdeki toplam batarya sayısı"
+    ::= { tescomBmsSystem 2 }
+
+totalArmCount OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Sistemdeki toplam aktif kol sayısı"
+    ::= { tescomBmsSystem 3 }
+
+systemStatus OBJECT-TYPE
+    SYNTAX      Integer32 {
+        stopped(0),
+        running(1),
+        error(2)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Sistem durumu: 0=Durdurulmuş, 1=Çalışıyor, 2=Hata"
+    ::= { tescomBmsSystem 4 }
+
+lastUpdateTime OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..32))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Son güncelleme zamanı (YYYY-MM-DD HH:MM:SS formatında)"
+    ::= { tescomBmsSystem 5 }
+
+dataCount OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "RAM'de saklanan toplam veri sayısı"
+    ::= { tescomBmsSystem 6 }
+
+arm1SlaveCount OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Kol 1'deki batarya sayısı"
+    ::= { tescomBmsSystem 7 }
+
+arm2SlaveCount OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Kol 2'deki batarya sayısı"
+    ::= { tescomBmsSystem 8 }
+
+arm3SlaveCount OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Kol 3'teki batarya sayısı"
+    ::= { tescomBmsSystem 9 }
+
+arm4SlaveCount OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Kol 4'teki batarya sayısı"
+    ::= { tescomBmsSystem 10 }
+
+-- ============================================
+-- Kol Verileri (1.3.6.1.4.1.1001.arm.dtype)
+-- ============================================
+-- arm = 1-4 (Kol numarası)
+-- dtype:
+--   1 = Akım (Ampere * 10)
+--   2 = Nem (% * 10)
+--   3 = NTC1 Sıcaklık (°C * 10)
+--   4 = NTC2 Sıcaklık (°C * 10)
+-- ============================================
+
+-- Örnek: 1.3.6.1.4.1.1001.3.1 = Kol 3 Akım
+--         1.3.6.1.4.1.1001.3.2 = Kol 3 Nem
+--         1.3.6.1.4.1.1001.3.3 = Kol 3 NTC1
+--         1.3.6.1.4.1.1001.3.4 = Kol 3 NTC2
+
+-- ============================================
+-- Batarya Verileri (1.3.6.1.4.1.1001.arm.5.k.dtype)
+-- ============================================
+-- arm = 1-4 (Kol numarası)
+-- k = 3-122 (Batarya numarası, k-2 = gerçek batarya adresi)
+-- dtype:
+--   1 = Gerilim (Volt * 1000)
+--   2 = Şarj Durumu - SOC (%)
+--   3 = Modül Sıcaklığı - RIMT (°C * 10)
+--   4 = Sağlık Durumu - SOH (%)
+--   5 = NTC1 Sıcaklık (°C * 10)
+--   6 = NTC2 Sıcaklık (°C * 10)
+--   7 = NTC3 Sıcaklık (°C * 10)
+-- ============================================
+
+-- Örnek: 1.3.6.1.4.1.1001.3.5.3.1 = Kol 3, Batarya 1 (k=3), Gerilim
+--         1.3.6.1.4.1.1001.3.5.3.2 = Kol 3, Batarya 1 (k=3), SOC
+--         1.3.6.1.4.1.1001.3.5.4.1 = Kol 3, Batarya 2 (k=4), Gerilim
+--         1.3.6.1.4.1.1001.3.5.4.2 = Kol 3, Batarya 2 (k=4), SOC
+
+-- ============================================
+-- Status Verileri (1.3.6.1.4.1.1001.arm.6.battery)
+-- ============================================
+-- arm = 1-4 (Kol numarası)
+-- battery:
+--   0 = Kol durumu
+--   1-120 = Batarya durumu
+-- Değer: 0=Normal, 1=Alarm var
+-- ============================================
+
+-- Örnek: 1.3.6.1.4.1.1001.3.6.0 = Kol 3 Status
+--         1.3.6.1.4.1.1001.3.6.1 = Kol 3, Batarya 1 Status
+--         1.3.6.1.4.1.1001.3.6.2 = Kol 3, Batarya 2 Status
+
+-- ============================================
+-- Alarm Verileri (1.3.6.1.4.1.1001.arm.7.battery.alarm_type)
+-- ============================================
+-- arm = 1-4 (Kol numarası)
+-- battery:
+--   0 = Kol alarmları
+--   1-120 = Batarya alarmları
+-- alarm_type (battery=0, Kol Alarmları):
+--   1 = Yüksek Akım Alarmı
+--   2 = Yüksek Nem Alarmı
+--   3 = Yüksek Ortam Sıcaklığı Alarmı
+--   4 = Yüksek Kol Sıcaklığı Alarmı
+-- alarm_type (battery>0, Batarya Alarmları):
+--   1 = Düşük Gerilim Uyarısı
+--   2 = Düşük Gerilim Alarmı
+--   3 = Yüksek Gerilim Uyarısı
+--   4 = Yüksek Gerilim Alarmı
+--   5 = Modül Sıcaklık Alarmı
+--   6 = Pozitif Kutup Sıcaklık Alarmı
+--   7 = Negatif Kutup Sıcaklık Alarmı
+-- Değer: 0=Alarm yok, 1=Alarm var
+-- ============================================
+
+-- Örnek: 1.3.6.1.4.1.1001.3.7.0.1 = Kol 3 Yüksek Akım Alarmı
+--         1.3.6.1.4.1.1001.3.7.1.1 = Kol 3, Batarya 1, Düşük Gerilim Uyarısı
+--         1.3.6.1.4.1.1001.3.7.1.2 = Kol 3, Batarya 1, Düşük Gerilim Alarmı
+--         1.3.6.1.4.1.1001.3.7.1.5 = Kol 3, Batarya 1, Modül Sıcaklık Alarmı
+
+-- ============================================
+-- SNMP Trap Tanımları
+-- ============================================
+
+batteryAlarmTrap NOTIFICATION-TYPE
+    OBJECTS { }
+    STATUS current
+    DESCRIPTION
+        "Batarya alarmı bildirimi"
+    ::= { tescomBmsTraps 1 }
+
+armAlarmTrap NOTIFICATION-TYPE
+    OBJECTS { }
+    STATUS current
+    DESCRIPTION
+        "Kol alarmı bildirimi"
+    ::= { tescomBmsTraps 2 }
+
+END
+
