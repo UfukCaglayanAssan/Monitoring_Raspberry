@@ -325,9 +325,8 @@ def is_valid_arm_data(arm_value, k_value):
 def get_last_battery_info():
     """En son batarya bilgisini döndür (arm, k) - veritabanından oku"""
     try:
-        # Veritabanından oku
-        with db_lock:
-            db_arm_slave_counts = db.get_arm_slave_counts()
+        # Veritabanından oku (database.py zaten thread-safe)
+        db_arm_slave_counts = db.get_arm_slave_counts()
         
         if not db_arm_slave_counts:
             print("⚠️ Veritabanından arm_slave_counts okunamadı")
@@ -392,12 +391,12 @@ def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False
     if arm_value == last_arm and k_value == last_battery - 1:
         # Son bataryadan bir önceki batarya geldi, son batarya pasif balansta mı kontrol et
         try:
-            with db_lock:
-                balance_data = db.get_passive_balance(arm=arm_value)
-                # Aktif pasif balans durumunu kontrol et (status=0 ve slave=last_battery)
-                for balance in balance_data:
-                    if balance['slave'] == last_battery and balance['status'] == 0:
-                        return True
+            # database.py zaten thread-safe
+            balance_data = db.get_passive_balance(arm=arm_value)
+            # Aktif pasif balans durumunu kontrol et (status=0 ve slave=last_battery)
+            for balance in balance_data:
+                if balance['slave'] == last_battery and balance['status'] == 0:
+                    return True
         except Exception as e:
             print(f"❌ Pasif balans kontrol hatası: {e}")
     
@@ -763,9 +762,8 @@ def db_worker():
                         # Status güncelle (veri var) - battery_value kullan (RAM için)
                         update_status(arm_value, battery_value, True)
                 
-                # SQLite'ye kaydet - k_value kaydet
-                with db_lock:
-                    db.insert_missing_data(arm_value, k_value, status_value, missing_timestamp)
+                # SQLite'ye kaydet - k_value kaydet (database.py zaten thread-safe)
+                db.insert_missing_data(arm_value, k_value, status_value, missing_timestamp)
                 print("✓ Missing data SQLite'ye kaydedildi")
                 continue
 
@@ -1225,15 +1223,14 @@ def db_worker():
                     print(f"✓ Modbus/SNMP RAM'e kaydedildi: {arm_slave_counts_ram}")
                     print(f"ℹ️ Not: Periyot kontrolü veritabanından yapılacak")
                     
-                    # Veritabanına kaydet
+                    # Veritabanına kaydet (database.py zaten thread-safe)
                     try:
                         updated_at = int(time.time() * 1000)
                         # Her arm için ayrı kayıt oluştur
-                        with db_lock:
-                            db.insert_arm_slave_counts(1, arm1)
-                            db.insert_arm_slave_counts(2, arm2)
-                            db.insert_arm_slave_counts(3, arm3)
-                            db.insert_arm_slave_counts(4, arm4)
+                        db.insert_arm_slave_counts(1, arm1)
+                        db.insert_arm_slave_counts(2, arm2)
+                        db.insert_arm_slave_counts(3, arm3)
+                        db.insert_arm_slave_counts(4, arm4)
                         print("✓ Armslavecounts SQLite'ye kaydedildi")
                         
                     except Exception as e:
@@ -1263,15 +1260,14 @@ def db_worker():
                         alarm_processor.add_alarm(arm_value, 0, error_msb, error_lsb, alarm_timestamp)  # 0 = kol alarmı
                         print("📝 Yeni Hatkon alarm eklendi (beklemede)")
                     
-                    # Veritabanına kaydet
+                    # Veritabanına kaydet (database.py zaten thread-safe)
                     try:
                         updated_at = int(time.time() * 1000)
                         # Her arm için ayrı kayıt oluştur
-                        with db_lock:
-                            db.insert_arm_slave_counts(1, arm1)
-                            db.insert_arm_slave_counts(2, arm2)
-                            db.insert_arm_slave_counts(3, arm3)
-                            db.insert_arm_slave_counts(4, arm4)
+                        db.insert_arm_slave_counts(1, arm1)
+                        db.insert_arm_slave_counts(2, arm2)
+                        db.insert_arm_slave_counts(3, arm3)
+                        db.insert_arm_slave_counts(4, arm4)
                         print("✓ Armslavecounts SQLite'ye kaydedildi")
                         
                     except Exception as e:
@@ -1290,8 +1286,8 @@ def db_worker():
                             status_value = raw_bytes[4]
                             balance_timestamp = updated_at
                             
-                            with db_lock:
-                                db.update_or_insert_passive_balance(arm_value, k_value, status_value, balance_timestamp)  # k_value kaydet
+                            # database.py zaten thread-safe
+                            db.update_or_insert_passive_balance(arm_value, k_value, status_value, balance_timestamp)  # k_value kaydet
                             print(f"✓ Balans güncellendi: Arm={arm_value}, k={k_value}, Battery={battery_value}, Status={status_value}")
                             program_start_time = updated_at
                     except Exception as e:
@@ -1308,17 +1304,15 @@ def db_worker():
                     error_lsb = 9
                     alarm_timestamp = int(time.time() * 1000)
                     
-                    # Eğer error_msb=1 veya error_msb=0 ise, mevcut alarmı düzelt
+                    # Eğer error_msb=1 veya error_msb=0 ise, mevcut alarmı düzelt (database.py zaten thread-safe)
                     if error_msb == 1 or error_msb == 0:
-                        with db_lock:
-                            if db.resolve_alarm(arm_value, 2):  # Hatkon alarmları için battery=2
-                                print(f"✓ Hatkon alarm düzeltildi - Arm: {arm_value} (error_msb: {error_msb})")
-                            else:
-                                print(f"⚠ Düzeltilecek aktif Hatkon alarm bulunamadı - Arm: {arm_value}")
+                        if db.resolve_alarm(arm_value, 2):  # Hatkon alarmları için battery=2
+                            print(f"✓ Hatkon alarm düzeltildi - Arm: {arm_value} (error_msb: {error_msb})")
+                        else:
+                            print(f"⚠ Düzeltilecek aktif Hatkon alarm bulunamadı - Arm: {arm_value}")
                     else:
                         # Yeni alarm ekle
-                        with db_lock:
-                            db.insert_alarm(arm_value, 2, error_msb, error_lsb, alarm_timestamp)
+                        db.insert_alarm(arm_value, 2, error_msb, error_lsb, alarm_timestamp)
                         print("✓ Yeni Hatkon alarm SQLite'ye kaydedildi")
                     continue
 
@@ -1354,8 +1348,8 @@ def db_worker():
                             # Periyot bitti, yeni periyot k=2 (akım verisi) geldiğinde başlayacak
                             reset_period()
                 
-                with db_lock:
-                    db.insert_battery_data_batch(batch)
+                # db_lock kaldırıldı - database.py zaten thread-safe
+                db.insert_battery_data_batch(batch)
                 batch = []
                 last_insert = time.time()
                 # Batch kayıt logları kaldırıldı
@@ -1402,8 +1396,8 @@ def db_worker():
                             reset_period()
                         # Periyot devam ediyor logları kaldırıldı
                 
-                with db_lock:
-                    db.insert_battery_data_batch(batch)
+                # db_lock kaldırıldı - database.py zaten thread-safe
+                db.insert_battery_data_batch(batch)
                 batch = []
                 last_insert = time.time()
                 # Batch kayıt logları kaldırıldı
@@ -1476,22 +1470,21 @@ def send_batconfig_to_device(config_data):
         wave_uart_send(pi, TX_PIN, config_packet, int(1e6 / BAUD_RATE))
         print(f"✓ Kol {config_data['armValue']} batarya konfigürasyonu cihaza gönderildi")
         
-        # Veritabanına kaydet
+        # Veritabanına kaydet (database.py zaten thread-safe)
         try:
-            with db_lock:
-                db.insert_batconfig(
-                    arm=config_data['armValue'],
-                    vnom=config_data['Vnom'],
-                    vmax=config_data['Vmax'],
-                    vmin=config_data['Vmin'],
-                    rintnom=config_data['Rintnom'],
-                    tempmin_d=config_data['Tempmin_D'],
-                    tempmax_d=config_data['Tempmax_D'],
-                    tempmin_pn=config_data['Tempmin_PN'],
-                    tempmax_pn=config_data['Tempmax_PN'],
-                    socmin=config_data['Socmin'],
-                    sohmin=config_data['Sohmin']
-                )
+            db.insert_batconfig(
+                arm=config_data['armValue'],
+                vnom=config_data['Vnom'],
+                vmax=config_data['Vmax'],
+                vmin=config_data['Vmin'],
+                rintnom=config_data['Rintnom'],
+                tempmin_d=config_data['Tempmin_D'],
+                tempmax_d=config_data['Tempmax_D'],
+                tempmin_pn=config_data['Tempmin_PN'],
+                tempmax_pn=config_data['Tempmax_PN'],
+                socmin=config_data['Socmin'],
+                sohmin=config_data['Sohmin']
+            )
             print(f"✓ Kol {config_data['armValue']} batarya konfigürasyonu veritabanına kaydedildi")
         except Exception as e:
             print(f"❌ Veritabanı kayıt hatası: {e}")
@@ -1555,16 +1548,15 @@ def send_armconfig_to_device(config_data):
         wave_uart_send(pi, TX_PIN, config_packet, int(1e6 / BAUD_RATE))
         print(f"✓ Kol {config_data['armValue']} konfigürasyonu cihaza gönderildi")
         
-        # Veritabanına kaydet
+        # Veritabanına kaydet (database.py zaten thread-safe)
         try:
-            with db_lock:
-                db.insert_armconfig(
-                    arm=config_data['armValue'],
-                    nem_max=config_data['nemMax'],
-                    nem_min=config_data['nemMin'],
-                    temp_max=config_data['tempMax'],
-                    temp_min=config_data['tempMin']
-                )
+            db.insert_armconfig(
+                arm=config_data['armValue'],
+                nem_max=config_data['nemMax'],
+                nem_min=config_data['nemMin'],
+                temp_max=config_data['tempMax'],
+                temp_min=config_data['tempMin']
+            )
             print(f"✓ Kol {config_data['armValue']} konfigürasyonu veritabanına kaydedildi")
         except Exception as e:
             print(f"❌ Veritabanı kayıt hatası: {e}")
@@ -2309,11 +2301,11 @@ def initialize_alarm_ram():
 def load_arm_slave_counts_from_db():
     """DB'den arm_slave_counts değerlerini çekip RAM'e aktar"""
     try:
-        with db_lock:
-            with db.get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT arm, slave_count FROM arm_slave_counts ORDER BY arm")
-                rows = cursor.fetchall()
+        # database.py zaten thread-safe, db_lock gereksiz
+        with db.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT arm, slave_count FROM arm_slave_counts ORDER BY arm")
+            rows = cursor.fetchall()
                 
                 if rows:
                     for arm, slave_count in rows:
@@ -2347,12 +2339,12 @@ def initialize_status_ram():
 def load_trap_targets_to_ram():
     """Trap hedeflerini veritabanından RAM'e yükle"""
     try:
-        with db_lock:
-            targets = db.get_trap_targets()
-            with trap_targets_lock:
-                trap_targets_ram.clear()
-                trap_targets_ram.extend(targets)
-            print(f"✓ {len(targets)} trap hedefi RAM'e yüklendi")
+        # database.py zaten thread-safe
+        targets = db.get_trap_targets()
+        with trap_targets_lock:
+            trap_targets_ram.clear()
+            trap_targets_ram.extend(targets)
+        print(f"✓ {len(targets)} trap hedefi RAM'e yüklendi")
     except Exception as e:
         print(f"❌ Trap hedefleri yüklenirken hata: {e}")
 

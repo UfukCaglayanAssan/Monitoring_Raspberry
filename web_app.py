@@ -12,15 +12,8 @@ app = Flask(__name__)
 app.secret_key = 'tescom_bms_secret_key_2024'  # Session için secret key
 
 # Thread-safe database erişimi için lock'lar
-# main.py'deki db_lock'u kullanmak için import edelim
-# Bu sayede main.py'de veri yazma ile web_app.py'de veri okuma/export çakışmaz
-try:
-    import main
-    db_lock = main.db_lock  # main.py'deki db_lock'u kullan
-except:
-    db_lock = threading.Lock()  # Fallback: kendi lock'umuzu kullan
-
-# db_read_lock artık kullanılmıyor - tüm işlemler için db_lock kullanılıyor
+# database.py içinde connection pool zaten thread-safe olduğu için
+# burada lock kullanmaya gerek yok - tüm db_lock kullanımları kaldırıldı
 
 # Retry mekanizması için
 import time as time_module
@@ -253,8 +246,8 @@ def get_page_html(page_name):
 def get_data_types():
     language = request.args.get('lang', 'tr')  # Varsayılan Türkçe
     db_instance = get_db()
-    with db_lock:
-        data_types = db_instance.get_data_types_by_language(language)
+    # database.py zaten thread-safe
+    data_types = db_instance.get_data_types_by_language(language)
     return jsonify(data_types)
 
 @app.route('/api/alarm_count')
@@ -262,8 +255,8 @@ def get_alarm_count():
     """Aktif alarm sayısını getir"""
     try:
         db_instance = get_db()
-        with db_lock:
-            count = db_instance.get_active_alarm_count()
+        # database.py zaten thread-safe
+        count = db_instance.get_active_alarm_count()
         return jsonify({
             'success': True,
             'count': count
@@ -292,8 +285,8 @@ def get_recent_data():
         dtype = int(dtype)
     
     db_instance = get_db()
-    with db_lock:
-        data = db_instance.get_recent_data_with_translations(
+    # database.py zaten thread-safe
+    data = db_instance.get_recent_data_with_translations(
         minutes=minutes, 
         arm=arm, 
         battery=battery, 
@@ -318,8 +311,8 @@ def get_data_by_date():
         dtype = int(dtype)
     
     db_instance = get_db()
-    with db_lock:
-        data = db_instance.get_data_by_date_range_with_translations(
+    # database.py zaten thread-safe
+    data = db_instance.get_data_by_date_range_with_translations(
         start_date, end_date, arm, dtype, language
     )
     return jsonify(data)
