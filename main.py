@@ -2919,6 +2919,33 @@ def snmp_server():
                 elif oid == "1.3.6.5.10.0":  # arm4SlaveCount
                     with data_lock:
                         return self.getSyntax().clone(str(arm_slave_counts_ram.get(4, 0)))
+                # Yeni MIB - tescomBmsSystem (1.3.6.1.4.1.1001.1.x)
+                elif oid == "1.3.6.1.4.1.1001.1.1.0":  # systemInfo
+                    return self.getSyntax().clone(
+                        f"TESCOM BMS - Python {sys.version.split()[0]} on {sys.platform}"
+                    )
+                elif oid == "1.3.6.1.4.1.1001.1.2.0":  # totalBatteryCount
+                    data = get_battery_data_ram()
+                    battery_count = 0
+                    for arm in data.keys():
+                        for k in data[arm].keys():
+                            if k > 2:  # k>2 olanlar batarya verisi
+                                battery_count += 1
+                    return self.getSyntax().clone(str(battery_count if battery_count > 0 else 0))
+                elif oid == "1.3.6.1.4.1.1001.1.3.0":  # totalArmCount
+                    data = get_battery_data_ram()
+                    return self.getSyntax().clone(str(len(data) if data else 0))
+                elif oid == "1.3.6.1.4.1.1001.1.4.0":  # systemStatus
+                    return self.getSyntax().clone("1")  # 1=running
+                elif oid == "1.3.6.1.4.1.1001.1.5.0":  # lastUpdateTime
+                    return self.getSyntax().clone(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                elif oid == "1.3.6.1.4.1.1001.1.6.0":  # dataCount
+                    data = get_battery_data_ram()
+                    total_data = 0
+                    for arm in data.values():
+                        for k in arm.values():
+                            total_data += len(k)
+                    return self.getSyntax().clone(str(total_data if total_data > 0 else 0))
                 else:
                     # OID parsing - önce batarya verilerini kontrol et
                     if oid.startswith("1.3.6.1.4.1.1001."):
@@ -3029,7 +3056,7 @@ def snmp_server():
         # MIB Objects oluştur
         mibBuilder.export_symbols(
             "__MODBUS_RAM_MIB",
-            # Sistem bilgileri
+            # Eski Sistem bilgileri (test için)
             MibScalar((1, 3, 6, 5, 1), v2c.OctetString()),
             ModbusRAMMibScalarInstance((1, 3, 6, 5, 1), (0,), v2c.OctetString()),
             
@@ -3060,6 +3087,28 @@ def snmp_server():
             
             MibScalar((1, 3, 6, 5, 10), v2c.OctetString()),
             ModbusRAMMibScalarInstance((1, 3, 6, 5, 10), (0,), v2c.OctetString()),
+        )
+        
+        # Yeni MIB - tescomBmsSystem OID'leri (1.3.6.1.4.1.1001.1.x)
+        mibBuilder.export_symbols(
+            "__TESCOM_BMS_SYSTEM_MIB",
+            MibScalar((1, 3, 6, 1, 4, 1, 1001, 1, 1), v2c.OctetString()),  # systemInfo
+            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 1, 1), (0,), v2c.OctetString()),
+            
+            MibScalar((1, 3, 6, 1, 4, 1, 1001, 1, 2), v2c.Integer()),  # totalBatteryCount
+            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 1, 2), (0,), v2c.Integer()),
+            
+            MibScalar((1, 3, 6, 1, 4, 1, 1001, 1, 3), v2c.Integer()),  # totalArmCount
+            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 1, 3), (0,), v2c.Integer()),
+            
+            MibScalar((1, 3, 6, 1, 4, 1, 1001, 1, 4), v2c.Integer()),  # systemStatus
+            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 1, 4), (0,), v2c.Integer()),
+            
+            MibScalar((1, 3, 6, 1, 4, 1, 1001, 1, 5), v2c.OctetString()),  # lastUpdateTime
+            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 1, 5), (0,), v2c.OctetString()),
+            
+            MibScalar((1, 3, 6, 1, 4, 1, 1001, 1, 6), v2c.Integer()),  # dataCount
+            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 1, 6), (0,), v2c.Integer()),
         )
         
         # Kol verileri için MIB Objects - MIB dosyasına göre (1.3.6.1.4.1.1001.arm.dtype)

@@ -4,7 +4,7 @@ IMPORTS
     MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
     Integer32, Counter32, Gauge32, enterprises
         FROM SNMPv2-SMI
-    DisplayString, TimeStamp
+    DisplayString, TimeStamp, TEXTUAL-CONVENTION
         FROM SNMPv2-TC
     MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
         FROM SNMPv2-CONF;
@@ -19,18 +19,39 @@ tescomBmsMIB MODULE-IDENTITY
         "TESCOM A.Ş.
          E-mail: support@tescom.com.tr"
     DESCRIPTION
-        "TESCOM Battery Management System MIB"
+        "TESCOM Battery Management System MIB
+         Bu MIB, batarya yönetim sistemi için SNMP erişim sağlar.
+         Kol ve batarya bilgileri, alarmlar ve status verileri içerir."
     REVISION "202410280000Z"
     DESCRIPTION
         "İlk versiyon - Batarya yönetim sistemi için SNMP MIB tanımları"
     ::= { enterprises 1001 }
 
 --
--- Temel Tanımlar
+-- Textual Conventions (bacs2.mib'den alındı)
+--
+PositiveInteger ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS       current
+    DESCRIPTION
+        "This data type is a non-zero and non-negative value."
+    SYNTAX       INTEGER (1..2147483647)
+
+NonNegativeInteger ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "d"
+    STATUS       current
+    DESCRIPTION
+        "This data type is a non-negative value."
+    SYNTAX       INTEGER (0..2147483647)
+
+--
+-- Ana Gruplar
 --
 tescomBmsSystem     OBJECT IDENTIFIER ::= { tescomBmsMIB 1 }
 tescomBmsArms       OBJECT IDENTIFIER ::= { tescomBmsMIB 2 }
-tescomBmsTraps      OBJECT IDENTIFIER ::= { tescomBmsMIB 3 }
+tescomBmsBatteries  OBJECT IDENTIFIER ::= { tescomBmsMIB 3 }
+tescomBmsAlarms     OBJECT IDENTIFIER ::= { tescomBmsMIB 4 }
+tescomBmsTraps      OBJECT IDENTIFIER ::= { tescomBmsMIB 5 }
 
 -- ============================================
 -- Sistem Bilgileri (1.3.6.1.4.1.1001.1.x)
@@ -45,7 +66,8 @@ systemInfo OBJECT-TYPE
     ::= { tescomBmsSystem 1 }
 
 totalBatteryCount OBJECT-TYPE
-    SYNTAX      Integer32
+    SYNTAX      NonNegativeInteger
+    UNITS       "batteries"
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
@@ -53,7 +75,8 @@ totalBatteryCount OBJECT-TYPE
     ::= { tescomBmsSystem 2 }
 
 totalArmCount OBJECT-TYPE
-    SYNTAX      Integer32
+    SYNTAX      NonNegativeInteger
+    UNITS       "arms"
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
@@ -61,7 +84,7 @@ totalArmCount OBJECT-TYPE
     ::= { tescomBmsSystem 3 }
 
 systemStatus OBJECT-TYPE
-    SYNTAX      Integer32 {
+    SYNTAX      INTEGER {
         stopped(0),
         running(1),
         error(2)
@@ -81,140 +104,418 @@ lastUpdateTime OBJECT-TYPE
     ::= { tescomBmsSystem 5 }
 
 dataCount OBJECT-TYPE
-    SYNTAX      Integer32
+    SYNTAX      NonNegativeInteger
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
         "RAM'de saklanan toplam veri sayısı"
     ::= { tescomBmsSystem 6 }
 
-arm1SlaveCount OBJECT-TYPE
-    SYNTAX      Integer32
+-- ============================================
+-- KOL TABLOSU (bacs2.mib bacsModuleTable benzeri)
+-- (1.3.6.1.4.1.1001.2.x)
+-- ============================================
+
+ArmEntry ::= SEQUENCE {
+    armIndex            PositiveInteger,
+    armSlaveCount       NonNegativeInteger,
+    armCurrent          Integer32,
+    armHumidity         NonNegativeInteger,
+    armNtc1Temp         Integer32,
+    armNtc2Temp         Integer32,
+    armStatus           INTEGER,
+    armAlarmFlags       NonNegativeInteger
+}
+
+armTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF ArmEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Kol bilgileri tablosu. Her kol için bir entry içerir."
+    ::= { tescomBmsArms 1 }
+
+armEntry OBJECT-TYPE
+    SYNTAX      ArmEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Bir kola ait bilgileri içeren entry."
+    INDEX       { armIndex }
+    ::= { armTable 1 }
+
+armIndex OBJECT-TYPE
+    SYNTAX      PositiveInteger (1..4)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Kol numarası (1-4 arası)"
+    ::= { armEntry 1 }
+
+armSlaveCount OBJECT-TYPE
+    SYNTAX      NonNegativeInteger
+    UNITS       "batteries"
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Kol 1'deki batarya sayısı"
-    ::= { tescomBmsSystem 7 }
+        "Bu koldaki batarya sayısı"
+    ::= { armEntry 2 }
 
-arm2SlaveCount OBJECT-TYPE
+armCurrent OBJECT-TYPE
     SYNTAX      Integer32
+    UNITS       "0.1 Ampere"
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Kol 2'deki batarya sayısı"
-    ::= { tescomBmsSystem 8 }
+        "Kol akım değeri (Ampere * 10)"
+    ::= { armEntry 3 }
 
-arm3SlaveCount OBJECT-TYPE
-    SYNTAX      Integer32
+armHumidity OBJECT-TYPE
+    SYNTAX      NonNegativeInteger
+    UNITS       "0.1 %"
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Kol 3'teki batarya sayısı"
-    ::= { tescomBmsSystem 9 }
+        "Kol nem değeri (% * 10)"
+    ::= { armEntry 4 }
 
-arm4SlaveCount OBJECT-TYPE
+armNtc1Temp OBJECT-TYPE
     SYNTAX      Integer32
+    UNITS       "0.1 Celsius"
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Kol 4'teki batarya sayısı"
-    ::= { tescomBmsSystem 10 }
+        "Kol NTC1 sıcaklık değeri (°C * 10)"
+    ::= { armEntry 5 }
 
--- ============================================
--- Kol Verileri (1.3.6.1.4.1.1001.arm.dtype)
--- ============================================
--- arm = 1-4 (Kol numarası)
--- dtype:
---   1 = Akım (Ampere * 10)
---   2 = Nem (% * 10)
---   3 = NTC1 Sıcaklık (°C * 10)
---   4 = NTC2 Sıcaklık (°C * 10)
--- ============================================
-
--- Örnek: 1.3.6.1.4.1.1001.3.1 = Kol 3 Akım
---         1.3.6.1.4.1.1001.3.2 = Kol 3 Nem
---         1.3.6.1.4.1.1001.3.3 = Kol 3 NTC1
---         1.3.6.1.4.1.1001.3.4 = Kol 3 NTC2
-
--- ============================================
--- Batarya Verileri (1.3.6.1.4.1.1001.arm.5.k.dtype)
--- ============================================
--- arm = 1-4 (Kol numarası)
--- k = 3-122 (Batarya numarası, k-2 = gerçek batarya adresi)
--- dtype:
---   1 = Gerilim (Volt * 1000)
---   2 = Şarj Durumu - SOC (%)
---   3 = Modül Sıcaklığı - RIMT (°C * 10)
---   4 = Sağlık Durumu - SOH (%)
---   5 = NTC1 Sıcaklık (°C * 10)
---   6 = NTC2 Sıcaklık (°C * 10)
---   7 = NTC3 Sıcaklık (°C * 10)
--- ============================================
-
--- Örnek: 1.3.6.1.4.1.1001.3.5.3.1 = Kol 3, Batarya 1 (k=3), Gerilim
---         1.3.6.1.4.1.1001.3.5.3.2 = Kol 3, Batarya 1 (k=3), SOC
---         1.3.6.1.4.1.1001.3.5.4.1 = Kol 3, Batarya 2 (k=4), Gerilim
---         1.3.6.1.4.1.1001.3.5.4.2 = Kol 3, Batarya 2 (k=4), SOC
-
--- ============================================
--- Status Verileri (1.3.6.1.4.1.1001.arm.6.battery)
--- ============================================
--- arm = 1-4 (Kol numarası)
--- battery:
---   0 = Kol durumu
---   1-120 = Batarya durumu
--- Değer: 0=Normal, 1=Alarm var
--- ============================================
-
--- Örnek: 1.3.6.1.4.1.1001.3.6.0 = Kol 3 Status
---         1.3.6.1.4.1.1001.3.6.1 = Kol 3, Batarya 1 Status
---         1.3.6.1.4.1.1001.3.6.2 = Kol 3, Batarya 2 Status
-
--- ============================================
--- Alarm Verileri (1.3.6.1.4.1.1001.arm.7.battery.alarm_type)
--- ============================================
--- arm = 1-4 (Kol numarası)
--- battery:
---   0 = Kol alarmları
---   1-120 = Batarya alarmları
--- alarm_type (battery=0, Kol Alarmları):
---   1 = Yüksek Akım Alarmı
---   2 = Yüksek Nem Alarmı
---   3 = Yüksek Ortam Sıcaklığı Alarmı
---   4 = Yüksek Kol Sıcaklığı Alarmı
--- alarm_type (battery>0, Batarya Alarmları):
---   1 = Düşük Gerilim Uyarısı
---   2 = Düşük Gerilim Alarmı
---   3 = Yüksek Gerilim Uyarısı
---   4 = Yüksek Gerilim Alarmı
---   5 = Modül Sıcaklık Alarmı
---   6 = Pozitif Kutup Sıcaklık Alarmı
---   7 = Negatif Kutup Sıcaklık Alarmı
--- Değer: 0=Alarm yok, 1=Alarm var
--- ============================================
-
--- Örnek: 1.3.6.1.4.1.1001.3.7.0.1 = Kol 3 Yüksek Akım Alarmı
---         1.3.6.1.4.1.1001.3.7.1.1 = Kol 3, Batarya 1, Düşük Gerilim Uyarısı
---         1.3.6.1.4.1.1001.3.7.1.2 = Kol 3, Batarya 1, Düşük Gerilim Alarmı
---         1.3.6.1.4.1.1001.3.7.1.5 = Kol 3, Batarya 1, Modül Sıcaklık Alarmı
-
--- ============================================
--- SNMP Trap Tanımları
--- ============================================
-
-batteryAlarmTrap NOTIFICATION-TYPE
-    OBJECTS { }
-    STATUS current
+armNtc2Temp OBJECT-TYPE
+    SYNTAX      Integer32
+    UNITS       "0.1 Celsius"
+    MAX-ACCESS  read-only
+    STATUS      current
     DESCRIPTION
-        "Batarya alarmı bildirimi"
+        "Kol NTC2 sıcaklık değeri (°C * 10)"
+    ::= { armEntry 6 }
+
+armStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+        normal(0),
+        alarm(1)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Kol genel durumu: 0=Normal, 1=Alarm var"
+    ::= { armEntry 7 }
+
+armAlarmFlags OBJECT-TYPE
+    SYNTAX      NonNegativeInteger
+    UNITS       "HEX flags"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Kol alarm bayrakları (HEX formatında):
+         0x0=Alarm yok
+         0x1=Yüksek Akım
+         0x2=Yüksek Nem
+         0x4=Yüksek Ortam Sıcaklığı
+         0x8=Yüksek Kol Sıcaklığı"
+    ::= { armEntry 8 }
+
+-- ============================================
+-- BATARYA TABLOSU (bacs2.mib bacsModuleTable benzeri)
+-- (1.3.6.1.4.1.1001.3.x)
+-- ============================================
+
+BatteryEntry ::= SEQUENCE {
+    batteryArmIndex         PositiveInteger,
+    batteryIndex            PositiveInteger,
+    batteryVoltage          NonNegativeInteger,
+    batterySoc              NonNegativeInteger,
+    batteryRimt             Integer32,
+    batterySoh              NonNegativeInteger,
+    batteryNtc1             Integer32,
+    batteryNtc2             Integer32,
+    batteryNtc3             Integer32,
+    batteryStatus           INTEGER,
+    batteryAlarmFlags       NonNegativeInteger
+}
+
+batteryTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF BatteryEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Batarya bilgileri tablosu. Her batarya için bir entry içerir."
+    ::= { tescomBmsBatteries 1 }
+
+batteryEntry OBJECT-TYPE
+    SYNTAX      BatteryEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Bir bataryaya ait bilgileri içeren entry."
+    INDEX       { batteryArmIndex, batteryIndex }
+    ::= { batteryTable 1 }
+
+batteryArmIndex OBJECT-TYPE
+    SYNTAX      PositiveInteger (1..4)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Bataryanın bağlı olduğu kol numarası (1-4)"
+    ::= { batteryEntry 1 }
+
+batteryIndex OBJECT-TYPE
+    SYNTAX      PositiveInteger (1..120)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Batarya adresi (1-120 arası)"
+    ::= { batteryEntry 2 }
+
+batteryVoltage OBJECT-TYPE
+    SYNTAX      NonNegativeInteger
+    UNITS       "mV"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Batarya gerilim değeri (miliVolt cinsinden)"
+    ::= { batteryEntry 3 }
+
+batterySoc OBJECT-TYPE
+    SYNTAX      NonNegativeInteger (0..100)
+    UNITS       "%"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Batarya şarj durumu (State of Charge, %)"
+    ::= { batteryEntry 4 }
+
+batteryRimt OBJECT-TYPE
+    SYNTAX      Integer32
+    UNITS       "0.1 Celsius"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Batarya modül sıcaklığı (°C * 10)"
+    ::= { batteryEntry 5 }
+
+batterySoh OBJECT-TYPE
+    SYNTAX      NonNegativeInteger (0..100)
+    UNITS       "%"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Batarya sağlık durumu (State of Health, %)"
+    ::= { batteryEntry 6 }
+
+batteryNtc1 OBJECT-TYPE
+    SYNTAX      Integer32
+    UNITS       "0.1 Celsius"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Batarya NTC1 sıcaklık sensörü (°C * 10)"
+    ::= { batteryEntry 7 }
+
+batteryNtc2 OBJECT-TYPE
+    SYNTAX      Integer32
+    UNITS       "0.1 Celsius"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Batarya NTC2 sıcaklık sensörü (°C * 10)"
+    ::= { batteryEntry 8 }
+
+batteryNtc3 OBJECT-TYPE
+    SYNTAX      Integer32
+    UNITS       "0.1 Celsius"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Batarya NTC3 sıcaklık sensörü (°C * 10)"
+    ::= { batteryEntry 9 }
+
+batteryStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+        normal(0),
+        alarm(1)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Batarya genel durumu: 0=Normal, 1=Alarm var"
+    ::= { batteryEntry 10 }
+
+batteryAlarmFlags OBJECT-TYPE
+    SYNTAX      NonNegativeInteger
+    UNITS       "HEX flags"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Batarya alarm bayrakları (HEX formatında):
+         0x0=Alarm yok
+         0x1=Düşük Gerilim Uyarısı
+         0x2=Düşük Gerilim Alarmı
+         0x4=Yüksek Gerilim Uyarısı
+         0x8=Yüksek Gerilim Alarmı
+         0x10=Modül Sıcaklık Alarmı
+         0x20=Pozitif Kutup Sıcaklık Alarmı
+         0x40=Negatif Kutup Sıcaklık Alarmı"
+    ::= { batteryEntry 11 }
+
+-- ============================================
+-- ALARM BİLGİLERİ (bacs2.mib bacsAlarms benzeri)
+-- (1.3.6.1.4.1.1001.4.x)
+-- ============================================
+
+tescomAlarmsPresent OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Sistemdeki toplam aktif alarm sayısı"
+    ::= { tescomBmsAlarms 1 }
+
+tescomArmAlarmsPresent OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Kol alarmlarının sayısı"
+    ::= { tescomBmsAlarms 2 }
+
+tescomBatteryAlarmsPresent OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Batarya alarmlarının sayısı"
+    ::= { tescomBmsAlarms 3 }
+
+-- Alarm Tablosu (bacs2.mib bacsAlarmTable benzeri)
+AlarmEntry ::= SEQUENCE {
+    alarmId             PositiveInteger,
+    alarmArmIndex       NonNegativeInteger,
+    alarmBatteryIndex   NonNegativeInteger,
+    alarmType           INTEGER,
+    alarmDescription    DisplayString,
+    alarmTime           TimeStamp,
+    alarmStatus         INTEGER
+}
+
+alarmTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF AlarmEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Aktif alarm listesi tablosu"
+    ::= { tescomBmsAlarms 4 }
+
+alarmEntry OBJECT-TYPE
+    SYNTAX      AlarmEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Bir alarm kaydı"
+    INDEX       { alarmId }
+    ::= { alarmTable 1 }
+
+alarmId OBJECT-TYPE
+    SYNTAX      PositiveInteger
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Alarm benzersiz ID'si"
+    ::= { alarmEntry 1 }
+
+alarmArmIndex OBJECT-TYPE
+    SYNTAX      NonNegativeInteger (0..4)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Alarmın ilgili olduğu kol numarası (0=Sistem geneli, 1-4=Kol)"
+    ::= { alarmEntry 2 }
+
+alarmBatteryIndex OBJECT-TYPE
+    SYNTAX      NonNegativeInteger (0..120)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Alarmın ilgili olduğu batarya adresi (0=Kol alarmı, 1-120=Batarya)"
+    ::= { alarmEntry 3 }
+
+alarmType OBJECT-TYPE
+    SYNTAX      INTEGER {
+        armHighCurrent(1),
+        armHighHumidity(2),
+        armHighAmbientTemp(3),
+        armHighTemp(4),
+        batteryLowVoltageWarn(11),
+        batteryLowVoltageAlarm(12),
+        batteryHighVoltageWarn(13),
+        batteryHighVoltageAlarm(14),
+        batteryModuleTemp(15),
+        batteryPositivePoleTemp(16),
+        batteryNegativePoleTemp(17)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Alarm tipi"
+    ::= { alarmEntry 4 }
+
+alarmDescription OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Alarm açıklaması (Türkçe)"
+    ::= { alarmEntry 5 }
+
+alarmTime OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Alarmın oluşma zamanı (sysUpTime)"
+    ::= { alarmEntry 6 }
+
+alarmStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+        active(1),
+        resolved(2)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Alarm durumu: 1=Aktif, 2=Çözüldü"
+    ::= { alarmEntry 7 }
+
+-- ============================================
+-- SNMP Trap Tanımları (bacs2.mib bacsTrapAlarmEntryAdded benzeri)
+-- ============================================
+
+tescomAlarmTrap NOTIFICATION-TYPE
+    OBJECTS     { alarmId, alarmArmIndex, alarmBatteryIndex, alarmType, alarmDescription }
+    STATUS      current
+    DESCRIPTION
+        "Yeni bir alarm oluştuğunda gönderilen trap"
     ::= { tescomBmsTraps 1 }
 
-armAlarmTrap NOTIFICATION-TYPE
-    OBJECTS { }
-    STATUS current
+tescomAlarmClearedTrap NOTIFICATION-TYPE
+    OBJECTS     { alarmId, alarmArmIndex, alarmBatteryIndex, alarmType, alarmDescription }
+    STATUS      current
     DESCRIPTION
-        "Kol alarmı bildirimi"
+        "Bir alarm çözüldüğünde gönderilen trap"
     ::= { tescomBmsTraps 2 }
 
-END
+tescomSystemStartTrap NOTIFICATION-TYPE
+    OBJECTS     { systemInfo }
+    STATUS      current
+    DESCRIPTION
+        "Sistem başlatıldığında gönderilen trap"
+    ::= { tescomBmsTraps 3 }
 
+END
