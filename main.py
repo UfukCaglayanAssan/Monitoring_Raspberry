@@ -2875,17 +2875,17 @@ def snmp_server():
                 oid = '.'.join([str(x) for x in name])
                 print(f"🔍 SNMP OID sorgusu: {oid}")
                 
-                # .0 olmadan gelen OID'leri .0 ile normalize et
-                if not oid.endswith('.0'):
-                    oid = oid + '.0'
-                    print(f"🔍 Normalize edildi: {oid}")
+                # .0 ile biten OID'leri normalize et (sonundaki .0'ı kaldır)
+                if oid.endswith('.0'):
+                    oid = oid[:-2]  # Son .0'ı kaldır
+                    print(f"🔍 Normalize edildi (.0 kaldırıldı): {oid}")
                 
                 # Sistem bilgileri
-                if oid == "1.3.6.5.1.0":
+                if oid == "1.3.6.5.1":
                     return self.getSyntax().clone(
                         f"Python {sys.version} running on a {sys.platform} platform"
                     )
-                elif oid == "1.3.6.5.2.0":  # totalBatteryCount
+                elif oid == "1.3.6.5.2":  # totalBatteryCount
                     data = get_battery_data_ram()
                     battery_count = 0
                     for arm in data.keys():
@@ -2893,30 +2893,30 @@ def snmp_server():
                             if k > 2:  # k>2 olanlar batarya verisi
                                 battery_count += 1
                     return self.getSyntax().clone(str(battery_count if battery_count > 0 else 0))
-                elif oid == "1.3.6.5.3.0":  # totalArmCount
+                elif oid == "1.3.6.5.3":  # totalArmCount
                     data = get_battery_data_ram()
                     return self.getSyntax().clone(str(len(data) if data else 0))
-                elif oid == "1.3.6.5.4.0":  # systemStatus
+                elif oid == "1.3.6.5.4":  # systemStatus
                     return self.getSyntax().clone("1")
-                elif oid == "1.3.6.5.5.0":  # lastUpdateTime
+                elif oid == "1.3.6.5.5":  # lastUpdateTime
                     return self.getSyntax().clone(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-                elif oid == "1.3.6.5.6.0":  # dataCount
+                elif oid == "1.3.6.5.6":  # dataCount
                     data = get_battery_data_ram()
                     total_data = 0
                     for arm in data.values():
                         for k in arm.values():
                             total_data += len(k)
                     return self.getSyntax().clone(str(total_data if total_data > 0 else 0))
-                elif oid == "1.3.6.5.7.0":  # arm1SlaveCount
+                elif oid == "1.3.6.5.7":  # arm1SlaveCount
                     with data_lock:
                         return self.getSyntax().clone(str(arm_slave_counts_ram.get(1, 0)))
-                elif oid == "1.3.6.5.8.0":  # arm2SlaveCount
+                elif oid == "1.3.6.5.8":  # arm2SlaveCount
                     with data_lock:
                         return self.getSyntax().clone(str(arm_slave_counts_ram.get(2, 0)))
-                elif oid == "1.3.6.5.9.0":  # arm3SlaveCount
+                elif oid == "1.3.6.5.9":  # arm3SlaveCount
                     with data_lock:
                         return self.getSyntax().clone(str(arm_slave_counts_ram.get(3, 0)))
-                elif oid == "1.3.6.5.10.0":  # arm4SlaveCount
+                elif oid == "1.3.6.5.10":  # arm4SlaveCount
                     with data_lock:
                         return self.getSyntax().clone(str(arm_slave_counts_ram.get(4, 0)))
                 else:
@@ -2925,10 +2925,10 @@ def snmp_server():
                         parts = oid.split('.')
                         
                         # Batarya verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.5.k.dtype)
-                        if len(parts) >= 11 and parts[8] == "5":  # 1.3.6.1.4.1.1001.arm.5.k.dtype.0
+                        if len(parts) >= 10 and parts[8] == "5":  # 1.3.6.1.4.1.1001.arm.5.k.dtype
                             arm = int(parts[7])    # 1.3.6.1.4.1.1001.{arm}
                             k = int(parts[9])      # 1.3.6.1.4.1.1001.arm.5.{k}
-                            dtype = int(parts[10])  # 1.3.6.1.4.1.1001.arm.5.k.{dtype}
+                            dtype = int(parts[10]) if len(parts) > 10 else 0  # 1.3.6.1.4.1.1001.arm.5.k.{dtype}
                             
                             print(f"🔍 Batarya OID parsing: arm={arm}, k={k}, dtype={dtype}")
                             
@@ -2948,9 +2948,9 @@ def snmp_server():
                                 return self.getSyntax().clone("0")
                         
                         # Kol verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.dtype)
-                        elif len(parts) >= 9:  # 1.3.6.1.4.1.1001.arm.dtype.0
+                        elif len(parts) >= 8:  # 1.3.6.1.4.1.1001.arm.dtype
                             arm = int(parts[7])    # 1.3.6.1.4.1.1001.{arm}
-                            dtype = int(parts[8])  # 1.3.6.1.4.1.1001.arm.{dtype}
+                            dtype = int(parts[8]) if len(parts) > 8 else 0  # 1.3.6.1.4.1.1001.arm.{dtype}
                             
                             print(f"🔍 Kol OID parsing: arm={arm}, dtype={dtype}")
                             
@@ -2976,9 +2976,9 @@ def snmp_server():
                                     return self.getSyntax().clone("0")
                         
                         # Status verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.6.battery)
-                        elif len(parts) >= 10:  # 1.3.6.1.4.1.1001.arm.6.battery.0
+                        elif len(parts) >= 9 and parts[8] == "6":  # 1.3.6.1.4.1.1001.arm.6.battery
                             arm = int(parts[7])    # 1.3.6.1.4.1.1001.{arm}
-                            battery = int(parts[9])  # 1.3.6.1.4.1.1001.arm.6.{battery}
+                            battery = int(parts[9]) if len(parts) > 9 else 0  # 1.3.6.1.4.1.1001.arm.6.{battery}
                             
                             print(f"🔍 Status OID parsing: arm={arm}, battery={battery}")
                             
@@ -2999,10 +2999,10 @@ def snmp_server():
                                     return self.getSyntax().clone("0")
                         
                         # Alarm verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.7.battery.alarm_type)
-                        elif len(parts) >= 12:  # 1.3.6.1.4.1.1001.arm.7.battery.alarm_type.0
+                        elif len(parts) >= 10 and parts[8] == "7":  # 1.3.6.1.4.1.1001.arm.7.battery.alarm_type
                             arm = int(parts[7])    # 1.3.6.1.4.1.1001.{arm}
-                            battery = int(parts[9])  # 1.3.6.1.4.1.1001.arm.7.{battery}
-                            alarm_type = int(parts[10])  # 1.3.6.1.4.1.1001.arm.7.battery.{alarm_type}
+                            battery = int(parts[9]) if len(parts) > 9 else 0  # 1.3.6.1.4.1.1001.arm.7.{battery}
+                            alarm_type = int(parts[10]) if len(parts) > 10 else 0  # 1.3.6.1.4.1.1001.arm.7.battery.{alarm_type}
                             
                             print(f"🔍 Alarm OID parsing: arm={arm}, battery={battery}, alarm_type={alarm_type}")
                             
@@ -3139,49 +3139,49 @@ def snmp_server():
         print(f"🚀 SNMP Agent başlatılıyor...")
         print(f"📡 Port {SNMP_PORT}'de dinleniyor...")
         print("=" * 50)
-        print("SNMP Test OID'leri:")
-        print("1.3.6.5.1.0  - Python bilgisi")
-        print("1.3.6.5.2.0  - Batarya sayısı")
-        print("1.3.6.5.3.0  - Kol sayısı")
-        print("1.3.6.5.4.0  - Sistem durumu")
-        print("1.3.6.5.5.0  - Son güncelleme zamanı")
-        print("1.3.6.5.6.0  - Veri sayısı")
-        print("1.3.6.5.7.0  - Kol 1 batarya sayısı")
-        print("1.3.6.5.8.0  - Kol 2 batarya sayısı")
-        print("1.3.6.5.9.0  - Kol 3 batarya sayısı")
-        print("1.3.6.5.10.0 - Kol 4 batarya sayısı")
+        print("SNMP Test OID'leri (MIB dosyasında .0 olmadan tanımlı - istek .0 ile veya .0 olmadan yapılabilir):")
+        print("1.3.6.5.1  - Python bilgisi")
+        print("1.3.6.5.2  - Batarya sayısı")
+        print("1.3.6.5.3  - Kol sayısı")
+        print("1.3.6.5.4  - Sistem durumu")
+        print("1.3.6.5.5  - Son güncelleme zamanı")
+        print("1.3.6.5.6  - Veri sayısı")
+        print("1.3.6.5.7  - Kol 1 batarya sayısı")
+        print("1.3.6.5.8  - Kol 2 batarya sayısı")
+        print("1.3.6.5.9  - Kol 3 batarya sayısı")
+        print("1.3.6.5.10 - Kol 4 batarya sayısı")
         print("")
         print("Kol verileri (MIB formatı):")
-        print("1.3.6.1.4.1.1001.3.1.0 - Kol 3 Akım")
-        print("1.3.6.1.4.1.1001.3.2.0 - Kol 3 Nem")
-        print("1.3.6.1.4.1.1001.3.3.0 - Kol 3 NTC1")
-        print("1.3.6.1.4.1.1001.3.4.0 - Kol 3 NTC2")
+        print("1.3.6.1.4.1.1001.3.1 - Kol 3 Akım")
+        print("1.3.6.1.4.1.1001.3.2 - Kol 3 Nem")
+        print("1.3.6.1.4.1.1001.3.3 - Kol 3 NTC1")
+        print("1.3.6.1.4.1.1001.3.4 - Kol 3 NTC2")
         print("")
         print("Status verileri (MIB formatı):")
-        print("1.3.6.1.4.1.1001.3.6.0.0 - Kol 3 Status")
-        print("1.3.6.1.4.1.1001.3.6.3.0 - Kol 3 Batarya 3 Status")
-        print("1.3.6.1.4.1.1001.3.6.4.0 - Kol 3 Batarya 4 Status")
+        print("1.3.6.1.4.1.1001.3.6.0 - Kol 3 Status")
+        print("1.3.6.1.4.1.1001.3.6.3 - Kol 3 Batarya 3 Status")
+        print("1.3.6.1.4.1.1001.3.6.4 - Kol 3 Batarya 4 Status")
         print("")
         print("Alarm verileri (MIB formatı):")
-        print("1.3.6.1.4.1.1001.3.7.0.1.0 - Kol 3 Akım Alarmı")
-        print("1.3.6.1.4.1.1001.3.7.3.1.0 - Kol 3 Batarya 3 LVoltageWarn")
-        print("1.3.6.1.4.1.1001.3.7.3.2.0 - Kol 3 Batarya 3 LVoltageAlarm")
-        print("1.3.6.1.4.1.1001.3.7.3.3.0 - Kol 3 Batarya 3 OVoltageWarn")
-        print("1.3.6.1.4.1.1001.3.7.3.4.0 - Kol 3 Batarya 3 OVoltageAlarm")
-        print("1.3.6.1.4.1.1001.3.7.3.5.0 - Kol 3 Batarya 3 OvertempD")
-        print("1.3.6.1.4.1.1001.3.7.3.6.0 - Kol 3 Batarya 3 OvertempP")
-        print("1.3.6.1.4.1.1001.3.7.3.7.0 - Kol 3 Batarya 3 OvertempN")
+        print("1.3.6.1.4.1.1001.3.7.0.1 - Kol 3 Akım Alarmı")
+        print("1.3.6.1.4.1.1001.3.7.3.1 - Kol 3 Batarya 3 LVoltageWarn")
+        print("1.3.6.1.4.1.1001.3.7.3.2 - Kol 3 Batarya 3 LVoltageAlarm")
+        print("1.3.6.1.4.1.1001.3.7.3.3 - Kol 3 Batarya 3 OVoltageWarn")
+        print("1.3.6.1.4.1.1001.3.7.3.4 - Kol 3 Batarya 3 OVoltageAlarm")
+        print("1.3.6.1.4.1.1001.3.7.3.5 - Kol 3 Batarya 3 OvertempD")
+        print("1.3.6.1.4.1.1001.3.7.3.6 - Kol 3 Batarya 3 OvertempP")
+        print("1.3.6.1.4.1.1001.3.7.3.7 - Kol 3 Batarya 3 OvertempN")
         print("")
         print("Batarya verileri (MIB formatı):")
-        print("1.3.6.1.4.1.1001.3.5.3.1.0 - Kol 3 Batarya 3 Gerilim")
-        print("1.3.6.1.4.1.1001.3.5.3.2.0 - Kol 3 Batarya 3 SOC")
-        print("1.3.6.1.4.1.1001.3.5.4.1.0 - Kol 3 Batarya 4 Gerilim")
-        print("1.3.6.1.4.1.1001.3.5.4.2.0 - Kol 3 Batarya 4 SOC")
+        print("1.3.6.1.4.1.1001.3.5.3.1 - Kol 3 Batarya 3 Gerilim")
+        print("1.3.6.1.4.1.1001.3.5.3.2 - Kol 3 Batarya 3 SOC")
+        print("1.3.6.1.4.1.1001.3.5.4.1 - Kol 3 Batarya 4 Gerilim")
+        print("1.3.6.1.4.1.1001.3.5.4.2 - Kol 3 Batarya 4 SOC")
         print("=" * 50)
-        print("SNMP Test komutları:")
-        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.5.2.0")
+        print("SNMP Test komutları (.0 ile veya .0 olmadan çalışır):")
+        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.5.2")
         print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.5.9.0")
-        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.3.5.3.1.0")
+        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.3.5.3.1")
         print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.3.5.3.2.0")
         print(f"snmpwalk -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001")
         print("=" * 50)
