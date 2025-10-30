@@ -2080,14 +2080,14 @@ def get_data_retrieval_status():
 if __name__ == '__main__':
     import sys
     
-    # IP ataması kontrolü
-    try:
-        from ip_manager import IPManager
-        ip_manager = IPManager()
-        ip_manager.initialize_default_ip()
-    except Exception as e:
-        # IP ataması kontrol hatası
-        pass
+    # IP ataması kontrolü - Manuel yapılacak, otomatik atama devre dışı
+    # try:
+    #     from ip_manager import IPManager
+    #     ip_manager = IPManager()
+    #     ip_manager.initialize_default_ip()
+    # except Exception as e:
+    #     # IP ataması kontrol hatası
+    #     pass
     
     # Port parametresini al (varsayılan: 80)
     port = 80
