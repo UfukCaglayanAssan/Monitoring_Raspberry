@@ -625,7 +625,7 @@ def db_worker():
     """Veritabanı işlemleri"""
     batch = []
     last_insert = time.time()
-    global last_data_received, tumunu_oku_mode, tumunu_oku_arm, read_all_mode, read_all_arm
+    global last_data_received, tumunu_oku_mode, tumunu_oku_arm, read_all_mode, read_all_arm, db
     
     while True:
         try:
@@ -3238,7 +3238,7 @@ def snmp_server():
         )
         
         # Alarm sayıları - tescomBmsAlarms (1.3.6.1.4.1.1001.4.x)
-        mibBuilder.export_symbols(
+                mibBuilder.export_symbols(
             "__TESCOM_BMS_ALARMS_MIB",
             MibScalar((1, 3, 6, 1, 4, 1, 1001, 4, 1), v2c.Gauge32()),  # tescomAlarmsPresent
             ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 4, 1), (0,), v2c.Gauge32()),
