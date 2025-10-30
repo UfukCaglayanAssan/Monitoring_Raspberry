@@ -2891,7 +2891,7 @@ def snmp_server():
         print("✅ MIB Builder oluşturuldu")
 
         class ModbusRAMMibScalarInstance(MibScalarInstance):
-            """Modbus TCP Server RAM sistemi ile MIB Instance"""
+            """Modbus TCP Server RAM sistemi ile MIB Instance - MIB TABLE yapısına uyumlu"""
             def getValue(self, name, **context):
                 oid = '.'.join([str(x) for x in name])
                 import sys
@@ -2901,12 +2901,6 @@ def snmp_server():
                 try:
                     with open("/home/bms/Desktop/Monitoring_Raspberry/snmp_requests.log", "a") as f:
                         f.write(f"{datetime.datetime.now()} - OID: {oid}\n")
-                        f.write(f"  RAM arm_slave_counts: {dict(arm_slave_counts_ram)}\n")
-                        f.write(f"  RAM battery_data keys: {list(battery_data_ram.keys())}\n")
-                        if 4 in battery_data_ram:
-                            f.write(f"  RAM battery_data[4] keys: {list(battery_data_ram[4].keys())}\n")
-                            if 2 in battery_data_ram[4]:
-                                f.write(f"  RAM battery_data[4][2] keys: {list(battery_data_ram[4][2].keys())}\n")
                 except:
                     pass
                 
@@ -2915,10 +2909,10 @@ def snmp_server():
                 if oid.endswith('.0'):
                     oid = oid[:-2]
                 
-                # Sistem bilgileri
+                # Sistem bilgileri - ESKİ TEST OID'leri (1.3.6.5.x)
                 if oid == "1.3.6.5.1":
                     return self.getSyntax().clone(
-                        f"SNMP-V2-FIXED Python {sys.version} running on a {sys.platform} platform"
+                        f"SNMP-V2 Python {sys.version} running on {sys.platform}"
                     )
                 elif oid == "1.3.6.5.2":  # totalBatteryCount
                     data = get_battery_data_ram()
@@ -2942,19 +2936,12 @@ def snmp_server():
                         for k in arm.values():
                             total_data += len(k)
                     return self.getSyntax().clone(str(total_data if total_data > 0 else 0))
-                elif oid == "1.3.6.5.7":  # arm1SlaveCount
-                    with data_lock:
-                        return self.getSyntax().clone(str(arm_slave_counts_ram.get(1, 0)))
-                elif oid == "1.3.6.5.8":  # arm2SlaveCount
-                    with data_lock:
-                        return self.getSyntax().clone(str(arm_slave_counts_ram.get(2, 0)))
-                elif oid == "1.3.6.5.9":  # arm3SlaveCount
-                    with data_lock:
-                        return self.getSyntax().clone(str(arm_slave_counts_ram.get(3, 0)))
-                elif oid == "1.3.6.5.10":  # arm4SlaveCount
-                    with data_lock:
-                        return self.getSyntax().clone(str(arm_slave_counts_ram.get(4, 0)))
-                # Yeni MIB - tescomBmsSystem (1.3.6.1.4.1.1001.1.x)
+                
+                # ============================================
+                # MIB UYUMLU OID'LER (1.3.6.1.4.1.1001.x)
+                # ============================================
+                
+                # Sistem bilgileri - tescomBmsSystem (1.3.6.1.4.1.1001.1.x)
                 elif oid == "1.3.6.1.4.1.1001.1.1":  # systemInfo
                     return self.getSyntax().clone(
                         f"TESCOM BMS - Python {sys.version.split()[0]} on {sys.platform}"
@@ -2966,12 +2953,12 @@ def snmp_server():
                         for k in data[arm].keys():
                             if k > 2:  # k>2 olanlar batarya verisi
                                 battery_count += 1
-                    return self.getSyntax().clone(str(battery_count if battery_count > 0 else 0))
+                    return self.getSyntax().clone(battery_count)
                 elif oid == "1.3.6.1.4.1.1001.1.3":  # totalArmCount
                     data = get_battery_data_ram()
-                    return self.getSyntax().clone(str(len(data) if data else 0))
+                    return self.getSyntax().clone(len(data) if data else 0)
                 elif oid == "1.3.6.1.4.1.1001.1.4":  # systemStatus
-                    return self.getSyntax().clone("1")  # 1=running
+                    return self.getSyntax().clone(1)  # 1=running
                 elif oid == "1.3.6.1.4.1.1001.1.5":  # lastUpdateTime
                     return self.getSyntax().clone(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                 elif oid == "1.3.6.1.4.1.1001.1.6":  # dataCount
@@ -2980,108 +2967,218 @@ def snmp_server():
                     for arm in data.values():
                         for k in arm.values():
                             total_data += len(k)
-                    return self.getSyntax().clone(str(total_data if total_data > 0 else 0))
+                    return self.getSyntax().clone(total_data if total_data > 0 else 0)
+                
+                # Alarm sayıları - tescomBmsAlarms (1.3.6.1.4.1.1001.4.x)
+                elif oid == "1.3.6.1.4.1.1001.4.1":  # tescomAlarmsPresent
+                    with data_lock:
+                        total_alarms = 0
+                        if alarm_ram:
+                            for arm_alarms in alarm_ram.values():
+                                for battery_alarms in arm_alarms.values():
+                                    for alarm_value in battery_alarms.values():
+                                        if alarm_value:
+                                            total_alarms += 1
+                        return self.getSyntax().clone(total_alarms)
+                elif oid == "1.3.6.1.4.1.1001.4.2":  # tescomArmAlarmsPresent
+                    with data_lock:
+                        arm_alarms = 0
+                        if alarm_ram:
+                            for arm_data in alarm_ram.values():
+                                if 0 in arm_data:  # battery=0 kol alarmları
+                                    for alarm_value in arm_data[0].values():
+                                        if alarm_value:
+                                            arm_alarms += 1
+                        return self.getSyntax().clone(arm_alarms)
+                elif oid == "1.3.6.1.4.1.1001.4.3":  # tescomBatteryAlarmsPresent
+                    with data_lock:
+                        battery_alarms = 0
+                        if alarm_ram:
+                            for arm_data in alarm_ram.values():
+                                for battery_id, battery_alarms_data in arm_data.items():
+                                    if battery_id > 0:  # battery>0 batarya alarmları
+                                        for alarm_value in battery_alarms_data.values():
+                                            if alarm_value:
+                                                battery_alarms += 1
+                        return self.getSyntax().clone(battery_alarms)
+                
                 else:
-                    # OID parsing - önce batarya verilerini kontrol et
+                    # OID parsing - MIB TABLE yapısına göre
                     if oid.startswith("1.3.6.1.4.1.1001."):
                         parts = oid.split('.')
                         
-                        # Batarya verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.5.k.dtype)
-                        if len(parts) >= 11 and parts[8] == "5":  # 1.3.6.1.4.1.1001.arm.5.k.dtype.0
-                            arm = int(parts[7])    # 1.3.6.1.4.1.1001.{arm}
-                            k = int(parts[9])      # 1.3.6.1.4.1.1001.arm.5.{k}
-                            dtype = int(parts[10])  # 1.3.6.1.4.1.1001.arm.5.k.{dtype}
+                        # ============================================
+                        # armTable - 1.3.6.1.4.1.1001.2.1.1.{armIndex}.{column}
+                        # ============================================
+                        if len(parts) >= 12 and parts[7:11] == ["2", "1", "1"]:
+                            arm_index = int(parts[11])  # armIndex (1-4)
                             
-                            # MIB dtype'ı RAM dtype'ına çevir (MIB'de 1-7, RAM'de 1-7)
-                            ram_dtype = dtype  # MIB ve RAM aynı format
-                            
-                            data = get_battery_data_ram(arm, k, ram_dtype)
-                            
-                            if data and 'value' in data:
-                                return self.getSyntax().clone(str(data['value']))
-                            else:
-                                return self.getSyntax().clone("0")
+                            # Column numarası var mı?
+                            if len(parts) >= 13:
+                                column = int(parts[12])
+                                
+                                with data_lock:
+                                    # Column 2: armSlaveCount
+                                    if column == 2:
+                                        return self.getSyntax().clone(arm_slave_counts_ram.get(arm_index, 0))
+                                    
+                                    # Column 3: armCurrent (k=2, dtype=1)
+                                    elif column == 3:
+                                        if arm_index in battery_data_ram and 2 in battery_data_ram[arm_index]:
+                                            if 1 in battery_data_ram[arm_index][2]:
+                                                value = battery_data_ram[arm_index][2][1].get('value', 0)
+                                                return self.getSyntax().clone(int(value * 10))  # 0.1 Ampere
+                                        return self.getSyntax().clone(0)
+                                    
+                                    # Column 4: armHumidity (k=2, dtype=2)
+                                    elif column == 4:
+                                        if arm_index in battery_data_ram and 2 in battery_data_ram[arm_index]:
+                                            if 2 in battery_data_ram[arm_index][2]:
+                                                value = battery_data_ram[arm_index][2][2].get('value', 0)
+                                                return self.getSyntax().clone(int(value * 10))  # 0.1 %
+                                        return self.getSyntax().clone(0)
+                                    
+                                    # Column 5: armNtc1Temp (k=2, dtype=3)
+                                    elif column == 5:
+                                        if arm_index in battery_data_ram and 2 in battery_data_ram[arm_index]:
+                                            if 3 in battery_data_ram[arm_index][2]:
+                                                value = battery_data_ram[arm_index][2][3].get('value', 0)
+                                                return self.getSyntax().clone(int(value * 10))  # 0.1 Celsius
+                                        return self.getSyntax().clone(0)
+                                    
+                                    # Column 6: armNtc2Temp (k=2, dtype=4)
+                                    elif column == 6:
+                                        if arm_index in battery_data_ram and 2 in battery_data_ram[arm_index]:
+                                            if 4 in battery_data_ram[arm_index][2]:
+                                                value = battery_data_ram[arm_index][2][4].get('value', 0)
+                                                return self.getSyntax().clone(int(value * 10))  # 0.1 Celsius
+                                        return self.getSyntax().clone(0)
+                                    
+                                    # Column 7: armStatus
+                                    elif column == 7:
+                                        if arm_index in status_ram and 0 in status_ram[arm_index]:
+                                            return self.getSyntax().clone(1 if status_ram[arm_index][0] else 0)
+                                        return self.getSyntax().clone(0)
+                                    
+                                    # Column 8: armAlarmFlags
+                                    elif column == 8:
+                                        alarm_flags = 0
+                                        if arm_index in alarm_ram and 0 in alarm_ram[arm_index]:
+                                            # Bit 0 (0x1): Yüksek Akım (alarm_type=1)
+                                            if alarm_ram[arm_index][0].get(1, False):
+                                                alarm_flags |= 0x1
+                                            # Bit 1 (0x2): Yüksek Nem (alarm_type=2)
+                                            if alarm_ram[arm_index][0].get(2, False):
+                                                alarm_flags |= 0x2
+                                            # Bit 2 (0x4): Yüksek Ortam Sıcaklığı (alarm_type=3)
+                                            if alarm_ram[arm_index][0].get(3, False):
+                                                alarm_flags |= 0x4
+                                            # Bit 3 (0x8): Yüksek Kol Sıcaklığı (alarm_type=4)
+                                            if alarm_ram[arm_index][0].get(4, False):
+                                                alarm_flags |= 0x8
+                                        return self.getSyntax().clone(alarm_flags)
                         
-                        # Kol verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.dtype)
-                        elif len(parts) >= 9:  # 1.3.6.1.4.1.1001.arm.dtype.0
-                            arm = int(parts[7])    # 1.3.6.1.4.1.1001.{arm}
-                            dtype = int(parts[8])  # 1.3.6.1.4.1.1001.arm.{dtype}
+                        # ============================================
+                        # batteryTable - 1.3.6.1.4.1.1001.3.1.1.{armIndex}.{batteryIndex}.{column}
+                        # ============================================
+                        elif len(parts) >= 14 and parts[7:11] == ["3", "1", "1"]:
+                            arm_index = int(parts[11])      # armIndex (1-4)
+                            battery_index = int(parts[12])  # batteryIndex (1-120)
                             
-                            # Kol verileri için RAM'den oku (battery_data_ram kullan)
-                            with data_lock:
-                                # DEBUG: İstek geldiği anda TÜM RAM durumu
-                                debug = f"REQUEST:ARM{arm}_DT{dtype}|"
-                                debug += f"COUNTS={dict(arm_slave_counts_ram)}|"
+                            # Column numarası var mı?
+                            if len(parts) >= 14:
+                                column = int(parts[13])
                                 
-                                # Tüm kolların k=2 durumu
-                                for a in [1,2,3,4]:
-                                    if a in battery_data_ram:
-                                        if 2 in battery_data_ram[a]:
-                                            k2_data = battery_data_ram[a][2]
-                                            # dtype 1,2,3,4 değerleri
-                                            vals = []
-                                            for dt in [1,2,3,4]:
-                                                if dt in k2_data:
-                                                    v = k2_data[dt].get('value', 'N')
-                                                    vals.append(f"{dt}:{v}")
-                                            debug += f"A{a}K2=[{','.join(vals)}]|"
-                                        else:
-                                            debug += f"A{a}K2=NONE|"
-                                    else:
-                                        debug += f"A{a}=NONE|"
+                                # battery_index'i k değerine çevir (k = battery_index + 2)
+                                k = battery_index + 2
                                 
-                                # Şimdi istenen değeri döndür
-                                if arm in battery_data_ram and 2 in battery_data_ram[arm]:
-                                    uart_dtype_map = {1: 1, 2: 2, 3: 3, 4: 4}
-                                    uart_dtype = uart_dtype_map.get(dtype)
-                                    if uart_dtype and uart_dtype in battery_data_ram[arm][2]:
-                                        value = battery_data_ram[arm][2][uart_dtype].get('value', 0)
-                                        debug += f"RESULT={value}"
-                                    else:
-                                        debug += "RESULT=DT_NOT_FOUND"
-                                else:
-                                    debug += "RESULT=K2_NOT_FOUND"
-                                
-                                return self.getSyntax().clone(debug)
-                        
-                        # Status verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.6.battery)
-                        elif len(parts) >= 10:  # 1.3.6.1.4.1.1001.arm.6.battery.0
-                            arm = int(parts[7])    # 1.3.6.1.4.1.1001.{arm}
-                            battery = int(parts[9])  # 1.3.6.1.4.1.1001.arm.6.{battery}
-                            
-                            # Status verileri için RAM'den oku
-                            with data_lock:
-                                # Batarya numarası mevcut mu kontrol et
-                                max_battery = arm_slave_counts_ram.get(arm, 0)
-                                if battery > max_battery:
-                                    return self.getSyntax().clone("0")
-                                
-                                if arm in status_ram and battery in status_ram[arm]:
-                                    status_value = 1 if status_ram[arm][battery] else 0
-                                    return self.getSyntax().clone(str(status_value))
-                                else:
-                                    return self.getSyntax().clone("0")
-                        
-                        # Alarm verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.7.battery.alarm_type)
-                        elif len(parts) >= 12:  # 1.3.6.1.4.1.1001.arm.7.battery.alarm_type.0
-                            arm = int(parts[7])    # 1.3.6.1.4.1.1001.{arm}
-                            battery = int(parts[9])  # 1.3.6.1.4.1.1001.arm.7.{battery}
-                            alarm_type = int(parts[10])  # 1.3.6.1.4.1.1001.arm.7.battery.{alarm_type}
-                            
-                            # Alarm verileri için RAM'den oku
-                            with data_lock:
-                                # Batarya numarası mevcut mu kontrol et (battery=0 ise kol alarmı, kontrol etme)
-                                if battery > 0:
-                                    max_battery = arm_slave_counts_ram.get(arm, 0)
-                                    if battery > max_battery:
-                                        return self.getSyntax().clone("0")
-                                
-                                if arm in alarm_ram and battery in alarm_ram[arm] and alarm_type in alarm_ram[arm][battery]:
-                                    alarm_value = 1 if alarm_ram[arm][battery][alarm_type] else 0
-                                    return self.getSyntax().clone(str(alarm_value))
-                                else:
-                                    return self.getSyntax().clone("0")
-                        
+                                with data_lock:
+                                    # Batarya mevcut mu kontrol et
+                                    max_battery = arm_slave_counts_ram.get(arm_index, 0)
+                                    if battery_index > max_battery:
+                                        return self.getSyntax().clone(0)
+                                    
+                                    # Column 3: batteryVoltage (dtype=1)
+                                    if column == 3:
+                                        data = get_battery_data_ram(arm_index, k, 1)
+                                        if data and 'value' in data:
+                                            return self.getSyntax().clone(int(data['value']))  # mV
+                                        return self.getSyntax().clone(0)
+                                    
+                                    # Column 4: batterySoc (dtype=2)
+                                    elif column == 4:
+                                        data = get_battery_data_ram(arm_index, k, 2)
+                                        if data and 'value' in data:
+                                            return self.getSyntax().clone(int(data['value']))  # %
+                                        return self.getSyntax().clone(0)
+                                    
+                                    # Column 5: batteryRimt (dtype=3)
+                                    elif column == 5:
+                                        data = get_battery_data_ram(arm_index, k, 3)
+                                        if data and 'value' in data:
+                                            return self.getSyntax().clone(int(data['value'] * 10))  # 0.1 Celsius
+                                        return self.getSyntax().clone(0)
+                                    
+                                    # Column 6: batterySoh (dtype=4)
+                                    elif column == 6:
+                                        data = get_battery_data_ram(arm_index, k, 4)
+                                        if data and 'value' in data:
+                                            return self.getSyntax().clone(int(data['value']))  # %
+                                        return self.getSyntax().clone(0)
+                                    
+                                    # Column 7: batteryNtc1 (dtype=5)
+                                    elif column == 7:
+                                        data = get_battery_data_ram(arm_index, k, 5)
+                                        if data and 'value' in data:
+                                            return self.getSyntax().clone(int(data['value'] * 10))  # 0.1 Celsius
+                                        return self.getSyntax().clone(0)
+                                    
+                                    # Column 8: batteryNtc2 (dtype=6)
+                                    elif column == 8:
+                                        data = get_battery_data_ram(arm_index, k, 6)
+                                        if data and 'value' in data:
+                                            return self.getSyntax().clone(int(data['value'] * 10))  # 0.1 Celsius
+                                        return self.getSyntax().clone(0)
+                                    
+                                    # Column 9: batteryNtc3 (dtype=7)
+                                    elif column == 9:
+                                        data = get_battery_data_ram(arm_index, k, 7)
+                                        if data and 'value' in data:
+                                            return self.getSyntax().clone(int(data['value'] * 10))  # 0.1 Celsius
+                                        return self.getSyntax().clone(0)
+                                    
+                                    # Column 10: batteryStatus
+                                    elif column == 10:
+                                        if arm_index in status_ram and battery_index in status_ram[arm_index]:
+                                            return self.getSyntax().clone(1 if status_ram[arm_index][battery_index] else 0)
+                                        return self.getSyntax().clone(0)
+                                    
+                                    # Column 11: batteryAlarmFlags
+                                    elif column == 11:
+                                        alarm_flags = 0
+                                        if arm_index in alarm_ram and battery_index in alarm_ram[arm_index]:
+                                            # Bit 0 (0x1): Düşük Gerilim Uyarısı (alarm_type=1)
+                                            if alarm_ram[arm_index][battery_index].get(1, False):
+                                                alarm_flags |= 0x1
+                                            # Bit 1 (0x2): Düşük Gerilim Alarmı (alarm_type=2)
+                                            if alarm_ram[arm_index][battery_index].get(2, False):
+                                                alarm_flags |= 0x2
+                                            # Bit 2 (0x4): Yüksek Gerilim Uyarısı (alarm_type=3)
+                                            if alarm_ram[arm_index][battery_index].get(3, False):
+                                                alarm_flags |= 0x4
+                                            # Bit 3 (0x8): Yüksek Gerilim Alarmı (alarm_type=4)
+                                            if alarm_ram[arm_index][battery_index].get(4, False):
+                                                alarm_flags |= 0x8
+                                            # Bit 4 (0x10): Modül Sıcaklık Alarmı (alarm_type=5)
+                                            if alarm_ram[arm_index][battery_index].get(5, False):
+                                                alarm_flags |= 0x10
+                                            # Bit 5 (0x20): Pozitif Kutup Sıcaklık Alarmı (alarm_type=6)
+                                            if alarm_ram[arm_index][battery_index].get(6, False):
+                                                alarm_flags |= 0x20
+                                            # Bit 6 (0x40): Negatif Kutup Sıcaklık Alarmı (alarm_type=7)
+                                            if alarm_ram[arm_index][battery_index].get(7, False):
+                                                alarm_flags |= 0x40
+                                        return self.getSyntax().clone(alarm_flags)
                     
                     return self.getSyntax().clone("No Such Object")
 
@@ -3143,67 +3240,75 @@ def snmp_server():
             ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 1, 6), (0,), v2c.Integer()),
         )
         
-        # Kol verileri için MIB Objects - MIB dosyasına göre (1.3.6.1.4.1.1001.arm.dtype)
-        for arm in range(1, 5):  # 1, 2, 3, 4
-            for dtype in range(1, 5):  # 1-4 arası dtype'lar (1=Akim, 2=Nem, 3=NTC1, 4=NTC2)
-                oid = (1, 3, 6, 1, 4, 1, 1001, arm, dtype)
+        # Alarm sayıları - tescomBmsAlarms (1.3.6.1.4.1.1001.4.x)
+        mibBuilder.export_symbols(
+            "__TESCOM_BMS_ALARMS_MIB",
+            MibScalar((1, 3, 6, 1, 4, 1, 1001, 4, 1), v2c.Gauge32()),  # tescomAlarmsPresent
+            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 4, 1), (0,), v2c.Gauge32()),
+            
+            MibScalar((1, 3, 6, 1, 4, 1, 1001, 4, 2), v2c.Gauge32()),  # tescomArmAlarmsPresent
+            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 4, 2), (0,), v2c.Gauge32()),
+            
+            MibScalar((1, 3, 6, 1, 4, 1, 1001, 4, 3), v2c.Gauge32()),  # tescomBatteryAlarmsPresent
+            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 4, 3), (0,), v2c.Gauge32()),
+        )
+        
+        # ============================================
+        # armTable - MIB TABLE yapısına uygun (1.3.6.1.4.1.1001.2.1.1.{armIndex}.{column})
+        # ============================================
+        print("⚙️  armTable OID'leri oluşturuluyor...")
+        for arm_index in range(1, 5):  # 1-4 arası kol
+            for column in range(2, 9):  # Column 2-8 (armSlaveCount'tan armAlarmFlags'e kadar)
+                oid = (1, 3, 6, 1, 4, 1, 1001, 2, 1, 1, arm_index, column)
+                if column == 2:  # armSlaveCount
+                    syntax = v2c.Integer()
+                elif column in [3, 4, 5, 6]:  # armCurrent, armHumidity, armNtc1Temp, armNtc2Temp
+                    syntax = v2c.Integer32()
+                elif column == 7:  # armStatus
+                    syntax = v2c.Integer()
+                elif column == 8:  # armAlarmFlags
+                    syntax = v2c.Integer()
+                
                 mibBuilder.export_symbols(
-                    f"__ARM_MIB_{arm}_{dtype}",
-                    MibScalar(oid, v2c.OctetString()),
-                    ModbusRAMMibScalarInstance(oid, (0,), v2c.OctetString()),
+                    f"__ARM_TABLE_{arm_index}_{column}",
+                    MibScalar(oid, syntax),
+                    ModbusRAMMibScalarInstance(oid, (0,), syntax),
                 )
         
-        # Status verileri için MIB Objects - MIB dosyasına göre (1.3.6.1.4.1.1001.arm.6.battery)
-        for arm in range(1, 5):  # 1, 2, 3, 4
-            # Kol statusu (battery=0)
-            oid = (1, 3, 6, 1, 4, 1, 1001, arm, 6, 0)
-            mibBuilder.export_symbols(
-                f"__STATUS_MIB_{arm}_0",
-                MibScalar(oid, v2c.Integer()),
-                ModbusRAMMibScalarInstance(oid, (0,), v2c.Integer()),
-            )
-            # Batarya statusları (sadece mevcut batarya sayısı kadar)
-            battery_count = arm_slave_counts_ram.get(arm, 0)
-            for battery in range(1, battery_count + 1):
-                oid = (1, 3, 6, 1, 4, 1, 1001, arm, 6, battery)
-                mibBuilder.export_symbols(
-                    f"__STATUS_MIB_{arm}_{battery}",
-                    MibScalar(oid, v2c.Integer()),
-                    ModbusRAMMibScalarInstance(oid, (0,), v2c.Integer()),
-                )
-        
-        # Alarm verileri için MIB Objects - MIB dosyasına göre (1.3.6.1.4.1.1001.arm.7.battery.alarm_type)
-        for arm in range(1, 5):  # 1, 2, 3, 4
-            # Kol alarmları (battery=0, alarm_type=1-4)
-            for alarm_type in range(1, 5):  # 1-4 arası kol alarm türleri
-                oid = (1, 3, 6, 1, 4, 1, 1001, arm, 7, 0, alarm_type)
-                mibBuilder.export_symbols(
-                    f"__ALARM_MIB_{arm}_0_{alarm_type}",
-                    MibScalar(oid, v2c.Integer()),
-                    ModbusRAMMibScalarInstance(oid, (0,), v2c.Integer()),
-                )
-            # Batarya alarmları (battery=1-120, alarm_type=1-7)
-            battery_count = arm_slave_counts_ram.get(arm, 0)
-            for battery in range(1, battery_count + 1):
-                for alarm_type in range(1, 8):  # 1-7 arası batarya alarm türleri
-                    oid = (1, 3, 6, 1, 4, 1, 1001, arm, 7, battery, alarm_type)
+        # ============================================
+        # batteryTable - MIB TABLE yapısına uygun (1.3.6.1.4.1.1001.3.1.1.{armIndex}.{batteryIndex}.{column})
+        # ============================================
+        print("⚙️  batteryTable OID'leri oluşturuluyor...")
+        for arm_index in range(1, 5):  # 1-4 arası kol
+            battery_count = arm_slave_counts_ram.get(arm_index, 0)
+            if battery_count == 0:
+                battery_count = 5  # En az 5 batarya için OID oluştur
+            
+            for battery_index in range(1, battery_count + 1):  # 1-120 arası batarya
+                for column in range(3, 12):  # Column 3-11 (batteryVoltage'dan batteryAlarmFlags'e kadar)
+                    oid = (1, 3, 6, 1, 4, 1, 1001, 3, 1, 1, arm_index, battery_index, column)
+                    if column == 3:  # batteryVoltage
+                        syntax = v2c.Integer()
+                    elif column == 4:  # batterySoc
+                        syntax = v2c.Integer()
+                    elif column == 5:  # batteryRimt
+                        syntax = v2c.Integer32()
+                    elif column == 6:  # batterySoh
+                        syntax = v2c.Integer()
+                    elif column in [7, 8, 9]:  # batteryNtc1, batteryNtc2, batteryNtc3
+                        syntax = v2c.Integer32()
+                    elif column == 10:  # batteryStatus
+                        syntax = v2c.Integer()
+                    elif column == 11:  # batteryAlarmFlags
+                        syntax = v2c.Integer()
+                    
                     mibBuilder.export_symbols(
-                        f"__ALARM_MIB_{arm}_{battery}_{alarm_type}",
-                        MibScalar(oid, v2c.Integer()),
-                        ModbusRAMMibScalarInstance(oid, (0,), v2c.Integer()),
+                        f"__BATTERY_TABLE_{arm_index}_{battery_index}_{column}",
+                        MibScalar(oid, syntax),
+                        ModbusRAMMibScalarInstance(oid, (0,), syntax),
                     )
         
-        # Batarya verileri için MIB Objects - MIB dosyasına göre (1.3.6.1.4.1.1001.arm.5.k.dtype)
-        for arm in range(1, 5):  # 1, 2, 3, 4
-            for k in range(2, 8):  # 2-7 arası batarya numaraları
-                for dtype in range(1, 8):  # 1-7 arası dtype'lar (1=Gerilim, 2=SOC, 3=RIMT, 4=SOH, 5=NTC1, 6=NTC2, 7=NTC3)
-                    oid = (1, 3, 6, 1, 4, 1, 1001, arm, 5, k, dtype)
-                    mibBuilder.export_symbols(
-                        f"__BATTERY_MIB_{arm}_{k}_{dtype}",
-                        MibScalar(oid, v2c.OctetString()),
-                        ModbusRAMMibScalarInstance(oid, (0,), v2c.OctetString()),
-                    )
-        print("✅ MIB Objects oluşturuldu")
+        print("✅ MIB Objects oluşturuldu (TABLE yapısı)")
 
         # --- end of Managed Object Instance initialization ----
 
@@ -3219,54 +3324,63 @@ def snmp_server():
 
         print(f"🚀 SNMP Agent başlatılıyor...")
         print(f"📡 Port {SNMP_PORT}'de dinleniyor...")
-        print("=" * 50)
-        print("SNMP Test OID'leri:")
-        print("1.3.6.5.1.0  - Python bilgisi")
-        print("1.3.6.5.2.0  - Batarya sayısı")
-        print("1.3.6.5.3.0  - Kol sayısı")
-        print("1.3.6.5.4.0  - Sistem durumu")
-        print("1.3.6.5.5.0  - Son güncelleme zamanı")
-        print("1.3.6.5.6.0  - Veri sayısı")
-        print("1.3.6.5.7.0  - Kol 1 batarya sayısı")
-        print("1.3.6.5.8.0  - Kol 2 batarya sayısı")
-        print("1.3.6.5.9.0  - Kol 3 batarya sayısı")
-        print("1.3.6.5.10.0 - Kol 4 batarya sayısı")
+        print("=" * 70)
+        print("📋 MIB UYUMLU TABLE YAPISI - TESCOM-BMS-MIB")
+        print("=" * 70)
         print("")
-        print("Kol verileri (MIB formatı):")
-        print("1.3.6.1.4.1.1001.3.1.0 - Kol 3 Akım")
-        print("1.3.6.1.4.1.1001.3.2.0 - Kol 3 Nem")
-        print("1.3.6.1.4.1.1001.3.3.0 - Kol 3 NTC1")
-        print("1.3.6.1.4.1.1001.3.4.0 - Kol 3 NTC2")
+        print("🔹 Sistem Bilgileri (tescomBmsSystem - 1.3.6.1.4.1.1001.1.x):")
+        print("   1.3.6.1.4.1.1001.1.1.0 - systemInfo")
+        print("   1.3.6.1.4.1.1001.1.2.0 - totalBatteryCount")
+        print("   1.3.6.1.4.1.1001.1.3.0 - totalArmCount")
+        print("   1.3.6.1.4.1.1001.1.4.0 - systemStatus")
+        print("   1.3.6.1.4.1.1001.1.5.0 - lastUpdateTime")
+        print("   1.3.6.1.4.1.1001.1.6.0 - dataCount")
         print("")
-        print("Status verileri (MIB formatı):")
-        print("1.3.6.1.4.1.1001.3.6.0.0 - Kol 3 Status")
-        print("1.3.6.1.4.1.1001.3.6.3.0 - Kol 3 Batarya 3 Status")
-        print("1.3.6.1.4.1.1001.3.6.4.0 - Kol 3 Batarya 4 Status")
+        print("🔹 Kol Tablosu (armTable - 1.3.6.1.4.1.1001.2.1.1.{armIndex}.{column}):")
+        print("   Örnek: 1.3.6.1.4.1.1001.2.1.1.1.2.0 - Kol 1, armSlaveCount (column 2)")
+        print("   Örnek: 1.3.6.1.4.1.1001.2.1.1.1.3.0 - Kol 1, armCurrent (column 3)")
+        print("   Örnek: 1.3.6.1.4.1.1001.2.1.1.1.4.0 - Kol 1, armHumidity (column 4)")
+        print("   Örnek: 1.3.6.1.4.1.1001.2.1.1.1.5.0 - Kol 1, armNtc1Temp (column 5)")
+        print("   Örnek: 1.3.6.1.4.1.1001.2.1.1.1.6.0 - Kol 1, armNtc2Temp (column 6)")
+        print("   Örnek: 1.3.6.1.4.1.1001.2.1.1.1.7.0 - Kol 1, armStatus (column 7)")
+        print("   Örnek: 1.3.6.1.4.1.1001.2.1.1.1.8.0 - Kol 1, armAlarmFlags (column 8)")
         print("")
-        print("Alarm verileri (MIB formatı):")
-        print("1.3.6.1.4.1.1001.3.7.0.1.0 - Kol 3 Akım Alarmı")
-        print("1.3.6.1.4.1.1001.3.7.3.1.0 - Kol 3 Batarya 3 LVoltageWarn")
-        print("1.3.6.1.4.1.1001.3.7.3.2.0 - Kol 3 Batarya 3 LVoltageAlarm")
-        print("1.3.6.1.4.1.1001.3.7.3.3.0 - Kol 3 Batarya 3 OVoltageWarn")
-        print("1.3.6.1.4.1.1001.3.7.3.4.0 - Kol 3 Batarya 3 OVoltageAlarm")
-        print("1.3.6.1.4.1.1001.3.7.3.5.0 - Kol 3 Batarya 3 OvertempD")
-        print("1.3.6.1.4.1.1001.3.7.3.6.0 - Kol 3 Batarya 3 OvertempP")
-        print("1.3.6.1.4.1.1001.3.7.3.7.0 - Kol 3 Batarya 3 OvertempN")
+        print("🔹 Batarya Tablosu (batteryTable - 1.3.6.1.4.1.1001.3.1.1.{armIndex}.{batteryIndex}.{column}):")
+        print("   Örnek: 1.3.6.1.4.1.1001.3.1.1.1.1.3.0  - Kol 1, Batarya 1, batteryVoltage (column 3)")
+        print("   Örnek: 1.3.6.1.4.1.1001.3.1.1.1.1.4.0  - Kol 1, Batarya 1, batterySoc (column 4)")
+        print("   Örnek: 1.3.6.1.4.1.1001.3.1.1.1.1.5.0  - Kol 1, Batarya 1, batteryRimt (column 5)")
+        print("   Örnek: 1.3.6.1.4.1.1001.3.1.1.1.1.10.0 - Kol 1, Batarya 1, batteryStatus (column 10)")
+        print("   Örnek: 1.3.6.1.4.1.1001.3.1.1.1.1.11.0 - Kol 1, Batarya 1, batteryAlarmFlags (column 11)")
         print("")
-        print("Batarya verileri (MIB formatı):")
-        print("1.3.6.1.4.1.1001.3.5.3.1.0 - Kol 3 Batarya 3 Gerilim")
-        print("1.3.6.1.4.1.1001.3.5.3.2.0 - Kol 3 Batarya 3 SOC")
-        print("1.3.6.1.4.1.1001.3.5.4.1.0 - Kol 3 Batarya 4 Gerilim")
-        print("1.3.6.1.4.1.1001.3.5.4.2.0 - Kol 3 Batarya 4 SOC")
-        print("=" * 50)
-        print("SNMP Test komutları:")
-        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.5.2.0")
-        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.5.9.0")
-        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.3.5.3.1.0")
-        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.3.5.3.2.0")
+        print("🔹 Alarm Bilgileri (tescomBmsAlarms - 1.3.6.1.4.1.1001.4.x):")
+        print("   1.3.6.1.4.1.1001.4.1.0 - tescomAlarmsPresent (Toplam alarm sayısı)")
+        print("   1.3.6.1.4.1.1001.4.2.0 - tescomArmAlarmsPresent (Kol alarm sayısı)")
+        print("   1.3.6.1.4.1.1001.4.3.0 - tescomBatteryAlarmsPresent (Batarya alarm sayısı)")
+        print("")
+        print("=" * 70)
+        print("🧪 SNMP Test Komutları:")
+        print("=" * 70)
+        print(f"# Sistem bilgileri:")
+        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.1.1.0")
+        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.1.2.0")
+        print("")
+        print(f"# Kol 1 verileri:")
+        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.2.1.1.1.2.0")
+        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.2.1.1.1.3.0")
+        print("")
+        print(f"# Batarya 1 verileri (Kol 1):")
+        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.3.1.1.1.1.3.0")
+        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.3.1.1.1.1.4.0")
+        print("")
+        print(f"# Tüm TESCOM BMS verilerini görmek için:")
         print(f"snmpwalk -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001")
-        print("=" * 50)
-        print("=" * 50)
+        print("")
+        print(f"# Sadece armTable'ı görmek için:")
+        print(f"snmpwalk -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.2")
+        print("")
+        print(f"# Sadece batteryTable'ı görmek için:")
+        print(f"snmpwalk -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.3")
+        print("=" * 70)
         print(f"✅ SNMP Agent hazır: {SNMP_HOST}:{SNMP_PORT}")
         print("=" * 50)
 
