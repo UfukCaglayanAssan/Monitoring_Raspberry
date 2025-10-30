@@ -2873,12 +2873,15 @@ def snmp_server():
             """Modbus TCP Server RAM sistemi ile MIB Instance"""
             def getValue(self, name, **context):
                 oid = '.'.join([str(x) for x in name])
-                print(f"🔍 SNMP OID sorgusu: {oid}")
+                import sys
+                sys.stdout.write(f"🔍 SNMP OID sorgusu: {oid}\n")
+                sys.stdout.flush()
                 
                 # .0 olmadan gelen OID'leri .0 ile normalize et
                 if not oid.endswith('.0'):
                     oid = oid + '.0'
-                    print(f"🔍 Normalize edildi: {oid}")
+                    sys.stdout.write(f"🔍 Normalize edildi: {oid}\n")
+                    sys.stdout.flush()
                 
                 # Sistem bilgileri
                 if oid == "1.3.6.5.1.0":
@@ -3051,7 +3054,8 @@ def snmp_server():
                                     return self.getSyntax().clone("0")
                         
                     
-                    print(f"❌ OID bulunamadı: {oid}")
+                    sys.stdout.write(f"❌ OID bulunamadı: {oid}\n")
+                    sys.stdout.flush()
                     return self.getSyntax().clone("No Such Object")
 
         # MIB Objects oluştur
