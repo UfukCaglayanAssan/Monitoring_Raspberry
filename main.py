@@ -2896,7 +2896,7 @@ def snmp_server():
                 # Sistem bilgileri
                 if oid == "1.3.6.5.1.0":
                     return self.getSyntax().clone(
-                        f"Python {sys.version} running on a {sys.platform} platform"
+                        f"SNMP-V2-FIXED Python {sys.version} running on a {sys.platform} platform"
                     )
                 elif oid == "1.3.6.5.2.0":  # totalBatteryCount
                     data = get_battery_data_ram()
@@ -2987,20 +2987,40 @@ def snmp_server():
                             
                             # Kol verileri için RAM'den oku (battery_data_ram kullan)
                             with data_lock:
-                                if arm in battery_data_ram and 2 in battery_data_ram[arm]:
-                                    # Kol verisi k=2'de saklanıyor
-                                    # MIB dtype'ı RAM dtype'ına çevir (k=2 için)
-                                    uart_dtype_map = {1: 1, 2: 2, 3: 3, 4: 4}  # MIB -> RAM (k=2 için)
-                                    uart_dtype = uart_dtype_map.get(dtype)
-                                    
-                                    if uart_dtype:
-                                        # İKİ KERE GET! battery_data_ram[arm][2][dtype]['value']
-                                        value = battery_data_ram[arm][2].get(uart_dtype, {}).get('value', 0)
-                                        return self.getSyntax().clone(str(value))
+                                # DEBUG: İstek geldiği anda TÜM RAM durumu
+                                debug = f"REQUEST:ARM{arm}_DT{dtype}|"
+                                debug += f"COUNTS={dict(arm_slave_counts_ram)}|"
+                                
+                                # Tüm kolların k=2 durumu
+                                for a in [1,2,3,4]:
+                                    if a in battery_data_ram:
+                                        if 2 in battery_data_ram[a]:
+                                            k2_data = battery_data_ram[a][2]
+                                            # dtype 1,2,3,4 değerleri
+                                            vals = []
+                                            for dt in [1,2,3,4]:
+                                                if dt in k2_data:
+                                                    v = k2_data[dt].get('value', 'N')
+                                                    vals.append(f"{dt}:{v}")
+                                            debug += f"A{a}K2=[{','.join(vals)}]|"
+                                        else:
+                                            debug += f"A{a}K2=NONE|"
                                     else:
-                                        return self.getSyntax().clone("0")
+                                        debug += f"A{a}=NONE|"
+                                
+                                # Şimdi istenen değeri döndür
+                                if arm in battery_data_ram and 2 in battery_data_ram[arm]:
+                                    uart_dtype_map = {1: 1, 2: 2, 3: 3, 4: 4}
+                                    uart_dtype = uart_dtype_map.get(dtype)
+                                    if uart_dtype and uart_dtype in battery_data_ram[arm][2]:
+                                        value = battery_data_ram[arm][2][uart_dtype].get('value', 0)
+                                        debug += f"RESULT={value}"
+                                    else:
+                                        debug += "RESULT=DT_NOT_FOUND"
                                 else:
-                                    return self.getSyntax().clone("0")
+                                    debug += "RESULT=K2_NOT_FOUND"
+                                
+                                return self.getSyntax().clone(debug)
                         
                         # Status verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.6.battery)
                         elif len(parts) >= 10:  # 1.3.6.1.4.1.1001.arm.6.battery.0
