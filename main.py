@@ -2829,6 +2829,11 @@ def get_battery_data_ram(arm=None, k=None, dtype=None):
 
 def snmp_server():
     """SNMP sunucu thread'i - modbus_snmp.py'den kopyalandı"""
+    # stderr'a yazdır ki log düşsün
+    import sys
+    sys.stderr.write("🚀 SNMP Agent Başlatılıyor...\n")
+    sys.stderr.write("📊 Modbus TCP Server RAM Sistemi ile Entegre\n")
+    sys.stderr.flush()
     print("🚀 SNMP Agent Başlatılıyor...")
     print("📊 Modbus TCP Server RAM Sistemi ile Entegre")
     
@@ -2840,21 +2845,29 @@ def snmp_server():
         
         # Create SNMP engine
         snmpEngine = engine.SnmpEngine()
+        sys.stderr.write("✅ SNMP Engine oluşturuldu\n")
+        sys.stderr.flush()
         print("✅ SNMP Engine oluşturuldu")
 
         # Transport setup - UDP over IPv4
         config.add_transport(
             snmpEngine, udp.DOMAIN_NAME, udp.UdpTransport().open_server_mode((SNMP_HOST, SNMP_PORT))
         )
-        print("✅ Transport ayarlandı")
+        sys.stderr.write(f"✅ Transport ayarlandı: {SNMP_HOST}:{SNMP_PORT}\n")
+        sys.stderr.flush()
+        print(f"✅ Transport ayarlandı: {SNMP_HOST}:{SNMP_PORT}")
 
         # SNMPv2c setup
         config.add_v1_system(snmpEngine, "my-area", "public")
+        sys.stderr.write("✅ SNMPv2c ayarlandı\n")
+        sys.stderr.flush()
         print("✅ SNMPv2c ayarlandı")
 
         # Allow read MIB access for this user / securityModels at VACM
         config.add_vacm_user(snmpEngine, 2, "my-area", "noAuthNoPriv", (1, 3, 6, 5))
         config.add_vacm_user(snmpEngine, 2, "my-area", "noAuthNoPriv", (1, 3, 6, 1, 4, 1, 1001))
+        sys.stderr.write("✅ VACM ayarlandı\n")
+        sys.stderr.flush()
         print("✅ VACM ayarlandı")
 
         # Create an SNMP context
@@ -2873,6 +2886,8 @@ def snmp_server():
             """Modbus TCP Server RAM sistemi ile MIB Instance"""
             def getValue(self, name, **context):
                 oid = '.'.join([str(x) for x in name])
+                sys.stderr.write(f"🔍 SNMP OID sorgusu: {oid}\n")
+                sys.stderr.flush()
                 print(f"🔍 SNMP OID sorgusu: {oid}")
                 
                 # .0 olmadan gelen OID'leri .0 ile normalize et
@@ -3051,6 +3066,9 @@ def snmp_server():
                                     return self.getSyntax().clone("0")
                         
                     
+                    sys.stderr.write(f"❌ OID bulunamadı: {oid}\n")
+                    sys.stderr.flush()
+                    print(f"❌ OID bulunamadı: {oid}")
                     return self.getSyntax().clone("No Such Object")
 
         # MIB Objects oluştur
@@ -3234,6 +3252,10 @@ def snmp_server():
         print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.3.5.3.2.0")
         print(f"snmpwalk -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001")
         print("=" * 50)
+        sys.stderr.write("=" * 50 + "\n")
+        sys.stderr.write(f"✅ SNMP Agent hazır: {SNMP_HOST}:{SNMP_PORT}\n")
+        sys.stderr.write("=" * 50 + "\n")
+        sys.stderr.flush()
 
         # Run I/O dispatcher which would receive queries and send responses
         try:
@@ -3243,9 +3265,12 @@ def snmp_server():
             raise
         
     except Exception as e:
+        sys.stderr.write(f"❌ SNMP sunucu hatası: {e}\n")
+        sys.stderr.flush()
         print(f"❌ SNMP sunucu hatası: {e}")
         import traceback
         traceback.print_exc()
+        traceback.print_exc(file=sys.stderr)
 
 if __name__ == '__main__':
     print("Program başlatıldı ==>")
