@@ -2873,17 +2873,25 @@ def snmp_server():
             """Modbus TCP Server RAM sistemi ile MIB Instance"""
             def getValue(self, name, **context):
                 oid = '.'.join([str(x) for x in name])
+                import sys
+                import datetime
                 
-                # Test: Her OID request'te "TEST" dön, log sorunu varsa en azından çalıştığını görelim
-                return self.getSyntax().clone("TEST-CALISIYOR")
-                
-                import builtins
-                builtins.print(f"🔍 SNMP OID sorgusu: {oid}", flush=True)
+                # DOSYAYA YAZDIR - stdout çalışmıyor
+                try:
+                    with open("/home/bms/Desktop/Monitoring_Raspberry/snmp_requests.log", "a") as f:
+                        f.write(f"{datetime.datetime.now()} - OID: {oid}\n")
+                        f.write(f"  RAM arm_slave_counts: {dict(arm_slave_counts_ram)}\n")
+                        f.write(f"  RAM battery_data keys: {list(battery_data_ram.keys())}\n")
+                        if 4 in battery_data_ram:
+                            f.write(f"  RAM battery_data[4] keys: {list(battery_data_ram[4].keys())}\n")
+                            if 2 in battery_data_ram[4]:
+                                f.write(f"  RAM battery_data[4][2] keys: {list(battery_data_ram[4][2].keys())}\n")
+                except:
+                    pass
                 
                 # .0 olmadan gelen OID'leri .0 ile normalize et
                 if not oid.endswith('.0'):
                     oid = oid + '.0'
-                    builtins.print(f"🔍 Normalize edildi: {oid}", flush=True)
                 
                 # Sistem bilgileri
                 if oid == "1.3.6.5.1.0":
