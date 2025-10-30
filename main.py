@@ -297,8 +297,19 @@ def capture_data_for_retrieval(arm_value, k_value, dtype, salt_data):
 
 def is_valid_arm_data(arm_value, k_value):
     """Veri doğrulama: Sadece aktif kollar ve bataryalar işlenir"""
+    # DB'den güncel arm_slave_counts oku ve RAM'i güncelle
+    try:
+        db = BatteryDatabase()
+        battery_count = db.get_arm_slave_count(arm_value)
+        if battery_count is not None:
+            with data_lock:
+                arm_slave_counts_ram[arm_value] = battery_count
+        else:
+            battery_count = 0
+    except:
+        battery_count = arm_slave_counts_ram.get(arm_value, 0)
+    
     # Kol aktif mi kontrol et
-    battery_count = arm_slave_counts_ram.get(arm_value, 0)
     if battery_count == 0:
         print(f"⚠️ HATALI VERİ: Kol {arm_value} aktif değil (batarya sayısı: {battery_count})")
         return False
@@ -655,9 +666,19 @@ def db_worker():
                     print(f"⚠️ GEÇERSİZ ALARM: LSB=0 ve MSB=0 (alarm yok) - Veritabanına kaydedilmedi")
                     is_valid_alarm = False
                 
-                # 3. Batarya mevcut mu kontrolü (arm_slave_counts_ram'den)
+                # 3. Batarya mevcut mu kontrolü (DB'den oku)
                 if is_valid_alarm:
-                    max_battery = arm_slave_counts_ram.get(arm_value, 0)
+                    try:
+                        db = BatteryDatabase()
+                        max_battery = db.get_arm_slave_count(arm_value)
+                        if max_battery is None:
+                            max_battery = 0
+                        # RAM'i de güncelle
+                        with data_lock:
+                            arm_slave_counts_ram[arm_value] = max_battery
+                    except:
+                        max_battery = arm_slave_counts_ram.get(arm_value, 0)
+                    
                     if battery > max_battery:
                         print(f"⚠️ GEÇERSİZ ALARM: Batarya {battery} mevcut değil (Kol {arm_value} max: {max_battery}) - Veritabanına kaydedilmedi")
                         is_valid_alarm = False
@@ -2889,16 +2910,17 @@ def snmp_server():
                 except:
                     pass
                 
-                # .0 olmadan gelen OID'leri .0 ile normalize et
-                if not oid.endswith('.0'):
-                    oid = oid + '.0'
+                # .0 eklemeden çalış - hem .0 ile hem .0 olmadan kabul et
+                # OID sonundaki .0'ı kaldır (varsa)
+                if oid.endswith('.0'):
+                    oid = oid[:-2]
                 
                 # Sistem bilgileri
-                if oid == "1.3.6.5.1.0":
+                if oid == "1.3.6.5.1":
                     return self.getSyntax().clone(
                         f"SNMP-V2-FIXED Python {sys.version} running on a {sys.platform} platform"
                     )
-                elif oid == "1.3.6.5.2.0":  # totalBatteryCount
+                elif oid == "1.3.6.5.2":  # totalBatteryCount
                     data = get_battery_data_ram()
                     battery_count = 0
                     for arm in data.keys():
@@ -2906,38 +2928,38 @@ def snmp_server():
                             if k > 2:  # k>2 olanlar batarya verisi
                                 battery_count += 1
                     return self.getSyntax().clone(str(battery_count if battery_count > 0 else 0))
-                elif oid == "1.3.6.5.3.0":  # totalArmCount
+                elif oid == "1.3.6.5.3":  # totalArmCount
                     data = get_battery_data_ram()
                     return self.getSyntax().clone(str(len(data) if data else 0))
-                elif oid == "1.3.6.5.4.0":  # systemStatus
+                elif oid == "1.3.6.5.4":  # systemStatus
                     return self.getSyntax().clone("1")
-                elif oid == "1.3.6.5.5.0":  # lastUpdateTime
+                elif oid == "1.3.6.5.5":  # lastUpdateTime
                     return self.getSyntax().clone(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-                elif oid == "1.3.6.5.6.0":  # dataCount
+                elif oid == "1.3.6.5.6":  # dataCount
                     data = get_battery_data_ram()
                     total_data = 0
                     for arm in data.values():
                         for k in arm.values():
                             total_data += len(k)
                     return self.getSyntax().clone(str(total_data if total_data > 0 else 0))
-                elif oid == "1.3.6.5.7.0":  # arm1SlaveCount
+                elif oid == "1.3.6.5.7":  # arm1SlaveCount
                     with data_lock:
                         return self.getSyntax().clone(str(arm_slave_counts_ram.get(1, 0)))
-                elif oid == "1.3.6.5.8.0":  # arm2SlaveCount
+                elif oid == "1.3.6.5.8":  # arm2SlaveCount
                     with data_lock:
                         return self.getSyntax().clone(str(arm_slave_counts_ram.get(2, 0)))
-                elif oid == "1.3.6.5.9.0":  # arm3SlaveCount
+                elif oid == "1.3.6.5.9":  # arm3SlaveCount
                     with data_lock:
                         return self.getSyntax().clone(str(arm_slave_counts_ram.get(3, 0)))
-                elif oid == "1.3.6.5.10.0":  # arm4SlaveCount
+                elif oid == "1.3.6.5.10":  # arm4SlaveCount
                     with data_lock:
                         return self.getSyntax().clone(str(arm_slave_counts_ram.get(4, 0)))
                 # Yeni MIB - tescomBmsSystem (1.3.6.1.4.1.1001.1.x)
-                elif oid == "1.3.6.1.4.1.1001.1.1.0":  # systemInfo
+                elif oid == "1.3.6.1.4.1.1001.1.1":  # systemInfo
                     return self.getSyntax().clone(
                         f"TESCOM BMS - Python {sys.version.split()[0]} on {sys.platform}"
                     )
-                elif oid == "1.3.6.1.4.1.1001.1.2.0":  # totalBatteryCount
+                elif oid == "1.3.6.1.4.1.1001.1.2":  # totalBatteryCount
                     data = get_battery_data_ram()
                     battery_count = 0
                     for arm in data.keys():
@@ -2945,14 +2967,14 @@ def snmp_server():
                             if k > 2:  # k>2 olanlar batarya verisi
                                 battery_count += 1
                     return self.getSyntax().clone(str(battery_count if battery_count > 0 else 0))
-                elif oid == "1.3.6.1.4.1.1001.1.3.0":  # totalArmCount
+                elif oid == "1.3.6.1.4.1.1001.1.3":  # totalArmCount
                     data = get_battery_data_ram()
                     return self.getSyntax().clone(str(len(data) if data else 0))
-                elif oid == "1.3.6.1.4.1.1001.1.4.0":  # systemStatus
+                elif oid == "1.3.6.1.4.1.1001.1.4":  # systemStatus
                     return self.getSyntax().clone("1")  # 1=running
-                elif oid == "1.3.6.1.4.1.1001.1.5.0":  # lastUpdateTime
+                elif oid == "1.3.6.1.4.1.1001.1.5":  # lastUpdateTime
                     return self.getSyntax().clone(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-                elif oid == "1.3.6.1.4.1.1001.1.6.0":  # dataCount
+                elif oid == "1.3.6.1.4.1.1001.1.6":  # dataCount
                     data = get_battery_data_ram()
                     total_data = 0
                     for arm in data.values():
