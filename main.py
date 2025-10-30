@@ -2829,21 +2829,8 @@ def get_battery_data_ram(arm=None, k=None, dtype=None):
 
 def snmp_server():
     """SNMP sunucu thread'i - modbus_snmp.py'den kopyalandı"""
-    # Log dosyasına doğrudan yaz
-    import sys
-    log_file = "/home/bms/Desktop/Monitoring_Raspberry/snmp_debug.log"
-    
-    def snmp_log(msg):
-        """SNMP loglarını hem console hem dosyaya yaz"""
-        print(msg)
-        try:
-            with open(log_file, "a") as f:
-                f.write(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {msg}\n")
-        except:
-            pass
-    
-    snmp_log("🚀 SNMP Agent Başlatılıyor...")
-    snmp_log("📊 Modbus TCP Server RAM Sistemi ile Entegre")
+    print("🚀 SNMP Agent Başlatılıyor...")
+    print("📊 Modbus TCP Server RAM Sistemi ile Entegre")
     
     try:
         # Thread için yeni event loop oluştur
@@ -2853,22 +2840,22 @@ def snmp_server():
         
         # Create SNMP engine
         snmpEngine = engine.SnmpEngine()
-        snmp_log("✅ SNMP Engine oluşturuldu")
+        print("✅ SNMP Engine oluşturuldu")
 
         # Transport setup - UDP over IPv4
         config.add_transport(
             snmpEngine, udp.DOMAIN_NAME, udp.UdpTransport().open_server_mode((SNMP_HOST, SNMP_PORT))
         )
-        snmp_log(f"✅ Transport ayarlandı: {SNMP_HOST}:{SNMP_PORT}")
+        print(f"✅ Transport ayarlandı: {SNMP_HOST}:{SNMP_PORT}")
 
         # SNMPv2c setup
         config.add_v1_system(snmpEngine, "my-area", "public")
-        snmp_log("✅ SNMPv2c ayarlandı")
+        print("✅ SNMPv2c ayarlandı")
 
         # Allow read MIB access for this user / securityModels at VACM
         config.add_vacm_user(snmpEngine, 2, "my-area", "noAuthNoPriv", (1, 3, 6, 5))
         config.add_vacm_user(snmpEngine, 2, "my-area", "noAuthNoPriv", (1, 3, 6, 1, 4, 1, 1001))
-        snmp_log("✅ VACM ayarlandı")
+        print("✅ VACM ayarlandı")
 
         # Create an SNMP context
         snmpContext = context.SnmpContext(snmpEngine)
@@ -2886,7 +2873,7 @@ def snmp_server():
             """Modbus TCP Server RAM sistemi ile MIB Instance"""
             def getValue(self, name, **context):
                 oid = '.'.join([str(x) for x in name])
-                snmp_log(f"🔍 SNMP OID sorgusu: {oid}")
+                print(f"🔍 SNMP OID sorgusu: {oid}")
                 
                 # .0 olmadan gelen OID'leri .0 ile normalize et
                 if not oid.endswith('.0'):
@@ -3064,7 +3051,7 @@ def snmp_server():
                                     return self.getSyntax().clone("0")
                         
                     
-                    snmp_log(f"❌ OID bulunamadı: {oid}")
+                    print(f"❌ OID bulunamadı: {oid}")
                     return self.getSyntax().clone("No Such Object")
 
         # MIB Objects oluştur
@@ -3248,9 +3235,9 @@ def snmp_server():
         print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.3.5.3.2.0")
         print(f"snmpwalk -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001")
         print("=" * 50)
-        snmp_log("=" * 50)
-        snmp_log(f"✅ SNMP Agent hazır: {SNMP_HOST}:{SNMP_PORT}")
-        snmp_log("=" * 50)
+        print("=" * 50)
+        print(f"✅ SNMP Agent hazır: {SNMP_HOST}:{SNMP_PORT}")
+        print("=" * 50)
 
         # Run I/O dispatcher which would receive queries and send responses
         try:
@@ -3260,9 +3247,9 @@ def snmp_server():
             raise
         
     except Exception as e:
-        snmp_log(f"❌ SNMP sunucu hatası: {e}")
+        print(f"❌ SNMP sunucu hatası: {e}")
         import traceback
-        snmp_log(traceback.format_exc())
+        traceback.print_exc()
 
 if __name__ == '__main__':
     print("Program başlatıldı ==>")
