@@ -2873,15 +2873,13 @@ def snmp_server():
             """Modbus TCP Server RAM sistemi ile MIB Instance"""
             def getValue(self, name, **context):
                 oid = '.'.join([str(x) for x in name])
-                import sys
-                sys.stdout.write(f"🔍 SNMP OID sorgusu: {oid}\n")
-                sys.stdout.flush()
+                import builtins
+                builtins.print(f"🔍 SNMP OID sorgusu: {oid}", flush=True)
                 
                 # .0 olmadan gelen OID'leri .0 ile normalize et
                 if not oid.endswith('.0'):
                     oid = oid + '.0'
-                    sys.stdout.write(f"🔍 Normalize edildi: {oid}\n")
-                    sys.stdout.flush()
+                    builtins.print(f"🔍 Normalize edildi: {oid}", flush=True)
                 
                 # Sistem bilgileri
                 if oid == "1.3.6.5.1.0":
@@ -2960,26 +2958,21 @@ def snmp_server():
                             k = int(parts[9])      # 1.3.6.1.4.1.1001.arm.5.{k}
                             dtype = int(parts[10])  # 1.3.6.1.4.1.1001.arm.5.k.{dtype}
                             
-                            sys.stdout.write(f"🔍 Batarya OID parsing: arm={arm}, k={k}, dtype={dtype}\n")
-                            sys.stdout.flush()
+                            builtins.print(f"🔍 Batarya OID parsing: arm={arm}, k={k}, dtype={dtype}", flush=True)
                             
                             # MIB dtype'ı RAM dtype'ına çevir (MIB'de 1-7, RAM'de 1-7)
                             ram_dtype = dtype  # MIB ve RAM aynı format
                             
-                            sys.stdout.write(f"🔍 MIB dtype={dtype} -> RAM dtype={ram_dtype}\n")
-                            sys.stdout.flush()
+                            builtins.print(f"🔍 MIB dtype={dtype} -> RAM dtype={ram_dtype}", flush=True)
                             
                             data = get_battery_data_ram(arm, k, ram_dtype)
-                            sys.stdout.write(f"🔍 RAM'den gelen data: {data}\n")
-                            sys.stdout.flush()
+                            builtins.print(f"🔍 RAM'den gelen data: {data}", flush=True)
                             
                             if data and 'value' in data:
-                                sys.stdout.write(f"✅ Batarya OID: {oid} - Değer: {data['value']}\n")
-                                sys.stdout.flush()
+                                builtins.print(f"✅ Batarya OID: {oid} - Değer: {data['value']}", flush=True)
                                 return self.getSyntax().clone(str(data['value']))
                             else:
-                                sys.stdout.write(f"❌ Batarya OID: {oid} - Veri bulunamadı veya boş\n")
-                                sys.stdout.flush()
+                                builtins.print(f"❌ Batarya OID: {oid} - Veri bulunamadı veya boş", flush=True)
                                 return self.getSyntax().clone("0")
                         
                         # Kol verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.dtype)
@@ -2987,8 +2980,7 @@ def snmp_server():
                             arm = int(parts[7])    # 1.3.6.1.4.1.1001.{arm}
                             dtype = int(parts[8])  # 1.3.6.1.4.1.1001.arm.{dtype}
                             
-                            sys.stdout.write(f"🔍 Kol OID parsing: arm={arm}, dtype={dtype}\n")
-                            sys.stdout.flush()
+                            builtins.print(f"🔍 Kol OID parsing: arm={arm}, dtype={dtype}", flush=True)
                             
                             # Kol verileri için RAM'den oku (battery_data_ram kullan)
                             with data_lock:
@@ -3002,16 +2994,13 @@ def snmp_server():
                                     
                                     if uart_dtype and uart_dtype in arm_data:
                                         value = arm_data[uart_dtype].get('value', 0)
-                                        sys.stdout.write(f"✅ Kol OID: {oid} - MIB dtype={dtype} -> UART dtype={uart_dtype} - Değer: {value}\n")
-                                        sys.stdout.flush()
+                                        builtins.print(f"✅ Kol OID: {oid} - MIB dtype={dtype} -> UART dtype={uart_dtype} - Değer: {value}", flush=True)
                                         return self.getSyntax().clone(str(value))
                                     else:
-                                        sys.stdout.write(f"❌ Kol OID: {oid} - MIB dtype={dtype} -> UART dtype={uart_dtype} bulunamadı\n")
-                                        sys.stdout.flush()
+                                        builtins.print(f"❌ Kol OID: {oid} - MIB dtype={dtype} -> UART dtype={uart_dtype} bulunamadı", flush=True)
                                         return self.getSyntax().clone("0")
                                 else:
-                                    sys.stdout.write(f"❌ Kol OID: {oid} - Kol {arm} verisi bulunamadı\n")
-                                    sys.stdout.flush()
+                                    builtins.print(f"❌ Kol OID: {oid} - Kol {arm} verisi bulunamadı", flush=True)
                                     return self.getSyntax().clone("0")
                         
                         # Status verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.6.battery)
@@ -3019,26 +3008,22 @@ def snmp_server():
                             arm = int(parts[7])    # 1.3.6.1.4.1.1001.{arm}
                             battery = int(parts[9])  # 1.3.6.1.4.1.1001.arm.6.{battery}
                             
-                            sys.stdout.write(f"🔍 Status OID parsing: arm={arm}, battery={battery}\n")
-                            sys.stdout.flush()
+                            builtins.print(f"🔍 Status OID parsing: arm={arm}, battery={battery}", flush=True)
                             
                             # Status verileri için RAM'den oku
                             with data_lock:
                                 # Batarya numarası mevcut mu kontrol et
                                 max_battery = arm_slave_counts_ram.get(arm, 0)
                                 if battery > max_battery:
-                                    sys.stdout.write(f"❌ Status OID: {oid} - Batarya {battery} mevcut değil (max: {max_battery})\n")
-                                    sys.stdout.flush()
+                                    builtins.print(f"❌ Status OID: {oid} - Batarya {battery} mevcut değil (max: {max_battery})", flush=True)
                                     return self.getSyntax().clone("0")
                                 
                                 if arm in status_ram and battery in status_ram[arm]:
                                     status_value = 1 if status_ram[arm][battery] else 0
-                                    sys.stdout.write(f"✅ Status OID: {oid} - Değer: {status_value}\n")
-                                    sys.stdout.flush()
+                                    builtins.print(f"✅ Status OID: {oid} - Değer: {status_value}", flush=True)
                                     return self.getSyntax().clone(str(status_value))
                                 else:
-                                    sys.stdout.write(f"❌ Status OID: {oid} - Veri bulunamadı\n")
-                                    sys.stdout.flush()
+                                    builtins.print(f"❌ Status OID: {oid} - Veri bulunamadı", flush=True)
                                     return self.getSyntax().clone("0")
                         
                         # Alarm verileri - MIB formatına göre (1.3.6.1.4.1.1001.arm.7.battery.alarm_type)
@@ -3047,8 +3032,7 @@ def snmp_server():
                             battery = int(parts[9])  # 1.3.6.1.4.1.1001.arm.7.{battery}
                             alarm_type = int(parts[10])  # 1.3.6.1.4.1.1001.arm.7.battery.{alarm_type}
                             
-                            sys.stdout.write(f"🔍 Alarm OID parsing: arm={arm}, battery={battery}, alarm_type={alarm_type}\n")
-                            sys.stdout.flush()
+                            builtins.print(f"🔍 Alarm OID parsing: arm={arm}, battery={battery}, alarm_type={alarm_type}", flush=True)
                             
                             # Alarm verileri için RAM'den oku
                             with data_lock:
@@ -3056,23 +3040,19 @@ def snmp_server():
                                 if battery > 0:
                                     max_battery = arm_slave_counts_ram.get(arm, 0)
                                     if battery > max_battery:
-                                        sys.stdout.write(f"❌ Alarm OID: {oid} - Batarya {battery} mevcut değil (max: {max_battery})\n")
-                                        sys.stdout.flush()
+                                        builtins.print(f"❌ Alarm OID: {oid} - Batarya {battery} mevcut değil (max: {max_battery})", flush=True)
                                         return self.getSyntax().clone("0")
                                 
                                 if arm in alarm_ram and battery in alarm_ram[arm] and alarm_type in alarm_ram[arm][battery]:
                                     alarm_value = 1 if alarm_ram[arm][battery][alarm_type] else 0
-                                    sys.stdout.write(f"✅ Alarm OID: {oid} - Değer: {alarm_value}\n")
-                                    sys.stdout.flush()
+                                    builtins.print(f"✅ Alarm OID: {oid} - Değer: {alarm_value}", flush=True)
                                     return self.getSyntax().clone(str(alarm_value))
                                 else:
-                                    sys.stdout.write(f"❌ Alarm OID: {oid} - Veri bulunamadı\n")
-                                    sys.stdout.flush()
+                                    builtins.print(f"❌ Alarm OID: {oid} - Veri bulunamadı", flush=True)
                                     return self.getSyntax().clone("0")
                         
                     
-                    sys.stdout.write(f"❌ OID bulunamadı: {oid}\n")
-                    sys.stdout.flush()
+                    builtins.print(f"❌ OID bulunamadı: {oid}", flush=True)
                     return self.getSyntax().clone("No Such Object")
 
         # MIB Objects oluştur
