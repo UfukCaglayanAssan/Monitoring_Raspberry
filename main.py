@@ -1910,7 +1910,7 @@ def main():
         print("Modbus TCP sunucu thread'i başlatıldı.")
 
         # SNMP sunucu thread'i
-        snmp_thread = threading.Thread(target=snmp_server, daemon=True)
+        snmp_thread = threading.Thread(target=snmp_server, daemon=False)
         snmp_thread.start()
         print("SNMP sunucu thread'i başlatıldı.")
 
