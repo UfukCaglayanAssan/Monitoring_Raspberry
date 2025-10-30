@@ -2989,14 +2989,13 @@ def snmp_server():
                             with data_lock:
                                 if arm in battery_data_ram and 2 in battery_data_ram[arm]:
                                     # Kol verisi k=2'de saklanıyor
-                                    arm_data = battery_data_ram[arm][2]
-                                    
                                     # MIB dtype'ı RAM dtype'ına çevir (k=2 için)
                                     uart_dtype_map = {1: 1, 2: 2, 3: 3, 4: 4}  # MIB -> RAM (k=2 için)
                                     uart_dtype = uart_dtype_map.get(dtype)
                                     
-                                    if uart_dtype and uart_dtype in arm_data:
-                                        value = arm_data[uart_dtype].get('value', 0)
+                                    if uart_dtype:
+                                        # İKİ KERE GET! battery_data_ram[arm][2][dtype]['value']
+                                        value = battery_data_ram[arm][2].get(uart_dtype, {}).get('value', 0)
                                         return self.getSyntax().clone(str(value))
                                     else:
                                         return self.getSyntax().clone("0")
