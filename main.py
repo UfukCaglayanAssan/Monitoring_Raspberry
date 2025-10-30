@@ -2873,6 +2873,10 @@ def snmp_server():
             """Modbus TCP Server RAM sistemi ile MIB Instance"""
             def getValue(self, name, **context):
                 oid = '.'.join([str(x) for x in name])
+                
+                # Test: Her OID request'te "TEST" dön, log sorunu varsa en azından çalıştığını görelim
+                return self.getSyntax().clone("TEST-CALISIYOR")
+                
                 import builtins
                 builtins.print(f"🔍 SNMP OID sorgusu: {oid}", flush=True)
                 
