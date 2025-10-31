@@ -3009,12 +3009,12 @@ def snmp_server():
                         # ============================================
                         # armTable - 1.3.6.1.4.1.1001.2.1.1.{column}.{armIndex}
                         # ============================================
-                        if len(parts) >= 12 and parts[7:11] == ["2", "1", "1"]:
-                            column = int(parts[11])  # Column numarası (2-8)
+                        if len(parts) >= 11 and parts[7:10] == ["2", "1", "1"]:
+                            column = int(parts[10])  # Column numarası (2-8)
                             
                             # armIndex var mı?
-                            if len(parts) >= 13:
-                                arm_index = int(parts[12])  # armIndex (1-4)
+                            if len(parts) >= 12:
+                                arm_index = int(parts[11])  # armIndex (1-4)
                                 
                                 with data_lock:
                                     # Column 2: armSlaveCount
@@ -3080,10 +3080,22 @@ def snmp_server():
                         # ============================================
                         # batteryTable - 1.3.6.1.4.1.1001.3.1.1.{column}.{armIndex}.{batteryIndex}
                         # ============================================
-                        elif len(parts) >= 14 and parts[7:11] == ["3", "1", "1"]:
-                            column = int(parts[11])         # Column numarası (3-11)
-                            arm_index = int(parts[12])      # armIndex (1-4)
-                            battery_index = int(parts[13])  # batteryIndex (1-120)
+                        elif len(parts) >= 12 and parts[7:10] == ["3", "1", "1"]:
+                            column = int(parts[10])         # Column numarası (3-11)
+                            # armIndex var mı?
+                            if len(parts) >= 12:
+                                arm_index = int(parts[11])      # armIndex (1-4)
+                            else:
+                                arm_index = None
+                            # batteryIndex var mı?
+                            if len(parts) >= 13:
+                                battery_index = int(parts[12])  # batteryIndex (1-120)
+                            else:
+                                battery_index = None
+                            
+                            # Eğer armIndex veya batteryIndex yoksa varsayılan dön
+                            if arm_index is None or battery_index is None:
+                                return self.getSyntax().clone(0)
                             
                             # battery_index'i k değerine çevir (k = battery_index + 2)
                             k = battery_index + 2

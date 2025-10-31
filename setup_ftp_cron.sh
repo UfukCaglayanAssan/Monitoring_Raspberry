@@ -20,7 +20,7 @@ if grep -q "ftp_backup.py" /tmp/current_cron; then
     grep "ftp_backup.py" /tmp/current_cron
 else
     # Her gün saat 11:55'te çalışacak cron job ekle (Türkiye saati)
-    echo "55 11 * * * /usr/bin/python3 $SCRIPT_DIR/ftp_backup.py >> $SCRIPT_DIR/ftp_backup.log 2>&1" >> /tmp/current_cron
+    echo "00 00 * * * /usr/bin/python3 $SCRIPT_DIR/ftp_backup.py >> $SCRIPT_DIR/ftp_backup.log 2>&1" >> /tmp/current_cron
     
     # Yeni crontab'ı yükle
     crontab /tmp/current_cron
