@@ -13,7 +13,7 @@ import struct
 import sys
 from collections import defaultdict
 from database import BatteryDatabase
-from alarm_processor import alarm_processor
+from alarm_processor import AlarmProcessor
 
 # Unbuffered output - logların hemen görünmesi için
 sys.stdout.reconfigure(line_buffering=True)
@@ -88,6 +88,11 @@ last_k_value_lock = threading.Lock()  # Thread-safe erişim için
 # Database instance
 db = BatteryDatabase()
 db_lock = threading.Lock()  # Veritabanı işlemleri için lock
+
+# Alarm processor instance (db oluşturulduktan sonra)
+import alarm_processor as alarm_processor_module
+alarm_processor = AlarmProcessor(db)
+alarm_processor_module.alarm_processor = alarm_processor  # Modül seviyesinde de set et
 
 pi = pigpio.pi()
 pi.set_mode(TX_PIN, pigpio.OUTPUT)
@@ -298,8 +303,8 @@ def capture_data_for_retrieval(arm_value, k_value, dtype, salt_data):
 def is_valid_arm_data(arm_value, k_value):
     """Veri doğrulama: Sadece aktif kollar ve bataryalar işlenir"""
     # DB'den güncel arm_slave_counts oku ve RAM'i güncelle
+    global db
     try:
-        db = BatteryDatabase()
         battery_count = db.get_arm_slave_count(arm_value)
         if battery_count is not None:
             with data_lock:
@@ -3395,7 +3400,15 @@ def snmp_server():
         # Run I/O dispatcher which would receive queries and send responses
         try:
             snmpEngine.open_dispatcher()
-        except:
+            # Event loop'u çalıştır - SNMP isteklerini dinlemek için gerekli
+            print("🔄 SNMP event loop başlatılıyor...")
+            loop.run_forever()
+        except KeyboardInterrupt:
+            print("\n🛑 SNMP event loop durduruluyor...")
+            loop.stop()
+            snmpEngine.close_dispatcher()
+        except Exception as e:
+            print(f"❌ SNMP dispatcher hatası: {e}")
             snmpEngine.close_dispatcher()
             raise
         

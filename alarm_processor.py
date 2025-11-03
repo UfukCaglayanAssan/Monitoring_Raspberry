@@ -3,12 +3,19 @@
 import time
 import threading
 from datetime import datetime
-from database import BatteryDatabase
 from mail_sender import send_alarm_notification
 
 class AlarmProcessor:
-    def __init__(self):
-        self.db = BatteryDatabase()
+    def __init__(self, db=None):
+        """
+        AlarmProcessor constructor
+        
+        Args:
+            db: BatteryDatabase instance (opsiyonel, dışarıdan verilmelidir)
+        """
+        if db is None:
+            raise ValueError("AlarmProcessor için database instance'ı gerekli. db parametresi verilmelidir.")
+        self.db = db
         self.pending_alarms = []  # Bekleyen alarmlar
         self.pending_resolves = []  # Bekleyen düzeltmeler
         self.lock = threading.Lock()
@@ -204,5 +211,5 @@ class AlarmProcessor:
         
         return " + ".join(description_parts) if description_parts else None
 
-# Global alarm processor instance
-alarm_processor = AlarmProcessor()
+# Global alarm processor instance - main.py'de db instance'ı oluşturulduktan sonra set edilecek
+alarm_processor = None

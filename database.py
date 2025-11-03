@@ -7,6 +7,10 @@ import time
 import queue
 from contextlib import contextmanager
 
+# Migration'ın sadece bir kez çalışması için modül seviyesi kontrol
+_migration_lock = threading.Lock()
+_migrated_databases = set()  # Migration'dan geçen veritabanları
+
 class BatteryDatabase:
     def __init__(self, db_path="battery_data.db", max_connections=20):
         self.db_path = db_path
@@ -18,17 +22,29 @@ class BatteryDatabase:
         if not os.path.exists(self.db_path):
             self.init_database()
         else:
-            print(f"Veritabanı zaten mevcut: {self.db_path}")
-            # Mevcut veritabanında eksik tabloları kontrol et ve oluştur
-            self.check_and_create_missing_tables()
-            # Mevcut veritabanında default değerleri kontrol et
-            self.check_default_arm_slave_counts()
-            
-            # Default kullanıcıları kontrol et
-            self.check_default_users()
-            
-            # Mevcut düz şifreleri bcrypt formatına dönüştür
-            self.migrate_existing_passwords_to_bcrypt()
+            # Migration'ın sadece bir kez çalışmasını garanti et
+            with _migration_lock:
+                # Veritabanının tam yolunu al (normalize et)
+                db_abs_path = os.path.abspath(self.db_path)
+                
+                if db_abs_path not in _migrated_databases:
+                    print(f"Veritabanı zaten mevcut: {self.db_path}")
+                    # Mevcut veritabanında eksik tabloları kontrol et ve oluştur
+                    self.check_and_create_missing_tables()
+                    # Mevcut veritabanında default değerleri kontrol et
+                    self.check_default_arm_slave_counts()
+                    
+                    # Default kullanıcıları kontrol et
+                    self.check_default_users()
+                    
+                    # Mevcut düz şifreleri bcrypt formatına dönüştür
+                    self.migrate_existing_passwords_to_bcrypt()
+                    
+                    # Migration tamamlandı, işaretle
+                    _migrated_databases.add(db_abs_path)
+                else:
+                    # Migration zaten yapılmış, sadece bağlan
+                    pass  # Sessizce devam et
     
     def _create_connections(self):
         """Connection pool oluştur - thread-safe ve performanslı"""
@@ -419,6 +435,11 @@ class BatteryDatabase:
                 # Veritabanı boyutunu göster
                 db_size = os.path.getsize(self.db_path) / (1024 * 1024)  # MB
                 print(f"Veritabanı boyutu: {db_size:.2f} MB")
+                
+                # Yeni veritabanı oluşturulduğunda migration set'ine ekle
+                with _migration_lock:
+                    db_abs_path = os.path.abspath(self.db_path)
+                    _migrated_databases.add(db_abs_path)
     
     # get_connection metodu yukarıda connection pool ile tanımlandı
     
