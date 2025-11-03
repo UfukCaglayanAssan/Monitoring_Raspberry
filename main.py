@@ -3033,7 +3033,7 @@ def snmp_server():
                             # armTable - 1.3.6.1.4.1.1001.2.1.1.{column}.{armIndex}
                             # ============================================
                             if len(parts) >= 11 and parts[7:10] == ["2", "1", "1"]:
-                                column = int(parts[10])  # Column numarası (2-8)
+                                column = int(parts[10])  # Column numarası (2-8) - MIB uyumlu
                                 
                                 # armIndex var mı?
                                 if len(parts) >= 12:
@@ -3082,39 +3082,27 @@ def snmp_server():
                                                 return self.getSyntax().clone(1 if status_ram[arm_index][0] else 0)
                                             return self.getSyntax().clone(0)
                                         
-                                        # Column 8: armAlarmFlags (eski - geriye dönük uyumluluk için, 0 döndür)
+                                        # Column 8: armAlarmFlags (HEX bitmask - MIB uyumlu)
+                                        # 0x1=Yüksek Akım, 0x2=Yüksek Nem, 0x4=Yüksek Ortam Sıcaklığı, 0x8=Yüksek Kol Sıcaklığı
                                         elif column == 8:
-                                            return self.getSyntax().clone(0)
-                                        
-                                        # Column 9: armHighCurrent (alarm_type=1)
-                                        elif column == 9:
                                             if arm_index in alarm_ram and 0 in alarm_ram[arm_index]:
-                                                return self.getSyntax().clone(1 if alarm_ram[arm_index][0].get(1, False) else 0)
-                                            return self.getSyntax().clone(0)
-                                        
-                                        # Column 10: armHighHumidity (alarm_type=2)
-                                        elif column == 10:
-                                            if arm_index in alarm_ram and 0 in alarm_ram[arm_index]:
-                                                return self.getSyntax().clone(1 if alarm_ram[arm_index][0].get(2, False) else 0)
-                                            return self.getSyntax().clone(0)
-                                        
-                                        # Column 11: armHighAmbientTemp (alarm_type=3)
-                                        elif column == 11:
-                                            if arm_index in alarm_ram and 0 in alarm_ram[arm_index]:
-                                                return self.getSyntax().clone(1 if alarm_ram[arm_index][0].get(3, False) else 0)
-                                            return self.getSyntax().clone(0)
-                                        
-                                        # Column 12: armHighTemp (alarm_type=4)
-                                        elif column == 12:
-                                            if arm_index in alarm_ram and 0 in alarm_ram[arm_index]:
-                                                return self.getSyntax().clone(1 if alarm_ram[arm_index][0].get(4, False) else 0)
+                                                flags = 0
+                                                if alarm_ram[arm_index][0].get(1, False):  # Yüksek Akım
+                                                    flags |= 0x1
+                                                if alarm_ram[arm_index][0].get(2, False):  # Yüksek Nem
+                                                    flags |= 0x2
+                                                if alarm_ram[arm_index][0].get(3, False):  # Yüksek Ortam Sıcaklığı
+                                                    flags |= 0x4
+                                                if alarm_ram[arm_index][0].get(4, False):  # Yüksek Kol Sıcaklığı
+                                                    flags |= 0x8
+                                                return self.getSyntax().clone(flags)
                                             return self.getSyntax().clone(0)
                             
                             # ============================================
                             # batteryTable - 1.3.6.1.4.1.1001.3.1.1.{column}.{armIndex}.{batteryIndex}
                             # ============================================
                             elif len(parts) >= 12 and parts[7:10] == ["3", "1", "1"]:
-                                column = int(parts[10])         # Column numarası (3-17)
+                                column = int(parts[10])         # Column numarası (3-11) - MIB uyumlu
                                 # armIndex var mı?
                                 if len(parts) >= 12:
                                     arm_index = int(parts[11])      # armIndex (1-4)
@@ -3203,46 +3191,28 @@ def snmp_server():
                                             return self.getSyntax().clone(1 if status_ram[arm_index][battery_index] else 0)
                                         return self.getSyntax().clone(0)
                                     
-                                    # Column 11: batteryLowVoltageWarning (alarm_type=1)
+                                    # Column 11: batteryAlarmFlags (HEX bitmask - MIB uyumlu)
+                                    # 0x1=Düşük Gerilim Uyarısı, 0x2=Düşük Gerilim Alarmı, 0x4=Yüksek Gerilim Uyarısı,
+                                    # 0x8=Yüksek Gerilim Alarmı, 0x10=Modül Sıcaklık Alarmı, 0x20=Pozitif Kutup Sıcaklık Alarmı,
+                                    # 0x40=Negatif Kutup Sıcaklık Alarmı
                                     elif column == 11:
                                         if arm_index in alarm_ram and battery_index in alarm_ram[arm_index]:
-                                            return self.getSyntax().clone(1 if alarm_ram[arm_index][battery_index].get(1, False) else 0)
-                                        return self.getSyntax().clone(0)
-                                    
-                                    # Column 12: batteryLowVoltageAlarm (alarm_type=2)
-                                    elif column == 12:
-                                        if arm_index in alarm_ram and battery_index in alarm_ram[arm_index]:
-                                            return self.getSyntax().clone(1 if alarm_ram[arm_index][battery_index].get(2, False) else 0)
-                                        return self.getSyntax().clone(0)
-                                    
-                                    # Column 13: batteryHighVoltageWarning (alarm_type=3)
-                                    elif column == 13:
-                                        if arm_index in alarm_ram and battery_index in alarm_ram[arm_index]:
-                                            return self.getSyntax().clone(1 if alarm_ram[arm_index][battery_index].get(3, False) else 0)
-                                        return self.getSyntax().clone(0)
-                                    
-                                    # Column 14: batteryHighVoltageAlarm (alarm_type=4)
-                                    elif column == 14:
-                                        if arm_index in alarm_ram and battery_index in alarm_ram[arm_index]:
-                                            return self.getSyntax().clone(1 if alarm_ram[arm_index][battery_index].get(4, False) else 0)
-                                        return self.getSyntax().clone(0)
-                                    
-                                    # Column 15: batteryModuleTempAlarm (alarm_type=5)
-                                    elif column == 15:
-                                        if arm_index in alarm_ram and battery_index in alarm_ram[arm_index]:
-                                            return self.getSyntax().clone(1 if alarm_ram[arm_index][battery_index].get(5, False) else 0)
-                                        return self.getSyntax().clone(0)
-                                    
-                                    # Column 16: batteryPositivePoleTempAlarm (alarm_type=6)
-                                    elif column == 16:
-                                        if arm_index in alarm_ram and battery_index in alarm_ram[arm_index]:
-                                            return self.getSyntax().clone(1 if alarm_ram[arm_index][battery_index].get(6, False) else 0)
-                                        return self.getSyntax().clone(0)
-                                    
-                                    # Column 17: batteryNegativePoleTempAlarm (alarm_type=7)
-                                    elif column == 17:
-                                        if arm_index in alarm_ram and battery_index in alarm_ram[arm_index]:
-                                            return self.getSyntax().clone(1 if alarm_ram[arm_index][battery_index].get(7, False) else 0)
+                                            flags = 0
+                                            if alarm_ram[arm_index][battery_index].get(1, False):  # Düşük Gerilim Uyarısı
+                                                flags |= 0x1
+                                            if alarm_ram[arm_index][battery_index].get(2, False):  # Düşük Gerilim Alarmı
+                                                flags |= 0x2
+                                            if alarm_ram[arm_index][battery_index].get(3, False):  # Yüksek Gerilim Uyarısı
+                                                flags |= 0x4
+                                            if alarm_ram[arm_index][battery_index].get(4, False):  # Yüksek Gerilim Alarmı
+                                                flags |= 0x8
+                                            if alarm_ram[arm_index][battery_index].get(5, False):  # Modül Sıcaklık Alarmı
+                                                flags |= 0x10
+                                            if alarm_ram[arm_index][battery_index].get(6, False):  # Pozitif Kutup Sıcaklık Alarmı
+                                                flags |= 0x20
+                                            if alarm_ram[arm_index][battery_index].get(7, False):  # Negatif Kutup Sıcaklık Alarmı
+                                                flags |= 0x40
+                                            return self.getSyntax().clone(flags)
                                         return self.getSyntax().clone(0)
                         
                         return self.getSyntax().clone("No Such Object")
@@ -3339,7 +3309,7 @@ def snmp_server():
         # ============================================
         print("⚙️  armTable OID'leri oluşturuluyor...")
         for arm_index in range(1, 5):  # 1-4 arası kol
-            for column in range(2, 13):  # Column 2-12 (armSlaveCount'tan armHighTemp'e kadar)
+            for column in range(2, 9):  # Column 2-8 (armSlaveCount'tan armAlarmFlags'e kadar - MIB uyumlu)
                 oid = (1, 3, 6, 1, 4, 1, 1001, 2, 1, 1, column, arm_index)
                 if column == 2:  # armSlaveCount
                     syntax = v2c.Integer()
@@ -3347,7 +3317,7 @@ def snmp_server():
                     syntax = v2c.OctetString()
                 elif column == 7:  # armStatus
                     syntax = v2c.Integer()
-                elif column in [8, 9, 10, 11, 12]:  # armAlarmFlags (eski), armHighCurrent, armHighHumidity, armHighAmbientTemp, armHighTemp
+                elif column == 8:  # armAlarmFlags (HEX bitmask)
                     syntax = v2c.Integer()
                 
                 mibBuilder.export_symbols(
@@ -3366,7 +3336,7 @@ def snmp_server():
                 battery_count = 5  # En az 5 batarya için OID oluştur
             
             for battery_index in range(1, battery_count + 1):  # 1-120 arası batarya
-                for column in range(3, 18):  # Column 3-17 (batteryVoltage'dan batteryNegativePoleTempAlarm'e kadar)
+                for column in range(3, 12):  # Column 3-11 (batteryVoltage'dan batteryAlarmFlags'e kadar - MIB uyumlu)
                     oid = (1, 3, 6, 1, 4, 1, 1001, 3, 1, 1, column, arm_index, battery_index)
                     if column == 3:  # batteryVoltage - String olarak gönder
                         syntax = v2c.OctetString()
@@ -3380,7 +3350,7 @@ def snmp_server():
                         syntax = v2c.OctetString()
                     elif column == 10:  # batteryStatus
                         syntax = v2c.Integer()
-                    elif column in [11, 12, 13, 14, 15, 16, 17]:  # Alarm tipleri (her biri ayrı)
+                    elif column == 11:  # batteryAlarmFlags (HEX bitmask)
                         syntax = v2c.Integer()
                     
                     mibBuilder.export_symbols(
@@ -3448,10 +3418,12 @@ def snmp_server():
         print(f"# Kol 1 verileri:")
         print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.2.1.1.2.1.0")
         print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.2.1.1.3.1.0")
+        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.2.1.1.8.1.0  # armAlarmFlags (HEX bitmask)")
         print("")
         print(f"# Batarya 1 verileri (Kol 1):")
         print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.3.1.1.3.1.1.0")
         print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.3.1.1.4.1.1.0")
+        print(f"snmpget -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001.3.1.1.11.1.1.0  # batteryAlarmFlags (HEX bitmask)")
         print("")
         print(f"# Tüm TESCOM BMS verilerini görmek için:")
         print(f"snmpwalk -v2c -c public localhost:{SNMP_PORT} 1.3.6.1.4.1.1001")
