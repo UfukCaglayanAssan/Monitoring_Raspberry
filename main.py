@@ -2912,7 +2912,11 @@ def snmp_server():
                 log_path = os.path.join(script_dir, "snmp_requests.log")
                 
                 try:
-                    # DOSYAYA YAZDIR - stdout çalışmıyor
+                    # STDOUT'A YAZDIR - tümünü oku gibi
+                    log_msg = f"📡 SNMP GET isteği - OID: {oid}"
+                    print(log_msg)
+                    
+                    # DOSYAYA DA YAZDIR
                     try:
                         with open(log_path, "a") as f:
                             f.write(f"{datetime.datetime.now()} - getValue ÇAĞRILDI - OID: {oid}\n")
@@ -3209,7 +3213,11 @@ def snmp_server():
                         return self.getSyntax().clone("No Such Object")
                 
                 except Exception as e:
-                    # Exception olursa log'a yaz ve 0 döndür
+                    # Exception olursa stdout'a ve log'a yaz
+                    error_msg = f"❌ SNMP HATA - OID: {oid} - {str(e)}"
+                    print(error_msg)
+                    print(f"   Traceback: {traceback.format_exc()}")
+                    
                     try:
                         with open(log_path, "a") as f:
                             f.write(f"{datetime.datetime.now()} - HATA OID: {oid} - {str(e)}\n")
@@ -3435,6 +3443,15 @@ def snmp_server():
             print("🔄 SNMP event loop başlatılıyor...")
             print("⚠️  Event loop başlatıldı - SNMP istekleri dinleniyor...")
             print("💡 Test için: snmpget -v2c -c public localhost:1161 1.3.6.1.4.1.1001.1.1.0")
+            print("📡 SNMP Agent hazır ve istekleri bekliyor...")
+            
+            # Event loop çalışıyor mu kontrol için
+            def loop_running_check():
+                print("✅ SNMP event loop çalışıyor...")
+            
+            # 5 saniye sonra kontrol mesajı göster
+            loop.call_later(5, loop_running_check)
+            
             loop.run_forever()
         except KeyboardInterrupt:
             print("\n🛑 SNMP event loop durduruluyor...")
