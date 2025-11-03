@@ -3433,39 +3433,65 @@ def snmp_server():
         # Run I/O dispatcher which would receive queries and send responses
         try:
             print("🔄 SNMP dispatcher açılıyor...")
-            snmpEngine.open_dispatcher()
-            print("✅ SNMP dispatcher açıldı")
+            print("   (Detay: open_dispatcher çağrılıyor...)")
+            
+            # open_dispatcher'ı try-except ile sar
+            try:
+                snmpEngine.open_dispatcher()
+                print("✅ SNMP dispatcher açıldı")
+            except Exception as disp_err:
+                print(f"❌ open_dispatcher hatası: {disp_err}")
+                import traceback
+                traceback.print_exc()
+                raise
             
             # Port dinleniyor mu kontrol et
             print(f"🔍 Port {SNMP_PORT} dinleniyor mu kontrol ediliyor...")
+            
+            # Event loop çalışıyor mu kontrol için
+            def loop_running_check():
+                print("✅ SNMP event loop çalışıyor...")
+            
+            # 2 saniye sonra kontrol mesajı göster
+            loop.call_later(2, loop_running_check)
             
             # Event loop'u çalıştır - SNMP isteklerini dinlemek için gerekli
             print("🔄 SNMP event loop başlatılıyor...")
             print("⚠️  Event loop başlatıldı - SNMP istekleri dinleniyor...")
             print("💡 Test için: snmpget -v2c -c public localhost:1161 1.3.6.1.4.1.1001.1.1.0")
             print("📡 SNMP Agent hazır ve istekleri bekliyor...")
+            print("   (Event loop run_forever çağrılıyor...)")
             
-            # Event loop çalışıyor mu kontrol için
-            def loop_running_check():
-                print("✅ SNMP event loop çalışıyor...")
-            
-            # 5 saniye sonra kontrol mesajı göster
-            loop.call_later(5, loop_running_check)
+            # stdout'u flush et - logların hemen görünmesi için
+            import sys
+            sys.stdout.flush()
             
             loop.run_forever()
         except KeyboardInterrupt:
             print("\n🛑 SNMP event loop durduruluyor...")
-            loop.stop()
-            snmpEngine.close_dispatcher()
-        except Exception as e:
-            print(f"❌ SNMP dispatcher hatası: {e}")
-            import traceback
-            traceback.print_exc()
+            try:
+                loop.stop()
+            except:
+                pass
             try:
                 snmpEngine.close_dispatcher()
             except:
                 pass
-            raise
+        except Exception as e:
+            print(f"❌ SNMP dispatcher hatası: {e}")
+            import traceback
+            traceback.print_exc()
+            sys.stdout.flush()
+            try:
+                loop.stop()
+            except:
+                pass
+            try:
+                snmpEngine.close_dispatcher()
+            except:
+                pass
+            # Exception'ı yeniden fırlatma - thread'i kill etme
+            print("⚠️  SNMP dispatcher hatası, ancak thread devam ediyor...")
         
     except Exception as e:
         print(f"❌ SNMP sunucu hatası: {e}")
