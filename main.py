@@ -3104,112 +3104,124 @@ def snmp_server():
                             # batteryTable - 1.3.6.1.4.1.1001.3.1.1.{column}.{armIndex}.{batteryIndex}
                             # ============================================
                             elif len(parts) >= 12 and parts[7:10] == ["3", "1", "1"]:
-                                column = int(parts[10])         # Column numarası (3-11)
-                                # armIndex var mı?
-                                if len(parts) >= 12:
-                                    arm_index = int(parts[11])      # armIndex (1-4)
-                                else:
-                                    arm_index = None
-                                # batteryIndex var mı?
-                                if len(parts) >= 13:
-                                    battery_index = int(parts[12])  # batteryIndex (1-120)
-                                else:
-                                    battery_index = None
-                                
-                                # Eğer armIndex veya batteryIndex yoksa varsayılan dön
-                                if arm_index is None or battery_index is None:
+                                try:
+                                    column = int(parts[10])         # Column numarası (3-11)
+                                    # armIndex var mı?
+                                    if len(parts) >= 12:
+                                        arm_index = int(parts[11])      # armIndex (1-4)
+                                    else:
+                                        arm_index = None
+                                    # batteryIndex var mı?
+                                    if len(parts) >= 13:
+                                        battery_index = int(parts[12])  # batteryIndex (1-120)
+                                    else:
+                                        battery_index = None
+                                    
+                                    # Eğer armIndex veya batteryIndex yoksa varsayılan dön
+                                    if arm_index is None or battery_index is None:
+                                        print(f"⚠️  Battery OID: arm_index={arm_index}, battery_index={battery_index}")
+                                        return self.getSyntax().clone(0)
+                                    
+                                    # battery_index'i k değerine çevir (k = battery_index + 2)
+                                    k = battery_index + 2
+                                    
+                                    # Debug log
+                                    print(f"🔍 Battery OID parse: column={column}, arm={arm_index}, battery={battery_index}, k={k}")
+                                    
+                                    with data_lock:
+                                        # Batarya mevcut mu kontrol et
+                                        max_battery = arm_slave_counts_ram.get(arm_index, 0)
+                                        if battery_index > max_battery:
+                                            print(f"⚠️  Battery index {battery_index} > max_battery {max_battery} for arm {arm_index}")
+                                            return self.getSyntax().clone(0)
+                                        
+                                        # Column 3: batteryVoltage (dtype=1)
+                                        if column == 3:
+                                            data = get_battery_data_ram(arm_index, k, 1)
+                                            print(f"🔍 Battery data: arm={arm_index}, k={k}, dtype=1, data={data}")
+                                            if data and 'value' in data:
+                                                return self.getSyntax().clone(int(data['value']))  # mV
+                                            return self.getSyntax().clone(0)
+                                        
+                                        # Column 4: batterySoc (dtype=2)
+                                        elif column == 4:
+                                            data = get_battery_data_ram(arm_index, k, 2)
+                                            if data and 'value' in data:
+                                                return self.getSyntax().clone(int(data['value']))  # %
+                                            return self.getSyntax().clone(0)
+                                        
+                                        # Column 5: batteryRimt (dtype=3)
+                                        elif column == 5:
+                                            data = get_battery_data_ram(arm_index, k, 3)
+                                            if data and 'value' in data:
+                                                return self.getSyntax().clone(int(data['value'] * 10))  # 0.1 Celsius
+                                            return self.getSyntax().clone(0)
+                                        
+                                        # Column 6: batterySoh (dtype=4)
+                                        elif column == 6:
+                                            data = get_battery_data_ram(arm_index, k, 4)
+                                            if data and 'value' in data:
+                                                return self.getSyntax().clone(int(data['value']))  # %
+                                            return self.getSyntax().clone(0)
+                                        
+                                        # Column 7: batteryNtc1 (dtype=5)
+                                        elif column == 7:
+                                            data = get_battery_data_ram(arm_index, k, 5)
+                                            if data and 'value' in data:
+                                                return self.getSyntax().clone(int(data['value'] * 10))  # 0.1 Celsius
+                                            return self.getSyntax().clone(0)
+                                        
+                                        # Column 8: batteryNtc2 (dtype=6)
+                                        elif column == 8:
+                                            data = get_battery_data_ram(arm_index, k, 6)
+                                            if data and 'value' in data:
+                                                return self.getSyntax().clone(int(data['value'] * 10))  # 0.1 Celsius
+                                            return self.getSyntax().clone(0)
+                                        
+                                        # Column 9: batteryNtc3 (dtype=7)
+                                        elif column == 9:
+                                            data = get_battery_data_ram(arm_index, k, 7)
+                                            if data and 'value' in data:
+                                                return self.getSyntax().clone(int(data['value'] * 10))  # 0.1 Celsius
+                                            return self.getSyntax().clone(0)
+                                        
+                                        # Column 10: batteryStatus
+                                        elif column == 10:
+                                            if arm_index in status_ram and battery_index in status_ram[arm_index]:
+                                                return self.getSyntax().clone(1 if status_ram[arm_index][battery_index] else 0)
+                                            return self.getSyntax().clone(0)
+                                        
+                                        # Column 11: batteryAlarmFlags
+                                        elif column == 11:
+                                            alarm_flags = 0
+                                            if arm_index in alarm_ram and battery_index in alarm_ram[arm_index]:
+                                                # Bit 0 (0x1): Düşük Gerilim Uyarısı (alarm_type=1)
+                                                if alarm_ram[arm_index][battery_index].get(1, False):
+                                                    alarm_flags |= 0x1
+                                                # Bit 1 (0x2): Düşük Gerilim Alarmı (alarm_type=2)
+                                                if alarm_ram[arm_index][battery_index].get(2, False):
+                                                    alarm_flags |= 0x2
+                                                # Bit 2 (0x4): Yüksek Gerilim Uyarısı (alarm_type=3)
+                                                if alarm_ram[arm_index][battery_index].get(3, False):
+                                                    alarm_flags |= 0x4
+                                                # Bit 3 (0x8): Yüksek Gerilim Alarmı (alarm_type=4)
+                                                if alarm_ram[arm_index][battery_index].get(4, False):
+                                                    alarm_flags |= 0x8
+                                                # Bit 4 (0x10): Modül Sıcaklık Alarmı (alarm_type=5)
+                                                if alarm_ram[arm_index][battery_index].get(5, False):
+                                                    alarm_flags |= 0x10
+                                                # Bit 5 (0x20): Pozitif Kutup Sıcaklık Alarmı (alarm_type=6)
+                                                if alarm_ram[arm_index][battery_index].get(6, False):
+                                                    alarm_flags |= 0x20
+                                                # Bit 6 (0x40): Negatif Kutup Sıcaklık Alarmı (alarm_type=7)
+                                                if alarm_ram[arm_index][battery_index].get(7, False):
+                                                    alarm_flags |= 0x40
+                                            return self.getSyntax().clone(alarm_flags)
+                                except Exception as battery_err:
+                                    print(f"❌ Battery table exception: {battery_err}")
+                                    import traceback
+                                    traceback.print_exc()
                                     return self.getSyntax().clone(0)
-                                
-                                # battery_index'i k değerine çevir (k = battery_index + 2)
-                                k = battery_index + 2
-                                
-                                with data_lock:
-                                    # Batarya mevcut mu kontrol et
-                                    max_battery = arm_slave_counts_ram.get(arm_index, 0)
-                                    if battery_index > max_battery:
-                                        return self.getSyntax().clone(0)
-                                    
-                                    # Column 3: batteryVoltage (dtype=1)
-                                    if column == 3:
-                                        data = get_battery_data_ram(arm_index, k, 1)
-                                        if data and 'value' in data:
-                                            return self.getSyntax().clone(int(data['value']))  # mV
-                                        return self.getSyntax().clone(0)
-                                    
-                                    # Column 4: batterySoc (dtype=2)
-                                    elif column == 4:
-                                        data = get_battery_data_ram(arm_index, k, 2)
-                                        if data and 'value' in data:
-                                            return self.getSyntax().clone(int(data['value']))  # %
-                                        return self.getSyntax().clone(0)
-                                    
-                                    # Column 5: batteryRimt (dtype=3)
-                                    elif column == 5:
-                                        data = get_battery_data_ram(arm_index, k, 3)
-                                        if data and 'value' in data:
-                                            return self.getSyntax().clone(int(data['value'] * 10))  # 0.1 Celsius
-                                        return self.getSyntax().clone(0)
-                                    
-                                    # Column 6: batterySoh (dtype=4)
-                                    elif column == 6:
-                                        data = get_battery_data_ram(arm_index, k, 4)
-                                        if data and 'value' in data:
-                                            return self.getSyntax().clone(int(data['value']))  # %
-                                        return self.getSyntax().clone(0)
-                                    
-                                    # Column 7: batteryNtc1 (dtype=5)
-                                    elif column == 7:
-                                        data = get_battery_data_ram(arm_index, k, 5)
-                                        if data and 'value' in data:
-                                            return self.getSyntax().clone(int(data['value'] * 10))  # 0.1 Celsius
-                                        return self.getSyntax().clone(0)
-                                    
-                                    # Column 8: batteryNtc2 (dtype=6)
-                                    elif column == 8:
-                                        data = get_battery_data_ram(arm_index, k, 6)
-                                        if data and 'value' in data:
-                                            return self.getSyntax().clone(int(data['value'] * 10))  # 0.1 Celsius
-                                        return self.getSyntax().clone(0)
-                                    
-                                    # Column 9: batteryNtc3 (dtype=7)
-                                    elif column == 9:
-                                        data = get_battery_data_ram(arm_index, k, 7)
-                                        if data and 'value' in data:
-                                            return self.getSyntax().clone(int(data['value'] * 10))  # 0.1 Celsius
-                                        return self.getSyntax().clone(0)
-                                    
-                                    # Column 10: batteryStatus
-                                    elif column == 10:
-                                        if arm_index in status_ram and battery_index in status_ram[arm_index]:
-                                            return self.getSyntax().clone(1 if status_ram[arm_index][battery_index] else 0)
-                                        return self.getSyntax().clone(0)
-                                    
-                                    # Column 11: batteryAlarmFlags
-                                    elif column == 11:
-                                        alarm_flags = 0
-                                        if arm_index in alarm_ram and battery_index in alarm_ram[arm_index]:
-                                            # Bit 0 (0x1): Düşük Gerilim Uyarısı (alarm_type=1)
-                                            if alarm_ram[arm_index][battery_index].get(1, False):
-                                                alarm_flags |= 0x1
-                                            # Bit 1 (0x2): Düşük Gerilim Alarmı (alarm_type=2)
-                                            if alarm_ram[arm_index][battery_index].get(2, False):
-                                                alarm_flags |= 0x2
-                                            # Bit 2 (0x4): Yüksek Gerilim Uyarısı (alarm_type=3)
-                                            if alarm_ram[arm_index][battery_index].get(3, False):
-                                                alarm_flags |= 0x4
-                                            # Bit 3 (0x8): Yüksek Gerilim Alarmı (alarm_type=4)
-                                            if alarm_ram[arm_index][battery_index].get(4, False):
-                                                alarm_flags |= 0x8
-                                            # Bit 4 (0x10): Modül Sıcaklık Alarmı (alarm_type=5)
-                                            if alarm_ram[arm_index][battery_index].get(5, False):
-                                                alarm_flags |= 0x10
-                                            # Bit 5 (0x20): Pozitif Kutup Sıcaklık Alarmı (alarm_type=6)
-                                            if alarm_ram[arm_index][battery_index].get(6, False):
-                                                alarm_flags |= 0x20
-                                            # Bit 6 (0x40): Negatif Kutup Sıcaklık Alarmı (alarm_type=7)
-                                            if alarm_ram[arm_index][battery_index].get(7, False):
-                                                alarm_flags |= 0x40
-                                        return self.getSyntax().clone(alarm_flags)
                         
                         return self.getSyntax().clone("No Such Object")
                 
