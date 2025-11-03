@@ -3453,20 +3453,38 @@ def snmp_server():
                 pass
             
             # pysnmp asyncio transport için doğru kullanım:
-            # transportDispatcher.runDispatcher() async metodunu kullan
-            print("🔄 SNMP dispatcher başlatılıyor (asyncio)...")
+            # simple_snmp_server.py örneğine göre: open_dispatcher() blocking çağrılır
+            # Ama thread içinde olduğumuz için executor kullanıyoruz
+            print("🔄 SNMP dispatcher başlatılıyor...")
+            print("   (open_dispatcher çağrılıyor - executor'da...)")
             
             async def run_snmp_dispatcher():
                 """SNMP dispatcher'ı async olarak çalıştır"""
                 try:
-                    print("✅ SNMP dispatcher başlatıldı")
-                    await snmpEngine.transport_dispatcher.run_dispatcher()
+                    # open_dispatcher() blocking olabilir, executor'da çağır
+                    await loop.run_in_executor(None, snmpEngine.open_dispatcher)
+                    print("✅ SNMP dispatcher açıldı")
+                    
+                    # transport_dispatcher kontrolü
+                    if not snmpEngine.transport_dispatcher:
+                        print("⚠️  transport_dispatcher None - open_dispatcher başarısız olmuş olabilir")
+                        return
+                    
+                    # Asyncio transport için run_dispatcher() gerekli olmayabilir
+                    # open_dispatcher() yeterli olabilir - event loop çalışıyor
+                    print("✅ SNMP dispatcher hazır, event loop çalışıyor...")
+                    
+                    # Sonsuz döngü - event loop devam etsin
+                    while True:
+                        await asyncio.sleep(1)
+                        
                 except Exception as e:
                     print(f"❌ SNMP dispatcher hatası: {e}")
                     import traceback
                     traceback.print_exc()
                     try:
-                        snmpEngine.transport_dispatcher.close_dispatcher()
+                        if snmpEngine.transport_dispatcher:
+                            snmpEngine.transport_dispatcher.close_dispatcher()
                     except:
                         pass
             
