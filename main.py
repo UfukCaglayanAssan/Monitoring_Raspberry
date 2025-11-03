@@ -2858,6 +2858,11 @@ def snmp_server():
     print("📊 Modbus TCP Server RAM Sistemi ile Entegre")
     
     try:
+        # Log dosyası yolu - mevcut dizine göre ayarla
+        script_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else os.getcwd()
+        snmp_log_path = os.path.join(script_dir, "snmp_requests.log")
+        print(f"📝 SNMP log dosyası: {snmp_log_path}")
+        
         # Thread için yeni event loop oluştur
         import asyncio
         loop = asyncio.new_event_loop()
@@ -2902,12 +2907,18 @@ def snmp_server():
                 import datetime
                 import traceback
                 
+                # Log dosyası yolu
+                script_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else os.getcwd()
+                log_path = os.path.join(script_dir, "snmp_requests.log")
+                
                 try:
                     # DOSYAYA YAZDIR - stdout çalışmıyor
                     try:
-                        with open("/home/bms/Desktop/Monitoring_Raspberry/snmp_requests.log", "a") as f:
-                            f.write(f"{datetime.datetime.now()} - OID: {oid}\n")
-                    except:
+                        with open(log_path, "a") as f:
+                            f.write(f"{datetime.datetime.now()} - getValue ÇAĞRILDI - OID: {oid}\n")
+                            f.flush()  # Hemen yaz
+                    except Exception as log_err:
+                        # Log yazma hatası sessizce geçiliyor
                         pass
                     
                     # .0 eklemeden çalış - hem .0 ile hem .0 olmadan kabul et
@@ -3200,9 +3211,10 @@ def snmp_server():
                 except Exception as e:
                     # Exception olursa log'a yaz ve 0 döndür
                     try:
-                        with open("/home/bms/Desktop/Monitoring_Raspberry/snmp_requests.log", "a") as f:
+                        with open(log_path, "a") as f:
                             f.write(f"{datetime.datetime.now()} - HATA OID: {oid} - {str(e)}\n")
                             f.write(f"{traceback.format_exc()}\n")
+                            f.flush()  # Hemen yaz
                     except:
                         pass
                     # Exception durumunda 0 döndür
@@ -3412,9 +3424,17 @@ def snmp_server():
 
         # Run I/O dispatcher which would receive queries and send responses
         try:
+            print("🔄 SNMP dispatcher açılıyor...")
             snmpEngine.open_dispatcher()
+            print("✅ SNMP dispatcher açıldı")
+            
+            # Port dinleniyor mu kontrol et
+            print(f"🔍 Port {SNMP_PORT} dinleniyor mu kontrol ediliyor...")
+            
             # Event loop'u çalıştır - SNMP isteklerini dinlemek için gerekli
             print("🔄 SNMP event loop başlatılıyor...")
+            print("⚠️  Event loop başlatıldı - SNMP istekleri dinleniyor...")
+            print("💡 Test için: snmpget -v2c -c public localhost:1161 1.3.6.1.4.1.1001.1.1.0")
             loop.run_forever()
         except KeyboardInterrupt:
             print("\n🛑 SNMP event loop durduruluyor...")
@@ -3422,7 +3442,12 @@ def snmp_server():
             snmpEngine.close_dispatcher()
         except Exception as e:
             print(f"❌ SNMP dispatcher hatası: {e}")
-            snmpEngine.close_dispatcher()
+            import traceback
+            traceback.print_exc()
+            try:
+                snmpEngine.close_dispatcher()
+            except:
+                pass
             raise
         
     except Exception as e:
