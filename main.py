@@ -3452,36 +3452,34 @@ def snmp_server():
             except:
                 pass
             
-            # open_dispatcher'ı çağır - transport zaten açık ama dispatcher'ı başlatmak gerekebilir
-            print("🔄 SNMP dispatcher açılıyor...")
-            try:
-                # open_dispatcher blocking olabilir ama transport zaten açık
-                # Thread içinde çalıştığımız için blocking olsa bile sorun olmaz
-                snmpEngine.open_dispatcher()
-                print("✅ SNMP dispatcher açıldı")
-            except Exception as disp_err:
-                print(f"⚠️  open_dispatcher hatası (devam ediliyor): {disp_err}")
-                # Transport zaten açık olabilir, devam et
+            # pysnmp asyncio transport için doğru kullanım:
+            # transportDispatcher.runDispatcher() async metodunu kullan
+            print("🔄 SNMP dispatcher başlatılıyor (asyncio)...")
             
-            # Event loop başlatıldıktan sonra kontrol et
-            print("🔄 SNMP event loop başlatılıyor...")
+            async def run_snmp_dispatcher():
+                """SNMP dispatcher'ı async olarak çalıştır"""
+                try:
+                    print("✅ SNMP dispatcher başlatıldı")
+                    await snmpEngine.transport_dispatcher.run_dispatcher()
+                except Exception as e:
+                    print(f"❌ SNMP dispatcher hatası: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    try:
+                        snmpEngine.transport_dispatcher.close_dispatcher()
+                    except:
+                        pass
             
             # Event loop çalışıyor mu kontrol için
             def loop_running_check():
                 print("✅ SNMP event loop çalışıyor...")
                 print("📡 SNMP Agent istekleri dinliyor...")
-                # Transport'u kontrol et
-                try:
-                    if hasattr(snmpEngine, 'transport_dispatcher'):
-                        dispatcher = snmpEngine.transport_dispatcher
-                        print(f"✅ Transport dispatcher mevcut: {type(dispatcher)}")
-                        if hasattr(dispatcher, 'transport') and dispatcher.transport:
-                            print(f"✅ Transport aktif: {dispatcher.transport}")
-                except Exception as check_err:
-                    print(f"⚠️  Transport kontrolü: {check_err}")
             
             # 2 saniye sonra kontrol mesajı göster
             loop.call_later(2, loop_running_check)
+            
+            # SNMP dispatcher'ı async olarak başlat
+            loop.create_task(run_snmp_dispatcher())
             
             print("⚠️  Event loop başlatıldı - SNMP istekleri dinleniyor...")
             print("💡 Test için: snmpget -v2c -c public localhost:1161 1.3.6.1.4.1.1001.1.1.0")
