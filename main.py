@@ -3128,20 +3128,35 @@ def snmp_server():
                                     # Debug log
                                     print(f"🔍 Battery OID parse: column={column}, arm={arm_index}, battery={battery_index}, k={k}")
                                     
+                                    print(f"🔒 data_lock'a giriliyor...")
                                     with data_lock:
+                                        print(f"✅ data_lock içinde")
                                         # Batarya mevcut mu kontrol et
                                         max_battery = arm_slave_counts_ram.get(arm_index, 0)
+                                        print(f"🔍 max_battery: {max_battery} for arm {arm_index}")
                                         if battery_index > max_battery:
                                             print(f"⚠️  Battery index {battery_index} > max_battery {max_battery} for arm {arm_index}")
                                             return self.getSyntax().clone(0)
                                         
                                         # Column 3: batteryVoltage (dtype=1)
                                         if column == 3:
-                                            data = get_battery_data_ram(arm_index, k, 1)
-                                            print(f"🔍 Battery data: arm={arm_index}, k={k}, dtype=1, data={data}")
-                                            if data and 'value' in data:
-                                                return self.getSyntax().clone(int(data['value']))  # mV
-                                            return self.getSyntax().clone(0)
+                                            try:
+                                                print(f"🔍 get_battery_data_ram çağrılıyor: arm={arm_index}, k={k}, dtype=1")
+                                                data = get_battery_data_ram(arm_index, k, 1)
+                                                print(f"🔍 Battery data alındı: arm={arm_index}, k={k}, dtype=1, data={data}")
+                                                if data and 'value' in data:
+                                                    print(f"✅ Değer bulundu: {data['value']}")
+                                                    result = self.getSyntax().clone(int(data['value']))  # mV
+                                                    print(f"✅ Sonuç döndürülüyor: {result}")
+                                                    return result
+                                                else:
+                                                    print(f"⚠️  Veri yok veya 'value' key yok, 0 döndürülüyor")
+                                                    return self.getSyntax().clone(0)
+                                            except Exception as get_data_err:
+                                                print(f"❌ get_battery_data_ram exception: {get_data_err}")
+                                                import traceback
+                                                traceback.print_exc()
+                                                return self.getSyntax().clone(0)
                                         
                                         # Column 4: batterySoc (dtype=2)
                                         elif column == 4:
