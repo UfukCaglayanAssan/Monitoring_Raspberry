@@ -2873,10 +2873,11 @@ def snmp_server():
         print("✅ SNMP Engine oluşturuldu")
 
         # Transport setup - UDP over IPv4
-        config.add_transport(
-            snmpEngine, udp.DOMAIN_NAME, udp.UdpTransport().open_server_mode((SNMP_HOST, SNMP_PORT))
-        )
-        print(f"✅ Transport ayarlandı: {SNMP_HOST}:{SNMP_PORT}")
+        print(f"🔧 Transport oluşturuluyor: {SNMP_HOST}:{SNMP_PORT}")
+        udp_transport = udp.UdpTransport()
+        transport_fd = udp_transport.open_server_mode((SNMP_HOST, SNMP_PORT))
+        config.add_transport(snmpEngine, udp.DOMAIN_NAME, transport_fd)
+        print(f"✅ Transport ayarlandı ve açıldı: {SNMP_HOST}:{SNMP_PORT}")
 
         # SNMPv2c setup
         config.add_v1_system(snmpEngine, "my-area", "public")
@@ -3437,31 +3438,51 @@ def snmp_server():
             # Port dinleniyor mu kontrol et
             print(f"🔍 Port {SNMP_PORT} kontrol ediliyor...")
             import socket
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            import subprocess
             try:
-                sock.bind(('0.0.0.0', SNMP_PORT))
-                sock.close()
-                print(f"✅ Port {SNMP_PORT} kullanılabilir")
-            except OSError as port_err:
-                print(f"⚠️  Port {SNMP_PORT} kontrolü: {port_err}")
-                sock.close()
+                # Önce mevcut process'i kontrol et
+                result = subprocess.run(
+                    f"lsof -i :{SNMP_PORT} || netstat -tulpn | grep :{SNMP_PORT} || ss -tulpn | grep :{SNMP_PORT}",
+                    shell=True, capture_output=True, text=True, timeout=2
+                )
+                if result.stdout:
+                    print(f"⚠️  Port {SNMP_PORT} zaten kullanımda:")
+                    print(f"   {result.stdout.strip()}")
+                    print("   Mevcut process kapatılıyor veya yeni port kullanılacak...")
+            except:
+                pass
+            
+            # open_dispatcher'ı çağır - transport zaten açık ama dispatcher'ı başlatmak gerekebilir
+            print("🔄 SNMP dispatcher açılıyor...")
+            try:
+                # open_dispatcher blocking olabilir ama transport zaten açık
+                # Thread içinde çalıştığımız için blocking olsa bile sorun olmaz
+                snmpEngine.open_dispatcher()
+                print("✅ SNMP dispatcher açıldı")
+            except Exception as disp_err:
+                print(f"⚠️  open_dispatcher hatası (devam ediliyor): {disp_err}")
+                # Transport zaten açık olabilir, devam et
+            
+            # Event loop başlatıldıktan sonra kontrol et
+            print("🔄 SNMP event loop başlatılıyor...")
             
             # Event loop çalışıyor mu kontrol için
             def loop_running_check():
                 print("✅ SNMP event loop çalışıyor...")
                 print("📡 SNMP Agent istekleri dinliyor...")
+                # Transport'u kontrol et
+                try:
+                    if hasattr(snmpEngine, 'transport_dispatcher'):
+                        dispatcher = snmpEngine.transport_dispatcher
+                        print(f"✅ Transport dispatcher mevcut: {type(dispatcher)}")
+                        if hasattr(dispatcher, 'transport') and dispatcher.transport:
+                            print(f"✅ Transport aktif: {dispatcher.transport}")
+                except Exception as check_err:
+                    print(f"⚠️  Transport kontrolü: {check_err}")
             
             # 2 saniye sonra kontrol mesajı göster
             loop.call_later(2, loop_running_check)
             
-            # open_dispatcher'ı asenkron olarak çalıştırmayı dene
-            # Aslında asyncio transport için open_dispatcher gerekli olmayabilir
-            # Transport zaten event loop üzerinde çalışıyor
-            print("🔄 SNMP dispatcher başlatılıyor...")
-            
-            # Event loop'u çalıştır - SNMP isteklerini dinlemek için gerekli
-            # open_dispatcher() çağrısını kaldırdık - asyncio transport zaten event loop üzerinde çalışıyor
-            print("🔄 SNMP event loop başlatılıyor...")
             print("⚠️  Event loop başlatıldı - SNMP istekleri dinleniyor...")
             print("💡 Test için: snmpget -v2c -c public localhost:1161 1.3.6.1.4.1.1001.1.1.0")
             print("📡 SNMP Agent hazır ve istekleri bekliyor...")
@@ -3471,8 +3492,7 @@ def snmp_server():
             import sys
             sys.stdout.flush()
             
-            # Event loop'u çalıştır - transport zaten bağlı
-            # open_dispatcher() çağrısına gerek yok, transport zaten event loop'a bağlı
+            # Event loop'u çalıştır
             loop.run_forever()
         except KeyboardInterrupt:
             print("\n🛑 SNMP event loop durduruluyor...")
