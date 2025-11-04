@@ -662,45 +662,52 @@ def db_worker():
                 is_valid_alarm = True
                 
                 # 1. Arm kontrolü (1-4 arası olmalı)
+                arm_valid = True
                 if arm_value not in [1, 2, 3, 4]:
                     print(f"⚠️ GEÇERSİZ ALARM: Hatalı arm değeri ({arm_value}) - Veritabanına kaydedilmedi")
+                    arm_valid = False
                     is_valid_alarm = False
                 
-                # 2. LSB=0 ve MSB=0 kontrolü (alarm yoksa kaydetme)
-                if error_lsb == 0 and error_msb == 0:
-                    print(f"⚠️ GEÇERSİZ ALARM: LSB=0 ve MSB=0 (alarm yok) - Veritabanına kaydedilmedi")
-                    is_valid_alarm = False
+                # 2. Batarya mevcut mu kontrolü (DB'den oku) - Her zaman yapılmalı (RAM temizleme için)
+                try:
+                    max_battery = db.get_arm_slave_count(arm_value)
+                    if max_battery is None:
+                        max_battery = 0
+                    # RAM'i de güncelle
+                    with data_lock:
+                        arm_slave_counts_ram[arm_value] = max_battery
+                except:
+                    max_battery = arm_slave_counts_ram.get(arm_value, 0)
                 
-                # 3. Batarya mevcut mu kontrolü (DB'den oku)
-                if is_valid_alarm:
-                    try:
-                        max_battery = db.get_arm_slave_count(arm_value)
-                        if max_battery is None:
-                            max_battery = 0
-                        # RAM'i de güncelle
-                        with data_lock:
-                            arm_slave_counts_ram[arm_value] = max_battery
-                    except:
-                        max_battery = arm_slave_counts_ram.get(arm_value, 0)
-                    
-                    if battery > max_battery:
-                        print(f"⚠️ GEÇERSİZ ALARM: Batarya {battery} mevcut değil (Kol {arm_value} max: {max_battery}) - Veritabanına kaydedilmedi")
-                        is_valid_alarm = False
-                    
-                    # k_value kontrolü (3 ile max_battery+2 arası olmalı)
-                    min_k = 3
-                    max_k = max_battery + 2
-                    if k_value < min_k or k_value > max_k:
-                        print(f"⚠️ GEÇERSİZ ALARM: Hatalı k_value ({k_value}) - Kol {arm_value} için geçerli aralık: {min_k}-{max_k} - Veritabanına kaydedilmedi")
-                        is_valid_alarm = False
+                # Batarya ve k_value kontrolü
+                battery_valid = True
+                if battery > max_battery:
+                    print(f"⚠️ GEÇERSİZ ALARM: Batarya {battery} mevcut değil (Kol {arm_value} max: {max_battery})")
+                    battery_valid = False
                 
-                # Geçerli alarm ise işle
-                if is_valid_alarm:
-                    alarm_timestamp = int(time.time() * 1000)
-                    
-                    # Alarm koşullarını kontrol et ve RAM'e kaydet
+                # k_value kontrolü (3 ile max_battery+2 arası olmalı)
+                min_k = 3
+                max_k = max_battery + 2
+                if k_value < min_k or k_value > max_k:
+                    print(f"⚠️ GEÇERSİZ ALARM: Hatalı k_value ({k_value}) - Kol {arm_value} için geçerli aralık: {min_k}-{max_k}")
+                    battery_valid = False
+                
+                # Alarm koşullarını her zaman kontrol et ve RAM'e kaydet (alarm düzeldiğinde de temizlemek için)
+                if arm_valid and battery_valid:
                     alarm_data = {'error_msb': error_msb, 'error_lsb': error_lsb}
                     check_alarm_conditions(arm_value, battery, alarm_data)
+                    print(f"✅ Alarm koşulları güncellendi - Kol {arm_value}, Batarya {battery}, MSB: {error_msb}, LSB: {error_lsb}")
+                
+                # 3. LSB=0 ve MSB=0 kontrolü (alarm yoksa veritabanına kaydetme)
+                if error_lsb == 0 and error_msb == 0:
+                    print(f"⚠️ ALARM YOK: LSB=0 ve MSB=0 - RAM temizlendi, veritabanına kaydedilmedi")
+                    is_valid_alarm = False
+                else:
+                    is_valid_alarm = arm_valid and battery_valid
+                
+                # Geçerli alarm ise veritabanına kaydet
+                if is_valid_alarm:
+                    alarm_timestamp = int(time.time() * 1000)
                     
                     # Eğer errorlsb=1 ve errormsb=1 ise, mevcut alarmı düzelt
                     if error_lsb == 1 and error_msb == 1:
@@ -3198,6 +3205,12 @@ def snmp_server():
                                     elif column == 11:
                                         if arm_index in alarm_ram and battery_index in alarm_ram[arm_index]:
                                             flags = 0
+                                            # Debug: Tüm alarm durumlarını logla
+                                            alarm_states = {}
+                                            for at in range(1, 8):
+                                                alarm_states[at] = alarm_ram[arm_index][battery_index].get(at, False)
+                                            print(f"🔍 DEBUG batteryAlarmFlags - Kol {arm_index}, Batarya {battery_index}: {alarm_states}")
+                                            
                                             if alarm_ram[arm_index][battery_index].get(1, False):  # Düşük Gerilim Uyarısı
                                                 flags |= 0x1
                                             if alarm_ram[arm_index][battery_index].get(2, False):  # Düşük Gerilim Alarmı
@@ -3212,6 +3225,7 @@ def snmp_server():
                                                 flags |= 0x20
                                             if alarm_ram[arm_index][battery_index].get(7, False):  # Negatif Kutup Sıcaklık Alarmı
                                                 flags |= 0x40
+                                            print(f"🔍 DEBUG batteryAlarmFlags - Dönen değer: {flags} (0x{flags:02X})")
                                             return self.getSyntax().clone(flags)
                                         return self.getSyntax().clone(0)
                         
