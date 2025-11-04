@@ -2414,6 +2414,12 @@ def check_alarm_conditions(arm, battery, data):
             error_msb = data['error_msb']
             error_lsb = data['error_lsb']
             
+            # Özel durum: error_msb=1 ve error_lsb=1 düzeltme sinyali (tüm alarmları temizle, yeni alarm aktif etme)
+            if error_msb == 1 and error_lsb == 1:
+                print(f"🔧 Düzeltme sinyali - Tüm alarmlar temizlendi - Kol {arm}, Batarya {battery}")
+                # Tüm alarmlar zaten False yapıldı, başka bir şey yapmaya gerek yok
+                return
+            
             # MSB kontrolü (bit flag sistemi)
             if error_msb & 1:  # Bit 0 set - Pozitif kutup başı alarmı
                 update_alarm_ram(arm, battery, 6, True)  # OvertempP
