@@ -2155,16 +2155,12 @@ if __name__ == '__main__':
         flask_logger.setLevel(logging.ERROR)
         flask_logger.disabled = True
         
-        # stdout'u geçici olarak kapat
-        original_stdout = sys.stdout
-        sys.stdout = open('/dev/null', 'w')
+        # stdout'u unbuffered yap (logların hemen görünmesi için)
+        import sys
+        sys.stdout.reconfigure(line_buffering=True)
+        sys.stderr.reconfigure(line_buffering=True)
         
-        try:
-            app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
-        finally:
-            # stdout'u geri aç
-            sys.stdout.close()
-            sys.stdout = original_stdout
+        app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
     except OSError as e:
         if "Address already in use" in str(e):
             # Port zaten kullanımda
