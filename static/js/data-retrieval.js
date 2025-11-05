@@ -713,18 +713,21 @@ if (typeof window.DataRetrieval === 'undefined') {
             });
 
             if (response.ok) {
-                // Frontend'de hemen aktif et (otomatik)
+                // Frontend'de hemen aktif et (otomatik) - Backend kontrol edilmeden önce true yap
                 this.isDataRetrievalMode = true;
                 this.retrievalConfig = config;
                 this.retrievedData = [];
                 
+                console.log('✅ Frontend aktif edildi (otomatik):', {
+                    isDataRetrievalMode: this.isDataRetrievalMode,
+                    config: config
+                });
+                
                 // Veri tablosunu göster
                 this.showDataTable();
                 
-                // Backend'in durumu değiştirmesini beklemeden hemen kontrol et
+                // Frontend zaten true, şimdi kontrol et
                 this.waitForPeriodStart();
-                
-                console.log('🔍 Veri alma modu başlatıldı (Frontend aktif):', config);
             } else {
                 throw new Error('Veri alma modu başlatılamadı');
             }
@@ -735,25 +738,39 @@ if (typeof window.DataRetrieval === 'undefined') {
     }
     
     waitForPeriodStart() {
-        // Hemen kontrol et (bekleme yok - frontend kendi durumunu yönetiyor)
-        // Backend sadece periyot bittiğinde false yapacak
+        // Frontend zaten true, hemen kontrol et (gecikme yok)
+        // Backend false dönerse ve veri yoksa devam et (henüz başlamamış)
+        // Backend false dönerse ve veri varsa durdur (periyot bitti)
+        console.log('🔄 Frontend aktif, kontrol başlatılıyor (gecikme yok)...');
         this.checkPeriodStatus();
     }
     
     async checkPeriodStatus() {
-        if (!this.isDataRetrievalMode) return;
+        if (!this.isDataRetrievalMode) {
+            console.log('⚠️ checkPeriodStatus: Frontend modu kapalı, kontrol edilmiyor');
+            return;
+        }
+        
+        console.log('🔄 checkPeriodStatus: Kontrol başlatılıyor...');
         
         try {
             // Backend'de veri alma modu durumu kontrol et
             const statusResponse = await fetch('/api/data-retrieval-status');
             if (statusResponse.ok) {
                 const statusResult = await statusResponse.json();
-                console.log('🔍 VERİ ALMA MODU DURUMU (Backend):', statusResult);
+                console.log('📊 Backend durumu:', {
+                    is_active: statusResult.is_active,
+                    success: statusResult.success,
+                    frontend_active: this.isDataRetrievalMode,
+                    retrieved_data_count: this.retrievedData.length
+                });
                 
                 // Backend aktifse, periyot devam ediyor demektir
                 if (statusResult.success && statusResult.is_active) {
-                    // Backend aktif - periyot devam ediyor, verileri çek
+                    console.log('✅ Backend AKTİF - Periyot devam ediyor, verileri çekiliyor...');
                     await this.fetchRetrievedData();
+                    console.log(`📊 Veri sayısı: ${this.retrievedData.length}`);
+                    
                     // Tekrar kontrol et
                     setTimeout(() => {
                         if (this.isDataRetrievalMode) {
@@ -765,13 +782,15 @@ if (typeof window.DataRetrieval === 'undefined') {
                 
                 // Backend false döndü - kontrol et: periyot bitti mi yoksa henüz başlamadı mı?
                 if (statusResult.success && !statusResult.is_active && this.isDataRetrievalMode) {
+                    console.log('⚠️ Backend PASİF - Veriler kontrol ediliyor...');
+                    
                     // Verileri çek ve kontrol et
                     await this.fetchRetrievedData();
+                    console.log(`📊 Veri sayısı: ${this.retrievedData.length}`);
                     
                     // Eğer veri varsa, periyot başlamış ve backend false yapmış demektir - durdur
-                    // Eğer veri yoksa, backend henüz aktif olmamış (JSON işlenmemiş) - devam et
                     if (this.retrievedData.length > 0) {
-                        // Veri var ve backend false → Periyot bitti, durdur
+                        console.log('✅ Veri VAR + Backend PASİF → Periyot BİTTİ, durduruluyor...');
                         
                         // Alınan verileri işleme ekle
                         let operationDescription;
@@ -800,19 +819,22 @@ if (typeof window.DataRetrieval === 'undefined') {
                         
                         // Verileri göster
                         this.showRetrievedData();
-                        console.log('🛑 Veri alma modu otomatik olarak durduruldu (Backend false + Veri var)');
+                        console.log('🛑 Veri alma modu durduruldu (Backend false + Veri var)');
                         return;
                     }
                     
-                    // Veri yoksa, backend henüz aktif olmamış - devam et (return etme, aşağıdaki kod devam edecek)
+                    // Veri yoksa, backend henüz aktif olmamış - devam et
+                    console.log('⏳ Veri YOK + Backend PASİF → Henüz başlamamış, devam ediliyor...');
                 }
             }
         } catch (error) {
-            console.error('Veri alma hatası:', error);
+            console.error('❌ Veri alma hatası:', error);
         }
         
-        // Frontend aktifse ve backend false döndü ama veri yoksa, henüz başlamamış - devam et
+        // Frontend aktifse, periyot devam ediyor veya henüz başlamamış - devam et
         if (this.isDataRetrievalMode) {
+            console.log('🔄 Frontend aktif, 3 saniye sonra tekrar kontrol edilecek...');
+            
             // Verileri çek
             await this.fetchRetrievedData();
             
@@ -822,6 +844,8 @@ if (typeof window.DataRetrieval === 'undefined') {
                     this.checkPeriodStatus();
                 }
             }, 3000);
+        } else {
+            console.log('⚠️ Frontend modu kapalı, kontrol durduruldu');
         }
     }
     
