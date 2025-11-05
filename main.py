@@ -1812,6 +1812,27 @@ def config_worker():
                         if config:
                             set_data_retrieval_mode(True, config)
                             print(f"🔧 VERİ ALMA MODU BAŞLATILDI (JSON'dan): {config}")
+                            
+                            # Eğer "Tümünü Oku" (address=0) ise, UART'a komut gönder
+                            if config.get('address') == 0:
+                                arm = config.get('arm')
+                                if arm:
+                                    # Tümünü Oku komutu paketini hazırla
+                                    if arm == 5:  # Tüm kollar
+                                        command_packet = [0x81, 5, 0x7A]  # 0x81 0x05 0x7A
+                                    else:  # Belirli kol
+                                        command_packet = [0x81, arm, 0x7A]  # 0x81 0xkol 0x7A
+                                    
+                                    print(f"*** TÜMÜNÜ OKU KOMUTU GÖNDERİLİYOR (Veri Alma Modu) ***")
+                                    print(f"Kol: {arm}, Paket: {[f'0x{b:02X}' for b in command_packet]}")
+                                    wave_uart_send(pi, TX_PIN, command_packet, int(1e6 / BAUD_RATE))
+                                    print(f"✓ Tümünü oku komutu cihaza gönderildi (Veri Alma Modu)")
+                                    
+                                    # read_all_mode flag'ini de set et
+                                    global read_all_mode, read_all_arm
+                                    read_all_mode = True
+                                    read_all_arm = arm
+                                    print(f"🔍 TÜMÜNÜ OKU MODU AKTİF - Kol {arm}")
                     elif config_data.get('type') == 'data_retrieval_stop':
                         # Veri alma modunu durdur (JSON dosyasından)
                         set_data_retrieval_mode(False, None)
