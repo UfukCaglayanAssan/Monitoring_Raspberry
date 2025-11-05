@@ -1941,8 +1941,17 @@ def start_data_retrieval():
         }
         
         # main.py'deki fonksiyonu çağır
-        import main
-        main.set_data_retrieval_mode(True, config)
+        try:
+            import main
+            if not hasattr(main, 'set_data_retrieval_mode'):
+                raise AttributeError("main.set_data_retrieval_mode fonksiyonu bulunamadı")
+            main.set_data_retrieval_mode(True, config)
+        except ImportError as ie:
+            raise Exception(f"main.py modülü import edilemedi: {str(ie)}")
+        except AttributeError as ae:
+            raise Exception(f"main.py'de gerekli fonksiyon bulunamadı: {str(ae)}")
+        except Exception as me:
+            raise Exception(f"main.py fonksiyonu çağrılırken hata: {str(me)}")
         
         # Web app tarafında da periyot başlangıcını kaydet
         global data_retrieval_period_start
