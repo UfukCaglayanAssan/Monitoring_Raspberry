@@ -396,10 +396,12 @@ def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False
                 last_arm, last_battery = get_last_battery_info()
                 if arm_value == last_arm and k_value == last_battery:
                     if dtype is not None and dtype != 14:
-                        return False
-                    print(f"✅ TÜMÜNÜ OKU PERİYOT BİTTİ (Tüm Kollar) - Kol {arm_value}, k={k_value}, dtype={dtype}")
-                    return True
-                return False
+                        # dtype=14 değilse normal periyot kontrolüne devam et
+                        pass  # Normal kontrolü yapmak için devam et
+                    else:
+                        print(f"✅ TÜMÜNÜ OKU PERİYOT BİTTİ (Tüm Kollar) - Kol {arm_value}, k={k_value}, dtype={dtype}")
+                        return True
+                # Eğer Tümünü Oku periyotu bitmediyse, normal periyot kontrolüne devam et
             # Belirli bir kol için "Tümünü Oku" - sadece o kolun son bataryasına bak
             else:
                 selected_arm = config['arm']
@@ -410,11 +412,12 @@ def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False
                 # Seçilen koldaki son bataryanın dtype=14 (NTC3) verisi geldi mi?
                 if arm_value == selected_arm and k_value == last_k_value:
                     if dtype is not None and dtype != 14:
-                        # dtype=14 değilse devam et
-                        return False
-                    print(f"✅ TÜMÜNÜ OKU PERİYOT BİTTİ (Kol {selected_arm}) - Kol {arm_value}, k={k_value}, dtype={dtype}")
-                    return True
-                return False
+                        # dtype=14 değilse normal periyot kontrolüne devam et
+                        pass  # Normal kontrolü yapmak için devam et
+                    else:
+                        print(f"✅ TÜMÜNÜ OKU PERİYOT BİTTİ (Kol {selected_arm}) - Kol {arm_value}, k={k_value}, dtype={dtype}")
+                        return True
+                # Eğer Tümünü Oku periyotu bitmediyse, normal periyot kontrolüne devam et
     
     if read_all_mode and read_all_arm is not None:
         # "Tümünü Oku" modu aktifse - sadece o koldaki son bataryanın dtype=14'ine bak
