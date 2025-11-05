@@ -139,7 +139,7 @@ def get_last_k_value():
 
 def set_data_retrieval_mode(enabled, config=None):
     """Veri alma modunu ayarla"""
-    global data_retrieval_mode, data_retrieval_config, data_retrieval_waiting_for_period, period_active, data_retrieval_start_timestamp
+    global data_retrieval_mode, data_retrieval_config, data_retrieval_waiting_for_period, period_active
     with data_retrieval_lock:
         old_mode = data_retrieval_mode
         data_retrieval_mode = enabled
