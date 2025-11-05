@@ -814,7 +814,7 @@ if (typeof window.DataRetrieval === 'undefined') {
                         this.addOperation(operationType, operationDescription, this.retrievedData);
                         // Sadece toplu veri alındığında toast göster (Tümünü Oku veya Veri Al)
                         if (this.retrievedData.length > 0) {
-                            this.showToast(`${this.retrievedData.length} adet veri alındı`, 'success');
+                            this.showToast('Tüm veriler başarıyla okundu', 'success');
                         }
                         
                         // Mod durdu, frontend'i güncelle
@@ -1091,6 +1091,10 @@ if (typeof window.DataRetrieval === 'undefined') {
             toast.querySelector('.toast-icon').style.background = '#10b981';
             toastContent.style.background = '#28a745';
         }
+        
+        // Toast'un kendisine background verme - sadece content'e ver
+        toast.style.background = 'transparent';
+        toast.style.border = 'none';
         
         // Toast'u göster
         toast.style.display = 'block';
