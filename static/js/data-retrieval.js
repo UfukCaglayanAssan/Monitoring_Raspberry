@@ -750,14 +750,30 @@ if (typeof window.DataRetrieval === 'undefined') {
                 const statusResult = await statusResponse.json();
                 console.log('🔍 VERİ ALMA MODU DURUMU (Backend):', statusResult);
                 
-                // Backend'de mod aktif değilse ve frontend'de aktifse, periyot bitti demektir
+                // Backend aktifse, periyot devam ediyor demektir
+                if (statusResult.success && statusResult.is_active) {
+                    // Backend aktif - periyot devam ediyor, verileri çek
+                    await this.fetchRetrievedData();
+                    // Tekrar kontrol et
+                    setTimeout(() => {
+                        if (this.isDataRetrievalMode) {
+                            this.checkPeriodStatus();
+                        }
+                    }, 3000);
+                    return;
+                }
+                
+                // Backend false döndü - kontrol et: periyot bitti mi yoksa henüz başlamadı mı?
                 if (statusResult.success && !statusResult.is_active && this.isDataRetrievalMode) {
-                    // Backend periyot bittiğini bildirdi - frontend'i durdur
-                    // Mod durdu - periyot bitti, verileri çek
+                    // Verileri çek ve kontrol et
                     await this.fetchRetrievedData();
                     
-                    // Alınan verileri işleme ekle
+                    // Eğer veri varsa, periyot başlamış ve backend false yapmış demektir - durdur
+                    // Eğer veri yoksa, backend henüz aktif olmamış (JSON işlenmemiş) - devam et
                     if (this.retrievedData.length > 0) {
+                        // Veri var ve backend false → Periyot bitti, durdur
+                        
+                        // Alınan verileri işleme ekle
                         let operationDescription;
                         let operationType = 'data';
                         
@@ -777,23 +793,25 @@ if (typeof window.DataRetrieval === 'undefined') {
                         
                         this.addOperation(operationType, operationDescription, this.retrievedData);
                         this.showToast(`${this.retrievedData.length} adet veri alındı`, 'success');
+                        
+                        // Mod durdu, frontend'i güncelle
+                        this.isDataRetrievalMode = false;
+                        this.retrievalConfig = null;
+                        
+                        // Verileri göster
+                        this.showRetrievedData();
+                        console.log('🛑 Veri alma modu otomatik olarak durduruldu (Backend false + Veri var)');
+                        return;
                     }
                     
-                    // Mod durdu, frontend'i güncelle
-                    this.isDataRetrievalMode = false;
-                    this.retrievalConfig = null;
-                    
-                    // Verileri göster
-                    this.showRetrievedData();
-                    console.log('🛑 Veri alma modu otomatik olarak durduruldu');
-                    return;
+                    // Veri yoksa, backend henüz aktif olmamış - devam et (return etme, aşağıdaki kod devam edecek)
                 }
             }
         } catch (error) {
             console.error('Veri alma hatası:', error);
         }
         
-        // Frontend aktifse, periyot devam ediyor - verileri çek ve tekrar kontrol et
+        // Frontend aktifse ve backend false döndü ama veri yoksa, henüz başlamamış - devam et
         if (this.isDataRetrievalMode) {
             // Verileri çek
             await this.fetchRetrievedData();
