@@ -343,6 +343,23 @@ class BatteryDatabase:
                 ''')
                 print("✓ trap_targets tablosu oluşturuldu")
                 
+                # Trap ayarları tablosu (tek kayıt)
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS trap_settings (
+                        id INTEGER PRIMARY KEY DEFAULT 1,
+                        trap_enabled BOOLEAN DEFAULT 0,
+                        trap_server TEXT,
+                        trap_port INTEGER DEFAULT 162,
+                        trap_community TEXT DEFAULT 'public',
+                        trap_version TEXT DEFAULT '2c',
+                        trap_interval INTEGER DEFAULT 30,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        CONSTRAINT single_trap_config CHECK (id = 1)
+                    )
+                ''')
+                print("✓ trap_settings tablosu oluşturuldu")
+                
                 # Default arm_slave_counts değerlerini ekle
                 cursor.execute('''
                     INSERT INTO arm_slave_counts (arm, slave_count) 
@@ -1027,6 +1044,33 @@ class BatteryDatabase:
                     print("✅ reset_system_log tablosu oluşturuldu")
                 else:
                     print("✅ reset_system_log tablosu mevcut")
+                
+                # trap_settings tablosu var mı kontrol et
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name='trap_settings'
+                """)
+                
+                if not cursor.fetchone():
+                    print("🔄 trap_settings tablosu eksik, oluşturuluyor...")
+                    cursor.execute('''
+                        CREATE TABLE IF NOT EXISTS trap_settings (
+                            id INTEGER PRIMARY KEY DEFAULT 1,
+                            trap_enabled BOOLEAN DEFAULT 0,
+                            trap_server TEXT,
+                            trap_port INTEGER DEFAULT 162,
+                            trap_community TEXT DEFAULT 'public',
+                            trap_version TEXT DEFAULT '2c',
+                            trap_interval INTEGER DEFAULT 30,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            CONSTRAINT single_trap_config CHECK (id = 1)
+                        )
+                    ''')
+                    conn.commit()
+                    print("✅ trap_settings tablosu oluşturuldu")
+                else:
+                    print("✅ trap_settings tablosu mevcut")
                 
                 # trap_targets tablosu var mı kontrol et
                 cursor.execute("""
@@ -3400,6 +3444,65 @@ class BatteryDatabase:
                 return {'success': True, 'message': 'FTP ayarları kaydedildi'}
         except Exception as e:
             print(f"FTP config kaydedilirken hata: {e}")
+            return {'success': False, 'message': str(e)}
+    
+    # Trap Settings Methods
+    def get_trap_settings(self):
+        """Trap ayarlarını getir"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT trap_enabled, trap_server, trap_port, trap_community, trap_version, trap_interval
+                    FROM trap_settings WHERE id = 1
+                ''')
+                row = cursor.fetchone()
+                if row:
+                    return {
+                        'trapEnabled': bool(row[0]),
+                        'trapServer': row[1],
+                        'trapPort': row[2],
+                        'trapCommunity': row[3],
+                        'trapVersion': row[4],
+                        'trapInterval': row[5]
+                    }
+                return None
+        except Exception as e:
+            print(f"Trap settings getirilirken hata: {e}")
+            return None
+    
+    def save_trap_settings(self, trap_enabled, trap_server, trap_port, trap_community, trap_version, trap_interval):
+        """Trap ayarlarını kaydet veya güncelle"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                # Önce var mı kontrol et
+                cursor.execute('SELECT id FROM trap_settings WHERE id = 1')
+                exists = cursor.fetchone()
+                
+                if exists:
+                    # Güncelle
+                    cursor.execute('''
+                        UPDATE trap_settings 
+                        SET trap_enabled = ?, trap_server = ?, trap_port = ?, 
+                            trap_community = ?, trap_version = ?, trap_interval = ?,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = 1
+                    ''', (trap_enabled, trap_server, trap_port, trap_community, trap_version, trap_interval))
+                    print("✅ Trap ayarları güncellendi")
+                else:
+                    # Yeni kayıt
+                    cursor.execute('''
+                        INSERT INTO trap_settings 
+                        (id, trap_enabled, trap_server, trap_port, trap_community, trap_version, trap_interval)
+                        VALUES (1, ?, ?, ?, ?, ?, ?)
+                    ''', (trap_enabled, trap_server, trap_port, trap_community, trap_version, trap_interval))
+                    print("✅ Trap ayarları eklendi")
+                
+                conn.commit()
+                return {'success': True, 'message': 'Trap ayarları kaydedildi'}
+        except Exception as e:
+            print(f"Trap settings kaydedilirken hata: {e}")
             return {'success': False, 'message': str(e)}
     
     def update_ftp_last_sent(self):

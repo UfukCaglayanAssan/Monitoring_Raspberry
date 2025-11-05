@@ -111,6 +111,48 @@ class App {
             });
         });
 
+            // Dropdown linklerini dinle (user dropdown)
+            document.querySelectorAll('.dropdown-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const timestamp = new Date().toISOString();
+                    
+                    // Tıklanan elementin kendisi veya parent'ından data-page'i al
+                    let targetElement = e.target;
+                    let page = targetElement.getAttribute('data-page');
+                    
+                    // Eğer span'a tıklandıysa, parent a elementini bul
+                    if (!page && targetElement.tagName === 'SPAN') {
+                        targetElement = targetElement.closest('.dropdown-link');
+                        page = targetElement ? targetElement.getAttribute('data-page') : null;
+                    }
+                    
+                    console.log(`🖱️ [${timestamp}] DROPDOWN TIKLAMA - Dropdown link tıklandı:`, {
+                        page: page,
+                        text: e.target.textContent.trim(),
+                        targetElement: e.target.tagName,
+                        linkElement: targetElement ? targetElement.tagName : 'null'
+                    });
+                    
+                    if (page) {
+                        console.log(`📄 [${timestamp}] SAYFA YÜKLEME - Dropdown'dan sayfa yükleniyor: ${page}`);
+                        this.loadPage(page);
+                        // Dropdown'ı kapat
+                        const userInfo = document.getElementById('userInfoDropdown');
+                        if (userInfo) {
+                            const dropdown = userInfo.querySelector('.user-dropdown');
+                            if (dropdown) {
+                                dropdown.style.opacity = '0';
+                                dropdown.style.visibility = 'hidden';
+                            }
+                        }
+                    } else {
+                        console.log(`ℹ️ [${timestamp}] DROPDOWN - data-page yok, özel işlem (logout gibi)`);
+                    }
+                });
+            });
+
             // Bell icon tıklama eventi
             document.getElementById('notificationBell').addEventListener('click', (e) => {
                 e.preventDefault();
@@ -191,6 +233,8 @@ class App {
                 pageUrl = '/interface-ip-settings';
             } else if (page === 'ftp-settings') {
                 pageUrl = '/ftp-settings';
+            } else if (page === 'trap-settings') {
+                pageUrl = '/trap-settings';
             } else {
                 pageUrl = `/pages/${page}.html`;
             }

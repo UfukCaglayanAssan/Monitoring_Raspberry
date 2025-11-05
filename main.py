@@ -252,16 +252,11 @@ def is_data_retrieval_period_complete(arm_value, k_value, dtype):
             last_battery_count = arm_slave_counts.get(selected_arm, 0)
             last_k_value = last_battery_count + 2  # k = battery_count + 2
             
-            print(f"🔍 Periyot kontrolü: Kol {selected_arm}, Son batarya sayısı: {last_battery_count}, last_k_value: {last_k_value}")
-            print(f"🔍 Gelen veri: arm={arm_value}, k={k_value}, dtype={dtype}")
-            print(f"🔍 Koşul kontrolü: arm_value({arm_value})==selected_arm({selected_arm})? {arm_value == selected_arm}, k_value({k_value})==last_k_value({last_k_value})? {k_value == last_k_value}")
-            
             # Seçilen koldaki son bataryanın dtype=14 (NTC3) verisi geldi mi?
             if arm_value == selected_arm and k_value == last_k_value:
                 print(f"✅ TÜMÜNÜ OKU PERİYOT BİTTİ - Kol {arm_value}, k={k_value}, dtype={dtype} (NTC3)")
                 return True
             
-            print(f"⚠️ Periyot devam ediyor - Henüz son batarya gelmedi (beklenen: k={last_k_value}, gelen: k={k_value})")
             return False
         # Adres 1-255 ise Veri Al işlemi - sadece istenen veri
         else:

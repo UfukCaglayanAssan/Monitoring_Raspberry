@@ -237,6 +237,8 @@ def get_page_html(page_name):
         return render_template('pages/configuration.html')
     elif page_name == 'data-retrieval':
         return render_template('pages/data-retrieval.html')
+    elif page_name == 'trap-settings':
+        return render_template('pages/trap-settings.html')
     elif page_name == 'profile':
         return render_template('pages/profile.html')
     else:
@@ -1602,7 +1604,18 @@ def save_trap_settings():
     try:
         data = request.get_json()
         db = get_db()
-        result = db_operation_with_retry(lambda: db.save_trap_settings(data))
+        
+        # Parametreleri al
+        trap_enabled = data.get('trapEnabled', False)
+        trap_server = data.get('trapServer', '')
+        trap_port = data.get('trapPort', 162)
+        trap_community = data.get('trapCommunity', 'public')
+        trap_version = data.get('trapVersion', '2c')
+        trap_interval = data.get('trapInterval', 30)
+        
+        result = db_operation_with_retry(lambda: db.save_trap_settings(
+            trap_enabled, trap_server, trap_port, trap_community, trap_version, trap_interval
+        ))
         
         return jsonify(result)
     except Exception as e:
