@@ -2075,13 +2075,18 @@ def get_retrieved_data():
 def get_data_retrieval_status():
     """Veri alma modu durumunu kontrol et"""
     try:
-        # JSON dosyasından oku
-        import main
-        status = main.load_data_retrieval_status()
-        if status:
-            is_active = status.get('data_retrieval_mode', False)
-        else:
-            is_active = main.is_data_retrieval_mode()
+        # JSON dosyasından doğrudan oku (import main etmeden)
+        status_file = 'data_retrieval_status.json'
+        is_active = False
+        
+        if os.path.exists(status_file):
+            try:
+                with open(status_file, 'r', encoding='utf-8') as f:
+                    status = json.load(f)
+                    is_active = status.get('data_retrieval_mode', False)
+            except Exception as e:
+                print(f"⚠️ JSON dosyası okunurken hata: {e}")
+                is_active = False
         
         return jsonify({
             'success': True,
@@ -2089,7 +2094,10 @@ def get_data_retrieval_status():
         })
         
     except Exception as e:
-        return jsonify({'success': False, 'message': 'Durum kontrol edilemedi'}), 500
+        print(f"❌ Veri alma durumu kontrol hatası: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Durum kontrol edilemedi: {str(e)}'}), 500
 
 if __name__ == '__main__':
     import sys
