@@ -1559,7 +1559,7 @@
 .time-cell {
     font-family: 'Courier New', monospace !important;
     font-size: 14px !important;
-    font-weight: normal !important;
+    font-weight: 600 !important;
     text-align: left !important;
     padding-left: 12px !important;
 }

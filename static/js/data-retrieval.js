@@ -272,6 +272,7 @@ if (typeof window.DataRetrieval === 'undefined') {
             
             if (data) {
                 console.log('✅ Tekil veri alındı:', data);
+                // Tekil veri alındığında toast göster (sadece başarılı olduğunda)
                 this.showToast(`${valueText} verisi alındı: ${data}`, 'success');
                 
                 // Veriyi tabloya ekle
@@ -811,7 +812,10 @@ if (typeof window.DataRetrieval === 'undefined') {
                         }
                         
                         this.addOperation(operationType, operationDescription, this.retrievedData);
-                        this.showToast(`${this.retrievedData.length} adet veri alındı`, 'success');
+                        // Sadece toplu veri alındığında toast göster (Tümünü Oku veya Veri Al)
+                        if (this.retrievedData.length > 0) {
+                            this.showToast(`${this.retrievedData.length} adet veri alındı`, 'success');
+                        }
                         
                         // Mod durdu, frontend'i güncelle
                         this.isDataRetrievalMode = false;
@@ -1070,21 +1074,38 @@ if (typeof window.DataRetrieval === 'undefined') {
         const toast = document.getElementById('toast');
         const toastMessage = document.getElementById('toastMessage');
         const toastIcon = toast.querySelector('.toast-icon i');
+        const toastContent = toast.querySelector('.toast-content');
         
         toastMessage.textContent = message;
+        
+        // Toast stilini temizle
+        toast.className = 'toast';
+        toastContent.className = 'toast-content';
         
         if (type === 'error') {
             toastIcon.className = 'fas fa-exclamation-triangle';
             toast.querySelector('.toast-icon').style.background = '#ef4444';
+            toastContent.style.background = '#dc3545';
         } else {
             toastIcon.className = 'fas fa-check';
             toast.querySelector('.toast-icon').style.background = '#10b981';
+            toastContent.style.background = '#28a745';
         }
         
+        // Toast'u göster
         toast.style.display = 'block';
         
+        // Animasyon için kısa gecikme
         setTimeout(() => {
-            toast.style.display = 'none';
+            toast.classList.add('show');
+        }, 10);
+        
+        // 3 saniye sonra gizle
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 300);
         }, 3000);
     }
     };

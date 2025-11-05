@@ -1196,21 +1196,28 @@ body {
 }
 
 .toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
     padding: 1rem 1.5rem;
     border-radius: 8px;
     color: white;
     font-weight: 500;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     transform: translateX(400px);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, opacity 0.3s ease;
     display: flex;
     align-items: center;
     gap: 10px;
     min-width: 300px;
+    max-width: 400px;
+    opacity: 0;
 }
 
 .toast.show {
     transform: translateX(0);
+    opacity: 1;
 }
 
 .toast-icon {
