@@ -160,19 +160,6 @@ def set_data_retrieval_mode(enabled, config=None):
             else:
                 data_retrieval_waiting_for_period = True
                 print(f"🔍 Veri alma modu: Tümünü Oku - Periyot bekleniyor")
-            
-            # Yeni periyot başlarken pending_config.json'daki retrieved_data'yı temizle
-            try:
-                if os.path.exists('pending_config.json'):
-                    with open('pending_config.json', 'r', encoding='utf-8') as f:
-                        existing_data = json.load(f)
-                    # retrieved_data array'ini temizle (yeni periyot için)
-                    existing_data['retrieved_data'] = []
-                    with open('pending_config.json', 'w', encoding='utf-8') as f:
-                        json.dump(existing_data, f, indent=2, ensure_ascii=False)
-                    print(f"🧹 Yeni periyot için retrieved_data temizlendi")
-            except Exception as e:
-                print(f"⚠️ retrieved_data temizlenirken hata: {e}")
         else:
             data_retrieval_waiting_for_period = False
             print(f"🔍 Veri alma modu: {'Aktif' if enabled else 'Pasif'}")
@@ -241,10 +228,14 @@ def is_data_retrieval_period_complete(arm_value, k_value, dtype):
     """Veri alma modu için periyot tamamlandı mı kontrol et"""
     config = get_data_retrieval_config()
     if not config:
+        print(f"🔍 [PERİYOT KONTROL] Config yok, False dönüyor")
         return False
+    
+    print(f"🔍 [PERİYOT KONTROL] Gelen veri: Kol={arm_value}, k={k_value}, dtype={dtype}, Config: arm={config.get('arm')}, address={config.get('address')}")
     
     # Tüm kollar seçilmişse (arm=5) - Tümünü Oku işlemi
     if config['arm'] == 5:
+        print(f"🔍 [PERİYOT KONTROL] arm=5 (Tüm kollar), is_period_complete çağrılıyor...")
         # Son kolun son bataryasının dtype=14 (NTC3) verisi geldi mi?
         return is_period_complete(arm_value, k_value, dtype=dtype)
     
@@ -252,8 +243,10 @@ def is_data_retrieval_period_complete(arm_value, k_value, dtype):
     if config['arm'] == arm_value:
         # Adres 0 ise Tümünü Oku işlemi - sadece seçilen koldaki son batarya
         if config['address'] == 0:
+            print(f"🔍 [PERİYOT KONTROL] Tümünü Oku işlemi (address=0), dtype kontrolü: {dtype}")
             # Sadece dtype=14 (NTC3) geldiğinde periyot biter (son batarya için)
             if dtype != 14:
+                print(f"🔍 [PERİYOT KONTROL] dtype={dtype} != 14, False dönüyor")
                 return False
                 
             # Seçilen koldaki son batarya sayısını al (k değerine çevir)
@@ -262,10 +255,15 @@ def is_data_retrieval_period_complete(arm_value, k_value, dtype):
             last_battery_count = arm_slave_counts.get(selected_arm, 0)
             last_k_value = last_battery_count + 2  # k = battery_count + 2
             
+            print(f"🔍 [PERİYOT KONTROL] Kol {selected_arm}: last_battery_count={last_battery_count}, last_k_value={last_k_value}")
+            print(f"🔍 [PERİYOT KONTROL] Gelen: arm_value={arm_value}, k_value={k_value}, Beklenen: selected_arm={selected_arm}, last_k_value={last_k_value}")
+            
             # Seçilen koldaki son bataryanın dtype=14 (NTC3) verisi geldi mi?
             if arm_value == selected_arm and k_value == last_k_value:
                 print(f"✅ TÜMÜNÜ OKU PERİYOT BİTTİ - Kol {arm_value}, k={k_value}, dtype={dtype} (NTC3)")
                 return True
+            else:
+                print(f"🔍 [PERİYOT KONTROL] Periyot devam ediyor: arm_value ({arm_value}) == selected_arm ({selected_arm})? {arm_value == selected_arm}, k_value ({k_value}) == last_k_value ({last_k_value})? {k_value == last_k_value}")
             
             return False
         # Adres 1-255 ise Veri Al işlemi - sadece istenen veri
@@ -396,12 +394,10 @@ def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False
                 last_arm, last_battery = get_last_battery_info()
                 if arm_value == last_arm and k_value == last_battery:
                     if dtype is not None and dtype != 14:
-                        # dtype=14 değilse normal periyot kontrolüne devam et
-                        pass  # Normal kontrolü yapmak için devam et
-                    else:
-                        print(f"✅ TÜMÜNÜ OKU PERİYOT BİTTİ (Tüm Kollar) - Kol {arm_value}, k={k_value}, dtype={dtype}")
-                        return True
-                # Eğer Tümünü Oku periyotu bitmediyse, normal periyot kontrolüne devam et
+                        return False
+                    print(f"✅ TÜMÜNÜ OKU PERİYOT BİTTİ (Tüm Kollar) - Kol {arm_value}, k={k_value}, dtype={dtype}")
+                    return True
+                return False
             # Belirli bir kol için "Tümünü Oku" - sadece o kolun son bataryasına bak
             else:
                 selected_arm = config['arm']
@@ -412,12 +408,11 @@ def is_period_complete(arm_value, k_value, is_missing_data=False, is_alarm=False
                 # Seçilen koldaki son bataryanın dtype=14 (NTC3) verisi geldi mi?
                 if arm_value == selected_arm and k_value == last_k_value:
                     if dtype is not None and dtype != 14:
-                        # dtype=14 değilse normal periyot kontrolüne devam et
-                        pass  # Normal kontrolü yapmak için devam et
-                    else:
-                        print(f"✅ TÜMÜNÜ OKU PERİYOT BİTTİ (Kol {selected_arm}) - Kol {arm_value}, k={k_value}, dtype={dtype}")
-                        return True
-                # Eğer Tümünü Oku periyotu bitmediyse, normal periyot kontrolüne devam et
+                        # dtype=14 değilse devam et
+                        return False
+                    print(f"✅ TÜMÜNÜ OKU PERİYOT BİTTİ (Kol {selected_arm}) - Kol {arm_value}, k={k_value}, dtype={dtype}")
+                    return True
+                return False
     
     if read_all_mode and read_all_arm is not None:
         # "Tümünü Oku" modu aktifse - sadece o koldaki son bataryanın dtype=14'ine bak
@@ -1183,23 +1178,27 @@ def db_worker():
                 
                     # Veri alma modu kontrolü (dtype=14 için - Tümünü Oku periyot bitişi)
                     if is_data_retrieval_mode():
+                        print(f"🔍 [dtype=14] Veri alma modu AKTİF - Kol {arm_value}, k={k_value}, dtype={dtype}")
                         config = get_data_retrieval_config()
-                        print(f"🔍 Veri alma kontrolü: Kol {arm_value}, k={k_value}, dtype={dtype}, config={config}")
-                        
-                        # Veri yakalanacak mı kontrol et
+                        print(f"🔍 [dtype=14] Config: {config}")
                         if config and should_capture_data(arm_value, k_value, dtype, config):
-                            print(f"✅ Veri yakalanacak: Kol {arm_value}, k={k_value}, dtype={dtype}")
+                            print(f"🔍 [dtype=14] Veri yakalanıyor: Kol {arm_value}, k={k_value}, dtype={dtype}")
                             capture_data_for_retrieval(arm_value, k_value, dtype, salt_data)
+                            
+                            # Veri alma modu periyot tamamlandı mı kontrol et (dtype=14 için)
+                            print(f"🔍 [dtype=14] Periyot bitiş kontrolü başlatılıyor...")
+                            period_complete = is_data_retrieval_period_complete(arm_value, k_value, dtype)
+                            print(f"🔍 [dtype=14] Periyot bitiş kontrolü sonucu: {period_complete}")
+                            if period_complete:
+                                print(f"🔄 VERİ ALMA PERİYOTU BİTTİ (NTC3) - Kol {arm_value}, k={k_value}, dtype={dtype}")
+                                set_data_retrieval_mode(False, None)
+                                print("🛑 Veri alma modu durduruldu - Tümünü Oku işlemi tamamlandı")
+                            else:
+                                print(f"🔍 [dtype=14] Periyot devam ediyor, bekleniyor...")
                         else:
-                            print(f"⚠️ Veri yakalanmadı: should_capture_data={config and should_capture_data(arm_value, k_value, dtype, config) if config else False}, config={config}")
-                        
-                        # Periyot bitiş kontrolü - her zaman yapılmalı (son batarya kontrolü için)
-                        if config and is_data_retrieval_period_complete(arm_value, k_value, dtype):
-                            print(f"🔄 VERİ ALMA PERİYOTU BİTTİ (NTC3) - Kol {arm_value}, k={k_value}, dtype={dtype}")
-                            set_data_retrieval_mode(False, None)
-                            print("🛑 Veri alma modu durduruldu - Tümünü Oku işlemi tamamlandı")
+                            print(f"🔍 [dtype=14] Veri yakalanmıyor: config={config}, should_capture={config and should_capture_data(arm_value, k_value, dtype, config) if config else False}")
                     else:
-                        print(f"⚠️ Veri alma modu pasif: Kol {arm_value}, k={k_value}, dtype={dtype}")
+                        print(f"🔍 [dtype=14] Veri alma modu PASİF - Kol {arm_value}, k={k_value}, dtype={dtype}")
                 
                 else:  # Diğer Dtype değerleri için
                     # Bu noktaya gelirse tanımsız dtype demektir, zaten yukarıda kontrol edildi
