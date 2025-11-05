@@ -160,6 +160,19 @@ def set_data_retrieval_mode(enabled, config=None):
             else:
                 data_retrieval_waiting_for_period = True
                 print(f"🔍 Veri alma modu: Tümünü Oku - Periyot bekleniyor")
+            
+            # Yeni periyot başlarken pending_config.json'daki retrieved_data'yı temizle
+            try:
+                if os.path.exists('pending_config.json'):
+                    with open('pending_config.json', 'r', encoding='utf-8') as f:
+                        existing_data = json.load(f)
+                    # retrieved_data array'ini temizle (yeni periyot için)
+                    existing_data['retrieved_data'] = []
+                    with open('pending_config.json', 'w', encoding='utf-8') as f:
+                        json.dump(existing_data, f, indent=2, ensure_ascii=False)
+                    print(f"🧹 Yeni periyot için retrieved_data temizlendi")
+            except Exception as e:
+                print(f"⚠️ retrieved_data temizlenirken hata: {e}")
         else:
             data_retrieval_waiting_for_period = False
             print(f"🔍 Veri alma modu: {'Aktif' if enabled else 'Pasif'}")
@@ -1168,7 +1181,9 @@ def db_worker():
                     # Veri alma modu kontrolü (dtype=14 için - Tümünü Oku periyot bitişi)
                     if is_data_retrieval_mode():
                         config = get_data_retrieval_config()
+                        print(f"🔍 Veri alma kontrolü: Kol {arm_value}, k={k_value}, dtype={dtype}, config={config}")
                         if config and should_capture_data(arm_value, k_value, dtype, config):
+                            print(f"✅ Veri yakalanacak: Kol {arm_value}, k={k_value}, dtype={dtype}")
                             capture_data_for_retrieval(arm_value, k_value, dtype, salt_data)
                             
                             # Veri alma modu periyot tamamlandı mı kontrol et (dtype=14 için)
@@ -1176,6 +1191,10 @@ def db_worker():
                                 print(f"🔄 VERİ ALMA PERİYOTU BİTTİ (NTC3) - Kol {arm_value}, k={k_value}, dtype={dtype}")
                                 set_data_retrieval_mode(False, None)
                                 print("🛑 Veri alma modu durduruldu - Tümünü Oku işlemi tamamlandı")
+                        else:
+                            print(f"⚠️ Veri yakalanmadı: should_capture_data={config and should_capture_data(arm_value, k_value, dtype, config) if config else False}, config={config}")
+                    else:
+                        print(f"⚠️ Veri alma modu pasif: Kol {arm_value}, k={k_value}, dtype={dtype}")
                 
                 else:  # Diğer Dtype değerleri için
                     # Bu noktaya gelirse tanımsız dtype demektir, zaten yukarıda kontrol edildi
