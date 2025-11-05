@@ -713,6 +713,7 @@ if (typeof window.DataRetrieval === 'undefined') {
             });
 
             if (response.ok) {
+                // Frontend'de hemen aktif et (otomatik)
                 this.isDataRetrievalMode = true;
                 this.retrievalConfig = config;
                 this.retrievedData = [];
@@ -720,10 +721,10 @@ if (typeof window.DataRetrieval === 'undefined') {
                 // Veri tablosunu göster
                 this.showDataTable();
                 
-                // Periyot başlangıcını bekle
+                // Backend'in durumu değiştirmesini beklemeden hemen kontrol et
                 this.waitForPeriodStart();
                 
-                console.log('🔍 Veri alma modu başlatıldı:', config);
+                console.log('🔍 Veri alma modu başlatıldı (Frontend aktif):', config);
             } else {
                 throw new Error('Veri alma modu başlatılamadı');
             }
@@ -734,7 +735,8 @@ if (typeof window.DataRetrieval === 'undefined') {
     }
     
     waitForPeriodStart() {
-        // Periyot başlangıcını kontrol et
+        // Hemen kontrol et (bekleme yok - frontend kendi durumunu yönetiyor)
+        // Backend sadece periyot bittiğinde false yapacak
         this.checkPeriodStatus();
     }
     
@@ -742,12 +744,15 @@ if (typeof window.DataRetrieval === 'undefined') {
         if (!this.isDataRetrievalMode) return;
         
         try {
-            // Veri alma modu durdu mu kontrol et
+            // Backend'de veri alma modu durumu kontrol et
             const statusResponse = await fetch('/api/data-retrieval-status');
             if (statusResponse.ok) {
                 const statusResult = await statusResponse.json();
-                console.log('🔍 VERİ ALMA MODU DURUMU:', statusResult);
-                if (statusResult.success && !statusResult.is_active) {
+                console.log('🔍 VERİ ALMA MODU DURUMU (Backend):', statusResult);
+                
+                // Backend'de mod aktif değilse ve frontend'de aktifse, periyot bitti demektir
+                if (statusResult.success && !statusResult.is_active && this.isDataRetrievalMode) {
+                    // Backend periyot bittiğini bildirdi - frontend'i durdur
                     // Mod durdu - periyot bitti, verileri çek
                     await this.fetchRetrievedData();
                     
@@ -788,12 +793,18 @@ if (typeof window.DataRetrieval === 'undefined') {
             console.error('Veri alma hatası:', error);
         }
         
-        // 3 saniye sonra tekrar kontrol et (daha az sıklıkta)
-        setTimeout(() => {
-            if (this.isDataRetrievalMode) {
-                this.checkPeriodStatus();
-            }
-        }, 3000);
+        // Frontend aktifse, periyot devam ediyor - verileri çek ve tekrar kontrol et
+        if (this.isDataRetrievalMode) {
+            // Verileri çek
+            await this.fetchRetrievedData();
+            
+            // 3 saniye sonra tekrar kontrol et (backend'in durumu değiştirmesini bekle)
+            setTimeout(() => {
+                if (this.isDataRetrievalMode) {
+                    this.checkPeriodStatus();
+                }
+            }, 3000);
+        }
     }
     
     async fetchRetrievedData() {
