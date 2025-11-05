@@ -158,8 +158,11 @@ def set_data_retrieval_mode(enabled, config=None):
                 data_retrieval_waiting_for_period = False
                 print(f"🔍 Veri alma modu: Tümünü Oku - Yeni periyot başlatıldı")
             else:
-                data_retrieval_waiting_for_period = True
-                print(f"🔍 Veri alma modu: Tümünü Oku - Periyot bekleniyor")
+                # Periyot aktif değilse, yeni periyot başlat (ikinci işlem için)
+                print(f"🔄 TÜMÜNÜ OKU: Yeni periyot başlatılıyor (period_active=False)")
+                get_period_timestamp()
+                data_retrieval_waiting_for_period = False
+                print(f"🔍 Veri alma modu: Tümünü Oku - Yeni periyot başlatıldı")
         else:
             data_retrieval_waiting_for_period = False
             print(f"🔍 Veri alma modu: {'Aktif' if enabled else 'Pasif'}")
