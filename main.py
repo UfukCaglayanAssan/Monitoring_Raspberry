@@ -1751,6 +1751,16 @@ def config_worker():
                             print(f"Kol: {arm_value}, Adres: {slave_address}, Komut: {slave_command}, Paket: {packet} (Hex: {[hex(x) for x in packet]})")
                             wave_uart_send(pi, TX_PIN, packet, int(1e6 / BAUD_RATE))
                             print(f"✓ Veri alma komutu cihaza gönderildi")
+                    elif config_data.get('type') == 'data_retrieval_start':
+                        # Veri alma modunu başlat (JSON dosyasından)
+                        config = config_data.get('config')
+                        if config:
+                            set_data_retrieval_mode(True, config)
+                            print(f"🔧 VERİ ALMA MODU BAŞLATILDI (JSON'dan): {config}")
+                    elif config_data.get('type') == 'data_retrieval_stop':
+                        # Veri alma modunu durdur (JSON dosyasından)
+                        set_data_retrieval_mode(False, None)
+                        print(f"🛑 VERİ ALMA MODU DURDURULDU (JSON'dan)")
                     
                 except Exception as e:
                     print(f"Konfigürasyon dosyası işlenirken hata: {e}")

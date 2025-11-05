@@ -1940,18 +1940,18 @@ def start_data_retrieval():
             'valueText': value_text
         }
         
-        # main.py'deki fonksiyonu çağır
+        # main.py'ye JSON dosyası üzerinden iletişim kur (import etmeden)
         try:
-            import main
-            if not hasattr(main, 'set_data_retrieval_mode'):
-                raise AttributeError("main.set_data_retrieval_mode fonksiyonu bulunamadı")
-            main.set_data_retrieval_mode(True, config)
-        except ImportError as ie:
-            raise Exception(f"main.py modülü import edilemedi: {str(ie)}")
-        except AttributeError as ae:
-            raise Exception(f"main.py'de gerekli fonksiyon bulunamadı: {str(ae)}")
-        except Exception as me:
-            raise Exception(f"main.py fonksiyonu çağrılırken hata: {str(me)}")
+            config_file = "pending_config.json"
+            config_data = {
+                'type': 'data_retrieval_start',
+                'config': config
+            }
+            with open(config_file, 'w', encoding='utf-8') as f:
+                json.dump(config_data, f, indent=2, ensure_ascii=False)
+            print(f"✓ Veri alma modu başlatma isteği JSON dosyasına yazıldı: {config_file}")
+        except Exception as je:
+            raise Exception(f"JSON dosyası yazılırken hata: {str(je)}")
         
         # Web app tarafında da periyot başlangıcını kaydet
         global data_retrieval_period_start
@@ -1974,9 +1974,14 @@ def start_data_retrieval():
 def stop_data_retrieval():
     """Veri alma modunu durdur"""
     try:
-        # main.py'deki fonksiyonu çağır
-        import main
-        main.set_data_retrieval_mode(False, None)
+        # main.py'ye JSON dosyası üzerinden iletişim kur (import etmeden)
+        config_file = "pending_config.json"
+        config_data = {
+            'type': 'data_retrieval_stop'
+        }
+        with open(config_file, 'w', encoding='utf-8') as f:
+            json.dump(config_data, f, indent=2, ensure_ascii=False)
+        print(f"✓ Veri alma modu durdurma isteği JSON dosyasına yazıldı: {config_file}")
         
         # Web app tarafında periyot başlangıcını temizle
         global data_retrieval_period_start
