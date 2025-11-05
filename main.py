@@ -1182,17 +1182,19 @@ def db_worker():
                     if is_data_retrieval_mode():
                         config = get_data_retrieval_config()
                         print(f"🔍 Veri alma kontrolü: Kol {arm_value}, k={k_value}, dtype={dtype}, config={config}")
+                        
+                        # Veri yakalanacak mı kontrol et
                         if config and should_capture_data(arm_value, k_value, dtype, config):
                             print(f"✅ Veri yakalanacak: Kol {arm_value}, k={k_value}, dtype={dtype}")
                             capture_data_for_retrieval(arm_value, k_value, dtype, salt_data)
-                            
-                            # Veri alma modu periyot tamamlandı mı kontrol et (dtype=14 için)
-                            if is_data_retrieval_period_complete(arm_value, k_value, dtype):
-                                print(f"🔄 VERİ ALMA PERİYOTU BİTTİ (NTC3) - Kol {arm_value}, k={k_value}, dtype={dtype}")
-                                set_data_retrieval_mode(False, None)
-                                print("🛑 Veri alma modu durduruldu - Tümünü Oku işlemi tamamlandı")
                         else:
                             print(f"⚠️ Veri yakalanmadı: should_capture_data={config and should_capture_data(arm_value, k_value, dtype, config) if config else False}, config={config}")
+                        
+                        # Periyot bitiş kontrolü - her zaman yapılmalı (son batarya kontrolü için)
+                        if config and is_data_retrieval_period_complete(arm_value, k_value, dtype):
+                            print(f"🔄 VERİ ALMA PERİYOTU BİTTİ (NTC3) - Kol {arm_value}, k={k_value}, dtype={dtype}")
+                            set_data_retrieval_mode(False, None)
+                            print("🛑 Veri alma modu durduruldu - Tümünü Oku işlemi tamamlandı")
                     else:
                         print(f"⚠️ Veri alma modu pasif: Kol {arm_value}, k={k_value}, dtype={dtype}")
                 
