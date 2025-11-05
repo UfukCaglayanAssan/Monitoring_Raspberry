@@ -1726,6 +1726,7 @@ def send_read_all_command(command):
 
 def config_worker():
     """Konfigürasyon değişikliklerini işle"""
+    global read_all_mode, read_all_arm
     while True:
         try:
             config_file = "pending_config.json"
@@ -1781,7 +1782,6 @@ def config_worker():
                             
                             # "Tümünü Oku" komutu gönderildiğinde flag'i True yap ve veri alma modunu başlat
                             if command == 'readAll':
-                                global read_all_mode, read_all_arm
                                 read_all_mode = True
                                 read_all_arm = arm
                                 print(f"🔍 TÜMÜNÜ OKU MODU AKTİF - Kol {arm}")
@@ -1829,7 +1829,6 @@ def config_worker():
                                     print(f"✓ Tümünü oku komutu cihaza gönderildi (Veri Alma Modu)")
                                     
                                     # read_all_mode flag'ini de set et
-                                    global read_all_mode, read_all_arm
                                     read_all_mode = True
                                     read_all_arm = arm
                                     print(f"🔍 TÜMÜNÜ OKU MODU AKTİF - Kol {arm}")
