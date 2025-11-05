@@ -638,6 +638,12 @@ def read_serial(pi):
                         if len(buffer) >= 3:
                             dtype = buffer[2]
                             
+                            # NTC3 (dtype=14) geldiğinde log
+                            if dtype == 14:
+                                arm_value_byte = buffer[3] if len(buffer) >= 4 else None
+                                k_value_byte = buffer[1] if len(buffer) >= 2 else None
+                                print(f"📡 READ: NTC3 (dtype=14) geldi - arm={arm_value_byte}, k={k_value_byte}, dtype={dtype}")
+                            
                             # 5 byte'lık missing data paketi kontrolü
                             if dtype == 0x7F and len(buffer) >= 5:
                                 packet_length = 5
@@ -851,6 +857,11 @@ def db_worker():
                 arm_value = int(data[3], 16)
                 dtype = int(data[2], 16)
                 k_value = int(data[1], 16)  # K değerini olduğu gibi al
+                
+                # NTC3 (dtype=14) geldiğinde log
+                if dtype == 14:
+                    print(f"📊 DB_WORKER: NTC3 (dtype=14) geldi - arm={arm_value}, k={k_value}, dtype={dtype}")
+                    print(f"   📦 Ham paket: {data}")
                 
                 # k_value 2 geldiğinde yeni periyot başlat (ard arda gelmemesi şartıyla)
                 if k_value == 2:
@@ -1154,6 +1165,7 @@ def db_worker():
                     # Alarm kontrolü kaldırıldı - sadece alarm verisi geldiğinde yapılır
                 
                 elif dtype == 14:  # NTC3
+                    print(f"📝 DB_WORKER: NTC3 işleniyor - arm={arm_value}, k={k_value}, dtype={dtype}, data={salt_data}")
                     period_ts = get_period_timestamp()
                     record = {
                         "Arm": arm_value,
@@ -1163,6 +1175,7 @@ def db_worker():
                         "timestamp": period_ts
                     }
                     batch.append(record)
+                    print(f"   ✅ NTC3 batch'e eklendi - Toplam batch: {len(batch)}")
                     
                     # RAM'e yaz (Modbus/SNMP için)
                     with data_lock:
