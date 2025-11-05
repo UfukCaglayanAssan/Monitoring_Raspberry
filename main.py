@@ -3136,10 +3136,15 @@ def snmp_server():
                                 k = battery_index + 2
                                 
                                 with data_lock:
-                                    # Batarya mevcut mu kontrol et
+                                    # 120 batarya sınırına kadar izin ver (takılı olmasa bile)
                                     max_battery = arm_slave_counts_ram.get(arm_index, 0)
+                                    if battery_index > 120:
+                                        print(f"   ⚠️  batteryTable: battery_index {battery_index} > 120 (maksimum sınır)")
+                                        return self.getSyntax().clone(0)
+                                    
+                                    # Takılı olmayan bataryalar için 0 dön (No Such Object yerine)
                                     if battery_index > max_battery:
-                                        print(f"   ⚠️  batteryTable: battery_index {battery_index} > max_battery {max_battery}")
+                                        # Takılı değil ama 120 sınırı içinde - 0 dön
                                         return self.getSyntax().clone(0)
                                     
                                     # Column 3: batteryVoltage (dtype=1) - String formatında gönder
@@ -3351,9 +3356,8 @@ def snmp_server():
         # ============================================
         print("⚙️  batteryTable OID'leri oluşturuluyor...")
         for arm_index in range(1, 5):  # 1-4 arası kol
-            battery_count = arm_slave_counts_ram.get(arm_index, 0)
-            if battery_count == 0:
-                battery_count = 5  # En az 5 batarya için OID oluştur
+            # Her zaman 120 batarya potansiyeli için OID oluştur
+            battery_count = 120
             
             for battery_index in range(1, battery_count + 1):  # 1-120 arası batarya
                 for column in range(3, 12):  # Column 3-11 (batteryVoltage'dan batteryAlarmFlags'e kadar - MIB uyumlu)
