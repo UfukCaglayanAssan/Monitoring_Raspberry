@@ -2844,7 +2844,7 @@ def get_snmp_data(oid):
         return 0
 
 def send_snmp_trap(arm, battery, alarm_type, status):
-    """SNMP trap gönder"""
+    """SNMP trap gönder - MIB uyumlu"""
     try:
         with trap_targets_lock:
             active_targets = [target for target in trap_targets_ram if target['is_active']]
@@ -2853,24 +2853,62 @@ def send_snmp_trap(arm, battery, alarm_type, status):
             print("⚠️ Aktif trap hedefi yok, trap gönderilmedi")
             return
         
-        # Trap OID'ini oluştur
-        if battery == 0:  # Kol alarmı
-            trap_oid = f'1.3.6.1.4.1.1001.{arm}.7.0.{alarm_type}'
-            trap_name = f"Kol {arm} Alarm {alarm_type}"
-        else:  # Batarya alarmı
-            trap_oid = f'1.3.6.1.4.1.1001.{arm}.7.{battery}.{alarm_type}'
-            trap_name = f"Kol {arm} Batarya {battery} Alarm {alarm_type}"
+        # Alarm bilgilerini oluştur
+        # Alarm ID: timestamp bazlı benzersiz ID
+        alarm_id = int(time.time() * 1000) % 2147483647  # PositiveInteger için
         
-        # Trap mesajı
+        # Alarm açıklaması
+        alarm_type_names = {
+            1: "Yüksek Akım",
+            2: "Yüksek Nem",
+            3: "Yüksek Ortam Sıcaklığı",
+            4: "Yüksek Kol Sıcaklığı",
+            11: "Düşük Gerilim Uyarısı",
+            12: "Düşük Gerilim Alarmı",
+            13: "Yüksek Gerilim Uyarısı",
+            14: "Yüksek Gerilim Alarmı",
+            15: "Modül Sıcaklık Alarmı",
+            16: "Pozitif Kutup Sıcaklık Alarmı",
+            17: "Negatif Kutup Sıcaklık Alarmı"
+        }
+        
+        alarm_type_name = alarm_type_names.get(alarm_type, f"Alarm Tipi {alarm_type}")
+        alarm_description = f"Kol {arm}"
+        if battery > 0:
+            alarm_description += f" Batarya {battery} - {alarm_type_name}"
+        else:
+            alarm_description += f" - {alarm_type_name}"
+        
+        # MIB'deki trap OID'lerini kullan
+        if status:  # Alarm aktif
+            trap_oid = '1.3.6.1.4.1.1001.5.1'  # tescomAlarmTrap
+        else:  # Alarm çözüldü
+            trap_oid = '1.3.6.1.4.1.1001.5.2'  # tescomAlarmClearedTrap
+        
+        # MIB'deki OBJECTS: alarmId, alarmArmIndex, alarmBatteryIndex, alarmType, alarmDescription
+        # MIB OID'leri:
+        # alarmId: 1.3.6.1.4.1.1001.4.4.1.1
+        # alarmArmIndex: 1.3.6.1.4.1.1001.4.4.1.2
+        # alarmBatteryIndex: 1.3.6.1.4.1.1001.4.4.1.3
+        # alarmType: 1.3.6.1.4.1.1001.4.4.1.4
+        # alarmDescription: 1.3.6.1.4.1.1001.4.4.1.5
+        
         status_text = "AKTIF" if status else "ÇÖZÜLDÜ"
-        trap_message = f"{trap_name}: {status_text}"
-        
-        print(f"📤 Trap gönderiliyor: {trap_message}")
+        print(f"📤 Trap gönderiliyor: Kol {arm}, Batarya {battery}, Alarm Tipi {alarm_type}, Durum: {status_text}")
         
         # Her aktif hedefe trap gönder
         for target in active_targets:
             try:
-                send_single_trap(target['ip_address'], target['port'], trap_oid, trap_message)
+                send_single_trap(
+                    target_ip=target['ip_address'],
+                    target_port=target['port'],
+                    trap_oid=trap_oid,
+                    alarm_id=alarm_id,
+                    alarm_arm_index=arm,
+                    alarm_battery_index=battery,
+                    alarm_type=alarm_type,
+                    alarm_description=alarm_description
+                )
                 print(f"✅ Trap gönderildi: {target['name']} ({target['ip_address']}:{target['port']})")
             except Exception as e:
                 print(f"❌ Trap gönderme hatası {target['name']}: {e}")
@@ -2878,9 +2916,25 @@ def send_snmp_trap(arm, battery, alarm_type, status):
     except Exception as e:
         print(f"❌ Trap gönderme genel hatası: {e}")
 
-def send_single_trap(target_ip, target_port, trap_oid, message):
-    """Tek bir trap gönder"""
+def send_single_trap(target_ip, target_port, trap_oid, alarm_id, alarm_arm_index, alarm_battery_index, alarm_type, alarm_description):
+    """Tek bir trap gönder - MIB uyumlu"""
     try:
+        # MIB'deki OBJECTS tanımına göre trap gönder
+        # tescomAlarmTrap ve tescomAlarmClearedTrap OBJECTS:
+        # - alarmId (1.3.6.1.4.1.1001.4.4.1.1)
+        # - alarmArmIndex (1.3.6.1.4.1.1001.4.4.1.2)
+        # - alarmBatteryIndex (1.3.6.1.4.1.1001.4.4.1.3)
+        # - alarmType (1.3.6.1.4.1.1001.4.4.1.4)
+        # - alarmDescription (1.3.6.1.4.1.1001.4.4.1.5)
+        
+        var_binds = [
+            ObjectType(ObjectIdentity('1.3.6.1.4.1.1001.4.4.1.1'), Integer(alarm_id)),  # alarmId
+            ObjectType(ObjectIdentity('1.3.6.1.4.1.1001.4.4.1.2'), Integer(alarm_arm_index)),  # alarmArmIndex
+            ObjectType(ObjectIdentity('1.3.6.1.4.1.1001.4.4.1.3'), Integer(alarm_battery_index)),  # alarmBatteryIndex
+            ObjectType(ObjectIdentity('1.3.6.1.4.1.1001.4.4.1.4'), Integer(alarm_type)),  # alarmType
+            ObjectType(ObjectIdentity('1.3.6.1.4.1.1001.4.4.1.5'), OctetString(alarm_description[:255]))  # alarmDescription (max 255)
+        ]
+        
         # SNMP Trap gönder
         errorIndication, errorStatus, errorIndex, varBinds = next(
             sendNotification(
@@ -2891,7 +2945,7 @@ def send_single_trap(target_ip, target_port, trap_oid, message):
                 'trap',
                 NotificationType(
                     ObjectIdentity(trap_oid),
-                    [ObjectType(ObjectIdentity('1.3.6.1.4.1.1001.999.1.1'), OctetString(message))]
+                    var_binds
                 )
             )
         )
@@ -2903,6 +2957,8 @@ def send_single_trap(target_ip, target_port, trap_oid, message):
             
     except Exception as e:
         print(f"❌ Trap gönderme hatası: {e}")
+        import traceback
+        traceback.print_exc()
 
 def get_battery_data_ram(arm=None, k=None, dtype=None):
     """RAM'den batarya verisi al - modbus_snmp.py'den kopyalandı"""

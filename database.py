@@ -3474,6 +3474,11 @@ class BatteryDatabase:
     def save_trap_settings(self, trap_enabled, trap_server, trap_port, trap_community, trap_version, trap_interval):
         """Trap ayarlarını kaydet veya güncelle"""
         try:
+            # Boolean değeri integer'a çevir (SQLite için)
+            trap_enabled_int = 1 if trap_enabled else 0
+            
+            print(f"💾 Trap ayarları kaydediliyor: enabled={trap_enabled} ({trap_enabled_int}), server={trap_server}, port={trap_port}, community={trap_community}, version={trap_version}, interval={trap_interval}")
+            
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 # Önce var mı kontrol et
@@ -3488,7 +3493,7 @@ class BatteryDatabase:
                             trap_community = ?, trap_version = ?, trap_interval = ?,
                             updated_at = CURRENT_TIMESTAMP
                         WHERE id = 1
-                    ''', (trap_enabled, trap_server, trap_port, trap_community, trap_version, trap_interval))
+                    ''', (trap_enabled_int, trap_server, trap_port, trap_community, trap_version, trap_interval))
                     print("✅ Trap ayarları güncellendi")
                 else:
                     # Yeni kayıt
@@ -3496,13 +3501,21 @@ class BatteryDatabase:
                         INSERT INTO trap_settings 
                         (id, trap_enabled, trap_server, trap_port, trap_community, trap_version, trap_interval)
                         VALUES (1, ?, ?, ?, ?, ?, ?)
-                    ''', (trap_enabled, trap_server, trap_port, trap_community, trap_version, trap_interval))
+                    ''', (trap_enabled_int, trap_server, trap_port, trap_community, trap_version, trap_interval))
                     print("✅ Trap ayarları eklendi")
                 
                 conn.commit()
+                
+                # Kaydedilen veriyi kontrol et
+                cursor.execute('SELECT * FROM trap_settings WHERE id = 1')
+                saved = cursor.fetchone()
+                print(f"📋 Kaydedilen trap ayarları: {saved}")
+                
                 return {'success': True, 'message': 'Trap ayarları kaydedildi'}
         except Exception as e:
-            print(f"Trap settings kaydedilirken hata: {e}")
+            print(f"❌ Trap settings kaydedilirken hata: {e}")
+            import traceback
+            traceback.print_exc()
             return {'success': False, 'message': str(e)}
     
     def update_ftp_last_sent(self):

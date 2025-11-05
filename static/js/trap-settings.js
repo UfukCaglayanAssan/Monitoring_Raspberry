@@ -179,17 +179,34 @@ if (typeof window.TrapSettingsPage === 'undefined') {
         // Toggle switch
         const trapEnabled = document.getElementById('trapEnabled');
         if (trapEnabled) {
-            trapEnabled.checked = this.trapSettings.enabled || false;
+            trapEnabled.checked = this.trapSettings.trapEnabled || this.trapSettings.enabled || false;
         }
 
-        // Diğer alanlar
-        const fields = ['trapServer', 'trapPort', 'trapCommunity', 'trapVersion', 'trapInterval'];
-        fields.forEach(field => {
-            const element = document.getElementById(field);
-            if (element && this.trapSettings[field] !== undefined) {
-                element.value = this.trapSettings[field];
-            }
-        });
+        // Diğer alanlar - API'den gelen veri formatına göre
+        const trapServer = document.getElementById('trapServer');
+        if (trapServer && (this.trapSettings.trapServer !== undefined || this.trapSettings.server !== undefined)) {
+            trapServer.value = this.trapSettings.trapServer || this.trapSettings.server || '';
+        }
+        
+        const trapPort = document.getElementById('trapPort');
+        if (trapPort && (this.trapSettings.trapPort !== undefined || this.trapSettings.port !== undefined)) {
+            trapPort.value = this.trapSettings.trapPort || this.trapSettings.port || 162;
+        }
+        
+        const trapCommunity = document.getElementById('trapCommunity');
+        if (trapCommunity && (this.trapSettings.trapCommunity !== undefined || this.trapSettings.community !== undefined)) {
+            trapCommunity.value = this.trapSettings.trapCommunity || this.trapSettings.community || 'public';
+        }
+        
+        const trapVersion = document.getElementById('trapVersion');
+        if (trapVersion && (this.trapSettings.trapVersion !== undefined || this.trapSettings.version !== undefined)) {
+            trapVersion.value = this.trapSettings.trapVersion || this.trapSettings.version || '2c';
+        }
+        
+        const trapInterval = document.getElementById('trapInterval');
+        if (trapInterval && (this.trapSettings.trapInterval !== undefined || this.trapSettings.interval !== undefined)) {
+            trapInterval.value = this.trapSettings.trapInterval || this.trapSettings.interval || 30;
+        }
     }
 
     async saveTrapSettings() {
@@ -198,16 +215,25 @@ if (typeof window.TrapSettingsPage === 'undefined') {
             this.showLoading(true);
 
             const form = document.getElementById('trapSettingsForm');
-            const formData = new FormData(form);
+            
+            // Checkbox değerini doğrudan al
+            const trapEnabled = document.getElementById('trapEnabled');
+            const trapServer = document.getElementById('trapServer');
+            const trapPort = document.getElementById('trapPort');
+            const trapCommunity = document.getElementById('trapCommunity');
+            const trapVersion = document.getElementById('trapVersion');
+            const trapInterval = document.getElementById('trapInterval');
             
             const settings = {
-                enabled: formData.get('trapEnabled') === 'on',
-                trapServer: formData.get('trapServer'),
-                trapPort: parseInt(formData.get('trapPort')) || 162,
-                trapCommunity: formData.get('trapCommunity'),
-                trapVersion: formData.get('trapVersion'),
-                trapInterval: parseInt(formData.get('trapInterval')) || 30
+                trapEnabled: trapEnabled ? trapEnabled.checked : false,
+                trapServer: trapServer ? trapServer.value : '',
+                trapPort: trapPort ? parseInt(trapPort.value) || 162 : 162,
+                trapCommunity: trapCommunity ? trapCommunity.value : 'public',
+                trapVersion: trapVersion ? trapVersion.value : '2c',
+                trapInterval: trapInterval ? parseInt(trapInterval.value) || 30 : 30
             };
+            
+            console.log('📤 Gönderilen trap ayarları:', settings);
 
             const response = await fetch('/api/trap-settings', {
                 method: 'POST',

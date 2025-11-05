@@ -1603,6 +1603,7 @@ def save_trap_settings():
     """Trap ayarlarını kaydet"""
     try:
         data = request.get_json()
+        print(f"📥 Trap ayarları POST isteği alındı: {data}")
         db = get_db()
         
         # Parametreleri al
@@ -1613,12 +1614,18 @@ def save_trap_settings():
         trap_version = data.get('trapVersion', '2c')
         trap_interval = data.get('trapInterval', 30)
         
+        print(f"📊 Trap ayarları parametreleri: enabled={trap_enabled}, server={trap_server}, port={trap_port}, community={trap_community}, version={trap_version}, interval={trap_interval}")
+        
         result = db_operation_with_retry(lambda: db.save_trap_settings(
             trap_enabled, trap_server, trap_port, trap_community, trap_version, trap_interval
         ))
         
+        print(f"✅ Trap ayarları kayıt sonucu: {result}")
         return jsonify(result)
     except Exception as e:
+        print(f"❌ Trap ayarları kaydedilirken hata: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
             'success': False,
             'message': str(e)
