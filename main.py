@@ -3304,53 +3304,53 @@ def snmp_server():
                                                 return self.getSyntax().clone(f"{value:.1f}")  # mV (virgüllü)
                                         return self.getSyntax().clone("0.0")
                                     
-                                # Column 4: batterySoc (dtype=2) - String formatında gönder (tam sayı - 100'ü geçmez)
-                                elif column == 4:
-                                    if arm_index in battery_data_ram and k in battery_data_ram[arm_index]:
-                                        if 2 in battery_data_ram[arm_index][k]:
-                                            value = battery_data_ram[arm_index][k][2].get('value', 0)
-                                            return self.getSyntax().clone(f"{int(value)}")  # % (tam sayı)
-                                    return self.getSyntax().clone("0")
+                                    # Column 4: batterySoc (dtype=2) - String formatında gönder (tam sayı - 100'ü geçmez)
+                                    elif column == 4:
+                                        if arm_index in battery_data_ram and k in battery_data_ram[arm_index]:
+                                            if 2 in battery_data_ram[arm_index][k]:
+                                                value = battery_data_ram[arm_index][k][2].get('value', 0)
+                                                return self.getSyntax().clone(f"{int(value)}")  # % (tam sayı)
+                                        return self.getSyntax().clone("0")
                                     
-                                # Column 5: batteryRimt (dtype=3) - String formatında gönder
-                                elif column == 5:
-                                    if arm_index in battery_data_ram and k in battery_data_ram[arm_index]:
-                                        if 3 in battery_data_ram[arm_index][k]:
-                                            value = battery_data_ram[arm_index][k][3].get('value', 0)
-                                            return self.getSyntax().clone(f"{value:.1f}")  # mOhm (virgüllü)
-                                    return self.getSyntax().clone("0.0")
+                                    # Column 5: batteryRimt (dtype=3) - String formatında gönder
+                                    elif column == 5:
+                                        if arm_index in battery_data_ram and k in battery_data_ram[arm_index]:
+                                            if 3 in battery_data_ram[arm_index][k]:
+                                                value = battery_data_ram[arm_index][k][3].get('value', 0)
+                                                return self.getSyntax().clone(f"{value:.1f}")  # mOhm (virgüllü)
+                                        return self.getSyntax().clone("0.0")
                                     
-                                # Column 6: batterySoh (dtype=4) - String formatında gönder (tam sayı - 100'ü geçmez)
-                                elif column == 6:
-                                    if arm_index in battery_data_ram and k in battery_data_ram[arm_index]:
-                                        if 4 in battery_data_ram[arm_index][k]:
-                                            value = battery_data_ram[arm_index][k][4].get('value', 0)
-                                            return self.getSyntax().clone(f"{int(value)}")  # % (tam sayı)
-                                    return self.getSyntax().clone("0")
+                                    # Column 6: batterySoh (dtype=4) - String formatında gönder (tam sayı - 100'ü geçmez)
+                                    elif column == 6:
+                                        if arm_index in battery_data_ram and k in battery_data_ram[arm_index]:
+                                            if 4 in battery_data_ram[arm_index][k]:
+                                                value = battery_data_ram[arm_index][k][4].get('value', 0)
+                                                return self.getSyntax().clone(f"{int(value)}")  # % (tam sayı)
+                                        return self.getSyntax().clone("0")
                                     
-                                # Column 7: batteryNtc1 (dtype=5) - String formatında gönder
-                                elif column == 7:
-                                    if arm_index in battery_data_ram and k in battery_data_ram[arm_index]:
-                                        if 5 in battery_data_ram[arm_index][k]:
-                                            value = battery_data_ram[arm_index][k][5].get('value', 0)
-                                            return self.getSyntax().clone(f"{value:.1f}")  # Celsius (virgüllü)
-                                    return self.getSyntax().clone("0.0")
+                                    # Column 7: batteryNtc1 (dtype=5) - String formatında gönder
+                                    elif column == 7:
+                                        if arm_index in battery_data_ram and k in battery_data_ram[arm_index]:
+                                            if 5 in battery_data_ram[arm_index][k]:
+                                                value = battery_data_ram[arm_index][k][5].get('value', 0)
+                                                return self.getSyntax().clone(f"{value:.1f}")  # Celsius (virgüllü)
+                                        return self.getSyntax().clone("0.0")
                                     
-                                # Column 8: batteryNtc2 (dtype=6) - String formatında gönder
-                                elif column == 8:
-                                    if arm_index in battery_data_ram and k in battery_data_ram[arm_index]:
-                                        if 6 in battery_data_ram[arm_index][k]:
-                                            value = battery_data_ram[arm_index][k][6].get('value', 0)
-                                            return self.getSyntax().clone(f"{value:.1f}")  # Celsius (virgüllü)
-                                    return self.getSyntax().clone("0.0")
+                                    # Column 8: batteryNtc2 (dtype=6) - String formatında gönder
+                                    elif column == 8:
+                                        if arm_index in battery_data_ram and k in battery_data_ram[arm_index]:
+                                            if 6 in battery_data_ram[arm_index][k]:
+                                                value = battery_data_ram[arm_index][k][6].get('value', 0)
+                                                return self.getSyntax().clone(f"{value:.1f}")  # Celsius (virgüllü)
+                                        return self.getSyntax().clone("0.0")
                                     
-                                # Column 9: batteryNtc3 (dtype=7) - String formatında gönder
-                                elif column == 9:
-                                    if arm_index in battery_data_ram and k in battery_data_ram[arm_index]:
-                                        if 7 in battery_data_ram[arm_index][k]:
-                                            value = battery_data_ram[arm_index][k][7].get('value', 0)
-                                            return self.getSyntax().clone(f"{value:.1f}")  # Celsius (virgüllü)
-                                    return self.getSyntax().clone("0.0")
+                                    # Column 9: batteryNtc3 (dtype=7) - String formatında gönder
+                                    elif column == 9:
+                                        if arm_index in battery_data_ram and k in battery_data_ram[arm_index]:
+                                            if 7 in battery_data_ram[arm_index][k]:
+                                                value = battery_data_ram[arm_index][k][7].get('value', 0)
+                                                return self.getSyntax().clone(f"{value:.1f}")  # Celsius (virgüllü)
+                                        return self.getSyntax().clone("0.0")
                                 
                                 # Column 10: batteryStatus
                                 elif column == 10:
@@ -3358,10 +3358,10 @@ def snmp_server():
                                         return self.getSyntax().clone(1 if status_ram[arm_index][battery_index] else 0)
                                     return self.getSyntax().clone(0)
                                 
-                                    # Column 11: batteryAlarmFlags (HEX bitmask - MIB uyumlu)
-                                    # 0x1=Düşük Gerilim Uyarısı, 0x2=Düşük Gerilim Alarmı, 0x4=Yüksek Gerilim Uyarısı,
-                                    # 0x8=Yüksek Gerilim Alarmı, 0x10=Modül Sıcaklık Alarmı, 0x20=Pozitif Kutup Sıcaklık Alarmı,
-                                    # 0x40=Negatif Kutup Sıcaklık Alarmı
+                                # Column 11: batteryAlarmFlags (HEX bitmask - MIB uyumlu)
+                                # 0x1=Düşük Gerilim Uyarısı, 0x2=Düşük Gerilim Alarmı, 0x4=Yüksek Gerilim Uyarısı,
+                                # 0x8=Yüksek Gerilim Alarmı, 0x10=Modül Sıcaklık Alarmı, 0x20=Pozitif Kutup Sıcaklık Alarmı,
+                                # 0x40=Negatif Kutup Sıcaklık Alarmı
                                 elif column == 11:
                                     if arm_index in alarm_ram and battery_index in alarm_ram[arm_index]:
                                         flags = 0
