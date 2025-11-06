@@ -2886,11 +2886,12 @@ def send_snmp_trap(arm, battery, alarm_type, status):
         
         # Alarm açıklaması - web_app.py ve alarm_processor.py'deki açıklamaları kullan
         # Kol alarmları (1-4) - web_app.py'deki get_arm_alarm_description ile uyumlu
+        # Not: Türkçe karakterler ASCII'ye çevrilecek (ş->s, ı->i, ğ->g, ü->u, ö->o, ç->c)
         arm_alarm_names = {
-            1: "Yüksek akım alarmı",  # error_msb == 2
-            2: "Yüksek nem alarmı",   # error_msb == 4
-            3: "Yüksek ortam sıcaklığı alarmı",  # error_msb == 8
-            4: "Yüksek kol sıcaklığı alarmı"  # error_msb == 16
+            1: "Yuksek akim alarmi",  # error_msb == 2
+            2: "Yuksek nem alarmi",   # error_msb == 4
+            3: "Yuksek ortam sicakligi alarmi",  # error_msb == 8
+            4: "Yuksek kol sicakligi alarmi"  # error_msb == 16
         }
         
         # Batarya alarmları (1-7) - web_app.py ve alarm_processor.py'deki get_battery_alarm_description ile uyumlu
@@ -2902,24 +2903,25 @@ def send_snmp_trap(arm, battery, alarm_type, status):
         # alarm_type 5 = OvertempD (error_lsb & 64)
         # alarm_type 6 = OvertempP (error_msb & 1)
         # alarm_type 7 = OvertempN (error_msb & 2)
+        # Not: Türkçe karakterler ASCII'ye çevrilecek (ş->s, ı->i, ğ->g, ü->u, ö->o, ç->c)
         battery_alarm_names = {
-            1: "Düşük batarya gerilim uyarısı",      # error_lsb & 4
-            2: "Düşük batarya gerilimi alarmı",      # error_lsb & 8
-            3: "Yüksek batarya gerilimi uyarısı",    # error_lsb & 16
-            4: "Yüksek batarya gerilimi alarmı",     # error_lsb & 32
-            5: "Modül sıcaklık alarmı",              # error_lsb & 64
-            6: "Pozitif kutup başı alarmı",          # error_msb & 1
-            7: "Negatif kutup başı sıcaklık alarmı"  # error_msb & 2
+            1: "Dusuk batarya gerilim uyarisi",      # error_lsb & 4
+            2: "Dusuk batarya gerilimi alarmi",      # error_lsb & 8
+            3: "Yuksek batarya gerilimi uyarisi",    # error_lsb & 16
+            4: "Yuksek batarya gerilimi alarmi",     # error_lsb & 32
+            5: "Modul sicaklik alarmi",              # error_lsb & 64
+            6: "Pozitif kutup basi alarmi",          # error_msb & 1
+            7: "Negatif kutup basi sicaklik alarmi"  # error_msb & 2
         }
         
         # Alarm tipi ismini belirle
         if battery > 0:
             # Batarya alarmı
-            alarm_type_name = battery_alarm_names.get(alarm_type, f"Bilinmeyen batarya alarmı (Tip: {alarm_type})")
+            alarm_type_name = battery_alarm_names.get(alarm_type, f"Bilinmeyen batarya alarmi (Tip: {alarm_type})")
             alarm_description = f"Kol {arm}, Batarya {battery}: {alarm_type_name}"
         else:
             # Kol alarmı
-            alarm_type_name = arm_alarm_names.get(alarm_type, f"Bilinmeyen kol alarmı (Tip: {alarm_type})")
+            alarm_type_name = arm_alarm_names.get(alarm_type, f"Bilinmeyen kol alarmi (Tip: {alarm_type})")
             alarm_description = f"Kol {arm}: {alarm_type_name}"
         
         # MIB'deki trap OID'lerini kullan
