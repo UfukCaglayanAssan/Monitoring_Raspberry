@@ -26,38 +26,27 @@ from pysnmp.carrier.asyncio.dgram import udp
 from pysnmp.proto.api import v2c
 
 # SNMP trap gönderme için gerekli sınıflar
-# Explicit import (pysnmp.hlapi'den direkt import et)
+# pysnmp 7.1.21 için - önce hangi modülün çalıştığını dene
 try:
-    from pysnmp.hlapi import (
+    # Önce v1arch'dan dene (senkron için)
+    from pysnmp.hlapi.v1arch import (
         sendNotification, UdpTransportTarget, ContextData,
-        CommunityData, SnmpEngine, NotificationType
-    )
-except ImportError:
-    # Fallback: v1arch'dan dene
-    try:
-        from pysnmp.hlapi.v1arch import (
-            sendNotification, UdpTransportTarget, ContextData,
-            CommunityData, SnmpEngine, NotificationType
-        )
-    except ImportError:
-        # Son çare: hlapi.asyncio'dan al ama senkron kullan
-        from pysnmp.hlapi.asyncio import (
-            sendNotification, UdpTransportTarget, ContextData,
-            CommunityData, SnmpEngine, NotificationType
-        )
-
-# SNMPv3 için gerekli sınıflar
-try:
-    from pysnmp.hlapi import (
+        CommunityData, SnmpEngine, NotificationType,
         UsmUserData, usmHMACSHAAuthProtocol, usmAesCfb128Protocol
     )
 except ImportError:
     try:
-        from pysnmp.hlapi.v1arch import (
+        # Sonra hlapi'den dene
+        from pysnmp.hlapi import (
+            sendNotification, UdpTransportTarget, ContextData,
+            CommunityData, SnmpEngine, NotificationType,
             UsmUserData, usmHMACSHAAuthProtocol, usmAesCfb128Protocol
         )
     except ImportError:
+        # Son çare: asyncio'dan al (ama senkron kullan)
         from pysnmp.hlapi.asyncio import (
+            sendNotification, UdpTransportTarget, ContextData,
+            CommunityData, SnmpEngine, NotificationType,
             UsmUserData, usmHMACSHAAuthProtocol, usmAesCfb128Protocol
         )
 
