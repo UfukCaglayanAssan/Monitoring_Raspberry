@@ -1803,6 +1803,10 @@ def config_worker():
                         # Veri alma modunu durdur (JSON dosyasından)
                         set_data_retrieval_mode(False, None)
                         print(f"🛑 VERİ ALMA MODU DURDURULDU (JSON'dan)")
+                    elif config_data.get('type') == 'reload_trap_targets':
+                        # Trap hedeflerini yeniden yükle
+                        load_trap_targets_to_ram()
+                        print(f"🔄 Trap hedefleri yeniden yüklendi")
                     
                 except Exception as e:
                     print(f"Konfigürasyon dosyası işlenirken hata: {e}")
@@ -2433,12 +2437,15 @@ def load_trap_targets_to_ram():
     try:
         with db_lock:
             targets = db.get_trap_targets()
+            
             with trap_targets_lock:
                 trap_targets_ram.clear()
                 trap_targets_ram.extend(targets)
             print(f"✓ {len(targets)} trap hedefi RAM'e yüklendi")
     except Exception as e:
         print(f"❌ Trap hedefleri yüklenirken hata: {e}")
+        import traceback
+        traceback.print_exc()
 
 def update_alarm_ram(arm, battery, alarm_type, status):
     """Alarm RAM'ini güncelle"""
@@ -2847,7 +2854,15 @@ def send_snmp_trap(arm, battery, alarm_type, status):
     """SNMP trap gönder - MIB uyumlu"""
     try:
         with trap_targets_lock:
-            active_targets = [target for target in trap_targets_ram if target['is_active']]
+            # trap_enabled kontrolü yap (varsa)
+            active_targets = []
+            for target in trap_targets_ram:
+                # trap_enabled kolonu varsa onu kullan, yoksa is_active kullan
+                if target.get('trap_enabled') is not None:
+                    if target.get('trap_enabled') and target.get('is_active', True):
+                        active_targets.append(target)
+                elif target.get('is_active'):
+                    active_targets.append(target)
         
         if not active_targets:
             print("⚠️ Aktif trap hedefi yok, trap gönderilmedi")
@@ -2902,6 +2917,7 @@ def send_snmp_trap(arm, battery, alarm_type, status):
                 send_single_trap(
                     target_ip=target['ip_address'],
                     target_port=target['port'],
+                    trap_community=target.get('trap_community', 'public'),
                     trap_oid=trap_oid,
                     alarm_id=alarm_id,
                     alarm_arm_index=arm,
@@ -2916,7 +2932,7 @@ def send_snmp_trap(arm, battery, alarm_type, status):
     except Exception as e:
         print(f"❌ Trap gönderme genel hatası: {e}")
 
-def send_single_trap(target_ip, target_port, trap_oid, alarm_id, alarm_arm_index, alarm_battery_index, alarm_type, alarm_description):
+def send_single_trap(target_ip, target_port, trap_community='public', trap_oid=None, alarm_id=None, alarm_arm_index=None, alarm_battery_index=None, alarm_type=None, alarm_description=None):
     """Tek bir trap gönder - MIB uyumlu"""
     try:
         # MIB'deki OBJECTS tanımına göre trap gönder
@@ -2939,7 +2955,7 @@ def send_single_trap(target_ip, target_port, trap_oid, alarm_id, alarm_arm_index
         errorIndication, errorStatus, errorIndex, varBinds = next(
             sendNotification(
                 SnmpEngine(),
-                CommunityData('public'),
+                CommunityData(trap_community),
                 UdpTransportTarget((target_ip, target_port)),
                 ContextData(),
                 'trap',

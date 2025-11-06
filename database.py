@@ -329,36 +329,53 @@ class BatteryDatabase:
                 ''')
                 print("✓ ftp_config tablosu oluşturuldu")
                 
-                # Trap hedefleri tablosu
+                # Trap hedefleri tablosu (trap_settings özellikleri ile birleştirildi)
                 cursor.execute('''
                     CREATE TABLE IF NOT EXISTS trap_targets (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name TEXT NOT NULL,
+                        id INTEGER PRIMARY KEY DEFAULT 1,
+                        name TEXT NOT NULL DEFAULT 'Trap Target',
                         ip_address TEXT NOT NULL,
                         port INTEGER DEFAULT 162,
                         is_active BOOLEAN DEFAULT 1,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                    )
-                ''')
-                print("✓ trap_targets tablosu oluşturuldu")
-                
-                # Trap ayarları tablosu (tek kayıt)
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS trap_settings (
-                        id INTEGER PRIMARY KEY DEFAULT 1,
                         trap_enabled BOOLEAN DEFAULT 0,
-                        trap_server TEXT,
-                        trap_port INTEGER DEFAULT 162,
                         trap_community TEXT DEFAULT 'public',
                         trap_version TEXT DEFAULT '2c',
                         trap_interval INTEGER DEFAULT 30,
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        CONSTRAINT single_trap_config CHECK (id = 1)
+                        CONSTRAINT single_trap_target CHECK (id = 1)
                     )
                 ''')
-                print("✓ trap_settings tablosu oluşturuldu")
+                print("✓ trap_targets tablosu oluşturuldu")
+                
+                # Yeni kolonları ekle (migration için)
+                try:
+                    cursor.execute("ALTER TABLE trap_targets ADD COLUMN trap_enabled BOOLEAN DEFAULT 0")
+                    print("✓ trap_enabled kolonu eklendi")
+                except:
+                    pass  # Kolon zaten varsa
+                
+                try:
+                    cursor.execute("ALTER TABLE trap_targets ADD COLUMN trap_community TEXT DEFAULT 'public'")
+                    print("✓ trap_community kolonu eklendi")
+                except:
+                    pass
+                
+                try:
+                    cursor.execute("ALTER TABLE trap_targets ADD COLUMN trap_version TEXT DEFAULT '2c'")
+                    print("✓ trap_version kolonu eklendi")
+                except:
+                    pass
+                
+                try:
+                    cursor.execute("ALTER TABLE trap_targets ADD COLUMN trap_interval INTEGER DEFAULT 30")
+                    print("✓ trap_interval kolonu eklendi")
+                except:
+                    pass
+                
+                conn.commit()
+                
+                # trap_settings tablosu artık kullanılmıyor - trap_targets'e taşındı
                 
                 # Default arm_slave_counts değerlerini ekle
                 cursor.execute('''
@@ -1045,32 +1062,7 @@ class BatteryDatabase:
                 else:
                     print("✅ reset_system_log tablosu mevcut")
                 
-                # trap_settings tablosu var mı kontrol et
-                cursor.execute("""
-                    SELECT name FROM sqlite_master 
-                    WHERE type='table' AND name='trap_settings'
-                """)
-                
-                if not cursor.fetchone():
-                    print("🔄 trap_settings tablosu eksik, oluşturuluyor...")
-                    cursor.execute('''
-                        CREATE TABLE IF NOT EXISTS trap_settings (
-                            id INTEGER PRIMARY KEY DEFAULT 1,
-                            trap_enabled BOOLEAN DEFAULT 0,
-                            trap_server TEXT,
-                            trap_port INTEGER DEFAULT 162,
-                            trap_community TEXT DEFAULT 'public',
-                            trap_version TEXT DEFAULT '2c',
-                            trap_interval INTEGER DEFAULT 30,
-                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                            CONSTRAINT single_trap_config CHECK (id = 1)
-                        )
-                    ''')
-                    conn.commit()
-                    print("✅ trap_settings tablosu oluşturuldu")
-                else:
-                    print("✅ trap_settings tablosu mevcut")
+                # trap_settings tablosu artık kullanılmıyor - trap_targets'e taşındı
                 
                 # trap_targets tablosu var mı kontrol et
                 cursor.execute("""
@@ -1078,23 +1070,54 @@ class BatteryDatabase:
                     WHERE type='table' AND name='trap_targets'
                 """)
                 
-                if not cursor.fetchone():
+                trap_targets_exists = cursor.fetchone()
+                if not trap_targets_exists:
                     print("🔄 trap_targets tablosu eksik, oluşturuluyor...")
                     cursor.execute('''
                         CREATE TABLE IF NOT EXISTS trap_targets (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            name TEXT NOT NULL,
+                            id INTEGER PRIMARY KEY DEFAULT 1,
+                            name TEXT NOT NULL DEFAULT 'Trap Target',
                             ip_address TEXT NOT NULL,
                             port INTEGER DEFAULT 162,
                             is_active BOOLEAN DEFAULT 1,
+                            trap_enabled BOOLEAN DEFAULT 0,
+                            trap_community TEXT DEFAULT 'public',
+                            trap_version TEXT DEFAULT '2c',
+                            trap_interval INTEGER DEFAULT 30,
                             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            CONSTRAINT single_trap_target CHECK (id = 1)
                         )
                     ''')
                     conn.commit()
                     print("✅ trap_targets tablosu oluşturuldu")
                 else:
                     print("✅ trap_targets tablosu mevcut")
+                    # Migration: Yeni kolonları ekle (yoksa)
+                    try:
+                        cursor.execute("ALTER TABLE trap_targets ADD COLUMN trap_enabled BOOLEAN DEFAULT 0")
+                        conn.commit()
+                        print("✓ trap_enabled kolonu eklendi (migration)")
+                    except:
+                        pass
+                    try:
+                        cursor.execute("ALTER TABLE trap_targets ADD COLUMN trap_community TEXT DEFAULT 'public'")
+                        conn.commit()
+                        print("✓ trap_community kolonu eklendi (migration)")
+                    except:
+                        pass
+                    try:
+                        cursor.execute("ALTER TABLE trap_targets ADD COLUMN trap_version TEXT DEFAULT '2c'")
+                        conn.commit()
+                        print("✓ trap_version kolonu eklendi (migration)")
+                    except:
+                        pass
+                    try:
+                        cursor.execute("ALTER TABLE trap_targets ADD COLUMN trap_interval INTEGER DEFAULT 30")
+                        conn.commit()
+                        print("✓ trap_interval kolonu eklendi (migration)")
+                    except:
+                        pass
                 
                 # ftp_config tablosu var mı kontrol et
                 cursor.execute("""
@@ -1988,7 +2011,7 @@ class BatteryDatabase:
                     return None
                 
                 # Debug: Dil parametresini yazdır
-                print(f"DEBUG: Dil parametresi: {language}")
+                
                 
                 # Sadece en son verileri getir (en son timestamp'teki tüm dtype'lar)
                 cursor.execute('''
@@ -2005,7 +2028,7 @@ class BatteryDatabase:
                 data_rows = cursor.fetchall()
                 
                 # Debug: Veri satırlarını yazdır
-                print(f"DEBUG: Veri satırları: {data_rows}")
+            
                 
                 # Pasif balans durumunu kontrol et
                 passive_balance_status = self.check_passive_balance_status(arm, battery_address)
@@ -3322,45 +3345,206 @@ class BatteryDatabase:
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
-                    SELECT id, name, ip_address, port, is_active, created_at, updated_at
+                # Önce kolonları kontrol et
+                cursor.execute("PRAGMA table_info(trap_targets)")
+                columns = [col[1] for col in cursor.fetchall()]
+                
+                # Kolonları dinamik olarak seç
+                select_cols = ['id', 'name', 'ip_address', 'port', 'is_active']
+                if 'trap_enabled' in columns:
+                    select_cols.append('trap_enabled')
+                if 'trap_community' in columns:
+                    select_cols.append('trap_community')
+                if 'trap_version' in columns:
+                    select_cols.append('trap_version')
+                if 'trap_interval' in columns:
+                    select_cols.append('trap_interval')
+                select_cols.extend(['created_at', 'updated_at'])
+                
+                cursor.execute(f"""
+                    SELECT {', '.join(select_cols)}
                     FROM trap_targets 
                     ORDER BY created_at ASC
                 """)
                 results = cursor.fetchall()
                 targets = []
                 for row in results:
-                    targets.append({
+                    target = {
                         'id': row[0],
                         'name': row[1],
                         'ip_address': row[2],
                         'port': row[3],
                         'is_active': bool(row[4]),
-                        'created_at': row[5],
-                        'updated_at': row[6]
-                    })
+                        'created_at': row[-2] if len(row) > 6 else None,
+                        'updated_at': row[-1] if len(row) > 6 else None
+                    }
+                    # Yeni kolonları ekle (varsa)
+                    idx = 5
+                    if 'trap_enabled' in columns:
+                        target['trap_enabled'] = bool(row[idx]) if idx < len(row) else False
+                        idx += 1
+                    else:
+                        target['trap_enabled'] = False
+                    
+                    if 'trap_community' in columns:
+                        target['trap_community'] = row[idx] if idx < len(row) else 'public'
+                        idx += 1
+                    else:
+                        target['trap_community'] = 'public'
+                    
+                    if 'trap_version' in columns:
+                        target['trap_version'] = row[idx] if idx < len(row) else '2c'
+                        idx += 1
+                    else:
+                        target['trap_version'] = '2c'
+                    
+                    if 'trap_interval' in columns:
+                        target['trap_interval'] = row[idx] if idx < len(row) else 30
+                    else:
+                        target['trap_interval'] = 30
+                    
+                    targets.append(target)
                 return targets
         except Exception as e:
             print(f"Trap hedefleri getirilirken hata: {e}")
+            import traceback
+            traceback.print_exc()
             return []
     
-    def add_trap_target(self, name, ip_address, port=162):
-        """Yeni trap hedefi ekle"""
+    def save_trap_target(self, name, ip_address, port=162, is_active=True, trap_enabled=False, trap_community='public', trap_version='2c', trap_interval=30):
+        """Tek trap hedefini kaydet veya güncelle (id=1) - trap_settings mantığı"""
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
-                    INSERT INTO trap_targets (name, ip_address, port, is_active)
-                    VALUES (?, ?, ?, 1)
-                """, (name, ip_address, port))
+                
+                # Migration: Yeni kolonları ekle (yoksa)
+                try:
+                    cursor.execute("ALTER TABLE trap_targets ADD COLUMN trap_enabled BOOLEAN DEFAULT 0")
+                except:
+                    pass
+                try:
+                    cursor.execute("ALTER TABLE trap_targets ADD COLUMN trap_community TEXT DEFAULT 'public'")
+                except:
+                    pass
+                try:
+                    cursor.execute("ALTER TABLE trap_targets ADD COLUMN trap_version TEXT DEFAULT '2c'")
+                except:
+                    pass
+                try:
+                    cursor.execute("ALTER TABLE trap_targets ADD COLUMN trap_interval INTEGER DEFAULT 30")
+                except:
+                    pass
                 conn.commit()
-                return {'success': True, 'message': 'Trap hedefi başarıyla eklendi'}
+                
+                # Mevcut kayıt var mı kontrol et
+                cursor.execute('SELECT id FROM trap_targets WHERE id = 1')
+                exists = cursor.fetchone()
+                
+                is_active_int = 1 if is_active else 0
+                trap_enabled_int = 1 if trap_enabled else 0
+                
+                if exists:
+                    # Kayıt varsa güncelle
+                    cursor.execute('''
+                        UPDATE trap_targets 
+                        SET name = ?, ip_address = ?, port = ?, is_active = ?,
+                            trap_enabled = ?, trap_community = ?, trap_version = ?, trap_interval = ?,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = 1
+                    ''', (name, ip_address, port, is_active_int, trap_enabled_int, trap_community, trap_version, trap_interval))
+                    print("✅ Trap hedefi güncellendi (id=1)")
+                else:
+                    # Kayıt yoksa ekle
+                    cursor.execute('''
+                        INSERT INTO trap_targets 
+                        (id, name, ip_address, port, is_active, trap_enabled, trap_community, trap_version, trap_interval)
+                        VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (name, ip_address, port, is_active_int, trap_enabled_int, trap_community, trap_version, trap_interval))
+                    print("✅ Trap hedefi eklendi (id=1)")
+                
+                conn.commit()
+                return {'success': True, 'message': 'Trap hedefi başarıyla kaydedildi'}
         except Exception as e:
-            print(f"Trap hedefi eklenirken hata: {e}")
+            print(f"❌ Trap hedefi kaydedilirken hata: {e}")
+            import traceback
+            traceback.print_exc()
             return {'success': False, 'message': str(e)}
     
+    def get_trap_target(self):
+        """Tek trap hedefini getir (id=1)"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                # Önce kolonları kontrol et
+                cursor.execute("PRAGMA table_info(trap_targets)")
+                columns = [col[1] for col in cursor.fetchall()]
+                
+                # Kolonları dinamik olarak seç
+                select_cols = ['id', 'name', 'ip_address', 'port', 'is_active']
+                if 'trap_enabled' in columns:
+                    select_cols.append('trap_enabled')
+                if 'trap_community' in columns:
+                    select_cols.append('trap_community')
+                if 'trap_version' in columns:
+                    select_cols.append('trap_version')
+                if 'trap_interval' in columns:
+                    select_cols.append('trap_interval')
+                select_cols.extend(['created_at', 'updated_at'])
+                
+                cursor.execute(f'''
+                    SELECT {', '.join(select_cols)}
+                    FROM trap_targets WHERE id = 1
+                ''')
+                row = cursor.fetchone()
+                if row:
+                    result = {
+                        'id': row[0],
+                        'name': row[1],
+                        'ip_address': row[2],
+                        'port': row[3],
+                        'is_active': bool(row[4]),
+                        'created_at': row[-2] if len(row) > 6 else None,
+                        'updated_at': row[-1] if len(row) > 6 else None
+                    }
+                    # Yeni kolonları ekle (varsa)
+                    idx = 5
+                    if 'trap_enabled' in columns:
+                        result['trap_enabled'] = bool(row[idx]) if idx < len(row) else False
+                        idx += 1
+                    else:
+                        result['trap_enabled'] = False
+                    
+                    if 'trap_community' in columns:
+                        result['trap_community'] = row[idx] if idx < len(row) else 'public'
+                        idx += 1
+                    else:
+                        result['trap_community'] = 'public'
+                    
+                    if 'trap_version' in columns:
+                        result['trap_version'] = row[idx] if idx < len(row) else '2c'
+                        idx += 1
+                    else:
+                        result['trap_version'] = '2c'
+                    
+                    if 'trap_interval' in columns:
+                        result['trap_interval'] = row[idx] if idx < len(row) else 30
+                    else:
+                        result['trap_interval'] = 30
+                    
+                    return result
+                return None
+        except Exception as e:
+            print(f"Trap hedefi getirilirken hata: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
+    
+    def add_trap_target(self, name, ip_address, port=162):
+        """Yeni trap hedefi ekle (eski fonksiyon - geriye uyumluluk için)"""
+        return self.save_trap_target(name, ip_address, port, is_active=True)
+    
     def update_trap_target(self, target_id, name, ip_address, port=162):
-        """Trap hedefini güncelle"""
+        """Trap hedefini güncelle (eski fonksiyon - geriye uyumluluk için)"""
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()

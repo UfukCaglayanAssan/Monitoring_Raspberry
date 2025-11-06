@@ -693,16 +693,62 @@ if (typeof window.ConfigurationPage === 'undefined') {
     showToast(message, type = 'info') {
         // Toast notification göster
         const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-        toast.textContent = message;
+        toast.className = 'toast';
+        
+        // Toast content div'i oluştur
+        const toastContent = document.createElement('div');
+        toastContent.className = 'toast-content';
+        
+        // İkon ekle
+        const toastIcon = document.createElement('div');
+        toastIcon.className = 'toast-icon';
+        
+        // Tip'e göre ikon ve renk ayarla
+        if (type === 'error') {
+            toastIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+            toastIcon.style.background = '#ef4444';
+            toastContent.style.background = '#dc3545';
+        } else if (type === 'success') {
+            toastIcon.innerHTML = '<i class="fas fa-check"></i>';
+            toastIcon.style.background = '#10b981';
+            toastContent.style.background = '#28a745';
+        } else if (type === 'warning') {
+            toastIcon.innerHTML = '<i class="fas fa-exclamation-circle"></i>';
+            toastIcon.style.background = '#f59e0b';
+            toastContent.style.background = '#ffc107';
+            toastMessage.style.color = '#212529'; // Warning için siyah yazı
+        } else { // info
+            toastIcon.innerHTML = '<i class="fas fa-info-circle"></i>';
+            toastIcon.style.background = '#3b82f6';
+            toastContent.style.background = '#17a2b8';
+        }
+        
+        // Mesaj ekle
+        const toastMessage = document.createElement('span');
+        toastMessage.className = 'toast-message';
+        toastMessage.textContent = message;
+        toastMessage.style.color = 'white';
+        
+        // Yapıyı oluştur
+        toastContent.appendChild(toastIcon);
+        toastContent.appendChild(toastMessage);
+        toast.appendChild(toastContent);
+        
+        // Toast'un kendisine background verme
+        toast.style.background = 'transparent';
+        toast.style.border = 'none';
         
         document.body.appendChild(toast);
         
         // Animasyon
-        setTimeout(() => toast.classList.add('show'), 100);
+        setTimeout(() => toast.classList.add('show'), 10);
         setTimeout(() => {
             toast.classList.remove('show');
-            setTimeout(() => document.body.removeChild(toast), 300);
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    document.body.removeChild(toast);
+                }
+            }, 300);
         }, 3000);
     }
 

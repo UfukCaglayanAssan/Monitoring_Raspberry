@@ -1583,10 +1583,31 @@ def toggle_trap_target(target_id):
 # Trap Settings API'leri
 @app.route('/api/trap-settings', methods=['GET'])
 def get_trap_settings():
-    """Trap ayarlarını getir"""
+    """Trap ayarlarını getir (trap_targets'ten)"""
     try:
         db = get_db()
-        settings = db_operation_with_retry(lambda: db.get_trap_settings())
+        target = db_operation_with_retry(lambda: db.get_trap_target())
+        
+        if target:
+            # trap_targets formatını trap_settings formatına çevir
+            settings = {
+                'trapEnabled': target.get('trap_enabled', target.get('is_active', False)),
+                'trapServer': target['ip_address'],
+                'trapPort': target['port'],
+                'trapCommunity': target.get('trap_community', 'public'),
+                'trapVersion': target.get('trap_version', '2c'),
+                'trapInterval': target.get('trap_interval', 30)
+            }
+        else:
+            # Kayıt yoksa varsayılan değerler
+            settings = {
+                'trapEnabled': False,
+                'trapServer': '',
+                'trapPort': 162,
+                'trapCommunity': 'public',
+                'trapVersion': '2c',
+                'trapInterval': 30
+            }
         
         return jsonify({
             'success': True,
@@ -1600,7 +1621,7 @@ def get_trap_settings():
 
 @app.route('/api/trap-settings', methods=['POST'])
 def save_trap_settings():
-    """Trap ayarlarını kaydet"""
+    """Trap ayarlarını kaydet (trap_targets'e)"""
     try:
         data = request.get_json()
         print(f"📥 Trap ayarları POST isteği alındı: {data}")
@@ -1610,15 +1631,40 @@ def save_trap_settings():
         trap_enabled = data.get('trapEnabled', False)
         trap_server = data.get('trapServer', '')
         trap_port = data.get('trapPort', 162)
-        trap_community = data.get('trapCommunity', 'public')
-        trap_version = data.get('trapVersion', '2c')
-        trap_interval = data.get('trapInterval', 30)
+        trap_community = data.get('trapCommunity', 'public')  # Not: Şimdilik kullanılmıyor
+        trap_version = data.get('trapVersion', '2c')  # Not: Şimdilik kullanılmıyor
+        trap_interval = data.get('trapInterval', 30)  # Not: Şimdilik kullanılmıyor
         
-        print(f"📊 Trap ayarları parametreleri: enabled={trap_enabled}, server={trap_server}, port={trap_port}, community={trap_community}, version={trap_version}, interval={trap_interval}")
+        print(f"📊 Trap ayarları parametreleri: enabled={trap_enabled}, server={trap_server}, port={trap_port}")
         
-        result = db_operation_with_retry(lambda: db.save_trap_settings(
-            trap_enabled, trap_server, trap_port, trap_community, trap_version, trap_interval
+        # trap_targets tablosuna kaydet (id=1, kayıt yoksa ekle varsa güncelle)
+        result = db_operation_with_retry(lambda: db.save_trap_target(
+            name='Trap Target',
+            ip_address=trap_server,
+            port=trap_port,
+            is_active=True,  # is_active her zaman True (trap_enabled kontrol edilir)
+            trap_enabled=trap_enabled,
+            trap_community=trap_community,
+            trap_version=trap_version,
+            trap_interval=trap_interval
         ))
+        
+        # Kayıt başarılıysa trap_targets RAM'ini yeniden yükle
+        if result.get('success'):
+            # main.py'ye sinyal gönder (pending_config.json ile)
+            import json
+            import os
+            config_file = 'pending_config.json'
+            config_data = {
+                'type': 'reload_trap_targets',
+                'timestamp': time.time()
+            }
+            try:
+                with open(config_file, 'w') as f:
+                    json.dump(config_data, f)
+                print(f"✓ Trap hedefleri yeniden yükleme sinyali gönderildi")
+            except Exception as e:
+                print(f"⚠️ Sinyal gönderme hatası: {e}")
         
         print(f"✅ Trap ayarları kayıt sonucu: {result}")
         return jsonify(result)
