@@ -61,6 +61,31 @@
                         </select>
                     </div>
 
+                    <!-- SNMPv3 Alanları (sadece v3 seçiliyse görünür) -->
+                    <div class="form-group snmpv3-field" id="trapUsernameGroup" style="display: none;">
+                        <label for="trapUsername" class="form-label">
+                            <i class="fas fa-user"></i>
+                            <span data-tr="Kullanıcı Adı" data-en="Username">Kullanıcı Adı</span>
+                        </label>
+                        <input type="text" id="trapUsername" name="trapUsername" class="form-input" placeholder="snmpuser">
+                    </div>
+
+                    <div class="form-group snmpv3-field" id="trapAuthPasswordGroup" style="display: none;">
+                        <label for="trapAuthPassword" class="form-label">
+                            <i class="fas fa-lock"></i>
+                            <span data-tr="Auth Şifresi" data-en="Auth Password">Auth Şifresi</span>
+                        </label>
+                        <input type="password" id="trapAuthPassword" name="trapAuthPassword" class="form-input" placeholder="authpassword">
+                    </div>
+
+                    <div class="form-group snmpv3-field" id="trapPrivPasswordGroup" style="display: none;">
+                        <label for="trapPrivPassword" class="form-label">
+                            <i class="fas fa-key"></i>
+                            <span data-tr="Priv Şifresi" data-en="Priv Password">Priv Şifresi</span>
+                        </label>
+                        <input type="password" id="trapPrivPassword" name="trapPrivPassword" class="form-input" placeholder="privpassword">
+                    </div>
+
                     <div class="form-group">
                         <label for="trapInterval" class="form-label">
                             <i class="fas fa-clock"></i>

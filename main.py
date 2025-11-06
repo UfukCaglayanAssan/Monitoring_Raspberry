@@ -2924,7 +2924,11 @@ def send_snmp_trap(arm, battery, alarm_type, status):
                 send_single_trap(
                     target_ip=target['ip_address'],
                     target_port=target['port'],
+                    trap_version=target.get('trap_version', '2c'),
                     trap_community=target.get('trap_community', 'public'),
+                    trap_username=target.get('trap_username', ''),
+                    trap_auth_password=target.get('trap_auth_password', ''),
+                    trap_priv_password=target.get('trap_priv_password', ''),
                     trap_oid=trap_oid,
                     alarm_id=alarm_id,
                     alarm_arm_index=arm,
@@ -2939,8 +2943,8 @@ def send_snmp_trap(arm, battery, alarm_type, status):
     except Exception as e:
         print(f"❌ Trap gönderme genel hatası: {e}")
 
-def send_single_trap(target_ip, target_port, trap_community='public', trap_oid=None, alarm_id=None, alarm_arm_index=None, alarm_battery_index=None, alarm_type=None, alarm_description=None):
-    """Tek bir trap gönder - MIB uyumlu"""
+def send_single_trap(target_ip, target_port, trap_version='2c', trap_community='public', trap_username='', trap_auth_password='', trap_priv_password='', trap_oid=None, alarm_id=None, alarm_arm_index=None, alarm_battery_index=None, alarm_type=None, alarm_description=None):
+    """Tek bir trap gönder - MIB uyumlu (SNMPv1/v2c/v3 desteği)"""
     try:
         # MIB'deki OBJECTS tanımına göre trap gönder
         # tescomAlarmTrap ve tescomAlarmClearedTrap OBJECTS:
@@ -2950,25 +2954,62 @@ def send_single_trap(target_ip, target_port, trap_community='public', trap_oid=N
         # - alarmType (1.3.6.1.4.1.1001.4.4.1.4)
         # - alarmDescription (1.3.6.1.4.1.1001.4.4.1.5)
         
-        var_binds = [
-            ObjectType(ObjectIdentity('1.3.6.1.4.1.1001.4.4.1.1'), Integer(alarm_id)),  # alarmId
-            ObjectType(ObjectIdentity('1.3.6.1.4.1.1001.4.4.1.2'), Integer(alarm_arm_index)),  # alarmArmIndex
-            ObjectType(ObjectIdentity('1.3.6.1.4.1.1001.4.4.1.3'), Integer(alarm_battery_index)),  # alarmBatteryIndex
-            ObjectType(ObjectIdentity('1.3.6.1.4.1.1001.4.4.1.4'), Integer(alarm_type)),  # alarmType
-            ObjectType(ObjectIdentity('1.3.6.1.4.1.1001.4.4.1.5'), OctetString(alarm_description[:255]))  # alarmDescription (max 255)
-        ]
+        # SNMP versiyonuna göre authentication data hazırla
+        if trap_version == '3':
+            # SNMPv3 için UsmUserData kullan
+            from pysnmp.hlapi import UsmUserData, usmHMACSHAAuthProtocol, usmAesCfb128Protocol
+            
+            # SNMPv3 parametreleri kontrol et
+            if not trap_username:
+                print("❌ SNMPv3 için kullanıcı adı gerekli")
+                return
+            
+            # Auth ve Priv protokolleri (varsayılan: SHA + AES128)
+            auth_protocol = usmHMACSHAAuthProtocol
+            priv_protocol = usmAesCfb128Protocol
+            
+            # Auth password yoksa sadece noAuthNoPriv
+            if not trap_auth_password:
+                user_data = UsmUserData(trap_username)
+            # Priv password yoksa authNoPriv
+            elif not trap_priv_password:
+                user_data = UsmUserData(
+                    trap_username,
+                    authKey=trap_auth_password,
+                    authProtocol=auth_protocol
+                )
+            # Her ikisi de varsa authPriv
+            else:
+                user_data = UsmUserData(
+                    trap_username,
+                    authKey=trap_auth_password,
+                    privKey=trap_priv_password,
+                    authProtocol=auth_protocol,
+                    privProtocol=priv_protocol
+                )
+        elif trap_version == '2c':
+            # SNMPv2c için CommunityData
+            user_data = CommunityData(trap_community, mpModel=1)
+        else:
+            # SNMPv1 için CommunityData (mpModel=0)
+            user_data = CommunityData(trap_community, mpModel=0)
         
         # SNMP Trap gönder
         errorIndication, errorStatus, errorIndex, varBinds = next(
             sendNotification(
                 SnmpEngine(),
-                CommunityData(trap_community),
+                user_data,
                 UdpTransportTarget((target_ip, target_port)),
                 ContextData(),
                 'trap',
                 NotificationType(
-                    ObjectIdentity(trap_oid),
-                    var_binds
+                    ObjectIdentity(trap_oid)
+                ).addVarBinds(
+                    ('1.3.6.1.4.1.1001.4.4.1.1', Integer(alarm_id)),  # alarmId
+                    ('1.3.6.1.4.1.1001.4.4.1.2', Integer(alarm_arm_index)),  # alarmArmIndex
+                    ('1.3.6.1.4.1.1001.4.4.1.3', Integer(alarm_battery_index)),  # alarmBatteryIndex
+                    ('1.3.6.1.4.1.1001.4.4.1.4', Integer(alarm_type)),  # alarmType
+                    ('1.3.6.1.4.1.1001.4.4.1.5', OctetString(alarm_description[:255]))  # alarmDescription (max 255)
                 )
             )
         )
@@ -2976,7 +3017,7 @@ def send_single_trap(target_ip, target_port, trap_community='public', trap_oid=N
         if errorIndication:
             print(f"❌ Trap hatası: {errorIndication}")
         else:
-            print(f"✅ Trap başarılı: {target_ip}")
+            print(f"✅ Trap başarılı: {target_ip} (SNMPv{trap_version})")
             
     except Exception as e:
         print(f"❌ Trap gönderme hatası: {e}")

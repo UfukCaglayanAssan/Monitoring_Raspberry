@@ -117,6 +117,14 @@ if (typeof window.TrapSettingsPage === 'undefined') {
                 });
             }
 
+            // SNMP versiyonu değişikliği dinleyicisi
+            const trapVersion = document.getElementById('trapVersion');
+            if (trapVersion) {
+                trapVersion.addEventListener('change', () => {
+                    this.toggleSnmpv3Fields();
+                });
+            }
+
             // Dil değişikliği dinleyicisi
             window.addEventListener('languageChanged', (e) => {
                 console.log('🌐 Trap Settings sayfası - Dil değişti:', e.detail.language);
@@ -210,9 +218,49 @@ if (typeof window.TrapSettingsPage === 'undefined') {
             trapVersion.value = this.trapSettings.trapVersion || this.trapSettings.version || '2c';
         }
         
+        // SNMPv3 alanları
+        const trapUsername = document.getElementById('trapUsername');
+        if (trapUsername && this.trapSettings.trapUsername !== undefined) {
+            trapUsername.value = this.trapSettings.trapUsername || '';
+        }
+        
+        const trapAuthPassword = document.getElementById('trapAuthPassword');
+        if (trapAuthPassword && this.trapSettings.trapAuthPassword !== undefined) {
+            trapAuthPassword.value = this.trapSettings.trapAuthPassword || '';
+        }
+        
+        const trapPrivPassword = document.getElementById('trapPrivPassword');
+        if (trapPrivPassword && this.trapSettings.trapPrivPassword !== undefined) {
+            trapPrivPassword.value = this.trapSettings.trapPrivPassword || '';
+        }
+        
         const trapInterval = document.getElementById('trapInterval');
         if (trapInterval && (this.trapSettings.trapInterval !== undefined || this.trapSettings.interval !== undefined)) {
             trapInterval.value = this.trapSettings.trapInterval || this.trapSettings.interval || 30;
+        }
+        
+        // SNMPv3 alanlarını göster/gizle
+        this.toggleSnmpv3Fields();
+    }
+
+    toggleSnmpv3Fields() {
+        // SNMP versiyonunu kontrol et
+        const trapVersion = document.getElementById('trapVersion');
+        const isV3 = trapVersion && trapVersion.value === '3';
+        
+        // SNMPv3 alanlarını göster/gizle
+        const usernameGroup = document.getElementById('trapUsernameGroup');
+        const authPasswordGroup = document.getElementById('trapAuthPasswordGroup');
+        const privPasswordGroup = document.getElementById('trapPrivPasswordGroup');
+        
+        if (usernameGroup) {
+            usernameGroup.style.display = isV3 ? 'flex' : 'none';
+        }
+        if (authPasswordGroup) {
+            authPasswordGroup.style.display = isV3 ? 'flex' : 'none';
+        }
+        if (privPasswordGroup) {
+            privPasswordGroup.style.display = isV3 ? 'flex' : 'none';
         }
     }
 
@@ -229,6 +277,9 @@ if (typeof window.TrapSettingsPage === 'undefined') {
             const trapPort = document.getElementById('trapPort');
             const trapCommunity = document.getElementById('trapCommunity');
             const trapVersion = document.getElementById('trapVersion');
+            const trapUsername = document.getElementById('trapUsername');
+            const trapAuthPassword = document.getElementById('trapAuthPassword');
+            const trapPrivPassword = document.getElementById('trapPrivPassword');
             const trapInterval = document.getElementById('trapInterval');
             
             const settings = {
@@ -239,6 +290,13 @@ if (typeof window.TrapSettingsPage === 'undefined') {
                 trapVersion: trapVersion ? trapVersion.value : '2c',
                 trapInterval: trapInterval ? parseInt(trapInterval.value) || 30 : 30
             };
+            
+            // SNMPv3 alanlarını ekle (sadece v3 seçiliyse)
+            if (trapVersion && trapVersion.value === '3') {
+                settings.trapUsername = trapUsername ? trapUsername.value.trim() : '';
+                settings.trapAuthPassword = trapAuthPassword ? trapAuthPassword.value.trim() : '';
+                settings.trapPrivPassword = trapPrivPassword ? trapPrivPassword.value.trim() : '';
+            }
             
             console.log('📤 Gönderilen trap ayarları:', settings);
             console.log('🔍 trapEnabled checkbox durumu:', trapEnabled ? trapEnabled.checked : 'checkbox bulunamadı');

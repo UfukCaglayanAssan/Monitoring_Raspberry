@@ -1596,7 +1596,10 @@ def get_trap_settings():
                 'trapPort': target['port'],
                 'trapCommunity': target.get('trap_community', 'public'),
                 'trapVersion': target.get('trap_version', '2c'),
-                'trapInterval': target.get('trap_interval', 30)
+                'trapInterval': target.get('trap_interval', 30),
+                'trapUsername': target.get('trap_username', ''),
+                'trapAuthPassword': target.get('trap_auth_password', ''),
+                'trapPrivPassword': target.get('trap_priv_password', '')
             }
         else:
             # Kayıt yoksa varsayılan değerler
@@ -1606,7 +1609,10 @@ def get_trap_settings():
                 'trapPort': 162,
                 'trapCommunity': 'public',
                 'trapVersion': '2c',
-                'trapInterval': 30
+                'trapInterval': 30,
+                'trapUsername': '',
+                'trapAuthPassword': '',
+                'trapPrivPassword': ''
             }
         
         return jsonify({
@@ -1635,6 +1641,11 @@ def save_trap_settings():
         trap_version = data.get('trapVersion', '2c')
         trap_interval = data.get('trapInterval', 30)
         
+        # SNMPv3 parametreleri (sadece v3 seçiliyse)
+        trap_username = data.get('trapUsername', '')
+        trap_auth_password = data.get('trapAuthPassword', '')
+        trap_priv_password = data.get('trapPrivPassword', '')
+        
         # Boolean kontrolü - string 'true' veya 'false' gelirse düzelt
         if isinstance(trap_enabled, str):
             trap_enabled = trap_enabled.lower() in ('true', '1', 'yes')
@@ -1642,6 +1653,8 @@ def save_trap_settings():
             trap_enabled = False
         
         print(f"📊 Trap ayarları parametreleri: enabled={trap_enabled} (type: {type(trap_enabled).__name__}), server={trap_server}, port={trap_port}, community={trap_community}, version={trap_version}, interval={trap_interval}")
+        if trap_version == '3':
+            print(f"📊 SNMPv3 parametreleri: username={trap_username}, auth_password={'***' if trap_auth_password else '(yok)'}, priv_password={'***' if trap_priv_password else '(yok)'}")
         
         # trap_targets tablosuna kaydet (id=1, kayıt yoksa ekle varsa güncelle)
         result = db_operation_with_retry(lambda: db.save_trap_target(
@@ -1652,7 +1665,10 @@ def save_trap_settings():
             trap_enabled=trap_enabled,
             trap_community=trap_community,
             trap_version=trap_version,
-            trap_interval=trap_interval
+            trap_interval=trap_interval,
+            trap_username=trap_username,
+            trap_auth_password=trap_auth_password,
+            trap_priv_password=trap_priv_password
         ))
         
         # Kayıt başarılıysa trap_targets RAM'ini yeniden yükle

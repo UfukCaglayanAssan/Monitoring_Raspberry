@@ -3400,8 +3400,26 @@ class BatteryDatabase:
                     
                     if 'trap_interval' in columns:
                         target['trap_interval'] = row[idx] if idx < len(row) else 30
+                        idx += 1
                     else:
                         target['trap_interval'] = 30
+                    
+                    if 'trap_username' in columns:
+                        target['trap_username'] = row[idx] if idx < len(row) else ''
+                        idx += 1
+                    else:
+                        target['trap_username'] = ''
+                    
+                    if 'trap_auth_password' in columns:
+                        target['trap_auth_password'] = row[idx] if idx < len(row) else ''
+                        idx += 1
+                    else:
+                        target['trap_auth_password'] = ''
+                    
+                    if 'trap_priv_password' in columns:
+                        target['trap_priv_password'] = row[idx] if idx < len(row) else ''
+                    else:
+                        target['trap_priv_password'] = ''
                     
                     targets.append(target)
                 return targets
@@ -3411,7 +3429,7 @@ class BatteryDatabase:
             traceback.print_exc()
             return []
     
-    def save_trap_target(self, name, ip_address, port=162, is_active=True, trap_enabled=False, trap_community='public', trap_version='2c', trap_interval=30):
+    def save_trap_target(self, name, ip_address, port=162, is_active=True, trap_enabled=False, trap_community='public', trap_version='2c', trap_interval=30, trap_username='', trap_auth_password='', trap_priv_password=''):
         """Tek trap hedefini kaydet veya güncelle (id=1) - trap_settings mantığı"""
         try:
             with self.get_connection() as conn:
@@ -3434,6 +3452,18 @@ class BatteryDatabase:
                     cursor.execute("ALTER TABLE trap_targets ADD COLUMN trap_interval INTEGER DEFAULT 30")
                 except:
                     pass
+                try:
+                    cursor.execute("ALTER TABLE trap_targets ADD COLUMN trap_username TEXT DEFAULT ''")
+                except:
+                    pass
+                try:
+                    cursor.execute("ALTER TABLE trap_targets ADD COLUMN trap_auth_password TEXT DEFAULT ''")
+                except:
+                    pass
+                try:
+                    cursor.execute("ALTER TABLE trap_targets ADD COLUMN trap_priv_password TEXT DEFAULT ''")
+                except:
+                    pass
                 conn.commit()
                 
                 # Mevcut kayıt var mı kontrol et
@@ -3454,17 +3484,18 @@ class BatteryDatabase:
                         UPDATE trap_targets 
                         SET name = ?, ip_address = ?, port = ?, is_active = ?,
                             trap_enabled = ?, trap_community = ?, trap_version = ?, trap_interval = ?,
+                            trap_username = ?, trap_auth_password = ?, trap_priv_password = ?,
                             updated_at = CURRENT_TIMESTAMP
                         WHERE id = 1
-                    ''', (name, ip_address, port, is_active_int, trap_enabled_int, trap_community, trap_version, trap_interval))
+                    ''', (name, ip_address, port, is_active_int, trap_enabled_int, trap_community, trap_version, trap_interval, trap_username, trap_auth_password, trap_priv_password))
                     print("✅ Trap hedefi güncellendi (id=1)")
                 else:
                     # Kayıt yoksa ekle
                     cursor.execute('''
                         INSERT INTO trap_targets 
-                        (id, name, ip_address, port, is_active, trap_enabled, trap_community, trap_version, trap_interval)
-                        VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ''', (name, ip_address, port, is_active_int, trap_enabled_int, trap_community, trap_version, trap_interval))
+                        (id, name, ip_address, port, is_active, trap_enabled, trap_community, trap_version, trap_interval, trap_username, trap_auth_password, trap_priv_password)
+                        VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (name, ip_address, port, is_active_int, trap_enabled_int, trap_community, trap_version, trap_interval, trap_username, trap_auth_password, trap_priv_password))
                     print("✅ Trap hedefi eklendi (id=1)")
                 
                 conn.commit()
@@ -3494,6 +3525,12 @@ class BatteryDatabase:
                     select_cols.append('trap_version')
                 if 'trap_interval' in columns:
                     select_cols.append('trap_interval')
+                if 'trap_username' in columns:
+                    select_cols.append('trap_username')
+                if 'trap_auth_password' in columns:
+                    select_cols.append('trap_auth_password')
+                if 'trap_priv_password' in columns:
+                    select_cols.append('trap_priv_password')
                 select_cols.extend(['created_at', 'updated_at'])
                 
                 cursor.execute(f'''
@@ -3533,8 +3570,26 @@ class BatteryDatabase:
                     
                     if 'trap_interval' in columns:
                         result['trap_interval'] = row[idx] if idx < len(row) else 30
+                        idx += 1
                     else:
                         result['trap_interval'] = 30
+                    
+                    if 'trap_username' in columns:
+                        result['trap_username'] = row[idx] if idx < len(row) else ''
+                        idx += 1
+                    else:
+                        result['trap_username'] = ''
+                    
+                    if 'trap_auth_password' in columns:
+                        result['trap_auth_password'] = row[idx] if idx < len(row) else ''
+                        idx += 1
+                    else:
+                        result['trap_auth_password'] = ''
+                    
+                    if 'trap_priv_password' in columns:
+                        result['trap_priv_password'] = row[idx] if idx < len(row) else ''
+                    else:
+                        result['trap_priv_password'] = ''
                     
                     return result
                 return None
