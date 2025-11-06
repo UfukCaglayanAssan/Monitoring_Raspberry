@@ -72,9 +72,16 @@ if (typeof window.TrapSettingsPage === 'undefined') {
             // Form submit event
             const form = document.getElementById('trapSettingsForm');
             if (form) {
+                // Form action'ı kaldır (yönlendirmeyi önlemek için)
+                form.setAttribute('action', 'javascript:void(0);');
+                form.setAttribute('onsubmit', 'return false;');
+                
                 form.addEventListener('submit', (e) => {
                     e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
                     this.saveTrapSettings();
+                    return false;
                 });
             }
 
@@ -226,14 +233,15 @@ if (typeof window.TrapSettingsPage === 'undefined') {
             
             const settings = {
                 trapEnabled: trapEnabled ? trapEnabled.checked : false,
-                trapServer: trapServer ? trapServer.value : '',
+                trapServer: trapServer ? trapServer.value.trim() : '',
                 trapPort: trapPort ? parseInt(trapPort.value) || 162 : 162,
-                trapCommunity: trapCommunity ? trapCommunity.value : 'public',
+                trapCommunity: trapCommunity ? trapCommunity.value.trim() : 'public',
                 trapVersion: trapVersion ? trapVersion.value : '2c',
                 trapInterval: trapInterval ? parseInt(trapInterval.value) || 30 : 30
             };
             
             console.log('📤 Gönderilen trap ayarları:', settings);
+            console.log('🔍 trapEnabled checkbox durumu:', trapEnabled ? trapEnabled.checked : 'checkbox bulunamadı');
 
             const response = await fetch('/api/trap-settings', {
                 method: 'POST',
@@ -249,6 +257,8 @@ if (typeof window.TrapSettingsPage === 'undefined') {
                     this.trapSettings = settings;
                     this.showSuccess('Trap ayarları başarıyla kaydedildi!');
                     console.log('✅ Trap ayarları kaydedildi:', settings);
+                    // Ayarları yeniden yükle (güncel değerleri görmek için)
+                    this.loadTrapSettings();
                 } else {
                     throw new Error(data.message || 'Ayarlar kaydedilemedi');
                 }

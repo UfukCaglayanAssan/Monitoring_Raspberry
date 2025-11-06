@@ -1631,11 +1631,17 @@ def save_trap_settings():
         trap_enabled = data.get('trapEnabled', False)
         trap_server = data.get('trapServer', '')
         trap_port = data.get('trapPort', 162)
-        trap_community = data.get('trapCommunity', 'public')  # Not: Şimdilik kullanılmıyor
-        trap_version = data.get('trapVersion', '2c')  # Not: Şimdilik kullanılmıyor
-        trap_interval = data.get('trapInterval', 30)  # Not: Şimdilik kullanılmıyor
+        trap_community = data.get('trapCommunity', 'public')
+        trap_version = data.get('trapVersion', '2c')
+        trap_interval = data.get('trapInterval', 30)
         
-        print(f"📊 Trap ayarları parametreleri: enabled={trap_enabled}, server={trap_server}, port={trap_port}")
+        # Boolean kontrolü - string 'true' veya 'false' gelirse düzelt
+        if isinstance(trap_enabled, str):
+            trap_enabled = trap_enabled.lower() in ('true', '1', 'yes')
+        elif trap_enabled is None:
+            trap_enabled = False
+        
+        print(f"📊 Trap ayarları parametreleri: enabled={trap_enabled} (type: {type(trap_enabled).__name__}), server={trap_server}, port={trap_port}, community={trap_community}, version={trap_version}, interval={trap_interval}")
         
         # trap_targets tablosuna kaydet (id=1, kayıt yoksa ekle varsa güncelle)
         result = db_operation_with_retry(lambda: db.save_trap_target(

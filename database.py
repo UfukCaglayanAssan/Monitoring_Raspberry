@@ -3441,7 +3441,12 @@ class BatteryDatabase:
                 exists = cursor.fetchone()
                 
                 is_active_int = 1 if is_active else 0
-                trap_enabled_int = 1 if trap_enabled else 0
+                # trap_enabled boolean dönüşümü - string kontrolü de ekle
+                if isinstance(trap_enabled, str):
+                    trap_enabled = trap_enabled.lower() in ('true', '1', 'yes')
+                trap_enabled_int = 1 if bool(trap_enabled) else 0
+                
+                print(f"💾 Trap hedefi kaydediliyor: trap_enabled={trap_enabled} ({type(trap_enabled).__name__}) -> trap_enabled_int={trap_enabled_int}")
                 
                 if exists:
                     # Kayıt varsa güncelle
