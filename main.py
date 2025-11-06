@@ -26,8 +26,11 @@ from pysnmp.carrier.asyncio.dgram import udp
 from pysnmp.proto.api import v2c
 
 # SNMP trap gönderme için gerekli sınıflar
-# pysnmp.hlapi modülünden tümünü import et
-from pysnmp.hlapi import *
+# SNMPv2c için v2c modülünden import et
+from pysnmp.hlapi.v2c import (
+    sendNotification, UdpTransportTarget, ContextData,
+    CommunityData, SnmpEngine, NotificationType
+)
 # SMI ve proto modüllerinden tip sınıfları
 from pysnmp.smi.rfc1902 import ObjectType, ObjectIdentity
 from pysnmp.proto.rfc1902 import Integer, OctetString
