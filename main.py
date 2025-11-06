@@ -3352,8 +3352,8 @@ def snmp_server():
                                                 return self.getSyntax().clone(f"{value:.1f}")  # Celsius (virgüllü)
                                         return self.getSyntax().clone("0.0")
                                 
-                                # Column 10: batteryStatus
-                                elif column == 10:
+                                # Column 10: batteryStatus (data_lock gerekmez - status_ram için)
+                                if column == 10:
                                     if arm_index in status_ram and battery_index in status_ram[arm_index]:
                                         return self.getSyntax().clone(1 if status_ram[arm_index][battery_index] else 0)
                                     return self.getSyntax().clone(0)
@@ -3362,7 +3362,7 @@ def snmp_server():
                                 # 0x1=Düşük Gerilim Uyarısı, 0x2=Düşük Gerilim Alarmı, 0x4=Yüksek Gerilim Uyarısı,
                                 # 0x8=Yüksek Gerilim Alarmı, 0x10=Modül Sıcaklık Alarmı, 0x20=Pozitif Kutup Sıcaklık Alarmı,
                                 # 0x40=Negatif Kutup Sıcaklık Alarmı
-                                elif column == 11:
+                                if column == 11:
                                     if arm_index in alarm_ram and battery_index in alarm_ram[arm_index]:
                                         flags = 0
                                         # Debug: Tüm alarm durumlarını logla
@@ -3628,7 +3628,7 @@ def snmp_server():
                     print(f"⚠️  Port {SNMP_PORT} zaten kullanımda:")
                     print(f"   {result.stdout.strip()}")
                     print("   Mevcut process kapatılıyor veya yeni port kullanılacak...")
-        except:
+            except:
                 pass
             
             # pysnmp asyncio transport için doğru kullanım:
@@ -3696,7 +3696,7 @@ def snmp_server():
             except:
                 pass
             try:
-            snmpEngine.close_dispatcher()
+                snmpEngine.close_dispatcher()
             except:
                 pass
         except Exception as e:
