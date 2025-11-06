@@ -22,24 +22,16 @@ sys.stderr.reconfigure(line_buffering=True)
 # SNMP imports
 from pysnmp.entity import engine, config
 from pysnmp.entity.rfc3413 import cmdrsp, context
-from pysnmp.hlapi import *
 from pysnmp.carrier.asyncio.dgram import udp
 from pysnmp.proto.api import v2c
 
-# SNMP trap gönderme için gerekli sınıflar (açıkça import et)
-try:
-    from pysnmp.hlapi import (
-        ObjectType, ObjectIdentity, Integer, OctetString,
-        CommunityData, UdpTransportTarget, ContextData,
-        SnmpEngine, sendNotification, NotificationType
-    )
-except ImportError:
-    # Fallback: pysnmp.hlapi.asyncio'dan import et
-    from pysnmp.hlapi.asyncio import (
-        ObjectType, ObjectIdentity, Integer, OctetString,
-        CommunityData, UdpTransportTarget, ContextData,
-        SnmpEngine, sendNotification, NotificationType
-    )
+# SNMP trap gönderme için gerekli sınıflar
+from pysnmp.hlapi import (
+    sendNotification, UdpTransportTarget, ContextData,
+    CommunityData, SnmpEngine, NotificationType
+)
+from pysnmp.smi.rfc1902 import ObjectType, ObjectIdentity
+from pysnmp.proto.rfc1902 import Integer, OctetString
 
 # SNMP ayarları
 SNMP_HOST = '0.0.0.0'  # Dışarıdan erişim için 0.0.0.0
