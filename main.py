@@ -26,32 +26,16 @@ from pysnmp.carrier.asyncio.dgram import udp
 from pysnmp.proto.api import v2c
 
 # SNMP trap gönderme için gerekli sınıflar
-# pysnmp 7.1.21 için - önce hangi modülün çalıştığını dene
-try:
-    # Önce v1arch'dan dene (senkron için)
-    from pysnmp.hlapi.v1arch import (
-        sendNotification, UdpTransportTarget, ContextData,
-        CommunityData, SnmpEngine, NotificationType,
-        UsmUserData, usmHMACSHAAuthProtocol, usmAesCfb128Protocol
-    )
-except ImportError:
-    try:
-        # Sonra hlapi'den dene
-        from pysnmp.hlapi import (
-            sendNotification, UdpTransportTarget, ContextData,
-            CommunityData, SnmpEngine, NotificationType,
-            UsmUserData, usmHMACSHAAuthProtocol, usmAesCfb128Protocol
-        )
-    except ImportError:
-        # Son çare: asyncio'dan al (ama senkron kullan)
-        from pysnmp.hlapi.asyncio import (
-            sendNotification, UdpTransportTarget, ContextData,
-            CommunityData, SnmpEngine, NotificationType,
-            UsmUserData, usmHMACSHAAuthProtocol, usmAesCfb128Protocol
-        )
+# pysnmp 7.1.21 için - v3arch.asyncio modülünü kullan (dokümantasyona göre)
+import asyncio
+from pysnmp.hlapi.v3arch.asyncio import (
+    send_notification, SnmpEngine, CommunityData, UdpTransportTarget,
+    ContextData, NotificationType, ObjectIdentity, UsmUserData,
+    usmHMACSHAAuthProtocol, usmAesCfb128Protocol
+)
 
 # SMI ve proto modüllerinden tip sınıfları
-from pysnmp.smi.rfc1902 import ObjectType, ObjectIdentity
+from pysnmp.smi.rfc1902 import ObjectType
 from pysnmp.proto.rfc1902 import Integer, OctetString
 
 # SNMP ayarları
@@ -2964,8 +2948,8 @@ def send_snmp_trap(arm, battery, alarm_type, status):
     except Exception as e:
         print(f"❌ Trap gönderme genel hatası: {e}")
 
-def send_single_trap(target_ip, target_port, trap_version='2c', trap_community='public', trap_username='', trap_auth_password='', trap_priv_password='', trap_oid=None, alarm_id=None, alarm_arm_index=None, alarm_battery_index=None, alarm_type=None, alarm_description=None):
-    """Tek bir trap gönder - MIB uyumlu (SNMPv1/v2c/v3 desteği)"""
+async def send_single_trap_async(target_ip, target_port, trap_version='2c', trap_community='public', trap_username='', trap_auth_password='', trap_priv_password='', trap_oid=None, alarm_id=None, alarm_arm_index=None, alarm_battery_index=None, alarm_type=None, alarm_description=None):
+    """Tek bir trap gönder - MIB uyumlu (SNMPv1/v2c/v3 desteği) - Asenkron"""
     try:
         # MIB'deki OBJECTS tanımına göre trap gönder
         # tescomAlarmTrap ve tescomAlarmClearedTrap OBJECTS:
@@ -2977,8 +2961,7 @@ def send_single_trap(target_ip, target_port, trap_version='2c', trap_community='
         
         # SNMP versiyonuna göre authentication data hazırla
         if trap_version == '3':
-            # SNMPv3 için UsmUserData kullan (zaten import edildi)
-            # SNMPv3 parametreleri kontrol et
+            # SNMPv3 için UsmUserData kullan
             if not trap_username:
                 print("❌ SNMPv3 için kullanıcı adı gerekli")
                 return
@@ -3008,29 +2991,27 @@ def send_single_trap(target_ip, target_port, trap_version='2c', trap_community='
                 )
         elif trap_version == '2c':
             # SNMPv2c için CommunityData
-            user_data = CommunityData(trap_community, mpModel=1)
+            user_data = CommunityData(trap_community)
         else:
-            # SNMPv1 için CommunityData (mpModel=0)
-            user_data = CommunityData(trap_community, mpModel=0)
+            # SNMPv1 için CommunityData
+            user_data = CommunityData(trap_community)
         
-        # SNMP Trap gönder
-        errorIndication, errorStatus, errorIndex, varBinds = next(
-            sendNotification(
-                SnmpEngine(),
-                user_data,
-                UdpTransportTarget((target_ip, target_port)),
-                ContextData(),
-                'trap',
-                NotificationType(
-                    ObjectIdentity(trap_oid)
-                ).addVarBinds(
-                    ('1.3.6.1.4.1.1001.4.4.1.1', Integer(alarm_id)),  # alarmId
-                    ('1.3.6.1.4.1.1001.4.4.1.2', Integer(alarm_arm_index)),  # alarmArmIndex
-                    ('1.3.6.1.4.1.1001.4.4.1.3', Integer(alarm_battery_index)),  # alarmBatteryIndex
-                    ('1.3.6.1.4.1.1001.4.4.1.4', Integer(alarm_type)),  # alarmType
-                    ('1.3.6.1.4.1.1001.4.4.1.5', OctetString(alarm_description[:255]))  # alarmDescription (max 255)
-                )
-            )
+        # UdpTransportTarget oluştur (asenkron)
+        transport_target = await UdpTransportTarget.create((target_ip, target_port))
+        
+        # SNMP Trap gönder (asenkron) - dokümantasyona göre
+        errorIndication, errorStatus, errorIndex, varBinds = await send_notification(
+            SnmpEngine(),
+            user_data,
+            transport_target,
+            ContextData(),
+            'trap',
+            NotificationType(ObjectIdentity(trap_oid)),
+            ObjectType(ObjectIdentity('1.3.6.1.4.1.1001.4.4.1.1'), Integer(alarm_id)),  # alarmId
+            ObjectType(ObjectIdentity('1.3.6.1.4.1.1001.4.4.1.2'), Integer(alarm_arm_index)),  # alarmArmIndex
+            ObjectType(ObjectIdentity('1.3.6.1.4.1.1001.4.4.1.3'), Integer(alarm_battery_index)),  # alarmBatteryIndex
+            ObjectType(ObjectIdentity('1.3.6.1.4.1.1001.4.4.1.4'), Integer(alarm_type)),  # alarmType
+            ObjectType(ObjectIdentity('1.3.6.1.4.1.1001.4.4.1.5'), OctetString(alarm_description[:255]))  # alarmDescription
         )
         
         if errorIndication:
@@ -3040,6 +3021,21 @@ def send_single_trap(target_ip, target_port, trap_version='2c', trap_community='
             
     except Exception as e:
         print(f"❌ Trap gönderme hatası: {e}")
+        import traceback
+        traceback.print_exc()
+
+def send_single_trap(target_ip, target_port, trap_version='2c', trap_community='public', trap_username='', trap_auth_password='', trap_priv_password='', trap_oid=None, alarm_id=None, alarm_arm_index=None, alarm_battery_index=None, alarm_type=None, alarm_description=None):
+    """Tek bir trap gönder - Senkron wrapper (asenkron fonksiyonu çağırır)"""
+    try:
+        # Asenkron fonksiyonu çalıştır
+        asyncio.run(send_single_trap_async(
+            target_ip, target_port, trap_version, trap_community,
+            trap_username, trap_auth_password, trap_priv_password,
+            trap_oid, alarm_id, alarm_arm_index, alarm_battery_index,
+            alarm_type, alarm_description
+        ))
+    except Exception as e:
+        print(f"❌ Trap gönderme hatası (wrapper): {e}")
         import traceback
         traceback.print_exc()
 
