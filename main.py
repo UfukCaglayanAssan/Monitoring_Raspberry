@@ -2914,13 +2914,26 @@ def send_snmp_trap(arm, battery, alarm_type, status):
             7: "Negatif kutup basi sicaklik alarmi"  # error_msb & 2
         }
         
-        # Alarm tipi ismini belirle
+        # Alarm tipi ismini belirle ve MIB değerine map et
+        # MIB'de: Kol alarmları 1-4, Batarya alarmları 11-17
+        # Kodda: Kol alarmları 1-4, Batarya alarmları 1-7
+        mib_alarm_type = alarm_type  # Varsayılan: Kol alarmı için aynı kalır
+        
         if battery > 0:
-            # Batarya alarmı
+            # Batarya alarmı - MIB değerlerine map et (1-7 -> 11-17)
+            # alarm_type 1 = LVoltageWarn -> MIB 11 = batteryLowVoltageWarn
+            # alarm_type 2 = LVoltageAlarm -> MIB 12 = batteryLowVoltageAlarm
+            # alarm_type 3 = OVoltageWarn -> MIB 13 = batteryHighVoltageWarn
+            # alarm_type 4 = OVoltageAlarm -> MIB 14 = batteryHighVoltageAlarm
+            # alarm_type 5 = OvertempD -> MIB 15 = batteryModuleTemp
+            # alarm_type 6 = OvertempP -> MIB 16 = batteryPositivePoleTemp
+            # alarm_type 7 = OvertempN -> MIB 17 = batteryNegativePoleTemp
+            mib_alarm_type = alarm_type + 10  # 1-7 -> 11-17
+            
             alarm_type_name = battery_alarm_names.get(alarm_type, f"Bilinmeyen batarya alarmi (Tip: {alarm_type})")
             alarm_description = f"Kol {arm}, Batarya {battery}: {alarm_type_name}"
         else:
-            # Kol alarmı
+            # Kol alarmı - MIB değerleri aynı (1-4)
             alarm_type_name = arm_alarm_names.get(alarm_type, f"Bilinmeyen kol alarmi (Tip: {alarm_type})")
             alarm_description = f"Kol {arm}: {alarm_type_name}"
         
@@ -2939,7 +2952,7 @@ def send_snmp_trap(arm, battery, alarm_type, status):
         # alarmDescription: 1.3.6.1.4.1.1001.4.4.1.5
         
         status_text = "AKTIF" if status else "ÇÖZÜLDÜ"
-        print(f"📤 Trap gönderiliyor: Kol {arm}, Batarya {battery}, Alarm Tipi {alarm_type}, Durum: {status_text}")
+        print(f"📤 Trap gönderiliyor: Kol {arm}, Batarya {battery}, Alarm Tipi {alarm_type} (MIB: {mib_alarm_type}), Durum: {status_text}")
         
         # Her aktif hedefe trap gönder
         for target in active_targets:
@@ -2956,7 +2969,7 @@ def send_snmp_trap(arm, battery, alarm_type, status):
                     alarm_id=alarm_id,
                     alarm_arm_index=arm,
                     alarm_battery_index=battery,
-                    alarm_type=alarm_type,
+                    alarm_type=mib_alarm_type,  # MIB uyumlu değer gönder
                     alarm_description=alarm_description
                 )
                 print(f"✅ Trap gönderildi: {target['name']} ({target['ip_address']}:{target['port']})")

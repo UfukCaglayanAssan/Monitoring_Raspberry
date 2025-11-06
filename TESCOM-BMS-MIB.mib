@@ -14,17 +14,17 @@ IMPORTS
 --
 tescomBmsMIB MODULE-IDENTITY
     LAST-UPDATED "202410280000Z"
-    ORGANIZATION "TESCOM A.Ş."
+    ORGANIZATION "TESCOM A.S."
     CONTACT-INFO
-        "TESCOM A.Ş.
+        "TESCOM A.S.
          E-mail: support@tescom.com.tr"
     DESCRIPTION
         "TESCOM Battery Management System MIB
-         Bu MIB, batarya yönetim sistemi için SNMP erişim sağlar.
-         Kol ve batarya bilgileri, alarmlar ve status verileri içerir."
+         Bu MIB, batarya yonetim sistemi icin SNMP erisim saglar.
+         Kol ve batarya bilgileri, alarmlar ve status verileri icerir."
     REVISION "202410280000Z"
     DESCRIPTION
-        "İlk versiyon - Batarya yönetim sistemi için SNMP MIB tanımları"
+        "Ilk versiyon - Batarya yonetim sistemi icin SNMP MIB tanimlari"
     ::= { enterprises 1001 }
 
 --
@@ -71,7 +71,7 @@ totalBatteryCount OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Sistemdeki toplam batarya sayısı"
+        "Sistemdeki toplam batarya sayisi"
     ::= { tescomBmsSystem 2 }
 
 totalArmCount OBJECT-TYPE
@@ -80,7 +80,7 @@ totalArmCount OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Sistemdeki toplam aktif kol sayısı"
+        "Sistemdeki toplam aktif kol sayisi"
     ::= { tescomBmsSystem 3 }
 
 systemStatus OBJECT-TYPE
@@ -92,7 +92,7 @@ systemStatus OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Sistem durumu: 0=Durdurulmuş, 1=Çalışıyor, 2=Hata"
+        "Sistem durumu: 0=Durdurulmus, 1=Calisiyor, 2=Hata"
     ::= { tescomBmsSystem 4 }
 
 lastUpdateTime OBJECT-TYPE
@@ -100,7 +100,7 @@ lastUpdateTime OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Son güncelleme zamanı (YYYY-MM-DD HH:MM:SS formatında)"
+        "Son guncelleme zamani (YYYY-MM-DD HH:MM:SS formatinda)"
     ::= { tescomBmsSystem 5 }
 
 dataCount OBJECT-TYPE
@@ -158,7 +158,7 @@ armSlaveCount OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Bu koldaki batarya sayısı"
+        "Bu koldaki batarya sayisi"
     ::= { armEntry 2 }
 
 armCurrent OBJECT-TYPE
@@ -185,7 +185,7 @@ armNtc1Temp OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Kol NTC1 sıcaklık değeri (°C * 10)"
+        "Kol NTC1 sicaklik degeri (C * 10)"
     ::= { armEntry 5 }
 
 armNtc2Temp OBJECT-TYPE
@@ -194,7 +194,7 @@ armNtc2Temp OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Kol NTC2 sıcaklık değeri (°C * 10)"
+        "Kol NTC2 sicaklik degeri (C * 10)"
     ::= { armEntry 6 }
 
 armStatus OBJECT-TYPE
@@ -214,12 +214,12 @@ armAlarmFlags OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Kol alarm bayrakları (HEX formatında):
+        "Kol alarm bayraklari (HEX formatinda):
          0x0=Alarm yok
-         0x1=Yüksek Akım
-         0x2=Yüksek Nem
-         0x4=Yüksek Ortam Sıcaklığı
-         0x8=Yüksek Kol Sıcaklığı"
+         0x1=Yuksek Akim
+         0x2=Yuksek Nem
+         0x4=Yuksek Ortam Sicakligi
+         0x8=Yuksek Kol Sicakligi"
     ::= { armEntry 8 }
 
 -- ============================================
@@ -280,7 +280,7 @@ batteryVoltage OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Batarya gerilim değeri (miliVolt cinsinden)"
+        "Batarya gerilim degeri (miliVolt cinsinden)"
     ::= { batteryEntry 3 }
 
 batterySoc OBJECT-TYPE
@@ -289,7 +289,7 @@ batterySoc OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Batarya şarj durumu (State of Charge, %)"
+        "Batarya sarj durumu (State of Charge, %)"
     ::= { batteryEntry 4 }
 
 batteryRimt OBJECT-TYPE
@@ -298,7 +298,7 @@ batteryRimt OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Batarya modül sıcaklığı (°C * 10)"
+        "Batarya modul sicakligi (C * 10)"
     ::= { batteryEntry 5 }
 
 batterySoh OBJECT-TYPE
@@ -307,7 +307,7 @@ batterySoh OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Batarya sağlık durumu (State of Health, %)"
+        "Batarya saglik durumu (State of Health, %)"
     ::= { batteryEntry 6 }
 
 batteryNtc1 OBJECT-TYPE
@@ -316,7 +316,7 @@ batteryNtc1 OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Batarya NTC1 sıcaklık sensörü (°C * 10)"
+        "Batarya NTC1 sicaklik sensoru (C * 10)"
     ::= { batteryEntry 7 }
 
 batteryNtc2 OBJECT-TYPE
@@ -325,7 +325,7 @@ batteryNtc2 OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Batarya NTC2 sıcaklık sensörü (°C * 10)"
+        "Batarya NTC2 sicaklik sensoru (C * 10)"
     ::= { batteryEntry 8 }
 
 batteryNtc3 OBJECT-TYPE
@@ -334,7 +334,7 @@ batteryNtc3 OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Batarya NTC3 sıcaklık sensörü (°C * 10)"
+        "Batarya NTC3 sicaklik sensoru (C * 10)"
     ::= { batteryEntry 9 }
 
 batteryStatus OBJECT-TYPE
@@ -354,15 +354,15 @@ batteryAlarmFlags OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Batarya alarm bayrakları (HEX formatında):
+        "Batarya alarm bayraklari (HEX formatinda):
          0x0=Alarm yok
-         0x1=Düşük Gerilim Uyarısı
-         0x2=Düşük Gerilim Alarmı
-         0x4=Yüksek Gerilim Uyarısı
-         0x8=Yüksek Gerilim Alarmı
-         0x10=Modül Sıcaklık Alarmı
-         0x20=Pozitif Kutup Sıcaklık Alarmı
-         0x40=Negatif Kutup Sıcaklık Alarmı"
+         0x1=Dusuk Gerilim Uyarisi
+         0x2=Dusuk Gerilim Alarmi
+         0x4=Yuksek Gerilim Uyarisi
+         0x8=Yuksek Gerilim Alarmi
+         0x10=Modul Sicaklik Alarmi
+         0x20=Pozitif Kutup Sicaklik Alarmi
+         0x40=Negatif Kutup Sicaklik Alarmi"
     ::= { batteryEntry 11 }
 
 -- ============================================
@@ -383,7 +383,7 @@ tescomArmAlarmsPresent OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Kol alarmlarının sayısı"
+        "Kol alarmlarinin sayisi"
     ::= { tescomBmsAlarms 2 }
 
 tescomBatteryAlarmsPresent OBJECT-TYPE
@@ -391,7 +391,7 @@ tescomBatteryAlarmsPresent OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Batarya alarmlarının sayısı"
+        "Batarya alarmlarinin sayisi"
     ::= { tescomBmsAlarms 3 }
 
 -- Alarm Tablosu (bacs2.mib bacsAlarmTable benzeri)
@@ -435,7 +435,7 @@ alarmArmIndex OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Alarmın ilgili olduğu kol numarası (0=Sistem geneli, 1-4=Kol)"
+        "Alarmin ilgili oldugu kol numarasi (0=Sistem geneli, 1-4=Kol)"
     ::= { alarmEntry 2 }
 
 alarmBatteryIndex OBJECT-TYPE
@@ -443,7 +443,7 @@ alarmBatteryIndex OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Alarmın ilgili olduğu batarya adresi (0=Kol alarmı, 1-120=Batarya)"
+        "Alarmin ilgili oldugu batarya adresi (0=Kol alarmi, 1-120=Batarya)"
     ::= { alarmEntry 3 }
 
 alarmType OBJECT-TYPE
@@ -471,7 +471,7 @@ alarmDescription OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Alarm açıklaması (Türkçe)"
+        "Alarm aciklamasi (ASCII formatinda)"
     ::= { alarmEntry 5 }
 
 alarmTime OBJECT-TYPE
@@ -479,7 +479,7 @@ alarmTime OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Alarmın oluşma zamanı (sysUpTime)"
+        "Alarmin olusma zamani (sysUpTime)"
     ::= { alarmEntry 6 }
 
 alarmStatus OBJECT-TYPE
@@ -490,7 +490,7 @@ alarmStatus OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Alarm durumu: 1=Aktif, 2=Çözüldü"
+        "Alarm durumu: 1=Aktif, 2=Cozuldu"
     ::= { alarmEntry 7 }
 
 -- ============================================
@@ -501,21 +501,21 @@ tescomAlarmTrap NOTIFICATION-TYPE
     OBJECTS     { alarmId, alarmArmIndex, alarmBatteryIndex, alarmType, alarmDescription }
     STATUS      current
     DESCRIPTION
-        "Yeni bir alarm oluştuğunda gönderilen trap"
+        "Yeni bir alarm olustugunda gonderilen trap"
     ::= { tescomBmsTraps 1 }
 
 tescomAlarmClearedTrap NOTIFICATION-TYPE
     OBJECTS     { alarmId, alarmArmIndex, alarmBatteryIndex, alarmType, alarmDescription }
     STATUS      current
     DESCRIPTION
-        "Bir alarm çözüldüğünde gönderilen trap"
+        "Bir alarm cozuldugunde gonderilen trap"
     ::= { tescomBmsTraps 2 }
 
 tescomSystemStartTrap NOTIFICATION-TYPE
     OBJECTS     { systemInfo }
     STATUS      current
     DESCRIPTION
-        "Sistem başlatıldığında gönderilen trap"
+        "Sistem baslatildiginda gonderilen trap"
     ::= { tescomBmsTraps 3 }
 
 END
