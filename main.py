@@ -26,8 +26,40 @@ from pysnmp.carrier.asyncio.dgram import udp
 from pysnmp.proto.api import v2c
 
 # SNMP trap gönderme için gerekli sınıflar
-# pysnmp.hlapi modülünden tümünü import et (snmp_trap_server.py'deki gibi)
-from pysnmp.hlapi import *
+# Explicit import (pysnmp.hlapi'den direkt import et)
+try:
+    from pysnmp.hlapi import (
+        sendNotification, UdpTransportTarget, ContextData,
+        CommunityData, SnmpEngine, NotificationType
+    )
+except ImportError:
+    # Fallback: v1arch'dan dene
+    try:
+        from pysnmp.hlapi.v1arch import (
+            sendNotification, UdpTransportTarget, ContextData,
+            CommunityData, SnmpEngine, NotificationType
+        )
+    except ImportError:
+        # Son çare: hlapi.asyncio'dan al ama senkron kullan
+        from pysnmp.hlapi.asyncio import (
+            sendNotification, UdpTransportTarget, ContextData,
+            CommunityData, SnmpEngine, NotificationType
+        )
+
+# SNMPv3 için gerekli sınıflar
+try:
+    from pysnmp.hlapi import (
+        UsmUserData, usmHMACSHAAuthProtocol, usmAesCfb128Protocol
+    )
+except ImportError:
+    try:
+        from pysnmp.hlapi.v1arch import (
+            UsmUserData, usmHMACSHAAuthProtocol, usmAesCfb128Protocol
+        )
+    except ImportError:
+        from pysnmp.hlapi.asyncio import (
+            UsmUserData, usmHMACSHAAuthProtocol, usmAesCfb128Protocol
+        )
 
 # SMI ve proto modüllerinden tip sınıfları
 from pysnmp.smi.rfc1902 import ObjectType, ObjectIdentity
@@ -2956,9 +2988,7 @@ def send_single_trap(target_ip, target_port, trap_version='2c', trap_community='
         
         # SNMP versiyonuna göre authentication data hazırla
         if trap_version == '3':
-            # SNMPv3 için UsmUserData kullan
-            from pysnmp.hlapi import UsmUserData, usmHMACSHAAuthProtocol, usmAesCfb128Protocol
-            
+            # SNMPv3 için UsmUserData kullan (zaten import edildi)
             # SNMPv3 parametreleri kontrol et
             if not trap_username:
                 print("❌ SNMPv3 için kullanıcı adı gerekli")
