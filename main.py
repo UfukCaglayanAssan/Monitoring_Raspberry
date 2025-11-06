@@ -26,6 +26,21 @@ from pysnmp.hlapi import *
 from pysnmp.carrier.asyncio.dgram import udp
 from pysnmp.proto.api import v2c
 
+# SNMP trap gönderme için gerekli sınıflar (açıkça import et)
+try:
+    from pysnmp.hlapi import (
+        ObjectType, ObjectIdentity, Integer, OctetString,
+        CommunityData, UdpTransportTarget, ContextData,
+        SnmpEngine, sendNotification, NotificationType
+    )
+except ImportError:
+    # Fallback: pysnmp.hlapi.asyncio'dan import et
+    from pysnmp.hlapi.asyncio import (
+        ObjectType, ObjectIdentity, Integer, OctetString,
+        CommunityData, UdpTransportTarget, ContextData,
+        SnmpEngine, sendNotification, NotificationType
+    )
+
 # SNMP ayarları
 SNMP_HOST = '0.0.0.0'  # Dışarıdan erişim için 0.0.0.0
 SNMP_PORT = 1161
