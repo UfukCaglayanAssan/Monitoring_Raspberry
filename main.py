@@ -3159,10 +3159,12 @@ def snmp_server():
                         import traceback
                         traceback.print_exc()
                     
-                    # .0 ile gelen istekleri reddet (MIB standardına uygun değil)
+                    # .0 ile gelen istekleri reddet (MIB TABLE'da instance INDEX değerleri kullanılır, .0 değil)
                     if oid.endswith('.0'):
                         print(f"   ❌ .0 ile gelen istek reddedildi: {oid}")
-                        return self.getSyntax().clone("No Such Name")
+                        # PySNMP'de "No Such Name" için exception fırlat
+                        from pysnmp.smi.error import NoSuchInstanceError
+                        raise NoSuchInstanceError(name=name)
                     
                     # Sistem bilgileri - ESKİ TEST OID'leri (1.3.6.5.x)
                     if oid == "1.3.6.5.1":
@@ -3558,7 +3560,11 @@ def snmp_server():
         print("⚙️  armTable OID'leri oluşturuluyor...")
         for arm_index in range(1, 5):  # 1-4 arası kol
             for column in range(2, 9):  # Column 2-8 (armSlaveCount'tan armAlarmFlags'e kadar - MIB uyumlu)
-                oid = (1, 3, 6, 1, 4, 1, 1001, 2, 1, 1, column, arm_index)
+                # Base OID (column dahil, INDEX değeri hariç)
+                base_oid = (1, 3, 6, 1, 4, 1, 1001, 2, 1, 1, column)
+                # Instance INDEX değeri (arm_index)
+                instance = (arm_index,)
+                
                 if column == 2:  # armSlaveCount
                     syntax = v2c.Integer()
                 elif column in [3, 4, 5, 6]:  # armCurrent, armHumidity, armNtc1Temp, armNtc2Temp - String olarak gönder
@@ -3568,10 +3574,11 @@ def snmp_server():
                 elif column == 8:  # armAlarmFlags (HEX bitmask)
                     syntax = v2c.Integer()
                 
+                # Instance INDEX değerini içerir (arm_index)
                 mibBuilder.export_symbols(
                     f"__ARM_TABLE_{arm_index}_{column}",
-                    MibScalar(oid, syntax),
-                    ModbusRAMMibScalarInstance(oid, (), syntax),  # Instance olmadan (MIB standardına uygun)
+                    MibScalar(base_oid, syntax),
+                    ModbusRAMMibScalarInstance(base_oid, instance, syntax),  # Instance INDEX değeri
                 )
         
         # ============================================
@@ -3584,7 +3591,11 @@ def snmp_server():
             
             for battery_index in range(1, battery_count + 1):  # 1-120 arası batarya
                 for column in range(3, 12):  # Column 3-11 (batteryVoltage'dan batteryAlarmFlags'e kadar - MIB uyumlu)
-                    oid = (1, 3, 6, 1, 4, 1, 1001, 3, 1, 1, column, arm_index, battery_index)
+                    # Base OID (column dahil, INDEX değerleri hariç)
+                    base_oid = (1, 3, 6, 1, 4, 1, 1001, 3, 1, 1, column)
+                    # Instance INDEX değerleri (arm_index, battery_index)
+                    instance = (arm_index, battery_index)
+                    
                     if column == 3:  # batteryVoltage - String olarak gönder
                         syntax = v2c.OctetString()
                     elif column == 4:  # batterySoc - String olarak gönder
@@ -3600,10 +3611,11 @@ def snmp_server():
                     elif column == 11:  # batteryAlarmFlags (HEX bitmask)
                         syntax = v2c.Integer()
                     
+                    # Instance INDEX değerlerini içerir (arm_index, battery_index)
                     mibBuilder.export_symbols(
                         f"__BATTERY_TABLE_{arm_index}_{battery_index}_{column}",
-                        MibScalar(oid, syntax),
-                        ModbusRAMMibScalarInstance(oid, (), syntax),  # Instance olmadan (MIB standardına uygun)
+                        MibScalar(base_oid, syntax),
+                        ModbusRAMMibScalarInstance(base_oid, instance, syntax),  # Instance INDEX değerleri
                     )
         
         print("✅ MIB Objects oluşturuldu (TABLE yapısı)")
