@@ -3159,9 +3159,10 @@ def snmp_server():
                         import traceback
                         traceback.print_exc()
                     
-                    # OID sonundaki .0'ı kaldır (varsa) - MIB instance'ları artık .0 olmadan kayıtlı
+                    # .0 ile gelen istekleri reddet (MIB standardına uygun değil)
                     if oid.endswith('.0'):
-                        oid = oid[:-2]
+                        print(f"   ❌ .0 ile gelen istek reddedildi: {oid}")
+                        return self.getSyntax().clone("No Such Name")
                     
                     # Sistem bilgileri - ESKİ TEST OID'leri (1.3.6.5.x)
                     if oid == "1.3.6.5.1":
@@ -3485,70 +3486,70 @@ def snmp_server():
             "__MODBUS_RAM_MIB",
             # Eski Sistem bilgileri (test için)
             MibScalar((1, 3, 6, 5, 1), v2c.OctetString()),
-            ModbusRAMMibScalarInstance((1, 3, 6, 5, 1), (), v2c.OctetString()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 5, 1), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 2), v2c.OctetString()),
-            ModbusRAMMibScalarInstance((1, 3, 6, 5, 2), (), v2c.OctetString()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 5, 2), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 3), v2c.OctetString()),
-            ModbusRAMMibScalarInstance((1, 3, 6, 5, 3), (), v2c.OctetString()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 5, 3), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 4), v2c.OctetString()),
-            ModbusRAMMibScalarInstance((1, 3, 6, 5, 4), (), v2c.OctetString()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 5, 4), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 5), v2c.OctetString()),
-            ModbusRAMMibScalarInstance((1, 3, 6, 5, 5), (), v2c.OctetString()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 5, 5), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 6), v2c.OctetString()),
-            ModbusRAMMibScalarInstance((1, 3, 6, 5, 6), (), v2c.OctetString()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 5, 6), (0,), v2c.OctetString()),
             
             # Armslavecounts OID'leri
             MibScalar((1, 3, 6, 5, 7), v2c.OctetString()),
-            ModbusRAMMibScalarInstance((1, 3, 6, 5, 7), (), v2c.OctetString()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 5, 7), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 8), v2c.OctetString()),
-            ModbusRAMMibScalarInstance((1, 3, 6, 5, 8), (), v2c.OctetString()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 5, 8), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 9), v2c.OctetString()),
-            ModbusRAMMibScalarInstance((1, 3, 6, 5, 9), (), v2c.OctetString()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 5, 9), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 5, 10), v2c.OctetString()),
-            ModbusRAMMibScalarInstance((1, 3, 6, 5, 10), (), v2c.OctetString()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 5, 10), (0,), v2c.OctetString()),
         )
         
         # Yeni MIB - tescomBmsSystem OID'leri (1.3.6.1.4.1.1001.1.x)
         mibBuilder.export_symbols(
             "__TESCOM_BMS_SYSTEM_MIB",
             MibScalar((1, 3, 6, 1, 4, 1, 1001, 1, 1), v2c.OctetString()),  # systemInfo
-            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 1, 1), (), v2c.OctetString()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 1, 1), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 1, 4, 1, 1001, 1, 2), v2c.Integer()),  # totalBatteryCount
-            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 1, 2), (), v2c.Integer()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 1, 2), (0,), v2c.Integer()),
             
             MibScalar((1, 3, 6, 1, 4, 1, 1001, 1, 3), v2c.Integer()),  # totalArmCount
-            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 1, 3), (), v2c.Integer()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 1, 3), (0,), v2c.Integer()),
             
             MibScalar((1, 3, 6, 1, 4, 1, 1001, 1, 4), v2c.Integer()),  # systemStatus
-            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 1, 4), (), v2c.Integer()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 1, 4), (0,), v2c.Integer()),
             
             MibScalar((1, 3, 6, 1, 4, 1, 1001, 1, 5), v2c.OctetString()),  # lastUpdateTime
-            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 1, 5), (), v2c.OctetString()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 1, 5), (0,), v2c.OctetString()),
             
             MibScalar((1, 3, 6, 1, 4, 1, 1001, 1, 6), v2c.Integer()),  # dataCount
-            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 1, 6), (), v2c.Integer()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 1, 6), (0,), v2c.Integer()),
         )
         
         # Alarm sayıları - tescomBmsAlarms (1.3.6.1.4.1.1001.4.x)
         mibBuilder.export_symbols(
             "__TESCOM_BMS_ALARMS_MIB",
             MibScalar((1, 3, 6, 1, 4, 1, 1001, 4, 1), v2c.Gauge32()),  # tescomAlarmsPresent
-            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 4, 1), (), v2c.Gauge32()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 4, 1), (0,), v2c.Gauge32()),
             
             MibScalar((1, 3, 6, 1, 4, 1, 1001, 4, 2), v2c.Gauge32()),  # tescomArmAlarmsPresent
-            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 4, 2), (), v2c.Gauge32()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 4, 2), (0,), v2c.Gauge32()),
             
             MibScalar((1, 3, 6, 1, 4, 1, 1001, 4, 3), v2c.Gauge32()),  # tescomBatteryAlarmsPresent
-            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 4, 3), (), v2c.Gauge32()),
+            ModbusRAMMibScalarInstance((1, 3, 6, 1, 4, 1, 1001, 4, 3), (0,), v2c.Gauge32()),
         )
         
         # ============================================
@@ -3570,7 +3571,7 @@ def snmp_server():
                 mibBuilder.export_symbols(
                     f"__ARM_TABLE_{arm_index}_{column}",
                     MibScalar(oid, syntax),
-                    ModbusRAMMibScalarInstance(oid, (), syntax),
+                    ModbusRAMMibScalarInstance(oid, (), syntax),  # Instance olmadan (MIB standardına uygun)
                 )
         
         # ============================================
@@ -3602,7 +3603,7 @@ def snmp_server():
                     mibBuilder.export_symbols(
                         f"__BATTERY_TABLE_{arm_index}_{battery_index}_{column}",
                         MibScalar(oid, syntax),
-                        ModbusRAMMibScalarInstance(oid, (), syntax),
+                        ModbusRAMMibScalarInstance(oid, (), syntax),  # Instance olmadan (MIB standardına uygun)
                     )
         
         print("✅ MIB Objects oluşturuldu (TABLE yapısı)")
