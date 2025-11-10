@@ -1,1 +1,0 @@
-print("Dosya2222")
