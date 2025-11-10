@@ -16,10 +16,12 @@ from database import BatteryDatabase
 from alarm_processor import AlarmProcessor
 #DEĞİŞİKLİK33322222
 #yenilik
+#BAKALIM NE OLACAK
 # Unbuffered output - logların hemen görünmesi için
 sys.stdout.reconfigure(line_buffering=True)
 sys.stderr.reconfigure(line_buffering=True)
 #EKLEME
+#DEĞİŞİKLİKLİKLERDEN SONRA BAKALIM NE OLACAK
 # SNMP imports
 from pysnmp.entity import engine, config
 from pysnmp.entity.rfc3413 import cmdrsp, context
