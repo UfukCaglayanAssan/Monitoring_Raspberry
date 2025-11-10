@@ -13,12 +13,33 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-# Log dosyası yolu (kullanıcı home dizinini otomatik bul)
-USER_HOME = os.path.expanduser("~")
-LOG_FILE = os.path.join(USER_HOME, "usb_updater.log")
-UPDATE_MARKER = "UPDATE"  # USB'de aranacak klasör adı
-BACKUP_DIR = os.path.join(USER_HOME, "usb_update_backups")
+# Proje dizini (önce tanımla, sonra kullan)
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Log dosyası yolu (kullanıcı home dizinini otomatik bul)
+# Root olarak çalışıyorsa SUDO_USER veya service'ten gelen kullanıcıyı kullan
+if os.geteuid() == 0:  # Root olarak çalışıyorsa
+    # SUDO_USER environment variable'ını kontrol et
+    sudo_user = os.environ.get('SUDO_USER')
+    if sudo_user:
+        import pwd
+        try:
+            USER_HOME = pwd.getpwnam(sudo_user).pw_dir
+        except:
+            USER_HOME = f"/home/{sudo_user}"
+    else:
+        # Proje dizininden kullanıcı adını çıkar (/home/bms/...)
+        if '/home/' in PROJECT_DIR:
+            user_name = PROJECT_DIR.split('/home/')[1].split('/')[0]
+            USER_HOME = f"/home/{user_name}"
+        else:
+            USER_HOME = "/home/bms"  # Varsayılan
+else:
+    USER_HOME = os.path.expanduser("~")
+
+LOG_FILE = os.path.join(PROJECT_DIR, "usb_updater.log")
+UPDATE_MARKER = "UPDATE"  # USB'de aranacak klasör adı
+BACKUP_DIR = os.path.join(PROJECT_DIR, "usb_update_backups")
 
 # Güncellenebilen dosya uzantıları
 ALLOWED_EXTENSIONS = {

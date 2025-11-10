@@ -41,14 +41,14 @@ echo "6. Udev kuralları yeniden yükleniyor..."
 sudo udevadm control --reload-rules
 sudo udevadm trigger
 
-# Log dizinini oluştur
-echo "7. Log dizini oluşturuluyor..."
-touch "$HOME/usb_updater.log"
-chmod 666 "$HOME/usb_updater.log"
+# Log dosyasını oluştur (proje dizininde)
+echo "7. Log dosyası oluşturuluyor..."
+touch "$PROJECT_DIR/usb_updater.log"
+chmod 666 "$PROJECT_DIR/usb_updater.log"
 
-# Backup dizinini oluştur
+# Backup dizinini oluştur (proje dizininde)
 echo "8. Backup dizini oluşturuluyor..."
-mkdir -p "$HOME/usb_update_backups"
+mkdir -p "$PROJECT_DIR/usb_update_backups"
 
 echo ""
 echo "=========================================="
@@ -62,8 +62,8 @@ echo "3. Güncellemek istediğiniz dosyaları UPDATE klasörüne koyun"
 echo "4. USB'yi Raspberry Pi'ye takın"
 echo "5. Güncelleme otomatik olarak başlayacak"
 echo ""
-echo "Log dosyası: $HOME/usb_updater.log"
-echo "Backup dosyaları: $HOME/usb_update_backups"
+echo "Log dosyası: $PROJECT_DIR/usb_updater.log"
+echo "Backup dosyaları: $PROJECT_DIR/usb_update_backups"
 echo ""
 echo "Manuel test için:"
 echo "  sudo systemctl start usb-update.service"
