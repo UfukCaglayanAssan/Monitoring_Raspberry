@@ -14,7 +14,7 @@ import sys
 from collections import defaultdict
 from database import BatteryDatabase
 from alarm_processor import AlarmProcessor
-
+#yenilik
 # Unbuffered output - logların hemen görünmesi için
 sys.stdout.reconfigure(line_buffering=True)
 sys.stderr.reconfigure(line_buffering=True)
@@ -1870,14 +1870,14 @@ def get_dynamic_data_by_index_new(start_index, quantity):
         # Sadece hedef kolu işle
         arm = target_arm
         
-        # Kol verileri (Register 1-3: Akım, Nem, Sıcaklık)
+        # Kol verileri (Register 0-3: Akım, Nem, Modül Sıcaklığı, Ortam Sıcaklığı)
         for i in range(quantity):
             current_register = start_index + i
             current_offset = current_register - arm_start
             
             print(f"DEBUG: İşlenen register: {current_register}, offset: {current_offset}")
             
-            if current_offset <= 2:  # Kol verileri (0,1,2)
+            if current_offset <= 3:  # Kol verileri (0,1,2,3)
                 # Kol verisi al
                 try:
                     arm_data = dict(battery_data_ram.get(arm, {}))
@@ -1891,17 +1891,20 @@ def get_dynamic_data_by_index_new(start_index, quantity):
                     elif current_offset == 1:  # Nem
                         value = arm_data[2].get(2, {}).get('value', 0)  # RAM dtype=2 (Nem)
                         print(f"DEBUG: Kol Nem: {value}")
-                    elif current_offset == 2:  # Sıcaklık
-                        value = arm_data[2].get(3, {}).get('value', 0)  # RAM dtype=3 (Sıcaklık)
-                        print(f"DEBUG: Kol Sıcaklık: {value}")
+                    elif current_offset == 2:  # Modül Sıcaklığı
+                        value = arm_data[2].get(3, {}).get('value', 0)  # RAM dtype=3 (Modül Sıcaklığı)
+                        print(f"DEBUG: Kol Modül Sıcaklığı: {value}")
+                    elif current_offset == 3:  # Ortam Sıcaklığı
+                        value = arm_data[2].get(4, {}).get('value', 0)  # RAM dtype=4 (Ortam Sıcaklığı)
+                        print(f"DEBUG: Kol Ortam Sıcaklığı: {value}")
                     else:
                         value = 0
                     result.append(float(value) if value else 0.0)
                 else:
                     result.append(0.0)
-            else:  # Batarya verileri (Register 4+)
+            else:  # Batarya verileri (Register 5+)
                 # Batarya hesaplaması
-                battery_offset = current_offset - 3  # Kol verilerini atla
+                battery_offset = current_offset - 4  # Kol verilerini atla (4 register)
                 battery_num = (battery_offset // 7) + 1  # Hangi batarya
                 data_type_offset = battery_offset % 7  # Hangi veri tipi
                 
@@ -3434,35 +3437,21 @@ def snmp_server():
                                         return self.getSyntax().clone(1 if status_ram[arm_index][battery_index] else 0)
                                     return self.getSyntax().clone(0)
                                 
-                                # Column 11: batteryAlarmFlags (HEX bitmask - MIB uyumlu)
-                                # 0x1=Düşük Gerilim Uyarısı, 0x2=Düşük Gerilim Alarmı, 0x4=Yüksek Gerilim Uyarısı,
-                                # 0x8=Yüksek Gerilim Alarmı, 0x10=Modül Sıcaklık Alarmı, 0x20=Pozitif Kutup Sıcaklık Alarmı,
-                                # 0x40=Negatif Kutup Sıcaklık Alarmı
+                                # Column 11: batteryAlarmFlags - Aktif alarm numarasını döndür (1-7)
+                                # Eğer birden fazla alarm aktifse, ilk aktif olan alarmın numarası döner
+                                # 1=Düşük Gerilim Uyarısı, 2=Düşük Gerilim Alarmı, 3=Yüksek Gerilim Uyarısı,
+                                # 4=Yüksek Gerilim Alarmı, 5=Modül Sıcaklık Alarmı, 6=Pozitif Kutup Sıcaklık Alarmı,
+                                # 7=Negatif Kutup Sıcaklık Alarmı, 0=Alarm yok
                                 if column == 11:
                                     if arm_index in alarm_ram and battery_index in alarm_ram[arm_index]:
-                                        flags = 0
-                                        # Debug: Tüm alarm durumlarını logla
-                                        alarm_states = {}
-                                        for at in range(1, 8):
-                                            alarm_states[at] = alarm_ram[arm_index][battery_index].get(at, False)
-                                        print(f"🔍 DEBUG batteryAlarmFlags - Kol {arm_index}, Batarya {battery_index}: {alarm_states}")
-                                        
-                                        if alarm_ram[arm_index][battery_index].get(1, False):  # Düşük Gerilim Uyarısı
-                                            flags |= 0x1
-                                        if alarm_ram[arm_index][battery_index].get(2, False):  # Düşük Gerilim Alarmı
-                                            flags |= 0x2
-                                        if alarm_ram[arm_index][battery_index].get(3, False):  # Yüksek Gerilim Uyarısı
-                                            flags |= 0x4
-                                        if alarm_ram[arm_index][battery_index].get(4, False):  # Yüksek Gerilim Alarmı
-                                            flags |= 0x8
-                                        if alarm_ram[arm_index][battery_index].get(5, False):  # Modül Sıcaklık Alarmı
-                                            flags |= 0x10
-                                        if alarm_ram[arm_index][battery_index].get(6, False):  # Pozitif Kutup Sıcaklık Alarmı
-                                            flags |= 0x20
-                                        if alarm_ram[arm_index][battery_index].get(7, False):  # Negatif Kutup Sıcaklık Alarmı
-                                            flags |= 0x40
-                                        print(f"🔍 DEBUG batteryAlarmFlags - Dönen değer: {flags} (0x{flags:02X})")
-                                        return self.getSyntax().clone(flags)
+                                        # İlk aktif alarmın numarasını bul (1-7 arası)
+                                        for alarm_type in range(1, 8):
+                                            if alarm_ram[arm_index][battery_index].get(alarm_type, False):
+                                                print(f"🔍 batteryAlarmFlags - Kol {arm_index}, Batarya {battery_index}: Aktif alarm numarası: {alarm_type}")
+                                                return self.getSyntax().clone(alarm_type)
+                                        # Hiç alarm yoksa 0 döndür
+                                        print(f"🔍 batteryAlarmFlags - Kol {arm_index}, Batarya {battery_index}: Alarm yok (0)")
+                                        return self.getSyntax().clone(0)
                                     return self.getSyntax().clone(0)
                     
                     return self.getSyntax().clone("No Such Object")

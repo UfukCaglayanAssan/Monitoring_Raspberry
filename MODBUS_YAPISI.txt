@@ -1,0 +1,442 @@
+================================================================================
+                    TESCOM BMS - MODBUS TCP YAPISI
+                    main.py Modbus Implementasyonu
+================================================================================
+
+GENEL BİLGİLER
+--------------
+- Protokol: Modbus TCP
+- Port: 1502
+- IP: 0.0.0.0 (Tüm arayüzlerde dinle)
+- Function Code 3: Read Holding Registers
+- Function Code 4: Read Input Registers
+- Veri Formatı: 16-bit Integer (Float değerler × 100 olarak gönderilir)
+
+================================================================================
+REGISTER ADRES ARALIKLARI
+================================================================================
+
+1. ARMSLAVECOUNTS (Kol Batarya Sayıları)
+   Register: 0-3
+   Açıklama: Her kol için batarya sayısı
+   Format: Float (× 100 olarak integer gönderilir)
+
+2. DİNAMİK VERİLER (Kol ve Batarya Verileri)
+   Register: 1001-4994
+   Açıklama: Kol verileri ve batarya verileri
+   Format: Float (× 100 olarak integer gönderilir)
+
+3. ALARM VERİLERİ
+   Register: 5001-8376
+   Açıklama: Kol ve batarya alarm durumları
+   Format: Integer (0 veya 1)
+
+4. STATUS VERİLERİ
+   Register: 9001-9484
+   Açıklama: Kol ve batarya status durumları
+   Format: Integer (0 veya 1)
+
+================================================================================
+1. ARMSLAVECOUNTS (Register 0-3)
+================================================================================
+
+Register 0: Kol 1 Batarya Sayısı
+Register 1: Kol 2 Batarya Sayısı
+Register 2: Kol 3 Batarya Sayısı
+Register 3: Kol 4 Batarya Sayısı
+
+Örnek:
+  Register 0: 7.0  → Kol 1'de 7 batarya var
+  Register 1: 0.0  → Kol 2'de batarya yok
+  Register 2: 5.0  → Kol 3'te 5 batarya var
+  Register 3: 0.0  → Kol 4'te batarya yok
+
+Modbus Komutu:
+  Function Code 3, Start Address: 0, Quantity: 4
+
+================================================================================
+2. DİNAMİK VERİLER (Register 1001-4994)
+================================================================================
+
+Her kol için ayrı register aralığı:
+- Kol 1: 1001-1994
+- Kol 2: 2001-2994
+- Kol 3: 3001-3994
+- Kol 4: 4001-4994
+
+Her kol için veri yapısı:
+  Register 0 (offset): Kol Akım (Ampere)
+  Register 1 (offset): Kol Nem (%)
+  Register 2 (offset): Kol Modül Sıcaklığı (°C)
+  Register 3 (offset): Kol Ortam Sıcaklığı (°C)
+  Register 4-10 (offset): Batarya 1 verileri (7 register)
+  Register 11-17 (offset): Batarya 2 verileri (7 register)
+  Register 18-24 (offset): Batarya 3 verileri (7 register)
+  ...
+  Register N-N+6 (offset): Batarya X verileri (7 register)
+
+KOL VERİLERİ (Her kol için ilk 4 register):
+------------------------------------------------
+Offset 0: Kol Akım (Ampere)
+Offset 1: Kol Nem (%)
+Offset 2: Kol Modül Sıcaklığı (°C)
+Offset 3: Kol Ortam Sıcaklığı (°C)
+
+Örnek - Kol 1 verileri:
+  Register 1001: 15.5 A  → Kol 1 Akım
+  Register 1002: 45.2 %  → Kol 1 Nem
+  Register 1003: 25.8 °C → Kol 1 Modül Sıcaklığı
+  Register 1004: 24.5 °C → Kol 1 Ortam Sıcaklığı
+
+BATARYA VERİLERİ (Her batarya için 7 register):
+------------------------------------------------
+Offset 0: Batarya Gerilim (Volt)
+Offset 1: SOC - State of Charge (%)
+Offset 2: RIMT - Modül Sıcaklığı (°C)
+Offset 3: SOH - State of Health (%)
+Offset 4: NTC1 Sıcaklık (°C)
+Offset 5: NTC2 Sıcaklık (°C)
+Offset 6: NTC3 Sıcaklık (°C)
+
+Örnek - Kol 1, Batarya 1 verileri:
+  Register 1005: 3.65 V   → Batarya 1 Gerilim
+  Register 1006: 85.0 %   → Batarya 1 SOC
+  Register 1007: 28.5 °C  → Batarya 1 RIMT
+  Register 1008: 95.0 %   → Batarya 1 SOH
+  Register 1009: 27.2 °C  → Batarya 1 NTC1
+  Register 1010: 26.8 °C  → Batarya 1 NTC2
+  Register 1011: 27.0 °C  → Batarya 1 NTC3
+
+Örnek - Kol 1, Batarya 2 verileri:
+  Register 1012: 3.68 V   → Batarya 2 Gerilim
+  Register 1013: 90.0 %   → Batarya 2 SOC
+  Register 1014: 29.1 °C  → Batarya 2 RIMT
+  Register 1015: 96.0 %   → Batarya 2 SOH
+  Register 1016: 28.0 °C  → Batarya 2 NTC1
+  Register 1017: 27.5 °C  → Batarya 2 NTC2
+  Register 1018: 27.8 °C  → Batarya 2 NTC3
+
+HESAPLAMA FORMÜLLERİ:
+---------------------
+Kol X için başlangıç register'ı:
+  arm_start = 1000 + (X * 1000)
+  Örnek: Kol 1 → 1001, Kol 2 → 2001, Kol 3 → 3001, Kol 4 → 4001
+
+Kol verileri:
+  Register = arm_start + offset
+  offset 0: Akım
+  offset 1: Nem
+  offset 2: Modül Sıcaklığı
+  offset 3: Ortam Sıcaklığı
+
+Batarya Y için register hesaplama:
+  battery_offset = (Y - 1) * 7
+  Register = arm_start + 4 + battery_offset + data_type_offset
+  
+  data_type_offset:
+    0: Gerilim
+    1: SOC
+    2: RIMT
+    3: SOH
+    4: NTC1
+    5: NTC2
+    6: NTC3
+
+Örnek - Kol 3, Batarya 5, SOC değeri:
+  arm_start = 3001
+  battery_offset = (5 - 1) * 7 = 28
+  data_type_offset = 1 (SOC)
+  Register = 3001 + 4 + 28 + 1 = 3034
+
+MODBUS KOMUTLARI:
+-----------------
+# Kol 1 tüm verileri (kol + 7 batarya = 4 + 49 = 53 register)
+Function Code 3, Start Address: 1001, Quantity: 53
+
+# Kol 1, sadece kol verileri
+Function Code 3, Start Address: 1001, Quantity: 4
+
+# Kol 1, Batarya 1 verileri
+Function Code 3, Start Address: 1005, Quantity: 7
+
+# Kol 3, Batarya 3 verileri
+Function Code 3, Start Address: 3026, Quantity: 7
+
+# Kol 3, Batarya 3, sadece SOC
+Function Code 3, Start Address: 3027, Quantity: 1
+
+================================================================================
+3. ALARM VERİLERİ (Register 5001-8376)
+================================================================================
+
+Her kol için ayrı register aralığı:
+- Kol 1: 5001-5844
+- Kol 2: 5845-6688
+- Kol 3: 6689-7532
+- Kol 4: 7533-8376
+
+Her kol için veri yapısı:
+  Register 0 (offset): Kol Alarm Tip 1
+  Register 1 (offset): Kol Alarm Tip 2
+  Register 2 (offset): Kol Alarm Tip 3
+  Register 3 (offset): Kol Alarm Tip 4
+  Register 4-10 (offset): Batarya 1 alarmları (7 register)
+  Register 11-17 (offset): Batarya 2 alarmları (7 register)
+  Register 18-24 (offset): Batarya 3 alarmları (7 register)
+  ...
+  Register N-N+6 (offset): Batarya X alarmları (7 register)
+
+KOL ALARMLARI (Her kol için ilk 4 register):
+-------------------------------------------
+Offset 0: Kol Alarm Tip 1 (Yüksek Akım)
+Offset 1: Kol Alarm Tip 2 (Yüksek Nem)
+Offset 2: Kol Alarm Tip 3 (Yüksek Ortam Sıcaklığı)
+Offset 3: Kol Alarm Tip 4 (Yüksek Kol Sıcaklığı)
+
+Değer: 0 = Alarm yok, 1 = Alarm var
+
+Örnek - Kol 1 alarmları:
+  Register 5001: 0 → Yüksek Akım yok
+  Register 5002: 1 → Yüksek Nem VAR
+  Register 5003: 0 → Yüksek Ortam Sıcaklığı yok
+  Register 5004: 0 → Yüksek Kol Sıcaklığı yok
+
+BATARYA ALARMLARI (Her batarya için 7 register):
+-------------------------------------------------
+Offset 0: Alarm Tip 1 (Düşük Gerilim Uyarısı)
+Offset 1: Alarm Tip 2 (Düşük Gerilim Alarmı)
+Offset 2: Alarm Tip 3 (Yüksek Gerilim Uyarısı)
+Offset 3: Alarm Tip 4 (Yüksek Gerilim Alarmı)
+Offset 4: Alarm Tip 5 (Modül Sıcaklık Alarmı)
+Offset 5: Alarm Tip 6 (Pozitif Kutup Sıcaklık Alarmı)
+Offset 6: Alarm Tip 7 (Negatif Kutup Sıcaklık Alarmı)
+
+Değer: 0 = Alarm yok, 1 = Alarm var
+
+Örnek - Kol 1, Batarya 1 alarmları:
+  Register 5005: 0 → Düşük Gerilim Uyarısı yok
+  Register 5006: 0 → Düşük Gerilim Alarmı yok
+  Register 5007: 0 → Yüksek Gerilim Uyarısı yok
+  Register 5008: 0 → Yüksek Gerilim Alarmı yok
+  Register 5009: 1 → Modül Sıcaklık Alarmı VAR
+  Register 5010: 0 → Pozitif Kutup Sıcaklık Alarmı yok
+  Register 5011: 0 → Negatif Kutup Sıcaklık Alarmı yok
+
+Örnek - Kol 3, Batarya 3 alarmları:
+  Register 6705: 0 → Düşük Gerilim Uyarısı yok
+  Register 6706: 1 → Düşük Gerilim Alarmı VAR
+  Register 6707: 0 → Yüksek Gerilim Uyarısı yok
+  Register 6708: 0 → Yüksek Gerilim Alarmı yok
+  Register 6709: 0 → Modül Sıcaklık Alarmı yok
+  Register 6710: 0 → Pozitif Kutup Sıcaklık Alarmı yok
+  Register 6711: 0 → Negatif Kutup Sıcaklık Alarmı yok
+
+HESAPLAMA FORMÜLLERİ:
+---------------------
+Kol X için başlangıç register'ı:
+  arm_start = 5001 + (X - 1) * 844
+  Örnek: Kol 1 → 5001, Kol 2 → 5845, Kol 3 → 6689, Kol 4 → 7533
+
+Kol alarmları:
+  Register = arm_start + offset
+  offset 0-3: Kol alarm tipleri 1-4
+
+Batarya Y için register hesaplama:
+  battery_offset = 4 + (Y - 1) * 7
+  Register = arm_start + battery_offset + alarm_type - 1
+  
+  alarm_type: 1-7 (Batarya alarm tipi)
+
+Örnek - Kol 3, Batarya 5, Alarm Tip 2 (Düşük Gerilim Alarmı):
+  arm_start = 6689
+  battery_offset = 4 + (5 - 1) * 7 = 32
+  Register = 6689 + 32 + 2 - 1 = 6722
+
+MODBUS KOMUTLARI:
+-----------------
+# Kol 1 tüm alarmları (kol + 7 batarya = 4 + 49 = 53 register)
+Function Code 3, Start Address: 5001, Quantity: 53
+
+# Kol 1, sadece kol alarmları
+Function Code 3, Start Address: 5001, Quantity: 4
+
+# Kol 1, Batarya 1 alarmları
+Function Code 3, Start Address: 5005, Quantity: 7
+
+# Kol 3, Batarya 3, Alarm Tip 2
+Function Code 3, Start Address: 6706, Quantity: 1
+
+================================================================================
+4. STATUS VERİLERİ (Register 9001-9484)
+================================================================================
+
+Her kol için ayrı register aralığı:
+- Kol 1: 9001-9121
+- Kol 2: 9122-9242
+- Kol 3: 9243-9363
+- Kol 4: 9364-9484
+
+Her kol için veri yapısı:
+  Register 0 (offset): Kol Status
+  Register 1-120 (offset): Batarya 1-120 Status
+
+KOL STATUS (Her kol için ilk register):
+---------------------------------------
+Offset 0: Kol Status
+Değer: 0 = Veri yok/Hata, 1 = Normal
+
+Örnek - Kol 1 status:
+  Register 9001: 1 → Kol 1 Normal
+
+BATARYA STATUS (Her batarya için 1 register):
+---------------------------------------------
+Offset 1-120: Batarya 1-120 Status
+Değer: 0 = Veri yok, 1 = Veri var
+
+Örnek - Kol 1 batarya statusları:
+  Register 9002: 1 → Batarya 1 veri var
+  Register 9003: 1 → Batarya 2 veri var
+  Register 9004: 0 → Batarya 3 veri yok
+  Register 9005: 1 → Batarya 4 veri var
+
+Örnek - Kol 3 batarya statusları:
+  Register 9244: 1 → Batarya 1 veri var
+  Register 9245: 1 → Batarya 2 veri var
+  Register 9246: 1 → Batarya 3 veri var
+  Register 9247: 0 → Batarya 4 veri yok
+
+HESAPLAMA FORMÜLLERİ:
+---------------------
+Kol X için başlangıç register'ı:
+  arm_start = 9001 + (X - 1) * 121
+  Örnek: Kol 1 → 9001, Kol 2 → 9122, Kol 3 → 9243, Kol 4 → 9364
+
+Kol status:
+  Register = arm_start
+
+Batarya Y status:
+  Register = arm_start + Y
+
+Örnek - Kol 3, Batarya 5 status:
+  arm_start = 9243
+  Register = 9243 + 5 = 9248
+
+MODBUS KOMUTLARI:
+-----------------
+# Kol 1 tüm statusları (kol + 120 batarya = 121 register)
+Function Code 3, Start Address: 9001, Quantity: 121
+
+# Kol 1, sadece kol status
+Function Code 3, Start Address: 9001, Quantity: 1
+
+# Kol 1, Batarya 1-10 statusları
+Function Code 3, Start Address: 9002, Quantity: 10
+
+# Kol 3, Batarya 5 status
+Function Code 3, Start Address: 9248, Quantity: 1
+
+================================================================================
+ÖRNEK MODBUS KOMUTLARI
+================================================================================
+
+1. Kol 1 tüm verileri okuma:
+   Function Code: 3
+   Start Address: 1001
+   Quantity: 53 (Kol 4 register + 7 batarya × 7 register = 4 + 49 = 53)
+   
+   Dönen veriler:
+   - Register 1001: Kol 1 Akım
+   - Register 1002: Kol 1 Nem
+   - Register 1003: Kol 1 Modül Sıcaklığı
+   - Register 1004: Kol 1 Ortam Sıcaklığı
+   - Register 1005-1011: Batarya 1 verileri (7 register)
+   - Register 1012-1018: Batarya 2 verileri (7 register)
+   - ... (7 batarya için toplam 49 register)
+
+2. Kol 3, Batarya 3 verileri:
+   Function Code: 3
+   Start Address: 3026
+   Quantity: 7
+   
+   Dönen veriler:
+   - Register 3026: Batarya 3 Gerilim
+   - Register 3027: Batarya 3 SOC
+   - Register 3028: Batarya 3 RIMT
+   - Register 3029: Batarya 3 SOH
+   - Register 3030: Batarya 3 NTC1
+   - Register 3031: Batarya 3 NTC2
+   - Register 3032: Batarya 3 NTC3
+
+3. Kol 2, Batarya 4 alarmları:
+   Function Code: 3
+   Start Address: 5856
+   Quantity: 7
+   
+   Dönen veriler:
+   - Register 5856: Batarya 4 Alarm Tip 1
+   - Register 5857: Batarya 4 Alarm Tip 2
+   - Register 5858: Batarya 4 Alarm Tip 3
+   - Register 5859: Batarya 4 Alarm Tip 4
+   - Register 5860: Batarya 4 Alarm Tip 5
+   - Register 5861: Batarya 4 Alarm Tip 6
+   - Register 5862: Batarya 4 Alarm Tip 7
+
+4. Kol 3, Batarya 2 status:
+   Function Code: 3
+   Start Address: 9245
+   Quantity: 1
+   
+   Dönen veri:
+   - Register 9245: Batarya 2 Status (0 veya 1)
+
+================================================================================
+VERİ FORMATI
+================================================================================
+
+Float Değerler:
+- Modbus'ta 16-bit integer olarak gönderilir
+- Gerçek değer = Modbus değeri / 100
+- Örnek: Modbus değeri 3650 → Gerçek değer 36.50 V
+
+Integer Değerler:
+- Direkt olarak gönderilir
+- Alarm: 0 veya 1
+- Status: 0 veya 1
+- Armslavecount: Tam sayı (× 100 yapılmaz)
+
+================================================================================
+ÖZET TABLO
+================================================================================
+
+Register Aralığı    | Açıklama                    | Format      | Örnek
+---------------------|----------------------------|-------------|------------------
+0-3                 | Armslavecounts             | Integer     | 7, 0, 5, 0
+1001-1994           | Kol 1 Dinamik Veriler     | Float×100   | 1550, 452, 258
+2001-2994           | Kol 2 Dinamik Veriler     | Float×100   | 1620, 480, 260
+3001-3994           | Kol 3 Dinamik Veriler     | Float×100   | 1580, 465, 255
+4001-4994           | Kol 4 Dinamik Veriler     | Float×100   | 0, 0, 0
+5001-5844           | Kol 1 Alarm Verileri       | Integer     | 0, 1, 0, 0, ...
+5845-6688           | Kol 2 Alarm Verileri       | Integer     | 0, 0, 0, 0, ...
+6689-7532           | Kol 3 Alarm Verileri       | Integer     | 0, 0, 1, 0, ...
+7533-8376           | Kol 4 Alarm Verileri       | Integer     | 0, 0, 0, 0, ...
+9001-9121           | Kol 1 Status Verileri     | Integer     | 1, 1, 1, 0, ...
+9122-9242           | Kol 2 Status Verileri     | Integer     | 1, 1, 0, 1, ...
+9243-9363           | Kol 3 Status Verileri     | Integer     | 1, 1, 1, 1, ...
+9364-9484           | Kol 4 Status Verileri     | Integer     | 0, 0, 0, 0, ...
+
+================================================================================
+SON NOTLAR
+================================================================================
+
+- Modbus TCP port: 1502
+- Function Code 3 (Read Holding Registers) ve Function Code 4 (Read Input 
+  Registers) aynı verileri döndürür
+- Register değerleri RAM'den okunur (battery_data_ram, alarm_ram, status_ram)
+- Takılı olmayan bataryalar için 0 değeri döner
+- Her kol için maksimum 120 batarya desteklenir
+- Float değerler × 100 olarak integer formatında gönderilir
+
+================================================================================
+Son Güncelleme: 2025-01-07
+================================================================================
+
