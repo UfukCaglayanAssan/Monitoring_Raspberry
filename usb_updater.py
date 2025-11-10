@@ -104,7 +104,8 @@ def find_usb_device():
                 continue
             parts = line.split()
             if len(parts) >= 2:
-                name = parts[0]
+                # Tree karakterlerini temizle (└─, ├─ gibi)
+                name = parts[0].replace('└─', '').replace('├─', '').replace('│', '').strip()
                 device_type = parts[1]
                 mountpoint = parts[2] if len(parts) > 2 else ''
                 
