@@ -14,11 +14,12 @@ import sys
 from collections import defaultdict
 from database import BatteryDatabase
 from alarm_processor import AlarmProcessor
+#DEĞİŞİKLİK
 #yenilik
 # Unbuffered output - logların hemen görünmesi için
 sys.stdout.reconfigure(line_buffering=True)
 sys.stderr.reconfigure(line_buffering=True)
-
+#EKLEME
 # SNMP imports
 from pysnmp.entity import engine, config
 from pysnmp.entity.rfc3413 import cmdrsp, context

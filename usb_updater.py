@@ -262,10 +262,11 @@ def main():
     update_folder = find_update_folder()
     
     if not update_folder:
-        log_message("UPDATE klasörü bulunamadı. USB'yi kontrol edin.", "WARNING")
+        log_message("UPDATE klasörü bulunamadı. USB mount edilmemiş olabilir veya UPDATE klasörü yok.", "WARNING")
         log_message("Kontrol edilen mount noktaları: /media, /mnt, /run/media")
         log_message("USB mount edildi mi kontrol edin: mount | grep -i usb")
-        return 1
+        log_message("Not: USB mount edilmesi birkaç saniye sürebilir.")
+        return 0  # Hata değil, sadece UPDATE klasörü yok
     
     log_message(f"UPDATE klasörü: {update_folder}")
     

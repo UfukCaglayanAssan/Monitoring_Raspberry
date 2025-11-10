@@ -1,0 +1,1 @@
+print("Dosya2222")
