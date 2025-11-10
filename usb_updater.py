@@ -13,10 +13,11 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-# Log dosyası yolu
-LOG_FILE = "/home/bms/usb_updater.log"
+# Log dosyası yolu (kullanıcı home dizinini otomatik bul)
+USER_HOME = os.path.expanduser("~")
+LOG_FILE = os.path.join(USER_HOME, "usb_updater.log")
 UPDATE_MARKER = "UPDATE"  # USB'de aranacak klasör adı
-BACKUP_DIR = "/home/bms/usb_update_backups"
+BACKUP_DIR = os.path.join(USER_HOME, "usb_update_backups")
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Güncellenebilen dosya uzantıları
