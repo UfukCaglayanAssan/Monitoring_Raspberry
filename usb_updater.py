@@ -84,9 +84,90 @@ def is_allowed_file(file_path):
     ext = os.path.splitext(file_path)[1].lower()
     return ext in ALLOWED_EXTENSIONS or ext == ''
 
+def find_usb_device():
+    """USB cihazını bul (mount edilmemiş olabilir)"""
+    try:
+        # lsblk çıktısını al
+        result = subprocess.run(['lsblk', '-n', '-o', 'NAME,TYPE,MOUNTPOINT'], 
+                              capture_output=True, text=True, timeout=5)
+        
+        if result.returncode != 0:
+            log_message(f"lsblk komutu başarısız: {result.stderr}", "ERROR")
+            return None
+        
+        log_message(f"lsblk çıktısı: {result.stdout}")
+        
+        # USB cihazlarını bul (disk ve part, mount edilmemiş)
+        lines = result.stdout.strip().split('\n')
+        for line in lines:
+            if not line.strip():
+                continue
+            parts = line.split()
+            if len(parts) >= 2:
+                name = parts[0]
+                device_type = parts[1]
+                mountpoint = parts[2] if len(parts) > 2 else ''
+                
+                log_message(f"Kontrol ediliyor: name={name}, type={device_type}, mountpoint={mountpoint}")
+                
+                # USB disk veya partition bul (sda, sdb, sdc gibi)
+                # Partition'ı tercih et (sda1, sdb1 gibi)
+                if device_type == 'part' and name.startswith('sd') and not mountpoint:
+                    device_path = f"/dev/{name}"
+                    if os.path.exists(device_path):
+                        log_message(f"USB cihazı bulundu: {device_path}")
+                        return device_path
+        
+        log_message("Mount edilmemiş USB cihazı bulunamadı")
+        return None
+    except Exception as e:
+        log_message(f"USB cihazı aranırken hata: {e}", "ERROR")
+        import traceback
+        log_message(traceback.format_exc(), "ERROR")
+        return None
+
+def check_mount_command():
+    """Mount komutunun var olup olmadığını kontrol et"""
+    try:
+        result = subprocess.run(['which', 'mount'], 
+                              capture_output=True, text=True, timeout=2)
+        return result.returncode == 0
+    except:
+        return False
+
+def mount_usb_device(device_path, mount_point="/media/usb_update"):
+    """USB cihazını mount et"""
+    try:
+        # Mount komutunun var olup olmadığını kontrol et
+        if not check_mount_command():
+            log_message("Mount komutu bulunamadı. util-linux paketi yüklü olmalı.", "ERROR")
+            log_message("Yüklemek için: sudo apt install util-linux", "ERROR")
+            return None
+        
+        # Mount noktası oluştur
+        os.makedirs(mount_point, exist_ok=True)
+        
+        # Mount et
+        result = subprocess.run(['mount', device_path, mount_point],
+                              capture_output=True, text=True, timeout=10)
+        
+        if result.returncode == 0:
+            log_message(f"USB cihazı mount edildi: {device_path} -> {mount_point}")
+            return mount_point
+        else:
+            log_message(f"USB mount edilemedi: {result.stderr}", "ERROR")
+            return None
+    except FileNotFoundError:
+        log_message("Mount komutu bulunamadı. util-linux paketi yüklü olmalı.", "ERROR")
+        log_message("Yüklemek için: sudo apt install util-linux", "ERROR")
+        return None
+    except Exception as e:
+        log_message(f"USB mount edilirken hata: {e}", "ERROR")
+        return None
+
 def find_update_folder(max_retries=10, retry_delay=1):
     """USB cihazlarında UPDATE klasörünü bul (mount edilene kadar bekler)"""
-    # Olası mount noktaları
+    # Önce mount edilmiş USB'leri kontrol et
     mount_points = [
         '/media',
         '/mnt',
@@ -99,6 +180,7 @@ def find_update_folder(max_retries=10, retry_delay=1):
             log_message(f"UPDATE klasörü aranıyor... (Deneme {attempt + 1}/{max_retries})")
             time.sleep(retry_delay)
         
+        # Önce mevcut mount noktalarını kontrol et
         for mount_point in mount_points:
             if not os.path.exists(mount_point):
                 continue
@@ -117,6 +199,18 @@ def find_update_folder(max_retries=10, retry_delay=1):
             except Exception as e:
                 log_message(f"Mount noktası kontrol edilirken hata: {mount_point} - {e}", "ERROR")
                 continue
+        
+        # İlk denemede mount edilmemiş USB varsa mount et
+        if attempt == 0:
+            usb_device = find_usb_device()
+            if usb_device:
+                mounted_path = mount_usb_device(usb_device)
+                if mounted_path:
+                    # Mount edildi, tekrar ara
+                    update_path = os.path.join(mounted_path, UPDATE_MARKER)
+                    if os.path.isdir(update_path):
+                        log_message(f"UPDATE klasörü bulundu (yeni mount): {update_path}")
+                        return update_path
     
     return None
 

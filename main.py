@@ -14,7 +14,7 @@ import sys
 from collections import defaultdict
 from database import BatteryDatabase
 from alarm_processor import AlarmProcessor
-#DEĞİŞİKLİK
+#DEĞİŞİKLİK333
 #yenilik
 # Unbuffered output - logların hemen görünmesi için
 sys.stdout.reconfigure(line_buffering=True)
