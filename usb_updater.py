@@ -9,6 +9,7 @@ import os
 import sys
 import shutil
 import subprocess
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -83,8 +84,8 @@ def is_allowed_file(file_path):
     ext = os.path.splitext(file_path)[1].lower()
     return ext in ALLOWED_EXTENSIONS or ext == ''
 
-def find_update_folder():
-    """USB cihazlarında UPDATE klasörünü bul"""
+def find_update_folder(max_retries=10, retry_delay=1):
+    """USB cihazlarında UPDATE klasörünü bul (mount edilene kadar bekler)"""
     # Olası mount noktaları
     mount_points = [
         '/media',
@@ -92,27 +93,30 @@ def find_update_folder():
         '/run/media',
     ]
     
-    for mount_point in mount_points:
-        if not os.path.exists(mount_point):
-            log_message(f"Mount noktası yok: {mount_point}")
-            continue
+    # Mount edilene kadar bekle (maksimum max_retries deneme)
+    for attempt in range(max_retries):
+        if attempt > 0:
+            log_message(f"UPDATE klasörü aranıyor... (Deneme {attempt + 1}/{max_retries})")
+            time.sleep(retry_delay)
         
-        log_message(f"Mount noktası kontrol ediliyor: {mount_point}")
-        
-        try:
-            # Tüm alt dizinleri kontrol et
-            for root, dirs, files in os.walk(mount_point):
-                # UPDATE klasörünü ara
-                if UPDATE_MARKER in dirs:
-                    update_path = os.path.join(root, UPDATE_MARKER)
-                    if os.path.isdir(update_path):
-                        log_message(f"UPDATE klasörü bulundu: {update_path}")
-                        return update_path
-        except PermissionError:
-            continue
-        except Exception as e:
-            log_message(f"Mount noktası kontrol edilirken hata: {mount_point} - {e}", "ERROR")
-            continue
+        for mount_point in mount_points:
+            if not os.path.exists(mount_point):
+                continue
+            
+            try:
+                # Tüm alt dizinleri kontrol et
+                for root, dirs, files in os.walk(mount_point):
+                    # UPDATE klasörünü ara
+                    if UPDATE_MARKER in dirs:
+                        update_path = os.path.join(root, UPDATE_MARKER)
+                        if os.path.isdir(update_path):
+                            log_message(f"UPDATE klasörü bulundu: {update_path}")
+                            return update_path
+            except PermissionError:
+                continue
+            except Exception as e:
+                log_message(f"Mount noktası kontrol edilirken hata: {mount_point} - {e}", "ERROR")
+                continue
     
     return None
 

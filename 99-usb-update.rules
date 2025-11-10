@@ -1,9 +1,6 @@
 # USB cihazı takıldığında otomatik güncelleme servisini çalıştır
 # Bu dosya /etc/udev/rules.d/ dizinine kopyalanmalı
 
-# USB cihazları için (genel)
-ACTION=="add", SUBSYSTEM=="block", KERNEL=="sd[a-z][0-9]*", RUN+="/bin/systemctl start usb-update.service"
-
-# USB flash diskler için
-ACTION=="add", SUBSYSTEM=="usb", DRIVERS=="usb-storage", RUN+="/bin/systemctl start usb-update.service"
+# USB block device mount edildiğinde (partition mount edildiğinde)
+ACTION=="add", SUBSYSTEM=="block", KERNEL=="sd[a-z][0-9]*", ENV{ID_FS_USAGE}=="filesystem", RUN+="/bin/systemctl start usb-update.service"
 
