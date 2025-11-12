@@ -1780,10 +1780,12 @@ input:disabled::placeholder {
     border-radius: 12px 12px 0 0;
 }
 
-.modal-header h2 {
+.modal-header h2,
+.modal-header h3 {
     margin: 0;
     font-size: 1.5rem;
     font-weight: 600;
+    color: white;
 }
 
 .close {

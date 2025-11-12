@@ -148,13 +148,18 @@ if (typeof window.MailManagementPage === 'undefined') {
             if (!container) return;
 
             if (this.recipients.length === 0) {
+                const t = window.translationManager ? window.translationManager.t.bind(window.translationManager) : (key) => key;
                 container.innerHTML = `
                     <div class="no-recipients">
                         <i class="fas fa-envelope"></i>
-                        <h3>Henüz mail alıcısı yok</h3>
-                        <p>Yeni mail alıcısı eklemek için yukarıdaki butona tıklayın.</p>
+                        <h3 data-i18n="mailManagement.noRecipients">${t('mailManagement.noRecipients')}</h3>
+                        <p data-i18n="mailManagement.noRecipientsMessage">${t('mailManagement.noRecipientsMessage')}</p>
                     </div>
                 `;
+                // Çevirileri uygula
+                if (window.translationManager && window.translationManager.initialized) {
+                    window.translationManager.updateAllElements();
+                }
                 return;
             }
 

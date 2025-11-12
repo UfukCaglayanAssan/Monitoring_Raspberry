@@ -374,7 +374,8 @@ if (typeof window.BatteriesPage === 'undefined') {
                             const passiveBalanceText = document.createElement('div');
                             passiveBalanceText.className = 'passive-balance-text';
                             passiveBalanceText.style.cssText = 'color: #2563eb; font-weight: 500; font-size: 0.9rem; margin-top: 0.5rem; text-align: center;';
-                            passiveBalanceText.textContent = 'Pasif Balans Aktif';
+                            passiveBalanceText.setAttribute('data-i18n', 'batteries.passiveBalanceActive');
+                            passiveBalanceText.textContent = window.translationManager ? window.translationManager.t('batteries.passiveBalanceActive') : 'Pasif Balans Aktif';
                             lastUpdateDiv.parentNode.insertBefore(passiveBalanceText, lastUpdateDiv.nextSibling);
                         }
                     }
@@ -496,13 +497,29 @@ if (typeof window.BatteriesPage === 'undefined') {
         // Debug: Fonksiyon çağrıldı mı?
         console.log('updateCardTexts çağrıldı, dil:', language);
         
-        // Tüm data-tr ve data-en attribute'larına sahip elementleri güncelle
+        // TranslationManager kullan
+        if (window.translationManager && window.translationManager.initialized) {
+            window.translationManager.updateAllElements();
+        }
+        
+        // Geriye dönük uyumluluk: data-tr ve data-en attribute'larını da güncelle
         const elements = document.querySelectorAll('[data-tr], [data-en]');
         elements.forEach(element => {
             if (language === 'en' && element.hasAttribute('data-en')) {
                 element.textContent = element.getAttribute('data-en');
             } else if (language === 'tr' && element.hasAttribute('data-tr')) {
                 element.textContent = element.getAttribute('data-tr');
+            }
+        });
+        
+        // Pasif balans yazısını güncelle
+        const passiveBalanceTexts = document.querySelectorAll('.passive-balance-text');
+        passiveBalanceTexts.forEach(element => {
+            if (element.hasAttribute('data-i18n')) {
+                const key = element.getAttribute('data-i18n');
+                if (window.translationManager && window.translationManager.initialized) {
+                    element.textContent = window.translationManager.t(key);
+                }
             }
         });
         

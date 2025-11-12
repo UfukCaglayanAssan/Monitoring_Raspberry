@@ -1,35 +1,35 @@
 <!-- Veri Alma Sayfası İçeriği -->
 <div class="data-retrieval-page">
     <div class="page-header">
-        <h2>Veri Alma</h2>
-        <p>Batarya verilerini almak için komutlar gönderin</p>
+        <h2 data-i18n="dataRetrieval.title">Veri Alma</h2>
+        <p data-i18n="dataRetrieval.description">Batarya verilerini almak için komutlar gönderin</p>
     </div>
     
     <!-- Toplu İşlemler -->
     <div class="batch-operations-section">
         <div class="section-header">
-            <h3><i class="fas fa-tasks"></i> Toplu İşlemler</h3>
+            <h3><i class="fas fa-tasks"></i> <span data-i18n="dataRetrieval.batchOperations">Toplu İşlemler</span></h3>
         </div>
         <div class="batch-controls">
             <div class="arm-selector-batch">
-                <label for="batchArmSelect">Kol Seçiniz</label>
+                <label for="batchArmSelect" data-i18n="dataRetrieval.selectArm">Kol Seçiniz</label>
                 <select id="batchArmSelect" class="form-select">
-                    <option value="">Kol Seçiniz</option>
+                    <option value="" data-i18n="dataRetrieval.selectArm">Kol Seçiniz</option>
                     <option value="1">Kol 1</option>
                     <option value="2">Kol 2</option>
                     <option value="3">Kol 3</option>
                     <option value="4">Kol 4</option>
-                    <option value="5">Tüm Kollar</option>
+                    <option value="5" data-i18n="dataRetrieval.allArms">Tüm Kollar</option>
                 </select>
             </div>
             <div class="batch-buttons">
                 <button class="btn btn-primary" id="readAllBtn">
                     <i class="fas fa-download"></i>
-                    Tümünü Oku
+                    <span data-i18n="dataRetrieval.readAll">Tümünü Oku</span>
                 </button>
                 <button class="btn btn-secondary" id="resetAllBtn">
                     <i class="fas fa-refresh"></i>
-                    Tümünü Sıfırla
+                    <span data-i18n="dataRetrieval.resetAll">Tümünü Sıfırla</span>
                 </button>
             </div>
         </div>
@@ -38,14 +38,14 @@
     <!-- Veri Alma Formu -->
     <div class="data-retrieval-section">
         <div class="section-header">
-            <h3><i class="fas fa-database"></i> Veri Alma</h3>
+            <h3><i class="fas fa-database"></i> <span data-i18n="dataRetrieval.title">Veri Alma</span></h3>
         </div>
         <div class="data-form">
             <div class="form-row">
                 <div class="form-group">
-                    <label for="dataArmSelect">Kol</label>
+                    <label for="dataArmSelect" data-i18n="dataRetrieval.arm">Kol</label>
                     <select id="dataArmSelect" class="form-select">
-                        <option value="">Seçiniz</option>
+                        <option value="" data-i18n="dataRetrieval.select">Seçiniz</option>
                         <option value="1">Kol 1</option>
                         <option value="2">Kol 2</option>
                         <option value="3">Kol 3</option>
@@ -53,28 +53,28 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="dataAddressSelect">Batarya Adresi</label>
+                    <label for="dataAddressSelect" data-i18n="dataRetrieval.batteryAddress">Batarya Adresi</label>
                     <select id="dataAddressSelect" class="form-select" disabled>
-                        <option value="">Önce kol seçiniz</option>
+                        <option value="" data-i18n="dataRetrieval.selectArmFirst">Önce kol seçiniz</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="dataValueSelect">İstenilen Değer</label>
+                    <label for="dataValueSelect" data-i18n="dataRetrieval.desiredValue">İstenilen Değer</label>
                     <select id="dataValueSelect" class="form-select">
-                        <option value="">Seçiniz</option>
-                        <option value="10">Gerilim (V)</option>
-                        <option value="11">SOH (%)</option>
-                        <option value="12">Sıcaklık (°C)</option>
-                        <option value="13">NTC2 (°C)</option>
-                        <option value="14">NTC3 (°C)</option>
-                        <option value="126">SOC (%)</option>
+                        <option value="" data-i18n="dataRetrieval.select">Seçiniz</option>
+                        <option value="10" data-i18n="dataRetrieval.voltage">Gerilim (V)</option>
+                        <option value="11" data-i18n="dataRetrieval.soh">SOH (%)</option>
+                        <option value="12" data-i18n="dataRetrieval.temperature">Sıcaklık (°C)</option>
+                        <option value="13" data-i18n="dataRetrieval.ntc2">NTC2 (°C)</option>
+                        <option value="14" data-i18n="dataRetrieval.ntc3">NTC3 (°C)</option>
+                        <option value="126" data-i18n="dataRetrieval.soc">SOC (%)</option>
                     </select>
                 </div>
             </div>
             <div class="form-actions">
                 <button class="btn btn-primary btn-large" id="getDataBtn">
                     <i class="fas fa-search"></i>
-                    Veri Al
+                    <span data-i18n="dataRetrieval.getData">Veri Al</span>
                 </button>
             </div>
         </div>
@@ -83,13 +83,13 @@
     <!-- Veri Tablosu -->
     <div class="data-table-section">
         <div class="section-header">
-            <h3><i class="fas fa-table"></i> Alınan Veriler</h3>
+            <h3><i class="fas fa-table"></i> <span data-i18n="dataRetrieval.retrievedData">Alınan Veriler</span></h3>
         </div>
         <div class="operations-list" id="operationsList">
             <div class="no-data-message">
                 <i class="fas fa-database"></i>
-                <h4>Veri Alma Sistemi</h4>
-                <p>Yukarıdaki butonları kullanarak veri alma işlemi başlatın</p>
+                <h4 data-i18n="dataRetrieval.dataRetrievalSystem">Veri Alma Sistemi</h4>
+                <p data-i18n="dataRetrieval.startDataRetrieval">Yukarıdaki butonları kullanarak veri alma işlemi başlatın</p>
             </div>
         </div>
     </div>
@@ -99,7 +99,7 @@
 <div class="loading-overlay" id="loadingOverlay" style="display: none;">
     <div class="loading-content">
         <div class="spinner"></div>
-        <p id="loadingText">İşlem yapılıyor...</p>
+        <p id="loadingText" data-i18n="dataRetrieval.processing">İşlem yapılıyor...</p>
     </div>
 </div>
 
@@ -109,7 +109,7 @@
         <div class="toast-icon">
             <i class="fas fa-check"></i>
         </div>
-        <div class="toast-message" id="toastMessage">İşlem başarılı</div>
+        <div class="toast-message" id="toastMessage" data-i18n="dataRetrieval.success">İşlem başarılı</div>
     </div>
 </div>
 

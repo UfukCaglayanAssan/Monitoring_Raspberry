@@ -1,68 +1,68 @@
 <!-- Mail Sunucu Konfigürasyonu Sayfası İçeriği -->
 <div class="mail-server-config-page">
     <div class="page-header">
-        <h2>📧 Mail Sunucu Konfigürasyonu</h2>
-        <p>Mail gönderimi için sunucu ayarlarını yapılandırın</p>
+        <h2 data-i18n="mailServerConfig.title">📧 Mail Sunucu Konfigürasyonu</h2>
+        <p data-i18n="mailServerConfig.description">Mail gönderimi için sunucu ayarlarını yapılandırın</p>
     </div>
 
     <div class="config-container full-width">
         <div class="config-card">
             <div class="config-header">
-                <h3>SMTP Sunucu Ayarları</h3>
+                <h3 data-i18n="mailServerConfig.smtpServerSettings">SMTP Sunucu Ayarları</h3>
                 <div class="status-indicator">
-                    <span id="configStatus" class="status-inactive">Konfigürasyon Yok</span>
+                    <span id="configStatus" class="status-inactive" data-i18n="mailServerConfig.noConfiguration">Konfigürasyon Yok</span>
                 </div>
             </div>
 
             <form id="mailConfigForm" class="config-form">
                 <div class="form-group">
-                    <label for="smtpServer">SMTP Sunucu Adresi *</label>
+                    <label for="smtpServer" data-i18n="mailServerConfig.smtpServerAddress">SMTP Sunucu Adresi *</label>
                     <input type="text" id="smtpServer" name="smtp_server" placeholder="" required>
-                    <small class="form-help">Mail sunucunuzun SMTP adresi</small>
+                    <small class="form-help" data-i18n="mailServerConfig.smtpServerAddressHint">Mail sunucunuzun SMTP adresi</small>
                 </div>
 
                 <div class="form-group">
-                    <label for="smtpPort">SMTP Port *</label>
+                    <label for="smtpPort" data-i18n="mailServerConfig.smtpPort">SMTP Port *</label>
                     <input type="number" id="smtpPort" name="smtp_port" placeholder="" min="1" max="65535" required>
-                    <small class="form-help">Genellikle 587 (TLS) veya 465 (SSL)</small>
+                    <small class="form-help" data-i18n="mailServerConfig.smtpPortHint">Genellikle 587 (TLS) veya 465 (SSL)</small>
                 </div>
 
                 <div class="form-group">
-                    <label for="smtpUsername">Mail Adresi</label>
+                    <label for="smtpUsername" data-i18n="mailServerConfig.mailAddress">Mail Adresi</label>
                     <input type="text" id="smtpUsername" name="smtp_username" placeholder="">
-                    <small class="form-help">Boş bırakılabilir (şifresiz sunucular için)</small>
+                    <small class="form-help" data-i18n="mailServerConfig.mailAddressHint">Boş bırakılabilir (şifresiz sunucular için)</small>
                 </div>
 
                 <div class="form-group">
-                    <label for="smtpPassword">Şifre</label>
+                    <label for="smtpPassword" data-i18n="mailServerConfig.password">Şifre</label>
                     <input type="password" id="smtpPassword" name="smtp_password" placeholder="">
-                    <small class="form-help">Boş bırakılabilir (şifresiz sunucular için)</small>
+                    <small class="form-help" data-i18n="mailServerConfig.passwordHint">Boş bırakılabilir (şifresiz sunucular için)</small>
                 </div>
 
                 <div class="form-group checkbox-group">
                     <label class="checkbox-label">
                         <input type="checkbox" id="useTls" name="use_tls" checked>
                         <span class="checkmark"></span>
-                        TLS Kullan
+                        <span data-i18n="mailServerConfig.useTls">TLS Kullan</span>
                     </label>
-                    <small class="form-help">Güvenli bağlantı için TLS şifrelemesi</small>
+                    <small class="form-help" data-i18n="mailServerConfig.useTlsHint">Güvenli bağlantı için TLS şifrelemesi</small>
                 </div>
 
                 <div class="form-group checkbox-group">
                     <label class="checkbox-label">
                         <input type="checkbox" id="isActive" name="is_active" checked>
                         <span class="checkmark"></span>
-                        Konfigürasyonu Aktif Et
+                        <span>Konfigürasyonu Aktif Et</span>
                     </label>
                     <small class="form-help">Mail gönderimi için bu konfigürasyonu kullan</small>
                 </div>
 
                 <div class="form-actions">
                     <button type="button" id="testConnection" class="btn btn-secondary">
-                        🔗 Bağlantıyı Test Et
+                        🔗 <span data-i18n="mailServerConfig.testConnection">Bağlantıyı Test Et</span>
                     </button>
                     <button type="button" id="saveMailConfig" class="btn btn-primary" data-requires-admin>
-                        💾 Konfigürasyonu Kaydet
+                        💾 <span data-i18n="mailServerConfig.saveSettings">Konfigürasyonu Kaydet</span>
                     </button>
                 </div>
             </form>

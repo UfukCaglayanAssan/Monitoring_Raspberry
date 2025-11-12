@@ -226,44 +226,53 @@ if (typeof window.AlarmsPage === 'undefined') {
         if (!container) return;
 
         if (alarms.length === 0) {
+            const t = window.translationManager ? window.translationManager.t.bind(window.translationManager) : (key) => key;
             container.innerHTML = `
                 <div class="no-data-message">
                     <i class="fas fa-check-circle"></i>
-                    <h3>Alarm Geçmişi Yok</h3>
-                    <p>Henüz alarm geçmişi bulunmuyor.</p>
+                    <h3 data-i18n="alarms.noHistory">${t('alarms.noHistory')}</h3>
+                    <p data-i18n="alarms.noHistoryMessage">${t('alarms.noHistoryMessage')}</p>
                 </div>
             `;
+            // Çevirileri uygula
+            if (window.translationManager && window.translationManager.initialized) {
+                window.translationManager.updateAllElements();
+            }
             return;
         }
 
         // Alarm geçmişi tablosu oluştur
+        const t = window.translationManager ? window.translationManager.t.bind(window.translationManager) : (key) => key;
+        const statusResolved = t('alarms.resolved');
+        const statusActive = t('alarms.active');
+        
         container.innerHTML = `
             <div class="alarm-history-content">
-                <h4>Alarm Geçmişi</h4>
+                <h4 data-i18n="alarms.alarmHistory">${t('alarms.alarmHistory')}</h4>
                 <div class="table-container">
                     <table class="alarms-table">
                         <thead>
                             <tr>
-                                <th>Zaman</th>
-                                <th>Kol</th>
-                                <th>Batarya</th>
-                                <th>Açıklama</th>
-                                <th>Durum</th>
-                                <th>Çözüm Zamanı</th>
+                                <th data-i18n="alarms.time">${t('alarms.time')}</th>
+                                <th data-i18n="alarms.arm">${t('alarms.arm')}</th>
+                                <th data-i18n="alarms.battery">${t('alarms.battery')}</th>
+                                <th data-i18n="alarms.description">${t('alarms.description')}</th>
+                                <th data-i18n="alarms.status">${t('alarms.status')}</th>
+                                <th data-i18n="alarms.resolutionTime">${t('alarms.resolutionTime')}</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${alarms.map(alarm => {
                                 // Durum mantığı: resolved_at varsa "Düzeldi", yoksa "Aktif"
-                                const statusText = (alarm.resolved_at && alarm.resolved_at !== '') ? 'Düzeldi' : 'Aktif';
+                                const statusText = (alarm.resolved_at && alarm.resolved_at !== '') ? statusResolved : statusActive;
                                 const statusClass = this.getStatusClass(statusText);
                                 
                                 return `
                                 <tr>
                                     <td>${this.formatTimestamp(alarm.timestamp)}</td>
                                     <td>${alarm.arm}</td>
-                                    <td>${alarm.batteryDisplay || 'Kol Alarmı'}</td>
-                                    <td>${alarm.description}</td>
+                                    <td>${alarm.batteryDisplay || t('alarms.descriptions.armAlarm')}</td>
+                                    <td>${this.translateAlarmDescription(alarm.description)}</td>
                                     <td>
                                         <span class="status-badge ${statusClass}">
                                             ${statusText}
@@ -278,6 +287,11 @@ if (typeof window.AlarmsPage === 'undefined') {
                 </div>
             </div>
         `;
+        
+        // Çevirileri uygula
+        if (window.translationManager && window.translationManager.initialized) {
+            window.translationManager.updateAllElements();
+        }
     }
 
     updatePagination() {
@@ -402,19 +416,21 @@ if (typeof window.AlarmsPage === 'undefined') {
         
         // Batarya
         const batteryCell = document.createElement('td');
-        batteryCell.textContent = alarm.batteryDisplay || 'Kol Alarmı';
+        const t = window.translationManager ? window.translationManager.t.bind(window.translationManager) : (key) => key;
+        batteryCell.textContent = alarm.batteryDisplay || t('alarms.descriptions.armAlarm');
         row.appendChild(batteryCell);
         
         // Açıklama
         const descriptionCell = document.createElement('td');
-        descriptionCell.textContent = alarm.description;
+        descriptionCell.textContent = this.translateAlarmDescription(alarm.description);
         row.appendChild(descriptionCell);
         
         // Durum (aktif alarmlar için her zaman "Aktif")
         const statusCell = document.createElement('td');
         const statusBadge = document.createElement('span');
         statusBadge.className = 'status-badge status-error';
-        statusBadge.textContent = 'Aktif';
+        const t = window.translationManager ? window.translationManager.t.bind(window.translationManager) : (key) => key;
+        statusBadge.textContent = t('alarms.active');
         statusCell.appendChild(statusBadge);
         row.appendChild(statusCell);
         
@@ -436,12 +452,13 @@ if (typeof window.AlarmsPage === 'undefined') {
         
         // Batarya
         const batteryCell = document.createElement('td');
-        batteryCell.textContent = alarm.batteryDisplay || 'Kol Alarmı';
+        const t = window.translationManager ? window.translationManager.t.bind(window.translationManager) : (key) => key;
+        batteryCell.textContent = alarm.batteryDisplay || t('alarms.descriptions.armAlarm');
         row.appendChild(batteryCell);
         
         // Açıklama
         const descriptionCell = document.createElement('td');
-        descriptionCell.textContent = alarm.description;
+        descriptionCell.textContent = this.translateAlarmDescription(alarm.description);
         row.appendChild(descriptionCell);
         
         // Durum
@@ -453,13 +470,13 @@ if (typeof window.AlarmsPage === 'undefined') {
         if (this.showResolved) {
             // Alarm geçmişi görünüyorsa - çözüm zamanı varsa "Düzeldi", yoksa "Aktif"
             if (alarm.resolved_at && alarm.resolved_at !== '') {
-                statusText = 'Düzeldi';
+                statusText = t('alarms.resolved');
             } else {
-                statusText = 'Aktif';
+                statusText = t('alarms.active');
             }
         } else {
             // Aktif alarmlar görünüyorsa - sadece aktif olanlar
-            statusText = 'Aktif';
+            statusText = t('alarms.active');
         }
         
         statusBadge.className = `status-badge ${this.getStatusClass(statusText)}`;
@@ -588,26 +605,81 @@ if (typeof window.AlarmsPage === 'undefined') {
     showAlarmHistoryLoading() {
         const container = document.getElementById('alarmHistoryContainer');
         if (container) {
+            const t = window.translationManager ? window.translationManager.t.bind(window.translationManager) : (key) => key;
             container.innerHTML = `
                 <div class="loading-spinner" style="display: flex;">
                     <div class="spinner"></div>
-                    <p>Alarm geçmişi yükleniyor...</p>
+                    <p data-i18n="alarms.loading">${t('alarms.loading')}</p>
                 </div>
             `;
+            // Çevirileri uygula
+            if (window.translationManager && window.translationManager.initialized) {
+                window.translationManager.updateAllElements();
+            }
         }
     }
     
     showAlarmHistoryNoData() {
         const container = document.getElementById('alarmHistoryContainer');
         if (container) {
+            const t = window.translationManager ? window.translationManager.t.bind(window.translationManager) : (key) => key;
             container.innerHTML = `
                 <div class="no-data-message">
                     <i class="fas fa-check-circle"></i>
-                    <h3>Alarm Geçmişi Yok</h3>
-                    <p>Henüz alarm geçmişi bulunmuyor.</p>
+                    <h3 data-i18n="alarms.noHistory">${t('alarms.noHistory')}</h3>
+                    <p data-i18n="alarms.noHistoryMessage">${t('alarms.noHistoryMessage')}</p>
                 </div>
             `;
+            // Çevirileri uygula
+            if (window.translationManager && window.translationManager.initialized) {
+                window.translationManager.updateAllElements();
+            }
         }
+    }
+    
+    translateAlarmDescription(description) {
+        // Backend'den gelen Türkçe açıklamayı çevir
+        if (!description) return description;
+        
+        if (!window.translationManager || !window.translationManager.initialized) {
+            return description; // TranslationManager hazır değilse orijinal metni döndür
+        }
+        
+        const t = window.translationManager.t.bind(window.translationManager);
+        
+        // Türkçe açıklamaları İngilizce anahtarlara map et
+        const descriptionMap = {
+            'Yüksek akım alarmı': 'alarms.descriptions.highCurrent',
+            'Yüksek nem alarmı': 'alarms.descriptions.highHumidity',
+            'Yüksek ortam sıcaklığı alarmı': 'alarms.descriptions.highAmbientTemp',
+            'Yüksek kol sıcaklığı alarmı': 'alarms.descriptions.highArmTemp',
+            'Kol verisi gelmiyor': 'alarms.descriptions.noArmData',
+            'Pozitif kutup başı alarmı': 'alarms.descriptions.positivePoleTemp',
+            'Negatif kutup başı sıcaklık alarmı': 'alarms.descriptions.negativePoleTemp',
+            'Düşük batarya gerilim uyarısı': 'alarms.descriptions.lowVoltageWarning',
+            'Düşük batarya gerilimi alarmı': 'alarms.descriptions.lowVoltageAlarm',
+            'Yüksek batarya gerilimi uyarısı': 'alarms.descriptions.highVoltageWarning',
+            'Yüksek batarya gerilimi alarmı': 'alarms.descriptions.highVoltageAlarm',
+            'Modül sıcaklık alarmı': 'alarms.descriptions.moduleTempAlarm',
+            'Kol Alarmı': 'alarms.descriptions.armAlarm'
+        };
+        
+        // Mevcut dili kontrol et
+        const currentLanguage = window.translationManager.getLanguage();
+        
+        // Eğer Türkçe ise, çeviri yapma
+        if (currentLanguage === 'tr') {
+            return description;
+        }
+        
+        // İngilizce ise çevir
+        const translationKey = descriptionMap[description];
+        if (translationKey) {
+            return t(translationKey);
+        }
+        
+        // Eşleşme bulunamazsa orijinal metni döndür
+        return description;
     }
     };
 }

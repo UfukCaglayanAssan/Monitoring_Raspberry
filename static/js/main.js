@@ -319,6 +319,18 @@ class App {
             // Son sayfayı localStorage'a kaydet
             localStorage.setItem('lastPage', page);
             
+            // Sayfa yüklendikten sonra dil tercihini uygula
+            if (window.translationManager && window.translationManager.initialized) {
+                const currentLanguage = localStorage.getItem('language') || 'tr';
+                window.translationManager.setLanguage(currentLanguage);
+            } else if (window.translationManager) {
+                // TranslationManager henüz initialize olmadıysa bekle ve uygula
+                window.translationManager.init().then(() => {
+                    const currentLanguage = localStorage.getItem('language') || 'tr';
+                    window.translationManager.setLanguage(currentLanguage);
+                });
+            }
+            
             console.log('Page loaded:', page);
             
         } catch (error) {

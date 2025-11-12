@@ -29,7 +29,12 @@ if (typeof window.SummaryPage === 'undefined') {
     }
 
     updateUITexts(language) {
-        // UI metinlerini güncelle
+        // TranslationManager kullan
+        if (window.translationManager && window.translationManager.initialized) {
+            window.translationManager.updateAllElements();
+        }
+        
+        // Geriye dönük uyumluluk: data-tr ve data-en attribute'larını da güncelle
         const elements = document.querySelectorAll('[data-tr], [data-en]');
         elements.forEach(element => {
             if (language === 'en' && element.hasAttribute('data-en')) {

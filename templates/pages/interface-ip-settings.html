@@ -1,53 +1,53 @@
 <!-- Arayüz IP Ayarları Sayfası İçeriği -->
 <div class="interface-ip-settings-page">
     <div class="page-header">
-        <h2>🌐 Arayüz IP Ayarları</h2>
-        <p>Raspberry Pi ağ konfigürasyonunu yönetin</p>
+        <h2 data-i18n="interfaceIpSettings.title">🌐 Arayüz IP Ayarları</h2>
+        <p data-i18n="interfaceIpSettings.description">Raspberry Pi ağ konfigürasyonunu yönetin</p>
     </div>
 
     <div class="config-container full-width">
         <div class="config-card">
             <div class="config-header">
-                <h3>Ağ Konfigürasyonu</h3>
+                <h3 data-i18n="interfaceIpSettings.networkConfiguration">Ağ Konfigürasyonu</h3>
                 <div class="status-indicator">
-                    <span id="ipStatus" class="status-inactive">IP Ataması Yok</span>
+                    <span id="ipStatus" class="status-inactive" data-i18n="interfaceIpSettings.noIpAssignment">IP Ataması Yok</span>
                 </div>
             </div>
 
             <div class="current-ip-info">
-                <h4>Mevcut IP Adresi</h4>
+                <h4 data-i18n="interfaceIpSettings.currentIpAddress">Mevcut IP Adresi</h4>
                 <div class="ip-display">
-                    <span id="currentIp" class="ip-address">Yükleniyor...</span>
+                    <span id="currentIp" class="ip-address" data-i18n="interfaceIpSettings.loading">Yükleniyor...</span>
                     <button id="refreshIp" class="btn btn-sm btn-secondary">
-                        <i class="fas fa-sync-alt"></i> Yenile
+                        <i class="fas fa-sync-alt"></i> <span data-i18n="interfaceIpSettings.refresh">Yenile</span>
                     </button>
                 </div>
             </div>
 
             <form id="ipConfigForm" class="config-form">
                 <div class="form-group">
-                    <label>IP Atama Yöntemi *</label>
+                    <label data-i18n="interfaceIpSettings.ipAssignmentMethod">IP Atama Yöntemi *</label>
                     <div class="radio-group">
                         <label class="radio-label">
                             <input type="radio" id="ipMethodStatic" name="ip_method" value="static" checked>
-                            <span class="radio-text">Statik IP</span>
+                            <span class="radio-text" data-i18n="interfaceIpSettings.staticIp">Statik IP</span>
                         </label>
                         <label class="radio-label">
                             <input type="radio" id="ipMethodDhcp" name="ip_method" value="dhcp">
-                            <span class="radio-text">DHCP (Otomatik)</span>
+                            <span class="radio-text" data-i18n="interfaceIpSettings.dhcp">DHCP (Otomatik)</span>
                         </label>
                     </div>
-                    <small class="form-help">IP adresinin nasıl atanacağını seçin</small>
+                    <small class="form-help" data-i18n="interfaceIpSettings.ipAssignmentMethodHint">IP adresinin nasıl atanacağını seçin</small>
                 </div>
 
                 <div id="staticIpFields" class="form-group">
-                    <label for="ipAddress">IP Adresi *</label>
+                    <label for="ipAddress" data-i18n="interfaceIpSettings.ipAddress">IP Adresi *</label>
                     <input type="text" id="ipAddress" name="ip_address" placeholder="">
-                    <small class="form-help">Raspberry Pi'nin kullanacağı statik IP adresi</small>
+                    <small class="form-help" data-i18n="interfaceIpSettings.ipAddressHint">Raspberry Pi'nin kullanacağı statik IP adresi</small>
                 </div>
 
                 <div id="staticIpFields" class="form-group">
-                    <label for="subnetMask">Alt Ağ Maskesi *</label>
+                    <label for="subnetMask" data-i18n="interfaceIpSettings.subnetMask">Alt Ağ Maskesi *</label>
                     <select id="subnetMask" name="subnet_mask">
                         <option value="255.255.255.0">255.255.255.0 (/24)</option>
                         <option value="255.255.0.0">255.255.0.0 (/16)</option>
@@ -57,23 +57,23 @@
                 </div>
 
                 <div id="staticIpFields" class="form-group">
-                    <label for="gateway">Gateway (Varsayılan Ağ Geçidi)</label>
+                    <label for="gateway" data-i18n="interfaceIpSettings.gateway">Gateway (Varsayılan Ağ Geçidi)</label>
                     <input type="text" id="gateway" name="gateway" placeholder="">
                     <small class="form-help">Genellikle router IP adresi</small>
                 </div>
 
                 <div id="staticIpFields" class="form-group">
-                    <label for="dnsServers">DNS Sunucuları</label>
+                    <label for="dnsServers" data-i18n="interfaceIpSettings.dns">DNS Sunucuları</label>
                     <input type="text" id="dnsServers" name="dns_servers" placeholder="">
                     <small class="form-help">Virgülle ayırın (örn: 8.8.8.8,8.8.4.4)</small>
                 </div>
 
                 <div class="form-actions">
                     <button type="button" id="testConnection" class="btn btn-secondary">
-                        🔗 Bağlantıyı Test Et
+                        🔗 <span data-i18n="interfaceIpSettings.testConnection">Bağlantıyı Test Et</span>
                     </button>
                     <button type="button" id="saveIpConfig" class="btn btn-primary">
-                        💾 IP Konfigürasyonunu Kaydet
+                        💾 <span data-i18n="interfaceIpSettings.saveSettings">IP Konfigürasyonunu Kaydet</span>
                     </button>
                 </div>
             </form>

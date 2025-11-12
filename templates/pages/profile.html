@@ -2,34 +2,34 @@
 <div class="profile-page">
     <div class="profile-container">
         <div class="profile-header">
-            <h2>Şifre Değiştir</h2>
-            <p>Hesap şifrenizi güvenli bir şekilde değiştirin</p>
+            <h2 data-i18n="profile.title">Şifre Değiştir</h2>
+            <p data-i18n="profile.description">Hesap şifrenizi güvenli bir şekilde değiştirin</p>
         </div>
         
         <div class="profile-content">
             <!-- Şifre Değiştirme -->
             <div class="profile-section">
-                <h3>Şifre Değiştir</h3>
+                <h3 data-i18n="profile.changePassword">Şifre Değiştir</h3>
                 <form id="passwordForm" class="password-form">
                     <div class="form-group">
-                        <label for="currentPassword">Mevcut Şifre</label>
+                        <label for="currentPassword" data-i18n="profile.currentPassword">Mevcut Şifre</label>
                         <input type="password" id="currentPassword" name="currentPassword" required>
                     </div>
                     
                     <div class="form-group">
-                        <label for="newPassword">Yeni Şifre</label>
+                        <label for="newPassword" data-i18n="profile.newPassword">Yeni Şifre</label>
                         <input type="password" id="newPassword" name="newPassword" required minlength="6">
                     </div>
                     
                     <div class="form-group">
-                        <label for="confirmPassword">Yeni Şifre (Tekrar)</label>
+                        <label for="confirmPassword" data-i18n="profile.confirmPassword">Yeni Şifre (Tekrar)</label>
                         <input type="password" id="confirmPassword" name="confirmPassword" required minlength="6">
                     </div>
                     
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary" id="changePasswordBtn">
                             <i class="fas fa-key"></i>
-                            Şifre Değiştir
+                            <span data-i18n="profile.changePassword">Şifre Değiştir</span>
                         </button>
                     </div>
                 </form>

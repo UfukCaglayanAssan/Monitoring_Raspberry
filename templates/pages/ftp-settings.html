@@ -1,39 +1,39 @@
 <!-- SFTP Ayarları Sayfası İçeriği -->
 <div class="ftp-settings-page">
     <div class="page-header">
-        <h2>🔒 SFTP Ayarları</h2>
-        <p>Veritabanı yedekleme için SFTP konfigürasyonunu yönetin.</p>
+        <h2 data-i18n="ftpSettings.title">🔒 SFTP Ayarları</h2>
+        <p data-i18n="ftpSettings.description">Veritabanı yedekleme için SFTP konfigürasyonunu yönetin.</p>
     </div>
 
     <div class="config-container full-width">
         <div class="config-card">
             <div class="config-header">
-                <h3>SFTP Konfigürasyonu</h3>
+                <h3 data-i18n="ftpSettings.sftpConfiguration">SFTP Konfigürasyonu</h3>
                 <div class="status-indicator">
-                    <span id="ftpStatus" class="status-inactive">Pasif</span>
+                    <span id="ftpStatus" class="status-inactive" data-i18n="ftpSettings.passive">Pasif</span>
                 </div>
             </div>
 
             <div class="current-ftp-info">
-                <h4>Son Gönderim</h4>
+                <h4 data-i18n="ftpSettings.lastSubmission">Son Gönderim</h4>
                 <div class="ftp-display">
-                    <span id="lastSentAt" class="ftp-info">Henüz gönderim yapılmadı</span>
+                    <span id="lastSentAt" class="ftp-info" data-i18n="ftpSettings.noSubmission">Henüz gönderim yapılmadı</span>
                 </div>
             </div>
 
             <form id="ftpConfigForm" class="config-form">
                 <div class="form-group">
-                    <label for="ftpHost">SFTP Sunucu Adresi *</label>
+                    <label for="ftpHost" data-i18n="ftpSettings.sftpServerAddress">SFTP Sunucu Adresi *</label>
                     <input type="text" id="ftpHost" name="ftp_host" placeholder="sftp.example.com veya 192.168.1.100" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="ftpUsername">Kullanıcı Adı *</label>
+                    <label for="ftpUsername" data-i18n="ftpSettings.username">Kullanıcı Adı *</label>
                     <input type="text" id="ftpUsername" name="ftp_username" placeholder="kullanici_adi" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="ftpPassword">Şifre *</label>
+                    <label for="ftpPassword" data-i18n="ftpSettings.password">Şifre *</label>
                     <div class="password-input-group">
                         <input type="password" id="ftpPassword" name="ftp_password" placeholder="••••••••" required>
                         <button type="button" id="togglePassword" class="btn-toggle-password">
@@ -44,13 +44,13 @@
 
                 <div class="form-actions">
                     <button type="button" id="testFtp" class="btn btn-info">
-                        <i class="fas fa-plug"></i> Bağlantıyı Test Et
+                        <i class="fas fa-plug"></i> <span data-i18n="ftpSettings.testConnection">Bağlantıyı Test Et</span>
                     </button>
                     <button type="button" id="sendNow" class="btn btn-warning">
-                        <i class="fas fa-paper-plane"></i> Şimdi Gönder
+                        <i class="fas fa-paper-plane"></i> <span data-i18n="ftpSettings.sendNow">Şimdi Gönder</span>
                     </button>
                     <button type="button" id="saveFtpConfig" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Ayarları Kaydet
+                        <i class="fas fa-save"></i> <span data-i18n="ftpSettings.saveSettings">Ayarları Kaydet</span>
                     </button>
                 </div>
             </form>

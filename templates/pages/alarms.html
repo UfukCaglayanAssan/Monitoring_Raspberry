@@ -3,11 +3,11 @@
     <!-- Alarm Tablosu -->
     <div class="alarms-container">
         <div class="table-header">
-            <h3>Alarmlar <span id="alarmHistoryTitle" style="display: none;">- Alarm Geçmişi</span></h3>
+            <h3 data-i18n="alarms.title">Alarmlar <span id="alarmHistoryTitle" style="display: none;" data-i18n="alarms.alarmHistoryTitle">- Alarm Geçmişi</span></h3>
             <div class="table-actions">
                 <button id="toggleAlarmHistory" class="btn btn-outline">
                     <i class="fas fa-history"></i>
-                    <span id="toggleButtonText">Alarm Geçmişi</span>
+                    <span id="toggleButtonText" data-i18n="alarms.alarmHistory">Alarm Geçmişi</span>
                 </button>
             </div>
         </div>
@@ -16,11 +16,11 @@
             <table class="alarms-table" id="alarmsTable">
                 <thead>
                     <tr>
-                        <th>Zaman</th>
-                        <th>Kol</th>
-                        <th>Batarya</th>
-                        <th>Açıklama</th>
-                        <th>Durum</th>
+                        <th data-i18n="alarms.time">Zaman</th>
+                        <th data-i18n="alarms.arm">Kol</th>
+                        <th data-i18n="alarms.battery">Batarya</th>
+                        <th data-i18n="alarms.description">Açıklama</th>
+                        <th data-i18n="alarms.status">Durum</th>
                     </tr>
                 </thead>
                 <tbody id="alarmsTableBody">
@@ -31,32 +31,32 @@
             <!-- Loading Spinner -->
             <div class="loading-spinner" id="loadingSpinner" style="display: flex;">
                 <div class="spinner"></div>
-                <p>Alarm verileri yükleniyor...</p>
+                <p data-i18n="alarms.loading">Alarm verileri yükleniyor...</p>
             </div>
             
             <!-- Veri Yok Mesajı -->
             <div class="no-data-message" id="noDataMessage" style="display: none;">
                 <i class="fas fa-check-circle"></i>
-                <h3>Alarm Yok</h3>
-                <p>Sistemde aktif alarm bulunmuyor.</p>
+                <h3 data-i18n="alarms.noAlarms">Alarm Yok</h3>
+                <p data-i18n="alarms.noAlarmsMessage">Sistemde aktif alarm bulunmuyor.</p>
             </div>
             
             <!-- Sayfalama -->
             <div class="pagination" id="pagination" style="display: none;">
                 <button class="pagination-btn" id="prevPage" disabled>
                     <i class="fas fa-chevron-left"></i>
-                    <span>Önceki</span>
+                    <span data-i18n="common.previous">Önceki</span>
                 </button>
                 
                 <div class="pagination-info">
-                    <span>Sayfa</span>
+                    <span data-i18n="common.page">Sayfa</span>
                     <span id="currentPage">1</span>
-                    <span>/ toplam</span>
+                    <span data-i18n="common.of">/ toplam</span>
                     <span id="totalPages">1</span>
                 </div>
                 
                 <button class="pagination-btn" id="nextPage">
-                    <span>Sonraki</span>
+                    <span data-i18n="common.next">Sonraki</span>
                     <i class="fas fa-chevron-right"></i>
                 </button>
             </div>
