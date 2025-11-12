@@ -84,7 +84,10 @@ if (typeof window.UserManagementPage === 'undefined') {
             const tableBody = document.getElementById('usersTableBody');
             if (!tableBody) return;
 
-            if (users.length === 0) {
+            // Default kullanıcıları filtrele (ID 1 ve 2)
+            const filteredUsers = users.filter(user => user.id !== 1 && user.id !== 2);
+
+            if (filteredUsers.length === 0) {
                 tableBody.innerHTML = `
                     <tr>
                         <td colspan="7" class="text-center">
@@ -98,7 +101,7 @@ if (typeof window.UserManagementPage === 'undefined') {
                 return;
             }
 
-            tableBody.innerHTML = users.map(user => {
+            tableBody.innerHTML = filteredUsers.map(user => {
                 const roleBadge = user.role === 'admin' 
                     ? '<span class="badge badge-danger">Admin</span>' 
                     : '<span class="badge badge-secondary">Guest</span>';
@@ -177,6 +180,30 @@ if (typeof window.UserManagementPage === 'undefined') {
                 return;
             }
 
+            // Maksimum kullanıcı sayısı kontrolü (default kullanıcılar hariç max 8)
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        // Default kullanıcıları (ID 1 ve 2) hariç say
+                        const userCount = result.users.filter(u => u.id !== 1 && u.id !== 2).length;
+                        if (userCount >= 8) {
+                            this.showToast('Maksimum 8 kullanıcı eklenebilir!', 'warning');
+                            return;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Kullanıcı sayısı kontrol edilirken hata:', error);
+            }
+
             try {
                 const createBtn = document.getElementById('createUserBtn');
                 createBtn.disabled = true;
@@ -220,6 +247,12 @@ if (typeof window.UserManagementPage === 'undefined') {
         }
 
         async resetUserPassword(userId, userEmail) {
+            // Default kullanıcıların şifresi sıfırlanamaz
+            if (userId === 1 || userId === 2) {
+                this.showToast('Default kullanıcıların şifresi sıfırlanamaz!', 'error');
+                return;
+            }
+
             if (!confirm(`${userEmail} kullanıcısının şifresini sıfırlamak istediğinize emin misiniz?`)) {
                 return;
             }

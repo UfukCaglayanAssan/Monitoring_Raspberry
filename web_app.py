@@ -232,7 +232,18 @@ def api_create_user():
                 'message': 'Şifre en az 6 karakter olmalı'
             }), 400
         
+        # Maksimum kullanıcı sayısı kontrolü (default kullanıcılar hariç max 8)
         db_instance = get_db()
+        with db_read_lock:
+            all_users = db_instance.get_all_users()
+            # Default kullanıcıları (ID 1 ve 2) hariç say
+            user_count = len([u for u in all_users if u['id'] != 1 and u['id'] != 2])
+            if user_count >= 8:
+                return jsonify({
+                    'success': False,
+                    'message': 'Maksimum 8 kullanıcı eklenebilir!'
+                }), 400
+        
         with db_lock:
             result = db_instance.create_user(email, password, username, role)
         
@@ -251,6 +262,13 @@ def api_create_user():
 def api_reset_user_password(user_id):
     """Kullanıcı şifresini sıfırla (sadece admin)"""
     try:
+        # Default kullanıcıların şifresi sıfırlanamaz
+        if user_id == 1 or user_id == 2:
+            return jsonify({
+                'success': False,
+                'message': 'Default kullanıcıların şifresi sıfırlanamaz!'
+            }), 403
+        
         db_instance = get_db()
         with db_lock:
             result = db_instance.reset_user_password(user_id)
