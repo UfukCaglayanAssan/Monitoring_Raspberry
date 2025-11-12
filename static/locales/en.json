@@ -23,7 +23,12 @@
     "of": "/ of",
     "all": "All",
     "select": "Select",
-    "selectFirst": "Please select first"
+    "selectFirst": "Please select first",
+    "arm1": "Arm 1",
+    "arm2": "Arm 2",
+    "arm3": "Arm 3",
+    "arm4": "Arm 4",
+    "appTitle": "Battery Monitoring System"
   },
   "menu": {
     "summary": "Summary",
@@ -54,7 +59,11 @@
     "avgSOH": "Avg. SOH",
     "humidity": "Humidity",
     "temperature": "Temperature",
-    "current": "Current"
+    "current": "Current",
+    "dischargeCurrent": "Discharge Current",
+    "totalVoltage": "Total Voltage",
+    "avgChargeStatus": "Avg. Charge Status",
+    "avgHealthStatus": "Avg. Health Status"
   },
   "batteries": {
     "title": "Batteries",
@@ -82,6 +91,11 @@
     "endDate": "End Date",
     "allArms": "All Arms",
     "selectArmFirst": "Please select an arm first",
+    "allBatteries": "All Batteries",
+    "selectBattery": "Select Battery",
+    "noBatteriesInArm": "No batteries in this arm",
+    "errorOccurred": "Error occurred",
+    "battery": "Battery",
     "time": "TIME",
     "arm": "ARM",
     "batteryAddressHeader": "BATTERY ADDRESS",

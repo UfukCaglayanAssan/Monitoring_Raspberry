@@ -119,6 +119,11 @@ if (typeof window.SummaryPage === 'undefined') {
 
         // Grid'i göster
         grid.style.display = 'grid';
+        
+        // Çevirileri uygula
+        if (window.translationManager && window.translationManager.initialized) {
+            window.translationManager.updateAllElements();
+        }
     }
 
     createArmCard(armData) {
@@ -133,14 +138,23 @@ if (typeof window.SummaryPage === 'undefined') {
         // Detay listesi
         const detailsList = this.createDetailsList(armData);
         
+        const t = window.translationManager && window.translationManager.initialized 
+            ? window.translationManager.t.bind(window.translationManager) 
+            : (key) => key;
+        const armLabel = t('summary.arm');
         card.innerHTML = `
             <div class="arm-header">
-                <span class="arm-number">Kol ${armData.arm}</span>
+                <span class="arm-number">${armLabel} ${armData.arm}</span>
                 <span class="arm-timestamp">${this.formatTimestamp(armData.timestamp)}</span>
             </div>
             ${mainMetric}
             ${detailsList}
         `;
+        
+        // Çevirileri uygula
+        if (window.translationManager && window.translationManager.initialized) {
+            window.translationManager.updateAllElements();
+        }
         
         // Kol kartına tıklama - Bataryalar sayfasına git ve kolu seç
         card.addEventListener('click', () => {
@@ -167,6 +181,10 @@ if (typeof window.SummaryPage === 'undefined') {
 
     createMainMetric(armData) {
         const currentValue = armData.current || 0;
+        const t = window.translationManager && window.translationManager.initialized 
+            ? window.translationManager.t.bind(window.translationManager) 
+            : (key) => key;
+        const dischargeCurrentLabel = t('summary.dischargeCurrent');
         return `
             <div class="arm-main-metric">
                 <div class="metric-icon">
@@ -176,7 +194,7 @@ if (typeof window.SummaryPage === 'undefined') {
                     </svg>
                 </div>
                 <div class="metric-value">${currentValue} <span class="metric-unit">A</span></div>
-                <div class="metric-label">Deşarj Akımı</div>
+                <div class="metric-label" data-i18n="summary.dischargeCurrent">${dischargeCurrentLabel}</div>
             </div>
         `;
     }
@@ -187,48 +205,59 @@ if (typeof window.SummaryPage === 'undefined') {
             ? (armData.avg_voltage * armData.battery_count).toFixed(2) 
             : null;
         
+        const t = window.translationManager && window.translationManager.initialized 
+            ? window.translationManager.t.bind(window.translationManager) 
+            : (key) => key;
+        
         const details = [
             {
                 icon: 'battery',
-                label: 'Nem:',
+                label: t('summary.humidity') + ':',
                 value: armData.humidity ? `${armData.humidity} %` : '--',
-                color: 'text-green-400'
+                color: 'text-green-400',
+                i18nKey: 'summary.humidity'
             },
             {
                 icon: 'thermometer',
-                label: 'Sıcaklık:',
+                label: t('summary.temperature') + ':',
                 value: armData.temperature ? `${armData.temperature} °C` : '--',
-                color: 'text-red-400'
+                color: 'text-red-400',
+                i18nKey: 'summary.temperature'
             },
             {
                 icon: 'hash',
-                label: 'Batarya Sayısı:',
+                label: t('summary.batteryCount') + ':',
                 value: armData.battery_count || 0,
-                color: 'text-purple-400'
+                color: 'text-purple-400',
+                i18nKey: 'summary.batteryCount'
             },
             {
                 icon: 'zap',
-                label: 'Toplam Gerilim:',
+                label: t('summary.totalVoltage') + ':',
                 value: totalVoltage ? `${totalVoltage} V` : '--',
-                color: 'text-yellow-400'
+                color: 'text-yellow-400',
+                i18nKey: 'summary.totalVoltage'
             },
             {
                 icon: 'zap',
-                label: 'Ort. Gerilim:',
+                label: t('summary.avgVoltage') + ':',
                 value: armData.avg_voltage ? `${armData.avg_voltage} V` : '--',
-                color: 'text-yellow-400'
+                color: 'text-yellow-400',
+                i18nKey: 'summary.avgVoltage'
             },
             {
                 icon: 'hash',
-                label: 'Ort. Şarj Durumu:',
+                label: t('summary.avgChargeStatus') + ':',
                 value: armData.avg_charge ? `${armData.avg_charge} %` : '--',
-                color: 'text-purple-400'
+                color: 'text-purple-400',
+                i18nKey: 'summary.avgChargeStatus'
             },
             {
                 icon: 'battery',
-                label: 'Ort. Sağlık Durumu:',
+                label: t('summary.avgHealthStatus') + ':',
                 value: armData.avg_health ? `${armData.avg_health} %` : '--',
-                color: 'text-green-400'
+                color: 'text-green-400',
+                i18nKey: 'summary.avgHealthStatus'
             }
         ];
 
@@ -236,7 +265,7 @@ if (typeof window.SummaryPage === 'undefined') {
             <div class="detail-item">
                 <div class="detail-left">
                     ${this.getIconSvg(detail.icon, detail.color)}
-                    <span class="detail-label">${detail.label}</span>
+                    <span class="detail-label" data-i18n="${detail.i18nKey}">${detail.label}</span>
                 </div>
                 <span class="detail-value">${detail.value}</span>
             </div>

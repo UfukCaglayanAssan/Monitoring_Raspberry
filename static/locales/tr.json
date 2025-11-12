@@ -23,7 +23,12 @@
     "of": "/ toplam",
     "all": "Tümü",
     "select": "Seçin",
-    "selectFirst": "Önce seçiniz"
+    "selectFirst": "Önce seçiniz",
+    "arm1": "Kol 1",
+    "arm2": "Kol 2",
+    "arm3": "Kol 3",
+    "arm4": "Kol 4",
+    "appTitle": "Akü İzleme Sistemi"
   },
   "menu": {
     "summary": "Özet",
@@ -54,7 +59,11 @@
     "avgSOH": "Ort. SOH",
     "humidity": "Nem",
     "temperature": "Sıcaklık",
-    "current": "Akım"
+    "current": "Akım",
+    "dischargeCurrent": "Deşarj Akımı",
+    "totalVoltage": "Toplam Gerilim",
+    "avgChargeStatus": "Ort. Şarj Durumu",
+    "avgHealthStatus": "Ort. Sağlık Durumu"
   },
   "batteries": {
     "title": "Bataryalar",
@@ -82,6 +91,11 @@
     "endDate": "Bitiş",
     "allArms": "Tüm Kollar",
     "selectArmFirst": "Önce kol seçiniz",
+    "allBatteries": "Tüm Bataryalar",
+    "selectBattery": "Batarya seçiniz",
+    "noBatteriesInArm": "Bu kolda batarya yok",
+    "errorOccurred": "Hata oluştu",
+    "battery": "Batarya",
     "time": "ZAMAN",
     "arm": "KOL",
     "batteryAddressHeader": "BATARYA ADRESİ",

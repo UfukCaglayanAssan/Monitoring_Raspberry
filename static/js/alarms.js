@@ -272,7 +272,14 @@ if (typeof window.AlarmsPage === 'undefined') {
                                     <td>${this.formatTimestamp(alarm.timestamp)}</td>
                                     <td>${alarm.arm}</td>
                                     <td>${alarm.batteryDisplay || t('alarms.descriptions.armAlarm')}</td>
-                                    <td>${this.translateAlarmDescription(alarm.description)}</td>
+                                    <td>${(() => {
+                                        try {
+                                            return this.translateAlarmDescription(alarm.description);
+                                        } catch (error) {
+                                            console.error('Alarm açıklaması çevrilirken hata:', error);
+                                            return alarm.description;
+                                        }
+                                    })()}</td>
                                     <td>
                                         <span class="status-badge ${statusClass}">
                                             ${statusText}
@@ -422,14 +429,18 @@ if (typeof window.AlarmsPage === 'undefined') {
         
         // Açıklama
         const descriptionCell = document.createElement('td');
-        descriptionCell.textContent = this.translateAlarmDescription(alarm.description);
+        try {
+            descriptionCell.textContent = this.translateAlarmDescription(alarm.description);
+        } catch (error) {
+            console.error('Alarm açıklaması çevrilirken hata:', error);
+            descriptionCell.textContent = alarm.description; // Hata durumunda orijinal metni göster
+        }
         row.appendChild(descriptionCell);
         
         // Durum (aktif alarmlar için her zaman "Aktif")
         const statusCell = document.createElement('td');
         const statusBadge = document.createElement('span');
         statusBadge.className = 'status-badge status-error';
-        const t = window.translationManager ? window.translationManager.t.bind(window.translationManager) : (key) => key;
         statusBadge.textContent = t('alarms.active');
         statusCell.appendChild(statusBadge);
         row.appendChild(statusCell);
@@ -458,7 +469,12 @@ if (typeof window.AlarmsPage === 'undefined') {
         
         // Açıklama
         const descriptionCell = document.createElement('td');
-        descriptionCell.textContent = this.translateAlarmDescription(alarm.description);
+        try {
+            descriptionCell.textContent = this.translateAlarmDescription(alarm.description);
+        } catch (error) {
+            console.error('Alarm açıklaması çevrilirken hata:', error);
+            descriptionCell.textContent = alarm.description; // Hata durumunda orijinal metni göster
+        }
         row.appendChild(descriptionCell);
         
         // Durum

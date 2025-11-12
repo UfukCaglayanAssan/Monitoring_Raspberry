@@ -22,6 +22,11 @@ class TranslationManager {
             };
             
             this.initialized = true;
+            
+            // Sayfa başlığını ve HTML lang attribute'unu ayarla
+            document.title = this.t('common.appTitle');
+            document.documentElement.lang = this.currentLanguage;
+            
             console.log('✅ TranslationManager başlatıldı');
         } catch (error) {
             console.error('❌ Çeviri dosyaları yüklenirken hata:', error);
@@ -67,6 +72,12 @@ class TranslationManager {
         
         this.currentLanguage = language;
         localStorage.setItem('language', language);
+        
+        // Sayfa başlığını güncelle
+        document.title = this.t('common.appTitle');
+        
+        // HTML lang attribute'unu güncelle
+        document.documentElement.lang = language;
         
         // Tüm data-i18n attribute'larına sahip elementleri güncelle
         this.updateAllElements();

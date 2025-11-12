@@ -316,15 +316,26 @@ if (typeof window.BatteryLogsPage === 'undefined') {
                     const oldArmFilter = armFilter.cloneNode(false);
                     
                     // Kol seçeneklerini güncelle
-                    armFilter.innerHTML = '<option value="">Tüm Kollar</option>';
+                    const t = window.translationManager && window.translationManager.initialized 
+                        ? window.translationManager.t.bind(window.translationManager) 
+                        : (key) => key;
+                    const allArmsText = t('batteryLogs.allArms');
+                    armFilter.innerHTML = `<option value="">${allArmsText}</option>`;
                     data.activeArms.forEach(arm => {
                         if (arm.slave_count > 0) {
                             const option = document.createElement('option');
                             option.value = arm.arm;
-                            option.textContent = `Kol ${arm.arm}`;
+                            const armKey = `common.arm${arm.arm}`;
+                            option.textContent = t(armKey);
+                            option.setAttribute('data-i18n', armKey);
                             armFilter.appendChild(option);
                         }
                     });
+                    
+                    // Çevirileri uygula
+                    if (window.translationManager && window.translationManager.initialized) {
+                        window.translationManager.updateAllElements();
+                    }
                     
                     // Event listener'ı yeniden bağla
                     armFilter.addEventListener('change', (e) => {
@@ -360,8 +371,11 @@ if (typeof window.BatteryLogsPage === 'undefined') {
     
     initSelect2() {
         // Batarya select2'yi başlat
+        const t = window.translationManager && window.translationManager.initialized 
+            ? window.translationManager.t.bind(window.translationManager) 
+            : (key) => key;
         $('#batteryFilter').select2({
-            placeholder: 'Önce kol seçiniz',
+            placeholder: t('batteryLogs.selectArmFirst'),
             allowClear: true,
             width: '100%'
         });
@@ -370,11 +384,16 @@ if (typeof window.BatteryLogsPage === 'undefined') {
     async updateBatteryOptions(selectedArm) {
         const batteryFilter = document.getElementById('batteryFilter');
         
+        const t = window.translationManager && window.translationManager.initialized 
+            ? window.translationManager.t.bind(window.translationManager) 
+            : (key) => key;
+        
         if (!selectedArm) {
             $('#batteryFilter').empty();
-            $('#batteryFilter').append('<option value="">Önce kol seçiniz</option>');
+            const selectArmFirstText = t('batteryLogs.selectArmFirst');
+            $('#batteryFilter').append(`<option value="">${selectArmFirstText}</option>`);
             $('#batteryFilter').select2({
-                placeholder: 'Önce kol seçiniz',
+                placeholder: selectArmFirstText,
                 allowClear: true,
                 width: '100%'
             });
@@ -395,16 +414,19 @@ if (typeof window.BatteryLogsPage === 'undefined') {
                     $('#batteryFilter').empty();
                     
                     // Tüm Bataryalar seçeneği ekle
-                    $('#batteryFilter').append('<option value="">Tüm Bataryalar</option>');
+                    const allBatteriesText = t('batteryLogs.allBatteries');
+                    $('#batteryFilter').append(`<option value="">${allBatteriesText}</option>`);
                     
                     // Batarya seçeneklerini ekle (1'den başla)
+                    const batteryText = t('batteryLogs.battery');
                     for (let i = 1; i <= batteryCount; i++) {
-                        $('#batteryFilter').append(`<option value="${i}">Batarya ${i}</option>`);
+                        $('#batteryFilter').append(`<option value="${i}">${batteryText} ${i}</option>`);
                     }
                     
                     // Select2'yi yeniden başlat
+                    const selectBatteryText = t('batteryLogs.selectBattery');
                     $('#batteryFilter').select2({
-                        placeholder: 'Batarya seçiniz',
+                        placeholder: selectBatteryText,
                         allowClear: true,
                         width: '100%'
                     });
@@ -412,9 +434,10 @@ if (typeof window.BatteryLogsPage === 'undefined') {
                     batteryFilter.disabled = false;
                 } else {
                     $('#batteryFilter').empty();
-                    $('#batteryFilter').append('<option value="">Bu kolda batarya yok</option>');
+                    const noBatteriesText = t('batteryLogs.noBatteriesInArm');
+                    $('#batteryFilter').append(`<option value="">${noBatteriesText}</option>`);
                     $('#batteryFilter').select2({
-                        placeholder: 'Bu kolda batarya yok',
+                        placeholder: noBatteriesText,
                         allowClear: true,
                         width: '100%'
                     });
@@ -424,9 +447,10 @@ if (typeof window.BatteryLogsPage === 'undefined') {
         } catch (error) {
             console.error('Batarya seçenekleri yükleme hatası:', error);
             $('#batteryFilter').empty();
-            $('#batteryFilter').append('<option value="">Hata oluştu</option>');
+            const errorText = t('batteryLogs.errorOccurred');
+            $('#batteryFilter').append(`<option value="">${errorText}</option>`);
             $('#batteryFilter').select2({
-                placeholder: 'Hata oluştu',
+                placeholder: errorText,
                 allowClear: true,
                 width: '100%'
             });

@@ -194,14 +194,20 @@ if (typeof window.ConfigurationPage === 'undefined') {
         });
         
         // Sabit 4 kol seçeneği
+        const t = window.translationManager && window.translationManager.initialized 
+            ? window.translationManager.t.bind(window.translationManager) 
+            : (key) => key;
+        
         for (let arm = 1; arm <= 4; arm++) {
             const slaveCount = armSlaveCountsMap.get(arm) || 0;
             const hasBattery = slaveCount > 0;
+            const armKey = `common.arm${arm}`;
             
             // Batarya konfigürasyonu select'i
             const option1 = document.createElement('option');
             option1.value = arm;
-            option1.textContent = `Kol ${arm}`;
+            option1.textContent = t(armKey);
+            option1.setAttribute('data-i18n', armKey);
             option1.disabled = !hasBattery; // Batarya yoksa tıklanamaz
             if (!hasBattery) {
                 option1.style.color = '#999';
@@ -212,13 +218,19 @@ if (typeof window.ConfigurationPage === 'undefined') {
             // Kol konfigürasyonu select'i
             const option2 = document.createElement('option');
             option2.value = arm;
-            option2.textContent = `Kol ${arm}`;
+            option2.textContent = t(armKey);
+            option2.setAttribute('data-i18n', armKey);
             option2.disabled = !hasBattery; // Batarya yoksa tıklanamaz
             if (!hasBattery) {
                 option2.style.color = '#999';
                 option2.style.fontStyle = 'italic';
             }
             armArmSelect.appendChild(option2);
+        }
+        
+        // Çevirileri uygula
+        if (window.translationManager && window.translationManager.initialized) {
+            window.translationManager.updateAllElements();
         }
     }
 
