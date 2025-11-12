@@ -50,6 +50,12 @@ if (typeof window.DataRetrieval === 'undefined') {
         document.getElementById('dataValueSelect').addEventListener('change', () => {
             this.validateForm();
         });
+        
+        // Dil değişikliği dinleyicisi
+        window.addEventListener('languageChanged', (e) => {
+            console.log('🌐 Data Retrieval sayfası - Dil değişti:', e.detail.language);
+            this.onLanguageChanged(e.detail.language);
+        });
     }
 
     updateDataTypeOptions() {
@@ -57,7 +63,16 @@ if (typeof window.DataRetrieval === 'undefined') {
         const valueSelect = document.getElementById('dataValueSelect');
         
         // Mevcut seçimi temizle
-        valueSelect.innerHTML = '<option value="">Seçiniz</option>';
+        const t = window.translationManager && window.translationManager.initialized 
+            ? window.translationManager.t.bind(window.translationManager) 
+            : (key) => key;
+        
+        const placeholderText = t('dataRetrieval.select');
+        valueSelect.innerHTML = `<option value="">${placeholderText}</option>`;
+        
+        // Placeholder option'a data-i18n ekle
+        const placeholderOption = valueSelect.querySelector('option[value=""]');
+        if (placeholderOption) placeholderOption.setAttribute('data-i18n', 'dataRetrieval.select');
         
         if (address === '0') {
             // Kol verileri (adres 0)
@@ -191,8 +206,15 @@ if (typeof window.DataRetrieval === 'undefined') {
             });
 
             if (response.ok) {
-                this.addOperation('reset', `Tümünü Sıfırla - ${selectedArm === '5' ? 'Tüm Kollar' : `Kol ${selectedArm}`}`);
-                this.showToast('Tümünü sıfırla komutu başarıyla gönderildi', 'success');
+                const t = window.translationManager && window.translationManager.initialized 
+                    ? window.translationManager.t.bind(window.translationManager) 
+                    : (key) => key;
+                
+                const armText = selectedArm === '5' 
+                    ? t('dataRetrieval.allArms') 
+                    : t(`common.arm${selectedArm}`);
+                this.addOperation('reset', `${t('dataRetrieval.resetAll')} - ${armText}`);
+                this.showToast(t('dataRetrieval.resetAll') + ' komutu başarıyla gönderildi', 'success');
             } else {
                 throw new Error('Komut gönderilemedi');
             }
@@ -526,15 +548,26 @@ if (typeof window.DataRetrieval === 'undefined') {
         // Toplu işlemler kol seçimi
         const batchArmSelect = document.getElementById('batchArmSelect');
         if (batchArmSelect) {
-            batchArmSelect.innerHTML = '<option value="">Kol Seçiniz</option>';
+            const t = window.translationManager && window.translationManager.initialized 
+                ? window.translationManager.t.bind(window.translationManager) 
+                : (key) => key;
+            
+            const placeholderText = t('dataRetrieval.selectArm');
+            batchArmSelect.innerHTML = `<option value="">${placeholderText}</option>`;
+            
+            // Placeholder option'a data-i18n ekle
+            const placeholderOption = batchArmSelect.querySelector('option[value=""]');
+            if (placeholderOption) placeholderOption.setAttribute('data-i18n', 'dataRetrieval.selectArm');
             
             // Tüm kolları ekle - bataryası olmayanları disabled yap
             for (let arm = 1; arm <= 4; arm++) {
                 const hasBatteries = armSlaveCountsMap.has(arm) && armSlaveCountsMap.get(arm) > 0;
+                const armKey = `common.arm${arm}`;
                 
                 const option = document.createElement('option');
                 option.value = arm;
-                option.textContent = `Kol ${arm}`;
+                option.textContent = t(armKey);
+                option.setAttribute('data-i18n', armKey);
                 option.disabled = !hasBatteries; // Batarya yoksa tıklanamaz
                 
                 if (!hasBatteries) {
@@ -549,7 +582,8 @@ if (typeof window.DataRetrieval === 'undefined') {
             if (armSlaveCountsMap.size > 1) {
                 const option = document.createElement('option');
                 option.value = '5';
-                option.textContent = 'Tüm Kollar';
+                option.textContent = t('dataRetrieval.allArms');
+                option.setAttribute('data-i18n', 'dataRetrieval.allArms');
                 batchArmSelect.appendChild(option);
             }
         }
@@ -558,15 +592,26 @@ if (typeof window.DataRetrieval === 'undefined') {
         const dataArmSelect = document.getElementById('dataArmSelect');
         
         if (dataArmSelect) {
-            dataArmSelect.innerHTML = '<option value="">Seçiniz</option>';
+            const t = window.translationManager && window.translationManager.initialized 
+                ? window.translationManager.t.bind(window.translationManager) 
+                : (key) => key;
+            
+            const placeholderText = t('dataRetrieval.select');
+            dataArmSelect.innerHTML = `<option value="">${placeholderText}</option>`;
+            
+            // Placeholder option'a data-i18n ekle
+            const placeholderOption = dataArmSelect.querySelector('option[value=""]');
+            if (placeholderOption) placeholderOption.setAttribute('data-i18n', 'dataRetrieval.select');
             
             // Tüm kolları ekle - bataryası olmayanları disabled yap
             for (let arm = 1; arm <= 4; arm++) {
                 const hasBatteries = armSlaveCountsMap.has(arm) && armSlaveCountsMap.get(arm) > 0;
+                const armKey = `common.arm${arm}`;
                 
                 const option = document.createElement('option');
                 option.value = arm;
-                option.textContent = `Kol ${arm}`;
+                option.textContent = t(armKey);
+                option.setAttribute('data-i18n', armKey);
                 option.disabled = !hasBatteries; // Batarya yoksa tıklanamaz
                 
                 if (!hasBatteries) {
@@ -577,12 +622,46 @@ if (typeof window.DataRetrieval === 'undefined') {
                 dataArmSelect.appendChild(option);
             }
         }
+        
+        // Çevirileri uygula
+        if (window.translationManager && window.translationManager.initialized) {
+            window.translationManager.updateAllElements();
+        }
+    }
+
+    onLanguageChanged(language) {
+        // Dropdown'ları yeniden yükle
+        this.loadArmOptions();
+        
+        // Select2 placeholder'ını güncelle
+        if (window.translationManager && window.translationManager.initialized) {
+            const t = window.translationManager.t.bind(window.translationManager);
+            const placeholderText = t('dataRetrieval.selectArmFirst');
+            
+            // Select2'yi güncelle
+            const $select = $('#dataAddressSelect');
+            if ($select.length && $select.data('select2')) {
+                $select.select2('destroy');
+                $select.select2({
+                    placeholder: placeholderText,
+                    allowClear: true,
+                    width: '100%'
+                });
+            }
+            
+            // Tüm çevirileri güncelle
+            window.translationManager.updateAllElements();
+        }
     }
 
     initSelect2() {
         // Batarya adresi select2'yi başlat
+        const t = window.translationManager && window.translationManager.initialized 
+            ? window.translationManager.t.bind(window.translationManager) 
+            : (key) => key;
+        
         $('#dataAddressSelect').select2({
-            placeholder: 'Önce kol seçiniz',
+            placeholder: t('dataRetrieval.selectArmFirst'),
             allowClear: true,
             width: '100%'
         });
@@ -592,10 +671,20 @@ if (typeof window.DataRetrieval === 'undefined') {
         const addressSelect = document.getElementById('dataAddressSelect');
         
         if (!selectedArm) {
+            const t = window.translationManager && window.translationManager.initialized 
+                ? window.translationManager.t.bind(window.translationManager) 
+                : (key) => key;
+            
+            const placeholderText = t('dataRetrieval.selectArmFirst');
             $('#dataAddressSelect').empty();
-            $('#dataAddressSelect').append('<option value="">Önce kol seçiniz</option>');
+            $('#dataAddressSelect').append(`<option value="">${placeholderText}</option>`);
+            
+            // Placeholder option'a data-i18n ekle
+            const placeholderOption = $('#dataAddressSelect option[value=""]')[0];
+            if (placeholderOption) placeholderOption.setAttribute('data-i18n', 'dataRetrieval.selectArmFirst');
+            
             $('#dataAddressSelect').select2({
-                placeholder: 'Önce kol seçiniz',
+                placeholder: placeholderText,
                 allowClear: true,
                 width: '100%'
             });
@@ -617,32 +706,53 @@ if (typeof window.DataRetrieval === 'undefined') {
                     $('#dataAddressSelect').empty();
                     
                     // Seçiniz seçeneği ekle
-                    $('#dataAddressSelect').append('<option value="">Seçiniz</option>');
+                    const t = window.translationManager && window.translationManager.initialized 
+                        ? window.translationManager.t.bind(window.translationManager) 
+                        : (key) => key;
+                    
+                    const placeholderText = t('dataRetrieval.select');
+                    const armText = t(`common.arm${selectedArm}`);
+                    $('#dataAddressSelect').append(`<option value="">${placeholderText}</option>`);
+                    
+                    // Placeholder option'a data-i18n ekle
+                    const placeholderOption = $('#dataAddressSelect option[value=""]')[0];
+                    if (placeholderOption) placeholderOption.setAttribute('data-i18n', 'dataRetrieval.select');
                     
                     // Kol seçeneği ekle (seçilebilir)
-                    $('#dataAddressSelect').append(`<option value="0">Kol ${selectedArm}</option>`);
+                    const kolOption = $(`<option value="0">${armText}</option>`);
+                    kolOption.attr('data-i18n', `common.arm${selectedArm}`);
+                    $('#dataAddressSelect').append(kolOption);
                     
                     // Kol başlığı ekle
-                    $('#dataAddressSelect').append(`<optgroup label="Bataryalar">`);
+                    const batteriesLabel = t('batteries.title');
+                    $('#dataAddressSelect').append(`<optgroup label="${batteriesLabel}">`);
                     
                     // Batarya adreslerini ekle (1'den başla, değer aynı gidecek)
                     for (let i = 1; i <= batteryCount; i++) {
-                        $('#dataAddressSelect').append(`<option value="${i}">Batarya ${i}</option>`);
+                        const batteryText = `${t('batteryLogs.battery')} ${i}`;
+                        const batteryOption = $(`<option value="${i}">${batteryText}</option>`);
+                        $('#dataAddressSelect').append(batteryOption);
                     }
                     
                     // Select2'yi yeniden başlat
+                    const selectBatteryText = t('batteryLogs.selectBattery');
                     $('#dataAddressSelect').select2({
-                        placeholder: 'Batarya seçiniz',
+                        placeholder: selectBatteryText,
                         allowClear: true,
                         width: '100%'
                     });
                     
                     addressSelect.disabled = false;
                 } else {
+                    const noBatteriesText = t('batteryLogs.noBatteriesInArm');
                     $('#dataAddressSelect').empty();
-                    $('#dataAddressSelect').append('<option value="">Bu kolda batarya yok</option>');
+                    $('#dataAddressSelect').append(`<option value="">${noBatteriesText}</option>`);
+                    
+                    // Placeholder option'a data-i18n ekle
+                    const placeholderOption = $('#dataAddressSelect option[value=""]')[0];
+                    if (placeholderOption) placeholderOption.setAttribute('data-i18n', 'batteryLogs.noBatteriesInArm');
                     $('#dataAddressSelect').select2({
-                        placeholder: 'Bu kolda batarya yok',
+                        placeholder: noBatteriesText,
                         allowClear: true,
                         width: '100%'
                     });

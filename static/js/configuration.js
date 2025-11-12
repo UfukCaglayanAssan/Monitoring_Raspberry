@@ -87,8 +87,36 @@ if (typeof window.ConfigurationPage === 'undefined') {
             }
         });
 
+        // Dil değişikliği dinleyicisi
+        window.addEventListener('languageChanged', (e) => {
+            console.log('🌐 Configuration sayfası - Dil değişti:', e.detail.language);
+            this.onLanguageChanged(e.detail.language);
+        });
+
         // Input validasyon event listener'ları
         this.addInputValidationListeners();
+    }
+    
+    onLanguageChanged(language) {
+        // Placeholder'ları güncelle
+        const batArmSelect = document.getElementById('batArmSelect');
+        const armArmSelect = document.getElementById('armArmSelect');
+        
+        if (batArmSelect && armArmSelect && window.translationManager && window.translationManager.initialized) {
+            const placeholderText = window.translationManager.t('configuration.selectArm');
+            const placeholderOption1 = batArmSelect.querySelector('option[value=""]');
+            const placeholderOption2 = armArmSelect.querySelector('option[value=""]');
+            
+            if (placeholderOption1) {
+                placeholderOption1.textContent = placeholderText;
+            }
+            if (placeholderOption2) {
+                placeholderOption2.textContent = placeholderText;
+            }
+            
+            // Tüm çevirileri güncelle
+            window.translationManager.updateAllElements();
+        }
     }
 
     addInputValidationListeners() {
@@ -183,10 +211,6 @@ if (typeof window.ConfigurationPage === 'undefined') {
             return;
         }
         
-        // Select'leri temizle
-        batArmSelect.innerHTML = '<option value="">Kol Seçin</option>';
-        armArmSelect.innerHTML = '<option value="">Kol Seçin</option>';
-        
         // arm_slave_counts verilerini map'e çevir
         const armSlaveCountsMap = new Map();
         activeArms.forEach(arm => {
@@ -197,6 +221,17 @@ if (typeof window.ConfigurationPage === 'undefined') {
         const t = window.translationManager && window.translationManager.initialized 
             ? window.translationManager.t.bind(window.translationManager) 
             : (key) => key;
+        
+        // Select'leri temizle ve placeholder ekle
+        const placeholderText = t('configuration.selectArm');
+        batArmSelect.innerHTML = `<option value="">${placeholderText}</option>`;
+        armArmSelect.innerHTML = `<option value="">${placeholderText}</option>`;
+        
+        // Placeholder option'a data-i18n ekle
+        const placeholderOption1 = batArmSelect.querySelector('option[value=""]');
+        const placeholderOption2 = armArmSelect.querySelector('option[value=""]');
+        if (placeholderOption1) placeholderOption1.setAttribute('data-i18n', 'configuration.selectArm');
+        if (placeholderOption2) placeholderOption2.setAttribute('data-i18n', 'configuration.selectArm');
         
         for (let arm = 1; arm <= 4; arm++) {
             const slaveCount = armSlaveCountsMap.get(arm) || 0;

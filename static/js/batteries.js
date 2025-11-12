@@ -411,6 +411,11 @@ if (typeof window.BatteriesPage === 'undefined') {
             }
         });
         
+        // Çevirileri uygula
+        if (window.translationManager && window.translationManager.initialized) {
+            window.translationManager.updateAllElements();
+        }
+        
         // Kartlar oluşturulduktan sonra durumlarını güncelle
         this.updateBatteryCardAlarmStatus();
     }
@@ -478,8 +483,10 @@ if (typeof window.BatteriesPage === 'undefined') {
             }
         }
         
-        // Çeviri attribute'larını ekle
-        this.addTranslationAttributes(cardElement);
+        // Çevirileri uygula (template'de zaten data-i18n var)
+        if (window.translationManager && window.translationManager.initialized) {
+            window.translationManager.updateAllElements();
+        }
         
         return cardElement;
     }
@@ -494,23 +501,10 @@ if (typeof window.BatteriesPage === 'undefined') {
     }
     
     updateCardTexts(language) {
-        // Debug: Fonksiyon çağrıldı mı?
-        console.log('updateCardTexts çağrıldı, dil:', language);
-        
         // TranslationManager kullan
         if (window.translationManager && window.translationManager.initialized) {
             window.translationManager.updateAllElements();
         }
-        
-        // Geriye dönük uyumluluk: data-tr ve data-en attribute'larını da güncelle
-        const elements = document.querySelectorAll('[data-tr], [data-en]');
-        elements.forEach(element => {
-            if (language === 'en' && element.hasAttribute('data-en')) {
-                element.textContent = element.getAttribute('data-en');
-            } else if (language === 'tr' && element.hasAttribute('data-tr')) {
-                element.textContent = element.getAttribute('data-tr');
-            }
-        });
         
         // Pasif balans yazısını güncelle
         const passiveBalanceTexts = document.querySelectorAll('.passive-balance-text');
@@ -522,135 +516,8 @@ if (typeof window.BatteriesPage === 'undefined') {
                 }
             }
         });
-        
-        // Mevcut kartlardaki metinleri güncelle
-        const cards = document.querySelectorAll('.battery-card');
-        console.log('Bulunan kart sayısı:', cards.length);
-        
-        cards.forEach((card, index) => {
-            console.log(`Kart ${index + 1} güncelleniyor...`);
-            
-            // Başlık
-            const title = card.querySelector('.card-title');
-            if (title) {
-                const oldText = title.textContent;
-                const newText = title.getAttribute(`data-${language}`) || title.textContent;
-                console.log(`Kart ${index + 1} başlık güncelleniyor: "${oldText}" -> "${newText}"`);
-                
-                // DOM'u güncelle
-                title.textContent = newText;
-                
-                // Güncelleme sonrası kontrol
-                const updatedText = title.textContent;
-                console.log(`Kart ${index + 1} başlık güncellendi: "${updatedText}"`);
-                
-                // DOM'da gerçekten güncellendi mi kontrol et
-                if (updatedText === newText) {
-                    console.log(`Kart ${index + 1} başlık DOM'da başarıyla güncellendi`);
-                } else {
-                    console.log(`Kart ${index + 1} başlık DOM'da güncellenemedi!`);
-                }
-            } else {
-                console.log(`Kart ${index + 1} başlık bulunamadı!`);
-            }
-            
-            // Adres etiketi
-            const addressLabel = card.querySelector('.battery-address span');
-            if (addressLabel) {
-                const labelText = addressLabel.getAttribute(`data-${language}`) || addressLabel.textContent;
-                const batteryValue = addressLabel.querySelector('.battery-value');
-                if (batteryValue) {
-                    addressLabel.innerHTML = labelText + batteryValue.outerHTML;
-                } else {
-                    addressLabel.textContent = labelText;
-                }
-            }
-            
-            // Son güncelleme etiketi
-            const updateLabel = card.querySelector('.last-update span');
-            if (updateLabel) {
-                updateLabel.textContent = updateLabel.getAttribute(`data-${language}`) || updateLabel.textContent;
-            }
-            
-            // Arka yüz başlığı
-            const backTitle = card.querySelector('.back-title');
-            if (backTitle) {
-                backTitle.textContent = backTitle.getAttribute(`data-${language}`) || backTitle.textContent;
-            }
-            
-            // Veri etiketleri
-            const voltageLabel = card.querySelector('.voltage-label');
-            if (voltageLabel) {
-                voltageLabel.textContent = voltageLabel.getAttribute(`data-${language}`) || voltageLabel.textContent;
-            }
-            
-            const temperatureLabel = card.querySelector('.temperature-label');
-            if (temperatureLabel) {
-                temperatureLabel.textContent = temperatureLabel.getAttribute(`data-${language}`) || temperatureLabel.textContent;
-            }
-            
-            const healthLabel = card.querySelector('.health-label');
-            if (healthLabel) {
-                healthLabel.textContent = healthLabel.getAttribute(`data-${language}`) || healthLabel.textContent;
-            }
-            
-            const chargeLabel = card.querySelector('.charge-label');
-            if (chargeLabel) {
-                chargeLabel.textContent = chargeLabel.getAttribute(`data-${language}`) || chargeLabel.textContent;
-            }
-        });
     }
     
-    addTranslationAttributes(cardElement) {
-        // Template'den oluşturulan kartlara çeviri attribute'larını ekle
-        const title = cardElement.querySelector('.card-title');
-        if (title) {
-            title.setAttribute('data-tr', 'Batarya Ünitesi');
-            title.setAttribute('data-en', 'Battery Unit');
-        }
-        
-        const addressLabel = cardElement.querySelector('.battery-address span');
-        if (addressLabel) {
-            addressLabel.setAttribute('data-tr', 'Adres: ');
-            addressLabel.setAttribute('data-en', 'Address: ');
-        }
-        
-        const updateLabel = cardElement.querySelector('.last-update span');
-        if (updateLabel) {
-            updateLabel.setAttribute('data-tr', 'Son güncelleme:');
-            updateLabel.setAttribute('data-en', 'Last update:');
-        }
-        
-        const backTitle = cardElement.querySelector('.back-title');
-        if (backTitle) {
-            backTitle.setAttribute('data-tr', 'Batarya Detayları');
-            backTitle.setAttribute('data-en', 'Battery Details');
-        }
-        
-        const voltageLabel = cardElement.querySelector('.voltage-label');
-        if (voltageLabel) {
-            voltageLabel.setAttribute('data-tr', 'Gerilim:');
-            voltageLabel.setAttribute('data-en', 'Voltage:');
-        }
-        
-        const temperatureLabel = cardElement.querySelector('.temperature-label');
-        if (temperatureLabel) {
-            temperatureLabel.setAttribute('data-tr', 'Sıcaklık:');
-            temperatureLabel.setAttribute('data-en', 'Temperature:');
-        }
-        
-        const healthLabel = cardElement.querySelector('.health-label');
-        if (healthLabel) {
-            healthLabel.setAttribute('data-tr', 'Sağlık:');
-            healthLabel.setAttribute('data-en', 'Health:');
-        }
-        
-        const chargeLabel = cardElement.querySelector('.charge-label');
-        if (chargeLabel) {
-            chargeLabel.setAttribute('data-tr', 'Şarj:');
-            chargeLabel.setAttribute('data-en', 'Charge:');
-        }
-    }
     
     formatValue(value, unit) {
         if (value === null || value === undefined) {
