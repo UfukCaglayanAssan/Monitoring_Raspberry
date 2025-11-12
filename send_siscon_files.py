@@ -19,7 +19,7 @@ BAUD_RATE = 9600
 BIT_TIME = int(1e6 / BAUD_RATE)
 
 # Paket Ayarları
-PACKET_SIZE = 64  # Her pakette maksimum 64 byte veri
+PACKET_SIZE = 256  # Her pakette maksimum 256 byte veri (64'ten artırıldı - daha hızlı gönderim)
 MAX_RETRY = 3     # Maksimum retry sayısı
 ACK_TIMEOUT = 2.0  # ACK bekleme süresi (saniye)
 
@@ -109,7 +109,6 @@ def send_file_start(pi, filename, file_size, wait_ack=True):
     packet.append(crc)
     
     print(f"📤 FILE_START gönderiliyor: {filename} ({file_size} byte)")
-    print(f"   Paket: {[f'0x{b:02X}' for b in packet]}")
     
     if wave_uart_send(pi, TX_PIN, packet, BIT_TIME):
         if wait_ack:
@@ -119,15 +118,15 @@ def send_file_start(pi, filename, file_size, wait_ack=True):
                 return True
             else:
                 print("⚠️ MCU hazır değil veya timeout (ACK beklemeden devam ediliyor)")
-                time.sleep(0.5)  # Kısa bekleme
+                time.sleep(0.2)  # Kısa bekleme
                 return True  # ACK beklemeden devam et
         else:
-            print("✅ FILE_START gönderildi (ACK beklemeden)")
-            time.sleep(0.5)  # Kısa bekleme
+            print("✅ FILE_START gönderildi")
+            time.sleep(0.2)  # Kısa bekleme - UART buffer için
             return True
     return False
 
-def send_file_data(pi, packet_num, data_chunk, wait_ack=True):
+def send_file_data(pi, packet_num, data_chunk, wait_ack=True, verbose=False):
     """FILE_DATA paketi gönder"""
     # Paket: Header(0x81) + CMD + PacketNum(2 byte) + DataLength + Data + CRC
     packet = bytearray([0x81])  # Header
@@ -152,24 +151,29 @@ def send_file_data(pi, packet_num, data_chunk, wait_ack=True):
         for retry in range(MAX_RETRY):
             if wave_uart_send(pi, TX_PIN, packet, BIT_TIME):
                 if wait_for_ack(pi, CMD_ACK):
-                    print(f"✅ Paket {packet_num} gönderildi ({data_len} byte)")
+                    if verbose:
+                        print(f"✅ Paket {packet_num} gönderildi ({data_len} byte)")
                     return True
                 else:
-                    print(f"⚠️ Paket {packet_num} ACK alınamadı (Retry {retry + 1}/{MAX_RETRY})")
+                    if verbose:
+                        print(f"⚠️ Paket {packet_num} ACK alınamadı (Retry {retry + 1}/{MAX_RETRY})")
                     if retry < MAX_RETRY - 1:
                         time.sleep(0.1)
             else:
-                print(f"❌ Paket {packet_num} gönderilemedi (Retry {retry + 1}/{MAX_RETRY})")
+                if verbose:
+                    print(f"❌ Paket {packet_num} gönderilemedi (Retry {retry + 1}/{MAX_RETRY})")
                 if retry < MAX_RETRY - 1:
                     time.sleep(0.1)
         
-        print(f"❌ Paket {packet_num} gönderilemedi (Max retry aşıldı)")
+        if verbose:
+            print(f"❌ Paket {packet_num} gönderilemedi (Max retry aşıldı)")
         return False
     else:
-        # ACK beklemeden gönder
+        # ACK beklemeden gönder - HIZLI MOD
         if wave_uart_send(pi, TX_PIN, packet, BIT_TIME):
-            print(f"✅ Paket {packet_num} gönderildi ({data_len} byte) - ACK beklemeden")
-            time.sleep(0.1)  # Paketler arası kısa bekleme
+            # Log sadece belirli aralıklarla (her 100 pakette bir veya %10'luk dilimlerde)
+            if verbose or packet_num % 100 == 0 or packet_num == 1:
+                print(f"📦 Paket {packet_num} gönderildi ({data_len} byte)")
             return True
         else:
             print(f"❌ Paket {packet_num} gönderilemedi")
@@ -199,8 +203,8 @@ def send_file_end(pi, filename, total_packets, wait_ack=True):
                 print(f"⚠️ FILE_END ACK alınamadı (ACK beklemeden tamamlandı): {filename}")
                 return True
         else:
-            print(f"✅ FILE_END gönderildi (ACK beklemeden): {filename}")
-            time.sleep(0.5)
+            print(f"✅ FILE_END gönderildi: {filename}")
+            time.sleep(0.2)  # Kısa bekleme
             return True
     return False
 
@@ -208,12 +212,14 @@ def send_file(pi, file_path, wait_ack=False):
     """Tek bir dosyayı gönder"""
     filename = os.path.basename(file_path)
     file_size = os.path.getsize(file_path)
+    total_packets = (file_size + PACKET_SIZE - 1) // PACKET_SIZE
     
     print(f"\n{'='*60}")
     print(f"📁 Dosya gönderiliyor: {filename}")
     print(f"   Boyut: {file_size} byte")
+    print(f"   Toplam paket: {total_packets}")
     if not wait_ack:
-        print(f"   ⚠️ TEST MODU: ACK beklemeden gönderiliyor")
+        print(f"   ⚡ HIZLI MOD: ACK beklemeden gönderiliyor")
     print(f"{'='*60}")
     
     # FILE_START gönder
@@ -225,7 +231,8 @@ def send_file(pi, file_path, wait_ack=False):
     try:
         with open(file_path, 'rb') as f:
             packet_num = 0
-            total_packets = (file_size + PACKET_SIZE - 1) // PACKET_SIZE
+            start_time = time.time()
+            last_progress_time = start_time
             
             while True:
                 chunk = f.read(PACKET_SIZE)
@@ -233,19 +240,33 @@ def send_file(pi, file_path, wait_ack=False):
                     break
                 
                 packet_num += 1
-                print(f"📦 Paket {packet_num}/{total_packets} gönderiliyor... ({len(chunk)} byte)")
                 
-                if not send_file_data(pi, packet_num, chunk, wait_ack=wait_ack):
+                # Progress göster (her 100 pakette veya her 2 saniyede bir)
+                current_time = time.time()
+                if packet_num % 100 == 0 or (current_time - last_progress_time) >= 2.0:
+                    elapsed = current_time - start_time
+                    speed = (packet_num * PACKET_SIZE) / elapsed if elapsed > 0 else 0
+                    progress = (packet_num / total_packets) * 100
+                    print(f"📦 İlerleme: {packet_num}/{total_packets} ({progress:.1f}%) - Hız: {speed:.0f} byte/sn")
+                    last_progress_time = current_time
+                
+                if not send_file_data(pi, packet_num, chunk, wait_ack=wait_ack, verbose=False):
                     print(f"❌ Dosya gönderimi başarısız: {filename}")
                     return False
                 
-                # Paketler arası kısa bekleme
+                # Paketler arası bekleme - HIZLI MOD için çok kısa veya yok
                 if not wait_ack:
-                    time.sleep(0.1)  # Test modunda biraz daha bekle
+                    # HIZLI MOD: Sadece UART buffer'ının dolmasını önlemek için minimal bekleme
+                    # 9600 baud = ~960 byte/sn, 64 byte paket = ~67ms, güvenlik için 10ms
+                    time.sleep(0.01)  # 10ms - UART buffer için yeterli
                 else:
                     time.sleep(0.05)
             
             # FILE_END gönder
+            elapsed_total = time.time() - start_time
+            avg_speed = file_size / elapsed_total if elapsed_total > 0 else 0
+            print(f"⏱️  Gönderim süresi: {elapsed_total:.2f} sn - Ortalama hız: {avg_speed:.0f} byte/sn")
+            
             if send_file_end(pi, filename, total_packets, wait_ack=wait_ack):
                 print(f"✅ Dosya başarıyla gönderildi: {filename}")
                 return True

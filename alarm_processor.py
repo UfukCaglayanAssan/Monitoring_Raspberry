@@ -56,16 +56,42 @@ class AlarmProcessor:
             
             # Alarmları kaydet
             if self.pending_alarms:
+                # Geçerli ve geçersiz alarmları ayır
+                valid_alarms = []
+                invalid_alarms = []
+                
+                for alarm in self.pending_alarms:
+                    if self._is_valid_alarm(alarm['error_code_msb'], alarm['error_code_lsb']):
+                        valid_alarms.append(alarm)
+                    else:
+                        invalid_alarms.append(alarm)
+                
+                # Geçersiz alarmları logla
+                if invalid_alarms:
+                    for alarm in invalid_alarms:
+                        print(f"⚠️ GEÇERSİZ ALARM LOG: Kol {alarm['arm']}, Batarya {alarm['battery']}, MSB {alarm['error_code_msb']}, LSB {alarm['error_code_lsb']}, Timestamp {alarm['timestamp']}")
+                
+                # Tüm alarmları veritabanına kaydet (geçerli + geçersiz)
                 success = self.db.batch_insert_alarms(self.pending_alarms)
                 if success:
-                    # Mail gönder
-                    self.send_alarm_emails(self.pending_alarms)
+                    # Sadece geçerli alarmlar için mail gönder
+                    if valid_alarms:
+                        self.send_alarm_emails(valid_alarms)
                     self.pending_alarms.clear()
             
             # Düzeltmeleri işle
             if self.pending_resolves:
                 self.process_resolves()
                 self.pending_resolves.clear()
+    
+    def _is_valid_alarm(self, error_msb, error_lsb):
+        """Alarm geçerli mi kontrol et (web_app.py ile uyumlu)"""
+        # Kol alarmı kontrolü
+        if error_lsb == 9:
+            return self.get_arm_alarm_description(error_msb) is not None
+        # Batarya alarmı kontrolü
+        else:
+            return self.get_battery_alarm_description(error_msb, error_lsb) is not None
     
     def process_resolves(self):
         """Bekleyen düzeltmeleri işle"""

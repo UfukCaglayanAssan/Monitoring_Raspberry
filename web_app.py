@@ -183,6 +183,88 @@ def api_user_info():
         }
     })
 
+@app.route('/user-management')
+@login_required
+def user_management():
+    """Kullanıcı yönetimi sayfası (sadece admin)"""
+    if session.get('user_role') != 'admin':
+        return redirect(url_for('index'))
+    return render_template('pages/user-management.html')
+
+@app.route('/api/users', methods=['GET'])
+@admin_required
+def api_get_users():
+    """Tüm kullanıcıları listele (sadece admin)"""
+    try:
+        db_instance = get_db()
+        with db_read_lock:
+            users = db_instance.get_all_users()
+        return jsonify({
+            'success': True,
+            'users': users
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Kullanıcılar yüklenemedi: {str(e)}'
+        }), 500
+
+@app.route('/api/users', methods=['POST'])
+@admin_required
+def api_create_user():
+    """Yeni kullanıcı oluştur (sadece admin)"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        password = data.get('password')
+        username = data.get('username')
+        role = data.get('role', 'guest')
+        
+        if not email or not password:
+            return jsonify({
+                'success': False,
+                'message': 'E-posta ve şifre gerekli'
+            }), 400
+        
+        if len(password) < 6:
+            return jsonify({
+                'success': False,
+                'message': 'Şifre en az 6 karakter olmalı'
+            }), 400
+        
+        db_instance = get_db()
+        with db_lock:
+            result = db_instance.create_user(email, password, username, role)
+        
+        if result['success']:
+            return jsonify(result)
+        else:
+            return jsonify(result), 400
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Kullanıcı oluşturulamadı: {str(e)}'
+        }), 500
+
+@app.route('/api/users/<int:user_id>/reset-password', methods=['POST'])
+@admin_required
+def api_reset_user_password(user_id):
+    """Kullanıcı şifresini sıfırla (sadece admin)"""
+    try:
+        db_instance = get_db()
+        with db_lock:
+            result = db_instance.reset_user_password(user_id)
+        
+        if result['success']:
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Şifre sıfırlanamadı: {str(e)}'
+        }), 500
+
 @app.route('/mail-management')
 @login_required
 def mail_management():
@@ -241,6 +323,8 @@ def get_page_html(page_name):
         return render_template('pages/trap-settings.html')
     elif page_name == 'profile':
         return render_template('pages/profile.html')
+    elif page_name == 'user-management':
+        return render_template('pages/user-management.html')
     else:
         return render_template('pages/404.html')
 

@@ -17,7 +17,7 @@
 #define MAX_FILENAME_LEN     64
 #define MAX_PACKET_SIZE      256
 #define MAX_FILE_SIZE        10240  // 10KB maksimum dosya boyutu
-#define PACKET_DATA_SIZE     64     // Her pakette maksimum 64 byte veri
+#define PACKET_DATA_SIZE     256    // Her pakette maksimum 256 byte veri (64'ten artırıldı)
 
 // Dosya Transfer Yapısı
 typedef struct {

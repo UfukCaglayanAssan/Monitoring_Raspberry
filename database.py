@@ -1500,6 +1500,89 @@ class BatteryDatabase:
             print(f"❌ Şifre güncelleme hatası: {e}")
             return False
     
+    def create_user(self, email, password, username=None, role='guest'):
+        """Yeni kullanıcı oluştur"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                import bcrypt
+                
+                # Username yoksa email'den oluştur
+                if not username:
+                    username = email.split('@')[0]
+                
+                # Şifreyi hash'le
+                password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+                
+                # Email zaten var mı kontrol et
+                cursor.execute('SELECT id FROM users WHERE email = ?', (email,))
+                if cursor.fetchone():
+                    return {'success': False, 'message': 'Bu e-posta adresi zaten kullanılıyor'}
+                
+                # Username zaten var mı kontrol et
+                cursor.execute('SELECT id FROM users WHERE username = ?', (username,))
+                if cursor.fetchone():
+                    return {'success': False, 'message': 'Bu kullanıcı adı zaten kullanılıyor'}
+                
+                # Kullanıcıyı oluştur
+                cursor.execute('''
+                    INSERT INTO users (username, email, password_hash, role, is_active)
+                    VALUES (?, ?, ?, ?, 1)
+                ''', (username, email, password_hash.decode('utf-8'), role))
+                
+                conn.commit()
+                return {'success': True, 'message': 'Kullanıcı başarıyla oluşturuldu', 'user_id': cursor.lastrowid}
+        except Exception as e:
+            print(f"❌ Kullanıcı oluşturma hatası: {e}")
+            return {'success': False, 'message': f'Kullanıcı oluşturulamadı: {str(e)}'}
+    
+    def get_all_users(self):
+        """Tüm kullanıcıları listele"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT id, username, email, role, is_active, created_at, updated_at
+                    FROM users
+                    ORDER BY created_at DESC
+                ''')
+                
+                users = []
+                for row in cursor.fetchall():
+                    users.append({
+                        'id': row[0],
+                        'username': row[1],
+                        'email': row[2],
+                        'role': row[3],
+                        'is_active': bool(row[4]),
+                        'created_at': row[5],
+                        'updated_at': row[6]
+                    })
+                
+                return users
+        except Exception as e:
+            print(f"❌ Kullanıcı listeleme hatası: {e}")
+            return []
+    
+    def reset_user_password(self, user_id, new_password='Bmsgst*1980'):
+        """Kullanıcı şifresini sıfırla (varsayılan: Bmsgst*1980)"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                import bcrypt
+                password_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
+                
+                cursor.execute('''
+                    UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                ''', (password_hash.decode('utf-8'), user_id))
+                
+                conn.commit()
+                return {'success': True, 'message': 'Şifre başarıyla sıfırlandı', 'new_password': new_password}
+        except Exception as e:
+            print(f"❌ Şifre sıfırlama hatası: {e}")
+            return {'success': False, 'message': f'Şifre sıfırlanamadı: {str(e)}'}
+    
     def get_recent_data_with_translations(self, minutes=5, arm=None, battery=None, dtype=None, data_type=None, limit=100, language='tr'):
         """Son verileri çevirilerle birlikte getir"""
         with self.get_connection() as conn:
@@ -2639,28 +2722,20 @@ class BatteryDatabase:
                         'charge_status': row[8]
                     })
                 
-                # Toplam sayfa sayısını hesapla
-                count_query = '''
-                    SELECT COUNT(*)
-                    FROM (
-                        SELECT DISTINCT timestamp, arm, k
-                        FROM battery_data
-                        WHERE k > 2
-                    ) AS subquery
-                '''
+                # COUNT sorgusu kaldırıldı - performans için
+                # Toplam sayfa sayısı gösterilmiyor, sadece sayfalama var
                 
-                cursor.execute(count_query)
-                total_count = cursor.fetchone()[0]
+                # Eğer gelen kayıt sayısı page_size'dan azsa, son sayfadayız
+                has_more = len(logs) == page_size
                 
-                total_pages = (total_count + page_size - 1) // page_size
-                
-                print(f"DEBUG database.py: {len(logs)} log verisi döndürüldü, toplam: {total_count}, sayfa: {total_pages}")
+                print(f"DEBUG database.py: {len(logs)} log verisi döndürüldü, sayfa: {page}, daha fazla var: {has_more}")
                 
                 return {
                     'logs': logs,
-                    'totalCount': total_count,
-                    'totalPages': total_pages,
-                    'currentPage': page
+                    'totalCount': None,  # COUNT yapılmıyor
+                    'totalPages': None,  # Toplam sayfa gösterilmiyor
+                    'currentPage': page,
+                    'hasMore': has_more  # Daha fazla kayıt var mı?
                 }
         except Exception as e:
             print(f"DEBUG database.py: Hata oluştu: {e}")
@@ -2821,14 +2896,76 @@ class BatteryDatabase:
             return []
 
     def get_active_alarm_count(self):
-        """Aktif alarm sayısını getir"""
+        """Aktif alarm sayısını getir (sadece geçerli alarmlar)"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
+            # Tüm aktif alarmları çek
             cursor.execute('''
-                SELECT COUNT(*) FROM alarms 
+                SELECT error_code_msb, error_code_lsb
+                FROM alarms 
                 WHERE status = 'active'
             ''')
-            return cursor.fetchone()[0]
+            rows = cursor.fetchall()
+            
+            # Geçerli alarmları say (is_valid_alarm kontrolü ile)
+            # web_app.py'deki is_valid_alarm fonksiyonunu burada da kullan
+            valid_count = 0
+            for row in rows:
+                error_msb = row[0]
+                error_lsb = row[1]
+                
+                # Geçerli alarm kontrolü
+                if self._is_valid_alarm(error_msb, error_lsb):
+                    valid_count += 1
+            
+            return valid_count
+    
+    def _is_valid_alarm(self, error_msb, error_lsb):
+        """Alarm geçerli mi kontrol et (web_app.py'deki is_valid_alarm ile aynı mantık)"""
+        # Kol alarmı kontrolü
+        if error_lsb == 9:
+            return self._get_arm_alarm_description(error_msb) is not None
+        # Batarya alarmı kontrolü
+        else:
+            return self._get_battery_alarm_description(error_msb, error_lsb) is not None
+    
+    def _get_arm_alarm_description(self, error_msb):
+        """Kol alarm açıklaması (web_app.py ile uyumlu)"""
+        if error_msb == 2:
+            return "Yüksek akım alarmı"
+        elif error_msb == 4:
+            return "Yüksek nem alarmı"
+        elif error_msb == 8:
+            return "Yüksek ortam sıcaklığı alarmı"
+        elif error_msb == 16:
+            return "Yüksek kol sıcaklığı alarmı"
+        elif error_msb == 266:
+            return "Kol verisi gelmiyor"
+        else:
+            return None
+    
+    def _get_battery_alarm_description(self, error_msb, error_lsb):
+        """Batarya alarm açıklaması (web_app.py ile uyumlu)"""
+        # MSB kontrolü (errorCodeLsb !== 1 && errorCodeMsb >= 1)
+        if error_lsb != 1 and error_msb >= 1:
+            if error_msb == 1:
+                return "Pozitif kutup başı alarmı"
+            elif error_msb == 2:
+                return "Negatif kutup başı sıcaklık alarmı"
+        
+        # LSB kontrolü (error_msb = 0 olan durumlar da dahil)
+        if error_lsb == 4:
+            return "Düşük batarya gerilim uyarısı"
+        elif error_lsb == 8:
+            return "Düşük batarya gerilimi alarmı"
+        elif error_lsb == 16:
+            return "Yüksek batarya gerilimi uyarısı"
+        elif error_lsb == 32:
+            return "Yüksek batarya gerilimi alarmı"
+        elif error_lsb == 64:
+            return "Modül sıcaklık alarmı"
+        
+        return None
     
     def create_missing_tables(self):
         """Eksik tabloları oluştur (migration)"""

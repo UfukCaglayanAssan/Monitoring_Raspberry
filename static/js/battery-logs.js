@@ -5,7 +5,7 @@ if (typeof window.BatteryLogsPage === 'undefined') {
     constructor() {
         this.currentPage = 1;
         this.pageSize = 50;
-        this.totalPages = 1;
+        this.hasMore = false;  // Toplam sayfa yerine "daha fazla var mı?" kontrolü
         this.filters = {
             arm: '',
             battery: '',
@@ -137,7 +137,7 @@ if (typeof window.BatteryLogsPage === 'undefined') {
                 const data = await response.json();
                 console.log('Battery logs API response:', data);
                 this.logs = data.logs || [];
-                this.totalPages = data.totalPages || 1;
+                this.hasMore = data.hasMore || false;  // Daha fazla kayıt var mı?
                 
                 console.log('Logs loaded:', this.logs.length, 'items');
                 this.renderLogs();
@@ -238,10 +238,17 @@ if (typeof window.BatteryLogsPage === 'undefined') {
 
     updatePagination() {
         document.getElementById('currentPage').textContent = this.currentPage;
-        document.getElementById('totalPages').textContent = this.totalPages;
+        // Toplam sayfa sayısı gösterilmiyor
+        const totalPagesElement = document.getElementById('totalPages');
+        if (totalPagesElement) {
+            totalPagesElement.textContent = '-';  // Veya gizle
+        }
         
+        // Önceki sayfa butonu: ilk sayfada devre dışı
         document.getElementById('prevPage').disabled = this.currentPage <= 1;
-        document.getElementById('nextPage').disabled = this.currentPage >= this.totalPages;
+        
+        // Sonraki sayfa butonu: daha fazla kayıt yoksa devre dışı
+        document.getElementById('nextPage').disabled = !this.hasMore;
     }
 
     previousPage() {
@@ -252,7 +259,7 @@ if (typeof window.BatteryLogsPage === 'undefined') {
     }
 
     nextPage() {
-        if (this.currentPage < this.totalPages) {
+        if (this.hasMore) {
             this.currentPage++;
             this.loadLogs();
         }
