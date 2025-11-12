@@ -1519,11 +1519,6 @@ class BatteryDatabase:
                 if cursor.fetchone():
                     return {'success': False, 'message': 'Bu e-posta adresi zaten kullanılıyor'}
                 
-                # Username zaten var mı kontrol et
-                cursor.execute('SELECT id FROM users WHERE username = ?', (username,))
-                if cursor.fetchone():
-                    return {'success': False, 'message': 'Bu kullanıcı adı zaten kullanılıyor'}
-                
                 # Kullanıcıyı oluştur
                 cursor.execute('''
                     INSERT INTO users (username, email, password_hash, role, is_active)
@@ -1564,8 +1559,8 @@ class BatteryDatabase:
             print(f"❌ Kullanıcı listeleme hatası: {e}")
             return []
     
-    def reset_user_password(self, user_id, new_password='Bmsgst*1980'):
-        """Kullanıcı şifresini sıfırla (varsayılan: Bmsgst*1980)"""
+    def reset_user_password(self, user_id, new_password='Bms.dfpw*1980'):
+        """Kullanıcı şifresini sıfırla (varsayılan: Bms.dfpw*1980)"""
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()

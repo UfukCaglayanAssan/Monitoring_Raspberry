@@ -1,21 +1,21 @@
 <!-- Trap Ayarları Sayfası İçeriği -->
 <div class="trap-settings-page">
     <div class="page-header">
-        <h2 class="page-title" data-tr="Trap Ayarları" data-en="Trap Settings">Trap Ayarları</h2>
-        <p class="page-description" data-tr="SNMP Trap ayarlarını yönetin" data-en="Manage SNMP Trap settings">SNMP Trap ayarlarını yönetin</p>
+        <h2 class="page-title" data-i18n="trapSettings.title">Trap Ayarları</h2>
+        <p class="page-description" data-i18n="trapSettings.description">SNMP Trap ayarlarını yönetin</p>
     </div>
 
     <!-- Trap Ayarları Formu -->
     <div class="settings-container">
         <div class="settings-card">
             <div class="card-header">
-                <h3 data-tr="Trap Sunucu Ayarları" data-en="Trap Server Settings">Trap Sunucu Ayarları</h3>
+                <h3 data-i18n="trapSettings.trapServerSettings">Trap Sunucu Ayarları</h3>
             </div>
             <div class="card-content">
                 <form id="trapSettingsForm" class="settings-form">
                     <div class="form-group form-group-toggle">
                         <label for="trapEnabled" class="form-label">
-                            <span data-tr="Trap Aktif" data-en="Trap Enabled">Trap Aktif</span>
+                            <span data-i18n="trapSettings.trapEnabled">Trap Aktif</span>
                         </label>
                         <div class="toggle-switch">
                             <input type="checkbox" id="trapEnabled" name="trapEnabled" class="toggle-input">
@@ -28,7 +28,7 @@
                     <div class="form-group">
                         <label for="trapServer" class="form-label">
                             <i class="fas fa-server"></i>
-                            <span data-tr="Trap Sunucu Adresi" data-en="Trap Server Address">Trap Sunucu Adresi</span>
+                            <span data-i18n="trapSettings.trapServerAddress">Trap Sunucu Adresi</span>
                         </label>
                         <input type="text" id="trapServer" name="trapServer" class="form-input" placeholder="192.168.1.100">
                     </div>
@@ -36,7 +36,7 @@
                     <div class="form-group">
                         <label for="trapPort" class="form-label">
                             <i class="fas fa-network-wired"></i>
-                            <span data-tr="Trap Port" data-en="Trap Port">Trap Port</span>
+                            <span data-i18n="trapSettings.trapPort">Trap Port</span>
                         </label>
                         <input type="number" id="trapPort" name="trapPort" class="form-input" placeholder="162" min="1" max="65535">
                     </div>
@@ -44,7 +44,7 @@
                     <div class="form-group">
                         <label for="trapCommunity" class="form-label">
                             <i class="fas fa-key"></i>
-                            <span data-tr="Community String" data-en="Community String">Community String</span>
+                            <span data-i18n="trapSettings.communityString">Community String</span>
                         </label>
                         <input type="text" id="trapCommunity" name="trapCommunity" class="form-input" placeholder="public">
                     </div>
@@ -52,12 +52,12 @@
                     <div class="form-group">
                         <label for="trapVersion" class="form-label">
                             <i class="fas fa-code-branch"></i>
-                            <span data-tr="SNMP Versiyonu" data-en="SNMP Version">SNMP Versiyonu</span>
+                            <span data-i18n="trapSettings.snmpVersion">SNMP Versiyonu</span>
                         </label>
                         <select id="trapVersion" name="trapVersion" class="form-select">
-                            <option value="1" data-tr="SNMPv1" data-en="SNMPv1">SNMPv1</option>
-                            <option value="2c" data-tr="SNMPv2c" data-en="SNMPv2c">SNMPv2c</option>
-                            <option value="3" data-tr="SNMPv3" data-en="SNMPv3">SNMPv3</option>
+                            <option value="1" data-i18n="trapSettings.snmpv1">SNMPv1</option>
+                            <option value="2c" data-i18n="trapSettings.snmpv2c">SNMPv2c</option>
+                            <option value="3" data-i18n="trapSettings.snmpv3">SNMPv3</option>
                         </select>
                     </div>
 
@@ -65,7 +65,7 @@
                     <div class="form-group snmpv3-field" id="trapUsernameGroup" style="display: none;">
                         <label for="trapUsername" class="form-label">
                             <i class="fas fa-user"></i>
-                            <span data-tr="Kullanıcı Adı" data-en="Username">Kullanıcı Adı</span>
+                            <span data-i18n="trapSettings.username">Kullanıcı Adı</span>
                         </label>
                         <input type="text" id="trapUsername" name="trapUsername" class="form-input" placeholder="snmpuser">
                     </div>
@@ -73,7 +73,7 @@
                     <div class="form-group snmpv3-field" id="trapAuthPasswordGroup" style="display: none;">
                         <label for="trapAuthPassword" class="form-label">
                             <i class="fas fa-lock"></i>
-                            <span data-tr="Auth Şifresi" data-en="Auth Password">Auth Şifresi</span>
+                            <span data-i18n="trapSettings.authPassword">Auth Şifresi</span>
                         </label>
                         <input type="password" id="trapAuthPassword" name="trapAuthPassword" class="form-input" placeholder="authpassword">
                     </div>
@@ -81,7 +81,7 @@
                     <div class="form-group snmpv3-field" id="trapPrivPasswordGroup" style="display: none;">
                         <label for="trapPrivPassword" class="form-label">
                             <i class="fas fa-key"></i>
-                            <span data-tr="Priv Şifresi" data-en="Priv Password">Priv Şifresi</span>
+                            <span data-i18n="trapSettings.privPassword">Priv Şifresi</span>
                         </label>
                         <input type="password" id="trapPrivPassword" name="trapPrivPassword" class="form-input" placeholder="privpassword">
                     </div>
@@ -89,7 +89,7 @@
                     <div class="form-group">
                         <label for="trapInterval" class="form-label">
                             <i class="fas fa-clock"></i>
-                            <span data-tr="Trap Gönderim Aralığı (saniye)" data-en="Trap Send Interval (seconds)">Trap Gönderim Aralığı (saniye)</span>
+                            <span data-i18n="trapSettings.trapSendInterval">Trap Gönderim Aralığı (saniye)</span>
                         </label>
                         <input type="number" id="trapInterval" name="trapInterval" class="form-input" placeholder="30" min="1" max="3600">
                     </div>
@@ -97,15 +97,15 @@
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i>
-                            <span data-tr="Ayarları Kaydet" data-en="Save Settings">Ayarları Kaydet</span>
+                            <span data-i18n="trapSettings.saveSettings">Ayarları Kaydet</span>
                         </button>
                         <button type="button" id="testTrapBtn" class="btn btn-secondary">
                             <i class="fas fa-paper-plane"></i>
-                            <span data-tr="Test Trap Gönder" data-en="Send Test Trap">Test Trap Gönder</span>
+                            <span data-i18n="trapSettings.testTrap">Test Trap Gönder</span>
                         </button>
                         <button type="button" id="resetTrapBtn" class="btn btn-outline">
                             <i class="fas fa-undo"></i>
-                            <span data-tr="Sıfırla" data-en="Reset">Sıfırla</span>
+                            <span data-i18n="trapSettings.reset">Sıfırla</span>
                         </button>
                     </div>
                 </form>

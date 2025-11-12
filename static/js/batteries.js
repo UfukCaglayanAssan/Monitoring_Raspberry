@@ -60,6 +60,13 @@ if (typeof window.BatteriesPage === 'undefined') {
                     this.selectArm(arm);
                 }
             });
+            
+            // Dil değişikliği dinleyicisi
+            window.addEventListener('languageChanged', (e) => {
+                console.log('🌐 Bataryalar sayfası - Dil değişti:', e.detail.language);
+                this.onLanguageChanged(e.detail.language);
+            });
+            
             this.eventsBound = true;
             console.log('🔗 Event delegation bağlandı');
         }
@@ -488,6 +495,16 @@ if (typeof window.BatteriesPage === 'undefined') {
     updateCardTexts(language) {
         // Debug: Fonksiyon çağrıldı mı?
         console.log('updateCardTexts çağrıldı, dil:', language);
+        
+        // Tüm data-tr ve data-en attribute'larına sahip elementleri güncelle
+        const elements = document.querySelectorAll('[data-tr], [data-en]');
+        elements.forEach(element => {
+            if (language === 'en' && element.hasAttribute('data-en')) {
+                element.textContent = element.getAttribute('data-en');
+            } else if (language === 'tr' && element.hasAttribute('data-tr')) {
+                element.textContent = element.getAttribute('data-tr');
+            }
+        });
         
         // Mevcut kartlardaki metinleri güncelle
         const cards = document.querySelectorAll('.battery-card');

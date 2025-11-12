@@ -34,8 +34,46 @@ class App {
 
     init() {
         this.bindEvents();
+        this.initLanguage(); // Dil sistemini başlat
         this.loadPage(this.currentPage); // localStorage'dan gelen sayfa veya summary
         this.startAlarmCountRefresh(); // Alarm sayısı güncellemeyi başlat
+    }
+
+    initLanguage() {
+        // localStorage'dan dil tercihini oku
+        const savedLanguage = localStorage.getItem('language') || 'tr';
+        this.setLanguage(savedLanguage);
+    }
+
+    async setLanguage(language) {
+        // TranslationManager kullan
+        if (window.translationManager) {
+            await window.translationManager.setLanguage(language);
+        }
+        
+        // Dil butonlarını güncelle
+        const langTr = document.getElementById('langTr');
+        const langEn = document.getElementById('langEn');
+        
+        if (langTr && langEn) {
+            if (language === 'tr') {
+                langTr.classList.add('active');
+                langEn.classList.remove('active');
+            } else {
+                langEn.classList.add('active');
+                langTr.classList.remove('active');
+            }
+        }
+        
+        // Geriye dönük uyumluluk: data-tr ve data-en attribute'larını da güncelle
+        const elements = document.querySelectorAll('[data-tr], [data-en]');
+        elements.forEach(element => {
+            if (language === 'en' && element.hasAttribute('data-en')) {
+                element.textContent = element.getAttribute('data-en');
+            } else if (language === 'tr' && element.hasAttribute('data-tr')) {
+                element.textContent = element.getAttribute('data-tr');
+            }
+        });
     }
 
     bindEvents() {
@@ -161,6 +199,22 @@ class App {
                 console.log('🔔 Bell icon tıklandı - Alarms sayfasına gidiliyor');
                 this.loadPage('alarms');
             });
+
+            // Dil butonları
+            const langTr = document.getElementById('langTr');
+            const langEn = document.getElementById('langEn');
+            
+            if (langTr) {
+                langTr.addEventListener('click', () => {
+                    this.setLanguage('tr');
+                });
+            }
+            
+            if (langEn) {
+                langEn.addEventListener('click', () => {
+                    this.setLanguage('en');
+                });
+            }
 
             this.eventsBound = true;
         }

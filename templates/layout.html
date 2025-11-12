@@ -39,38 +39,38 @@
                     <li class="nav-item active">
                         <a href="#" class="nav-link" data-page="summary">
                             <i class="fas fa-home"></i>
-                            <span>Özet</span>
+                            <span data-i18n="menu.summary">Özet</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="#" class="nav-link" data-page="alarms">
                             <i class="fas fa-exclamation-triangle"></i>
-                            <span>Alarmlar</span>
+                            <span data-i18n="menu.alarms">Alarmlar</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="#" class="nav-link" data-page="batteries">
                             <i class="fas fa-battery-three-quarters"></i>
-                            <span>Bataryalar</span>
+                            <span data-i18n="menu.batteries">Bataryalar</span>
                         </a>
                     </li>
                     <li class="nav-item has-submenu">
                         <a href="#" class="nav-link" data-toggle="submenu">
                             <i class="fas fa-file-alt"></i>
-                            <span>Loglar</span>
+                            <span data-i18n="menu.logs">Loglar</span>
                             <i class="fas fa-chevron-down submenu-arrow"></i>
                         </a>
                         <ul class="submenu">
                             <li>
                                 <a href="#" class="submenu-link" data-page="battery-logs">
                                     <i class="fas fa-battery-three-quarters"></i>
-                                    <span>Batarya Verileri</span>
+                                    <span data-i18n="menu.batteryData">Batarya Verileri</span>
                                 </a>
                             </li>
                             <li>
                                 <a href="#" class="submenu-link" data-page="arm-logs">
                                     <i class="fas fa-industry"></i>
-                                    <span>Kol Verileri</span>
+                                    <span data-i18n="menu.armData">Kol Verileri</span>
                                 </a>
                             </li>
                         </ul>
@@ -78,50 +78,50 @@
                     <li class="nav-item">
                         <a href="#" class="nav-link" data-page="configuration">
                             <i class="fas fa-cog"></i>
-                            <span>Konfigürasyon</span>
+                            <span data-i18n="menu.configuration">Konfigürasyon</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="#" class="nav-link" data-page="data-retrieval">
                             <i class="fas fa-database"></i>
-                            <span>Veri Alma</span>
+                            <span data-i18n="menu.dataRetrieval">Veri Alma</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="#" class="nav-link" data-page="mail-management">
                             <i class="fas fa-envelope"></i>
-                            <span>Mail Yönetimi</span>
+                            <span data-i18n="menu.mailManagement">Mail Yönetimi</span>
                         </a>
                     </li>
                     <li class="nav-item has-submenu">
                         <a href="#" class="nav-link" data-toggle="submenu">
                             <i class="fas fa-network-wired"></i>
-                            <span>Ağ Ayarları</span>
+                            <span data-i18n="menu.networkSettings">Ağ Ayarları</span>
                             <i class="fas fa-chevron-down submenu-arrow"></i>
                         </a>
                         <ul class="submenu">
                             <li>
                                 <a href="#" class="submenu-link" data-page="trap-settings">
                                     <i class="fas fa-broadcast-tower"></i>
-                                    <span>SNMP Trap</span>
+                                    <span data-i18n="menu.trapSettings">SNMP Trap</span>
                                 </a>
                             </li>
                             <li>
                                 <a href="#" class="submenu-link" data-page="mail-server-config">
                                     <i class="fas fa-server"></i>
-                                    <span>Mail Sunucu Konfigürasyonu</span>
+                                    <span data-i18n="menu.mailServerConfig">Mail Sunucu Konfigürasyonu</span>
                                 </a>
                             </li>
                             <li>
                                 <a href="#" class="submenu-link" data-page="interface-ip-settings">
                                     <i class="fas fa-globe"></i>
-                                    <span>Arayüz IP Ayarları</span>
+                                    <span data-i18n="menu.interfaceIpSettings">Arayüz IP Ayarları</span>
                                 </a>
                             </li>
                             <li>
                                 <a href="#" class="submenu-link" data-page="ftp-settings">
                                     <i class="fas fa-shield-alt"></i>
-                                    <span>SFTP Ayarları</span>
+                                    <span data-i18n="menu.sftpSettings">SFTP Ayarları</span>
                                 </a>
                             </li>
                         </ul>
@@ -134,13 +134,13 @@
                     <li class="nav-item" data-requires-admin>
                         <a href="#" class="nav-link" data-page="user-management">
                             <i class="fas fa-users-cog"></i>
-                            <span>Kullanıcı Yönetimi</span>
+                            <span data-i18n="menu.userManagement">Kullanıcı Yönetimi</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="#" class="nav-link" data-page="profile">
                             <i class="fas fa-user"></i>
-                            <span>Profil</span>
+                            <span data-i18n="common.profile">Profil</span>
                         </a>
                     </li>
                 </ul>
@@ -156,6 +156,16 @@
                 </div>
                 
                 <div class="header-right">
+                    <!-- Dil Seçici -->
+                    <div class="language-switcher">
+                        <button class="lang-btn" id="langTr" data-lang="tr" title="Türkçe">
+                            <span>TR</span>
+                        </button>
+                        <button class="lang-btn" id="langEn" data-lang="en" title="English">
+                            <span>EN</span>
+                        </button>
+                    </div>
+                    
                     <!-- Kullanıcı Bilgisi -->
                     <div class="user-info" id="userInfoDropdown">
                         <div class="user-avatar">
@@ -168,11 +178,11 @@
                         <div class="user-dropdown">
                             <a href="#" class="dropdown-link" data-page="profile">
                                 <i class="fas fa-user"></i>
-                                <span>Profil</span>
+                                <span data-i18n="common.profile">Profil</span>
                             </a>
                             <a href="#" class="dropdown-link" id="logoutBtn">
                                 <i class="fas fa-sign-out-alt"></i>
-                                <span>Çıkış Yap</span>
+                                <span data-i18n="common.logout">Çıkış Yap</span>
                             </a>
                         </div>
                     </div>
@@ -196,6 +206,7 @@
     </div>
 
     <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/translation.js') }}"></script>
     <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block scripts %}{% endblock %}

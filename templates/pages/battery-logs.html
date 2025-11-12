@@ -4,26 +4,26 @@
     <div class="filters-section">
         <div class="filters-grid">
             <div class="filter-group">
-                <label for="armFilter" data-tr="Kol Numarası" data-en="Arm Number">Kol Numarası</label>
+                <label for="armFilter" data-i18n="batteryLogs.armNumber">Kol Numarası</label>
                 <select id="armFilter" class="filter-input">
-                    <option value="">Tüm Kollar</option>
+                    <option value="" data-i18n="batteryLogs.allArms">Tüm Kollar</option>
                 </select>
             </div>
             
             <div class="filter-group">
-                <label for="batteryFilter" data-tr="Batarya Adresi" data-en="Battery Address">Batarya Adresi</label>
+                <label for="batteryFilter" data-i18n="batteryLogs.batteryAddress">Batarya Adresi</label>
                 <select id="batteryFilter" class="filter-input" disabled>
-                    <option value="">Önce kol seçiniz</option>
+                    <option value="" data-i18n="batteryLogs.selectArmFirst">Önce kol seçiniz</option>
                 </select>
             </div>
             
             <div class="filter-group">
-                <label for="startDate" data-tr="Başlangıç" data-en="Start Date">Başlangıç</label>
+                <label for="startDate" data-i18n="batteryLogs.startDate">Başlangıç</label>
                 <input type="date" id="startDate" class="filter-input">
             </div>
             
             <div class="filter-group">
-                <label for="endDate" data-tr="Bitiş" data-en="End Date">Bitiş</label>
+                <label for="endDate" data-i18n="batteryLogs.endDate">Bitiş</label>
                 <input type="date" id="endDate" class="filter-input">
             </div>
         </div>
@@ -31,11 +31,11 @@
         <div class="filter-actions">
             <button class="btn btn-secondary" id="clearFilters">
                 <i class="fas fa-times"></i>
-                <span data-tr="Filtreleri Temizle" data-en="Clear Filters">Filtreleri Temizle</span>
+                <span data-i18n="common.clearFilters">Filtreleri Temizle</span>
             </button>
             <button class="btn btn-primary" id="applyFilters">
                 <i class="fas fa-filter"></i>
-                <span data-tr="Filtrele" data-en="Filter">Filtrele</span>
+                <span data-i18n="common.filter">Filtrele</span>
             </button>
         </div>
     </div>
@@ -43,15 +43,15 @@
     <!-- Log Tablosu -->
     <div class="logs-table-container">
         <div class="table-header">
-            <h3 data-tr="Batarya Verileri" data-en="Battery Data">Batarya Verileri</h3>
+            <h3 data-i18n="batteryLogs.title">Batarya Verileri</h3>
             <div class="table-actions">
                 <button class="btn btn-outline" id="refreshLogs">
                     <i class="fas fa-sync-alt"></i>
-                    <span data-tr="Yenile" data-en="Refresh">Yenile</span>
+                    <span data-i18n="common.refresh">Yenile</span>
                 </button>
                 <button class="btn btn-outline" id="exportLogs">
                     <i class="fas fa-download"></i>
-                    <span data-tr="Dışa Aktar" data-en="Export">Dışa Aktar</span>
+                    <span data-i18n="common.export">Dışa Aktar</span>
                 </button>
             </div>
         </div>
@@ -60,15 +60,15 @@
             <table class="logs-table">
                 <thead>
                     <tr>
-                        <th data-tr="ZAMAN" data-en="TIME">ZAMAN</th>
-                        <th data-tr="KOL" data-en="ARM">KOL</th>
-                        <th data-tr="BATARYA ADRESİ" data-en="BATTERY ADDRESS">BATARYA ADRESİ</th>
-                        <th data-tr="GERİLİM" data-en="VOLTAGE">GERİLİM</th>
-                        <th data-tr="ŞARJ DURUMU" data-en="CHARGE STATUS">ŞARJ DURUMU</th>
-                        <th data-tr="MODÜL SICAKLIĞI" data-en="MODULE TEMPERATURE">MODÜL SICAKLIĞI</th>
-                        <th data-tr="POZİTİF KUTUP SICAKLIĞI" data-en="POSITIVE POLE TEMP">POZİTİF KUTUP SICAKLIĞI</th>
-                        <th data-tr="NEGATİF KUTUP SICAKLIĞI" data-en="NEGATIVE POLE TEMP">NEGATİF KUTUP SICAKLIĞI</th>
-                        <th data-tr="SAĞLIK DURUMU" data-en="HEALTH STATUS">SAĞLIK DURUMU</th>
+                        <th data-i18n="batteryLogs.time">ZAMAN</th>
+                        <th data-i18n="batteryLogs.arm">KOL</th>
+                        <th data-i18n="batteryLogs.batteryAddressHeader">BATARYA ADRESİ</th>
+                        <th data-i18n="batteryLogs.voltage">GERİLİM</th>
+                        <th data-i18n="batteryLogs.chargeStatus">ŞARJ DURUMU</th>
+                        <th data-i18n="batteryLogs.moduleTemperature">MODÜL SICAKLIĞI</th>
+                        <th data-i18n="batteryLogs.positivePoleTemp">POZİTİF KUTUP SICAKLIĞI</th>
+                        <th data-i18n="batteryLogs.negativePoleTemp">NEGATİF KUTUP SICAKLIĞI</th>
+                        <th data-i18n="batteryLogs.healthStatus">SAĞLIK DURUMU</th>
                     </tr>
                 </thead>
                 <tbody id="batteryLogsTableBody">
@@ -81,18 +81,18 @@
         <div class="pagination">
             <button class="pagination-btn" id="prevPage" disabled>
                 <i class="fas fa-chevron-left"></i>
-                <span data-tr="Önceki" data-en="Previous">Önceki</span>
+                <span data-i18n="common.previous">Önceki</span>
             </button>
             
             <div class="pagination-info">
-                <span data-tr="Sayfa" data-en="Page">Sayfa</span>
+                <span data-i18n="common.page">Sayfa</span>
                 <span id="currentPage">1</span>
-                <span data-tr="/ toplam" data-en="/ of">/ toplam</span>
+                <span data-i18n="common.of">/ toplam</span>
                 <span id="totalPages">1</span>
             </div>
             
             <button class="pagination-btn" id="nextPage">
-                <span data-tr="Sonraki" data-en="Next">Sonraki</span>
+                <span data-i18n="common.next">Sonraki</span>
                 <i class="fas fa-chevron-right"></i>
             </button>
         </div>

@@ -4,17 +4,17 @@
     <div class="filters-section">
         <div class="filters-grid">
             <div class="filter-group">
-                <label for="armFilter" data-tr="Kol Numarası" data-en="Arm Number">Kol Numarası</label>
-                <input type="text" id="armFilter" placeholder="Kol numarası giriniz" class="filter-input">
+                <label for="armFilter" data-i18n="armLogs.armNumber">Kol Numarası</label>
+                <input type="text" id="armFilter" data-i18n-placeholder="armLogs.armNumberPlaceholder" placeholder="Kol numarası giriniz" class="filter-input">
             </div>
             
             <div class="filter-group">
-                <label for="startDate" data-tr="Başlangıç" data-en="Start Date">Başlangıç</label>
+                <label for="startDate" data-i18n="armLogs.startDate">Başlangıç</label>
                 <input type="date" id="startDate" class="filter-input">
             </div>
             
             <div class="filter-group">
-                <label for="endDate" data-tr="Bitiş" data-en="End Date">Bitiş</label>
+                <label for="endDate" data-i18n="armLogs.endDate">Bitiş</label>
                 <input type="date" id="endDate" class="filter-input">
             </div>
         </div>
@@ -22,11 +22,11 @@
         <div class="filter-actions">
             <button class="btn btn-secondary" id="clearFilters">
                 <i class="fas fa-times"></i>
-                <span data-tr="Filtreleri Temizle" data-en="Clear Filters">Filtreleri Temizle</span>
+                <span data-i18n="common.clearFilters">Filtreleri Temizle</span>
             </button>
             <button class="btn btn-primary" id="applyFilters">
                 <i class="fas fa-filter"></i>
-                <span data-tr="Filtrele" data-en="Filter">Filtrele</span>
+                <span data-i18n="common.filter">Filtrele</span>
             </button>
         </div>
     </div>
@@ -34,15 +34,15 @@
     <!-- Log Tablosu -->
     <div class="logs-table-container">
         <div class="table-header">
-            <h3 data-tr="Kol Verileri" data-en="Arm Data">Kol Verileri</h3>
+            <h3 data-i18n="armLogs.title">Kol Verileri</h3>
             <div class="table-actions">
                 <button class="btn btn-outline" id="refreshLogs">
                     <i class="fas fa-sync-alt"></i>
-                    <span data-tr="Yenile" data-en="Refresh">Yenile</span>
+                    <span data-i18n="common.refresh">Yenile</span>
                 </button>
                 <button class="btn btn-outline" id="exportLogs">
                     <i class="fas fa-download"></i>
-                    <span data-tr="Dışa Aktar" data-en="Export">Dışa Aktar</span>
+                    <span data-i18n="common.export">Dışa Aktar</span>
                 </button>
             </div>
         </div>
@@ -51,12 +51,12 @@
             <table class="logs-table">
                 <thead>
                     <tr>
-                        <th data-tr="KOL" data-en="ARM">KOL</th>
-                        <th data-tr="ZAMAN" data-en="TIME">ZAMAN</th>
-                        <th data-tr="AKIM" data-en="CURRENT">AKIM</th>
-                        <th data-tr="NEM" data-en="HUMIDITY">NEM</th>
-                        <th data-tr="MODÜL SICAKLIĞI" data-en="MODULE TEMPERATURE">MODÜL SICAKLIĞI</th>
-                        <th data-tr="ORTAM SICAKLIĞI" data-en="AMBIENT TEMPERATURE">ORTAM SICAKLIĞI</th>
+                        <th data-i18n="armLogs.arm">KOL</th>
+                        <th data-i18n="armLogs.time">ZAMAN</th>
+                        <th data-i18n="armLogs.current">AKIM</th>
+                        <th data-i18n="armLogs.humidity">NEM</th>
+                        <th data-i18n="armLogs.moduleTemperature">MODÜL SICAKLIĞI</th>
+                        <th data-i18n="armLogs.ambientTemperature">ORTAM SICAKLIĞI</th>
                     </tr>
                 </thead>
                 <tbody id="armLogsTableBody">
@@ -69,18 +69,18 @@
         <div class="pagination">
             <button class="pagination-btn" id="prevPage" disabled>
                 <i class="fas fa-chevron-left"></i>
-                <span data-tr="Önceki" data-en="Previous">Önceki</span>
+                <span data-i18n="common.previous">Önceki</span>
             </button>
             
             <div class="pagination-info">
-                <span data-tr="Sayfa" data-en="Page">Sayfa</span>
+                <span data-i18n="common.page">Sayfa</span>
                 <span id="currentPage">1</span>
-                <span data-tr="/ toplam" data-en="/ of">/ toplam</span>
+                <span data-i18n="common.of">/ toplam</span>
                 <span id="totalPages">1</span>
             </div>
             
             <button class="pagination-btn" id="nextPage">
-                <span data-tr="Sonraki" data-en="Next">Sonraki</span>
+                <span data-i18n="common.next">Sonraki</span>
                 <i class="fas fa-chevron-right"></i>
             </button>
         </div>

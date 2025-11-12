@@ -90,7 +90,7 @@ if (typeof window.UserManagementPage === 'undefined') {
             if (filteredUsers.length === 0) {
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="7" class="text-center">
+                        <td colspan="5" class="text-center">
                             <div class="no-data-message">
                                 <i class="fas fa-users"></i>
                                 <p>Henüz kullanıcı bulunmuyor</p>
@@ -106,10 +106,6 @@ if (typeof window.UserManagementPage === 'undefined') {
                     ? '<span class="badge badge-danger">Admin</span>' 
                     : '<span class="badge badge-secondary">Guest</span>';
                 
-                const statusBadge = user.is_active 
-                    ? '<span class="badge badge-success">Aktif</span>' 
-                    : '<span class="badge badge-warning">Pasif</span>';
-                
                 const createdDate = user.created_at 
                     ? new Date(user.created_at).toLocaleString('tr-TR') 
                     : '-';
@@ -117,10 +113,8 @@ if (typeof window.UserManagementPage === 'undefined') {
                 return `
                     <tr>
                         <td>${user.id}</td>
-                        <td>${user.username}</td>
                         <td>${user.email}</td>
                         <td>${roleBadge}</td>
-                        <td>${statusBadge}</td>
                         <td>${createdDate}</td>
                         <td>
                             <button class="btn btn-sm btn-warning reset-password-btn" data-user-id="${user.id}" data-user-email="${user.email}">
@@ -147,7 +141,7 @@ if (typeof window.UserManagementPage === 'undefined') {
             if (tableBody) {
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="7" class="text-center">
+                        <td colspan="5" class="text-center">
                             <div class="no-data-message">
                                 <i class="fas fa-exclamation-triangle"></i>
                                 <p>${message}</p>

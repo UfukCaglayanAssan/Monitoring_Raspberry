@@ -1,10 +1,10 @@
 <div class="mail-management-page">
     <div class="page-header">
-        <h2 data-tr="Mail Yönetimi" data-en="Mail Management">Mail Yönetimi</h2>
+        <h2 data-i18n="mailManagement.title">Mail Yönetimi</h2>
         <div class="header-actions">
             <button id="addRecipientBtn" class="btn btn-primary">
                 <i class="fas fa-plus"></i>
-                <span data-tr="Yeni Alıcı Ekle" data-en="Add New Recipient">Yeni Alıcı Ekle</span>
+                <span data-i18n="mailManagement.addNewRecipient">Yeni Alıcı Ekle</span>
             </button>
         </div>
     </div>
@@ -19,25 +19,25 @@
     <div id="addRecipientModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 data-tr="Yeni Mail Alıcısı Ekle" data-en="Add New Mail Recipient">Yeni Mail Alıcısı Ekle</h3>
+                <h3 data-i18n="mailManagement.addNewMailRecipient">Yeni Mail Alıcısı Ekle</h3>
                 <span class="close">&times;</span>
             </div>
             <div class="modal-body">
                 <form id="addRecipientForm">
                     <div class="form-group">
-                        <label for="recipientName" data-tr="Ad Soyad" data-en="Full Name">Ad Soyad</label>
+                        <label for="recipientName" data-i18n="mailManagement.fullName">Ad Soyad</label>
                         <input type="text" id="recipientName" name="name" required>
                     </div>
                     <div class="form-group">
-                        <label for="recipientEmail" data-tr="E-mail Adresi" data-en="Email Address">E-mail Adresi</label>
+                        <label for="recipientEmail" data-i18n="mailManagement.emailAddress">E-mail Adresi</label>
                         <input type="email" id="recipientEmail" name="email" required>
                     </div>
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" id="cancelAdd">
-                            <span data-tr="İptal" data-en="Cancel">İptal</span>
+                            <span data-i18n="common.cancel">İptal</span>
                         </button>
                         <button type="submit" class="btn btn-primary">
-                            <span data-tr="Ekle" data-en="Add">Ekle</span>
+                            <span data-i18n="mailManagement.add">Ekle</span>
                         </button>
                     </div>
                 </form>
@@ -49,26 +49,26 @@
     <div id="editRecipientModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 data-tr="Mail Alıcısını Düzenle" data-en="Edit Mail Recipient">Mail Alıcısını Düzenle</h3>
+                <h3 data-i18n="mailManagement.editRecipient">Mail Alıcısını Düzenle</h3>
                 <span class="close">&times;</span>
             </div>
             <div class="modal-body">
                 <form id="editRecipientForm">
                     <input type="hidden" id="editRecipientId" name="id">
                     <div class="form-group">
-                        <label for="editRecipientName" data-tr="Ad Soyad" data-en="Full Name">Ad Soyad</label>
+                        <label for="editRecipientName" data-i18n="mailManagement.fullName">Ad Soyad</label>
                         <input type="text" id="editRecipientName" name="name" required>
                     </div>
                     <div class="form-group">
-                        <label for="editRecipientEmail" data-tr="E-mail Adresi" data-en="Email Address">E-mail Adresi</label>
+                        <label for="editRecipientEmail" data-i18n="mailManagement.emailAddress">E-mail Adresi</label>
                         <input type="email" id="editRecipientEmail" name="email" required>
                     </div>
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" id="cancelEdit">
-                            <span data-tr="İptal" data-en="Cancel">İptal</span>
+                            <span data-i18n="common.cancel">İptal</span>
                         </button>
                         <button type="submit" class="btn btn-primary">
-                            <span data-tr="Güncelle" data-en="Update">Güncelle</span>
+                            <span data-i18n="mailManagement.update">Güncelle</span>
                         </button>
                     </div>
                 </form>

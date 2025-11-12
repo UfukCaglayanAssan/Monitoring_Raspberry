@@ -1,20 +1,20 @@
 <!-- Configuration Sayfası İçeriği -->
 <div class="configuration-page">
     <div class="page-header">
-        <h2>Sistem Konfigürasyonu</h2>
-        <p>Batarya ve kol konfigürasyonlarını yapılandırın ve yönetin</p>
+        <h2 data-i18n="configuration.title">Sistem Konfigürasyonu</h2>
+        <p data-i18n="configuration.description">Batarya ve kol konfigürasyonlarını yapılandırın ve yönetin</p>
     </div>
     
     <div class="config-sections">
         <!-- Batarya Konfigürasyonu -->
         <div class="config-card">
-            <h3>Batarya Konfigürasyonu</h3>
+            <h3 data-i18n="configuration.batteryConfig">Batarya Konfigürasyonu</h3>
             <div class="config-form">
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="batArmSelect">Kol Numarası</label>
+                        <label for="batArmSelect" data-i18n="configuration.armNumber">Kol Numarası</label>
                         <select id="batArmSelect" class="form-select">
-                            <option value="">Kol Seçin</option>
+                            <option value="" data-i18n="configuration.selectArm">Kol Seçin</option>
                             <option value="1">Kol 1</option>
                             <option value="2">Kol 2</option>
                             <option value="3">Kol 3</option>
@@ -25,22 +25,22 @@
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="Vmin">Vmin (V)</label>
+                        <label for="Vmin" data-i18n="configuration.vmin">Vmin (V)</label>
                         <input type="number" id="Vmin" step="0.01" value="10" class="form-input" min="0">
                     </div>
                     <div class="form-group">
-                        <label for="Vmax">Vmax (V)</label>
+                        <label for="Vmax" data-i18n="configuration.vmax">Vmax (V)</label>
                         <input type="number" id="Vmax" step="0.01" value="14" class="form-input" min="0">
                     </div>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="Vnom">Nominal Gerilim (V)</label>
+                        <label for="Vnom" data-i18n="configuration.vnom">Nominal Gerilim (V)</label>
                         <input type="number" id="Vnom" step="0.01" value="11.00" class="form-input" min="0">
                     </div>
                     <div class="form-group">
-                        <label for="Rintnom">Nominal İç Direnç (mΩ)</label>
+                        <label for="Rintnom" data-i18n="configuration.rintnom">Nominal İç Direnç (mΩ)</label>
                         <select id="Rintnom" class="form-select">
                             <option value="7">7 mΩ</option>
                             <option value="10">10 mΩ</option>
@@ -56,33 +56,33 @@
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="Tempmin_D">Modül Sıcaklık Min (°C)</label>
+                        <label for="Tempmin_D" data-i18n="configuration.tempminD">Modül Sıcaklık Min (°C)</label>
                         <input type="number" id="Tempmin_D" value="15" class="form-input" min="0">
                     </div>
                     <div class="form-group">
-                        <label for="Tempmax_D">Modül Sıcaklık Max (°C)</label>
+                        <label for="Tempmax_D" data-i18n="configuration.tempmaxD">Modül Sıcaklık Max (°C)</label>
                         <input type="number" id="Tempmax_D" value="55" class="form-input" min="0">
                     </div>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="Tempmin_PN">Kutup Sıcaklık Min (°C)</label>
+                        <label for="Tempmin_PN" data-i18n="configuration.tempminPN">Kutup Sıcaklık Min (°C)</label>
                         <input type="number" id="Tempmin_PN" value="15" class="form-input" min="0">
                     </div>
                     <div class="form-group">
-                        <label for="Tempmax_PN">Kutup Sıcaklık Max (°C)</label>
+                        <label for="Tempmax_PN" data-i18n="configuration.tempmaxPN">Kutup Sıcaklık Max (°C)</label>
                         <input type="number" id="Tempmax_PN" value="65" class="form-input" min="0">
                     </div>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="Socmin">SOC Min (%)</label>
+                        <label for="Socmin" data-i18n="configuration.socmin">SOC Min (%)</label>
                         <input type="number" id="Socmin" value="30" class="form-input" min="0">
                     </div>
                     <div class="form-group">
-                        <label for="Sohmin">SOH Min (%)</label>
+                        <label for="Sohmin" data-i18n="configuration.sohmin">SOH Min (%)</label>
                         <input type="number" id="Sohmin" value="30" class="form-input" min="0">
                     </div>
                 </div>
@@ -90,7 +90,7 @@
                 <div class="form-actions">
                     <button class="btn btn-primary" id="saveBatConfig" data-requires-admin>
                         <i class="fas fa-save"></i>
-                        Batarya Konfigürasyonunu Kaydet
+                        <span data-i18n="configuration.saveBatteryConfig">Batarya Konfigürasyonunu Kaydet</span>
                     </button>
                 </div>
             </div>
@@ -98,13 +98,13 @@
         
         <!-- Kol Konfigürasyonu -->
         <div class="config-card">
-            <h3>Kol Konfigürasyonu</h3>
+            <h3 data-i18n="configuration.armConfig">Kol Konfigürasyonu</h3>
             <div class="config-form">
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="armArmSelect">Kol Numarası</label>
+                        <label for="armArmSelect" data-i18n="configuration.armNumber">Kol Numarası</label>
                         <select id="armArmSelect" class="form-select">
-                            <option value="">Kol Seçin</option>
+                            <option value="" data-i18n="configuration.selectArm">Kol Seçin</option>
                             <option value="1">Kol 1</option>
                             <option value="2">Kol 2</option>
                             <option value="3">Kol 3</option>
@@ -115,33 +115,33 @@
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="akimKats">Akım Katsayısı</label>
+                        <label for="akimKats" data-i18n="configuration.akimKats">Akım Katsayısı</label>
                         <input type="number" id="akimKats" value="150" class="form-input" min="0">
                     </div>
                     <div class="form-group">
-                        <label for="akimMax">Maksimum Akım (A)</label>
+                        <label for="akimMax" data-i18n="configuration.akimMax">Maksimum Akım (A)</label>
                         <input type="number" id="akimMax" value="999" max="999" min="0" class="form-input" oninput="validateAkimMax(this)">
                     </div>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="nemMin">Nem Min (%)</label>
+                        <label for="nemMin" data-i18n="configuration.nemMin">Nem Min (%)</label>
                         <input type="number" id="nemMin" value="0" class="form-input" min="0" max="100">
                     </div>
                     <div class="form-group">
-                        <label for="nemMax">Nem Max (%)</label>
+                        <label for="nemMax" data-i18n="configuration.nemMax">Nem Max (%)</label>
                         <input type="number" id="nemMax" value="100" class="form-input" max="100" min="0">
                     </div>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="tempMin">Sıcaklık Min (°C)</label>
+                        <label for="tempMin" data-i18n="configuration.tempMin">Sıcaklık Min (°C)</label>
                         <input type="number" id="tempMin" value="15" class="form-input" min="0" max="65">
                     </div>
                     <div class="form-group">
-                        <label for="tempMax">Sıcaklık Max (°C)</label>
+                        <label for="tempMax" data-i18n="configuration.tempMax">Sıcaklık Max (°C)</label>
                         <input type="number" id="tempMax" value="65" class="form-input" max="65" min="0">
                     </div>
                 </div>
@@ -149,7 +149,7 @@
                 <div class="form-actions">
                     <button class="btn btn-primary" id="saveArmConfig" data-requires-admin>
                         <i class="fas fa-save"></i>
-                        Kol Konfigürasyonunu Kaydet
+                        <span data-i18n="configuration.saveArmConfig">Kol Konfigürasyonunu Kaydet</span>
                     </button>
                 </div>
             </div>
@@ -159,17 +159,17 @@
     <div class="config-actions">
         <button class="btn btn-primary" id="sendConfigToDevice">
             <i class="fas fa-paper-plane"></i>
-            Tümünü Oku
+            <span data-i18n="configuration.readAll">Tümünü Oku</span>
         </button>
     </div>
     
     <div class="manual-set-section">
-        <h3>Manuel Kol Ayarlama</h3>
+        <h3 data-i18n="configuration.manualSet">Manuel Kol Ayarlama</h3>
         <div class="manual-set-controls">
             <div class="form-group">
-                <label for="manualArmSelect">Kol Seçimi</label>
+                <label for="manualArmSelect" data-i18n="configuration.selectArmForSet">Kol Seçimi</label>
                 <select id="manualArmSelect" class="form-select">
-                    <option value="">Kol Seçin</option>
+                    <option value="" data-i18n="configuration.selectArm">Kol Seçin</option>
                     <option value="1">Kol 1</option>
                     <option value="2">Kol 2</option>
                     <option value="3">Kol 3</option>
@@ -177,12 +177,12 @@
                 </select>
             </div>
             <div class="form-group">
-                <label for="manualSlaveSelect">Batarya Adresi (Slave)</label>
+                <label for="manualSlaveSelect" data-i18n="configuration.batteryAddress">Batarya Adresi (Slave)</label>
                 <input type="number" id="manualSlaveSelect" class="form-input" placeholder="0-255" min="0" max="255" value="0">
             </div>
             <button class="btn btn-warning" id="manualSetArm">
                 <i class="fas fa-cog"></i>
-                Manuel Set
+                <span data-i18n="configuration.manualSetButton">Manuel Set</span>
             </button>
         </div>
     </div>

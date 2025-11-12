@@ -122,6 +122,42 @@ body {
     gap: 1.5rem;
 }
 
+/* Dil Seçici */
+.language-switcher {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.lang-btn {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 50px;
+}
+
+.lang-btn:hover {
+    background: #e9ecef;
+    border-color: #1e3c72;
+    color: #1e3c72;
+}
+
+.lang-btn.active {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    border-color: #1e3c72;
+    color: white;
+}
+
+.lang-btn.active:hover {
+    background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
+}
+
 /* Kullanıcı Bilgisi */
 .user-info {
     display: flex;
