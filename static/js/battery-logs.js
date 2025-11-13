@@ -262,11 +262,6 @@ if (typeof window.BatteryLogsPage === 'undefined') {
 
     updatePagination() {
         document.getElementById('currentPage').textContent = this.currentPage;
-        // Toplam sayfa sayısı gösterilmiyor
-        const totalPagesElement = document.getElementById('totalPages');
-        if (totalPagesElement) {
-            totalPagesElement.textContent = '-';  // Veya gizle
-        }
         
         // Önceki sayfa butonu: ilk sayfada devre dışı
         document.getElementById('prevPage').disabled = this.currentPage <= 1;
