@@ -17,12 +17,12 @@ if (typeof window.BatteryLogsPage === 'undefined') {
         this.init();
     }
 
-    init() {
+    async init() {
         console.log('🚀 BatteryLogsPage init() çağrıldı');
         this.bindEvents();
         this.setDefaultDates();
         this.initSelect2();
-        this.loadArmOptions();
+        await this.loadArmOptions();
         this.loadLogs();
     }
 
@@ -515,7 +515,7 @@ if (typeof window.BatteryLogsPage === 'undefined') {
 } // if statement kapanış süslü parantezi
 
 // Sayfa yüklendiğinde başlat
-function initBatteryLogsPage() {
+async function initBatteryLogsPage() {
     console.log('🔧 initBatteryLogsPage() çağrıldı');
     if (!window.batteryLogsPage) {
         console.log('🆕 Yeni BatteryLogsPage instance oluşturuluyor');
@@ -524,7 +524,7 @@ function initBatteryLogsPage() {
         // Mevcut instance varsa kol seçeneklerini yenile ve veri yükle
         console.log('🔄 Mevcut BatteryLogsPage instance kullanılıyor, kol seçenekleri yenileniyor');
         // Kol seçeneklerini yenile
-        window.batteryLogsPage.loadArmOptions();
+        await window.batteryLogsPage.loadArmOptions();
         // Veri yükle
         window.batteryLogsPage.loadLogs();
     }

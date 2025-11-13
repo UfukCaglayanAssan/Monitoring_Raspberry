@@ -2727,10 +2727,8 @@ class BatteryDatabase:
                 
                 return {
                     'logs': logs,
-                    'totalCount': None,  # COUNT yapılmıyor
-                    'totalPages': None,  # Toplam sayfa gösterilmiyor
                     'currentPage': page,
-                    'hasMore': has_more  # Daha fazla kayıt var mı?
+                    'hasMore': has_more  # Daha fazla kayıt var mı? (COUNT sorgusu yapılmıyor - performans için)
                 }
         except Exception as e:
             print(f"DEBUG database.py: Hata oluştu: {e}")
