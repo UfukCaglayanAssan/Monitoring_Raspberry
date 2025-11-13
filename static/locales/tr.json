@@ -117,7 +117,8 @@
     "humidity": "NEM",
     "moduleTemperature": "MODÜL SICAKLIĞI",
     "ambientTemperature": "ORTAM SICAKLIĞI",
-    "armNumberPlaceholder": "Kol numarası giriniz"
+    "armNumberPlaceholder": "Kol numarası giriniz",
+    "allArms": "Tüm Kollar"
   },
   "configuration": {
     "title": "Sistem Konfigürasyonu",

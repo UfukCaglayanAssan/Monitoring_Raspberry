@@ -5,7 +5,13 @@
         <div class="filters-grid">
             <div class="filter-group">
                 <label for="armFilter" data-i18n="armLogs.armNumber">Kol Numarası</label>
-                <input type="text" id="armFilter" data-i18n-placeholder="armLogs.armNumberPlaceholder" placeholder="Kol numarası giriniz" class="filter-input">
+                <select id="armFilter" class="filter-input form-select">
+                    <option value="" data-i18n="armLogs.allArms">Tüm Kollar</option>
+                    <option value="1" data-i18n="common.arm1">Kol 1</option>
+                    <option value="2" data-i18n="common.arm2">Kol 2</option>
+                    <option value="3" data-i18n="common.arm3">Kol 3</option>
+                    <option value="4" data-i18n="common.arm4">Kol 4</option>
+                </select>
             </div>
             
             <div class="filter-group">

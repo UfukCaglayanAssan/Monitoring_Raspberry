@@ -16,9 +16,10 @@ if (typeof window.ArmLogsPage === 'undefined') {
         this.init();
     }
 
-    init() {
+    async init() {
         this.bindEvents();
         this.setDefaultDates();
+        await this.loadArmOptions();
         this.loadLogs();
     }
 
@@ -51,7 +52,7 @@ if (typeof window.ArmLogsPage === 'undefined') {
         });
 
         // Filtre input'ları
-        document.getElementById('armFilter').addEventListener('input', (e) => {
+        document.getElementById('armFilter').addEventListener('change', (e) => {
             this.filters.arm = e.target.value;
         });
 
@@ -82,13 +83,30 @@ if (typeof window.ArmLogsPage === 'undefined') {
         return date.toISOString().split('T')[0];
     }
 
-    onLanguageChanged(language) {
+    async onLanguageChanged(language) {
         console.log('ArmLogs: Dil değişti:', language);
+        
+        // TranslationManager ile çevirileri güncelle
+        if (window.translationManager && window.translationManager.initialized) {
+            window.translationManager.updateAllElements();
+        }
+        
+        // Dropdown'ı yeniden yükle (çevirileri güncellemek için)
+        const currentArmValue = document.getElementById('armFilter')?.value || '';
+        await this.loadArmOptions();
+        
+        // Seçili değeri geri yükle
+        if (currentArmValue) {
+            document.getElementById('armFilter').value = currentArmValue;
+            this.filters.arm = currentArmValue;
+        }
+        
+        // Geriye dönük uyumluluk: data-tr ve data-en attribute'larını da güncelle
         this.updateUITexts(language);
     }
 
     updateUITexts(language) {
-        // UI metinlerini güncelle
+        // UI metinlerini güncelle (geriye dönük uyumluluk için)
         const elements = document.querySelectorAll('[data-tr], [data-en]');
         elements.forEach(element => {
             if (language === 'en' && element.hasAttribute('data-en')) {
@@ -97,6 +115,64 @@ if (typeof window.ArmLogsPage === 'undefined') {
                 element.textContent = element.getAttribute('data-tr');
             }
         });
+    }
+    
+    async loadArmOptions() {
+        try {
+            const response = await fetch('/api/active-arms', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.activeArms) {
+                    const armFilter = document.getElementById('armFilter');
+                    const currentArmValue = this.filters.arm || armFilter.value;
+                    
+                    // Kol seçeneklerini güncelle
+                    const t = window.translationManager && window.translationManager.initialized 
+                        ? window.translationManager.t.bind(window.translationManager) 
+                        : (key) => key;
+                    
+                    const allArmsText = t('armLogs.allArms');
+                    armFilter.innerHTML = `<option value="" data-i18n="armLogs.allArms">${allArmsText}</option>`;
+                    
+                    // Tüm kolları ekle - bataryası olmayanları disabled yap
+                    for (let arm = 1; arm <= 4; arm++) {
+                        const armData = data.activeArms.find(a => a.arm === arm);
+                        const hasBatteries = armData && armData.slave_count > 0;
+                        const armKey = `common.arm${arm}`;
+                        
+                        const option = document.createElement('option');
+                        option.value = arm;
+                        option.textContent = t(armKey);
+                        option.setAttribute('data-i18n', armKey);
+                        option.disabled = !hasBatteries; // Batarya yoksa tıklanamaz
+                        
+                        if (!hasBatteries) {
+                            option.style.color = '#999';
+                            option.style.fontStyle = 'italic';
+                        }
+                        
+                        armFilter.appendChild(option);
+                    }
+                    
+                    // Çevirileri uygula
+                    if (window.translationManager && window.translationManager.initialized) {
+                        window.translationManager.updateAllElements();
+                    }
+                    
+                    // Seçili değeri geri yükle
+                    if (currentArmValue) {
+                        armFilter.value = currentArmValue;
+                        this.filters.arm = currentArmValue;
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('❌ Kol seçenekleri yükleme hatası:', error);
+        }
     }
 
     async loadLogs() {
@@ -316,15 +392,15 @@ if (typeof window.ArmLogsPage === 'undefined') {
 }
 
 // Sayfa yüklendiğinde başlat
-function initArmLogsPage() {
+async function initArmLogsPage() {
     console.log('🔧 initArmLogsPage() çağrıldı');
     if (!window.armLogsPage) {
         console.log('🆕 Yeni ArmLogsPage instance oluşturuluyor');
         window.armLogsPage = new window.ArmLogsPage();
     } else {
-        // Mevcut instance varsa sadece veri yükle, init() çağırma
-        console.log('🔄 Mevcut ArmLogsPage instance kullanılıyor, sadece veri yükleniyor');
-        // Her zaman loadLogs() çağır
+        // Mevcut instance varsa kol seçeneklerini yenile ve veri yükle
+        console.log('🔄 Mevcut ArmLogsPage instance kullanılıyor, kol seçenekleri yenileniyor');
+        await window.armLogsPage.loadArmOptions();
         window.armLogsPage.loadLogs();
     }
 }

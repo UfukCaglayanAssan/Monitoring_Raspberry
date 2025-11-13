@@ -117,7 +117,8 @@
     "humidity": "HUMIDITY",
     "moduleTemperature": "MODULE TEMPERATURE",
     "ambientTemperature": "AMBIENT TEMPERATURE",
-    "armNumberPlaceholder": "Enter arm number"
+    "armNumberPlaceholder": "Enter arm number",
+    "allArms": "All Arms"
   },
   "configuration": {
     "title": "System Configuration",
