@@ -513,9 +513,8 @@ def get_arm_logs():
         return jsonify({
             'success': True,
             'logs': logs_data['logs'],
-            'totalCount': logs_data['totalCount'],
-            'totalPages': logs_data['totalPages'],
-            'currentPage': logs_data['currentPage']
+            'currentPage': logs_data['currentPage'],
+            'hasMore': logs_data.get('hasMore', False)
         })
         
     except Exception as e:

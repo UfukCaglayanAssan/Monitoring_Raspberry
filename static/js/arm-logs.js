@@ -206,7 +206,7 @@ if (typeof window.ArmLogsPage === 'undefined') {
                 const data = await response.json();
                 console.log('📊 [2025-09-08T11:16:35.221Z] Gelen veri:', data);
                 this.logs = data.logs || [];
-                this.totalPages = data.totalPages || 1;
+                this.hasMore = data.hasMore || false;
                 
                 console.log('📋 [2025-09-08T11:16:35.221Z] Log sayısı:', this.logs.length);
                 this.renderLogs();
@@ -298,10 +298,10 @@ if (typeof window.ArmLogsPage === 'undefined') {
 
     updatePagination() {
         document.getElementById('currentPage').textContent = this.currentPage;
-        document.getElementById('totalPages').textContent = this.totalPages;
         
         document.getElementById('prevPage').disabled = this.currentPage <= 1;
-        document.getElementById('nextPage').disabled = this.currentPage >= this.totalPages;
+        // Sonraki sayfa butonu: daha fazla kayıt yoksa devre dışı
+        document.getElementById('nextPage').disabled = !this.hasMore;
     }
 
     previousPage() {
@@ -312,7 +312,7 @@ if (typeof window.ArmLogsPage === 'undefined') {
     }
 
     nextPage() {
-        if (this.currentPage < this.totalPages) {
+        if (this.hasMore) {
             this.currentPage++;
             this.loadLogs();
         }

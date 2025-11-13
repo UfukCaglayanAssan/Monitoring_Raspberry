@@ -2796,28 +2796,16 @@ class BatteryDatabase:
                         'ambient_temperature': row[5]
                     })
                 
-                # Toplam sayfa sayısını hesapla
-                count_query = '''
-                    SELECT COUNT(*)
-                    FROM (
-                        SELECT DISTINCT timestamp, arm, k
-                        FROM battery_data
-                        WHERE k = 2
-                    ) AS subquery
-                '''
+                # COUNT sorgusu kaldırıldı - performans için
+                # Eğer gelen kayıt sayısı page_size'dan azsa, son sayfadayız
+                has_more = len(logs) == page_size
                 
-                cursor.execute(count_query)
-                total_count = cursor.fetchone()[0]
-                
-                total_pages = (total_count + page_size - 1) // page_size
-                
-                print(f"DEBUG database.py: {len(logs)} arm log verisi döndürüldü, toplam: {total_count}, sayfa: {total_pages}")
+                print(f"DEBUG database.py: {len(logs)} arm log verisi döndürüldü, sayfa: {page}, daha fazla var: {has_more}")
                 
                 return {
                     'logs': logs,
-                    'totalCount': total_count,
-                    'totalPages': total_pages,
-                    'currentPage': page
+                    'currentPage': page,
+                    'hasMore': has_more  # Daha fazla kayıt var mı? (COUNT sorgusu yapılmıyor - performans için)
                 }
         except Exception as e:
             print(f"DEBUG database.py: Arm logs hatası oluştu: {e}")
