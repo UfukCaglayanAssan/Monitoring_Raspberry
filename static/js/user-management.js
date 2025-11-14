@@ -45,6 +45,26 @@ if (typeof window.UserManagementPage === 'undefined') {
                     this.createUser();
                 });
             }
+            
+            // Dil değişikliği dinleyicisi
+            window.addEventListener('languageChanged', (e) => {
+                console.log('🌐 User Management sayfası - Dil değişti:', e.detail.language);
+                this.onLanguageChanged(e.detail.language);
+            });
+        }
+        
+        onLanguageChanged(language) {
+            // TranslationManager ile çevirileri güncelle
+            if (window.translationManager && window.translationManager.initialized) {
+                window.translationManager.updateAllElements();
+            }
+            
+            // Eğer "Henüz kullanıcı bulunmuyor" mesajı gösteriliyorsa, onu da güncelle
+            const noUsersMessage = document.querySelector('#usersTableBody .no-data-message p');
+            if (noUsersMessage && noUsersMessage.hasAttribute('data-i18n')) {
+                const t = window.translationManager.t.bind(window.translationManager);
+                noUsersMessage.textContent = t('userManagement.noUsers');
+            }
         }
 
         async loadUsers() {
@@ -88,16 +108,26 @@ if (typeof window.UserManagementPage === 'undefined') {
             const filteredUsers = users.filter(user => user.id !== 1 && user.id !== 2);
 
             if (filteredUsers.length === 0) {
+                const t = window.translationManager && window.translationManager.initialized 
+                    ? window.translationManager.t.bind(window.translationManager) 
+                    : (key) => key;
+                
+                const noUsersText = t('userManagement.noUsers');
                 tableBody.innerHTML = `
                     <tr>
                         <td colspan="5" class="text-center">
                             <div class="no-data-message">
                                 <i class="fas fa-users"></i>
-                                <p>Henüz kullanıcı bulunmuyor</p>
+                                <p data-i18n="userManagement.noUsers">${noUsersText}</p>
                             </div>
                         </td>
                     </tr>
                 `;
+                
+                // Çevirileri uygula
+                if (window.translationManager && window.translationManager.initialized) {
+                    window.translationManager.updateAllElements();
+                }
                 return;
             }
 

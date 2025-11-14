@@ -129,7 +129,10 @@ if (typeof window.DataRetrieval === 'undefined') {
             return;
         }
 
-        this.showLoading('Tümünü oku komutu gönderiliyor...');
+        const t = window.translationManager && window.translationManager.initialized 
+            ? window.translationManager.t.bind(window.translationManager) 
+            : (key) => key;
+        this.showLoading(t('dataRetrieval.sendingReadAllCommand'));
 
         try {
             const response = await fetch('/api/commands', {
@@ -191,7 +194,10 @@ if (typeof window.DataRetrieval === 'undefined') {
             return;
         }
 
-        this.showLoading('Tümünü sıfırla komutu gönderiliyor...');
+        const t = window.translationManager && window.translationManager.initialized 
+            ? window.translationManager.t.bind(window.translationManager) 
+            : (key) => key;
+        this.showLoading(t('dataRetrieval.sendingResetAllCommand'));
 
         try {
             const response = await fetch('/api/commands', {
@@ -240,7 +246,10 @@ if (typeof window.DataRetrieval === 'undefined') {
         const commandTimestamp = Date.now();
         console.log(`🕐 Komut gönderilmeden önce timestamp: ${new Date(commandTimestamp).toLocaleString()}`);
 
-        this.showLoading('Veri alma komutu gönderiliyor...');
+        const t = window.translationManager && window.translationManager.initialized 
+            ? window.translationManager.t.bind(window.translationManager) 
+            : (key) => key;
+        this.showLoading(t('dataRetrieval.sendingDataCommand'));
 
         try {
             const response = await fetch('/api/datagets', {
@@ -262,7 +271,10 @@ if (typeof window.DataRetrieval === 'undefined') {
                 console.log(`🕐 Komut gönderildi: ${new Date(commandTimestamp).toLocaleString()}`);
                 
                 // Tekil veri alma - sadece 3 saniye bekle
-                this.showLoading('Veri bekleniyor...');
+                const t = window.translationManager && window.translationManager.initialized 
+                    ? window.translationManager.t.bind(window.translationManager) 
+                    : (key) => key;
+                this.showLoading(t('dataRetrieval.waitingForData'));
                 await this.waitForSingleData(parseInt(arm), parseInt(address), parseInt(value), valueText, commandTimestamp);
                 
                 // Formu temizle
@@ -306,7 +318,10 @@ if (typeof window.DataRetrieval === 'undefined') {
             if (attempt < maxAttempts) {
                 console.log('⏳ Veri gelmedi, tekrar denenecek...');
                 // Deneme sayısı gösterilmiyor, sadece başlangıç mesajı
-                this.showLoading('Veri bekleniyor...');
+                const t = window.translationManager && window.translationManager.initialized 
+                    ? window.translationManager.t.bind(window.translationManager) 
+                    : (key) => key;
+                this.showLoading(t('dataRetrieval.waitingForData'));
             }
         }
         
@@ -508,15 +523,27 @@ if (typeof window.DataRetrieval === 'undefined') {
         // "Son İşlemler" bölümünü gizle
         const operationsList = document.getElementById('operationsList');
         if (operationsList) {
+            const t = window.translationManager && window.translationManager.initialized 
+                ? window.translationManager.t.bind(window.translationManager) 
+                : (key) => key;
+            
+            const systemText = t('dataRetrieval.dataRetrievalSystem');
+            const startText = t('dataRetrieval.startDataRetrieval');
+            
             operationsList.innerHTML = `
                 <div class="data-table-container">
                     <div class="no-data-message">
                         <i class="fas fa-database"></i>
-                        <h4>Veri Alma Sistemi</h4>
-                        <p>Yukarıdaki butonları kullanarak veri alma işlemi başlatın</p>
+                        <h4 data-i18n="dataRetrieval.dataRetrievalSystem">${systemText}</h4>
+                        <p data-i18n="dataRetrieval.startDataRetrieval">${startText}</p>
                     </div>
                 </div>
             `;
+            
+            // Çevirileri uygula
+            if (window.translationManager && window.translationManager.initialized) {
+                window.translationManager.updateAllElements();
+            }
         }
     }
 
@@ -651,6 +678,27 @@ if (typeof window.DataRetrieval === 'undefined') {
             
             // Tüm çevirileri güncelle
             window.translationManager.updateAllElements();
+            
+            // Eğer "Veri Alma Sistemi" mesajı gösteriliyorsa, onu da güncelle
+            const noDataMessage = document.querySelector('#operationsList .no-data-message');
+            if (noDataMessage) {
+                const h4 = noDataMessage.querySelector('h4[data-i18n]');
+                const p = noDataMessage.querySelector('p[data-i18n]');
+                if (h4) h4.textContent = t('dataRetrieval.dataRetrievalSystem');
+                if (p) p.textContent = t('dataRetrieval.startDataRetrieval');
+            }
+            
+            // "Veriler alınıyor..." mesajını güncelle
+            const retrievingDataH4 = document.querySelector('#operationsList h4[data-i18n="dataRetrieval.retrievingData"]');
+            if (retrievingDataH4) {
+                retrievingDataH4.textContent = t('dataRetrieval.retrievingData');
+            }
+            
+            // "Veri bekleniyor..." mesajını güncelle
+            const waitingForDataTd = document.querySelector('#dataTableBody .no-data[data-i18n="dataRetrieval.waitingForData"]');
+            if (waitingForDataTd) {
+                waitingForDataTd.textContent = t('dataRetrieval.waitingForData');
+            }
         }
     }
 
@@ -1046,7 +1094,7 @@ if (typeof window.DataRetrieval === 'undefined') {
                 <div class="loading-container" id="loadingContainer">
                     <div class="loading">
                         <i class="fas fa-spinner fa-spin"></i>
-                        <h4>Veriler alınıyor...</h4>
+                        <h4 data-i18n="dataRetrieval.retrievingData">Veriler alınıyor...</h4>
                     </div>
                 </div>
                 <div class="data-table" style="display: none;" id="retrievedDataTable">
@@ -1089,7 +1137,16 @@ if (typeof window.DataRetrieval === 'undefined') {
         console.log(`🔍 updateDataTable çağrıldı - Veri sayısı: ${this.retrievedData.length}`);
         
         if (this.retrievedData.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" class="no-data">Veri bekleniyor...</td></tr>';
+            const t = window.translationManager && window.translationManager.initialized 
+                ? window.translationManager.t.bind(window.translationManager) 
+                : (key) => key;
+            const waitingText = t('dataRetrieval.waitingForData');
+            tbody.innerHTML = `<tr><td colspan="9" class="no-data" data-i18n="dataRetrieval.waitingForData">${waitingText}</td></tr>`;
+            
+            // Çevirileri uygula
+            if (window.translationManager && window.translationManager.initialized) {
+                window.translationManager.updateAllElements();
+            }
             console.log('⚠️ Veri yok, "Veri bekleniyor..." gösteriliyor');
             return;
         }

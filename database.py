@@ -11,8 +11,36 @@ from contextlib import contextmanager
 _migration_lock = threading.Lock()
 _migrated_databases = set()  # Migration'dan geçen veritabanları
 
+def get_default_db_path():
+    """Veritabanı yolunu environment variable'dan veya default'tan al"""
+    # Önce environment variable'ı kontrol et
+    db_path = os.environ.get('BATTERY_DB_PATH')
+    
+    if db_path and os.path.exists(os.path.dirname(db_path)):
+        return db_path
+    
+    # Environment variable yoksa veya dizin yoksa, Desktop'taki yolu kullan
+    user_home = os.path.expanduser('~')
+    desktop_db = os.path.join(user_home, 'Desktop', 'battery_data.db')
+    
+    # Desktop dizini yoksa, çalışma dizinini kullan
+    if not os.path.exists(os.path.dirname(desktop_db)):
+        return "battery_data.db"
+    
+    return desktop_db
+
 class BatteryDatabase:
-    def __init__(self, db_path="battery_data.db", max_connections=20):
+    def __init__(self, db_path=None, max_connections=20):
+        # Eğer db_path verilmemişse, default yolu kullan
+        if db_path is None:
+            db_path = get_default_db_path()
+        
+        # Dizin yoksa oluştur
+        db_dir = os.path.dirname(os.path.abspath(db_path))
+        if db_dir and not os.path.exists(db_dir):
+            os.makedirs(db_dir, exist_ok=True)
+            print(f"Veritabanı dizini oluşturuldu: {db_dir}")
+        
         self.db_path = db_path
         self.lock = threading.Lock()
         self.connection_pool = queue.Queue(maxsize=max_connections)

@@ -50,8 +50,10 @@ def send_database_to_sftp():
         except:
             pass  # Zaten düz metin
         
-        # Veritabanı dosyası
-        db_file = os.path.join(USER_HOME, 'Desktop', 'battery_data.db')
+        # Veritabanı dosyası - environment variable'dan veya default'tan al
+        db_file = os.environ.get('BATTERY_DB_PATH')
+        if not db_file:
+            db_file = os.path.join(USER_HOME, 'Desktop', 'battery_data.db')
         
         if not os.path.exists(db_file):
             print(f"❌ Veritabanı dosyası bulunamadı: {db_file}")
