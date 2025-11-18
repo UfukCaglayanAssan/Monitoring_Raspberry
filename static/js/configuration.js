@@ -401,7 +401,7 @@ if (typeof window.ConfigurationPage === 'undefined') {
         }
     }
 
-    loadArmConfigForArm(armValue, configs) {
+    async loadArmConfigForArm(armValue, configs) {
         // DB'den bu kol için konfigürasyon bul
         const config = configs.find(c => c.armValue === armValue);
         
@@ -414,8 +414,46 @@ if (typeof window.ConfigurationPage === 'undefined') {
             document.getElementById('tempMin').value = config.tempMin;
             document.getElementById('tempMax').value = config.tempMax;
         } else {
-            // DB'de yoksa default değerleri kullan
+            // DB'de yoksa default değerleri yükle ve veritabanına kaydet
+            console.log(`⚠️ Kol ${armValue} konfigürasyonu DB'de yok, default değerlerle kaydediliyor...`);
+            const defaults = this.getArmDefaults(armValue);
+            
+            // Form alanlarını doldur
             this.loadArmDefaultsForArm(armValue);
+            
+            // Veritabanına default değerlerle kaydet
+            try {
+                const configData = {
+                    armValue: parseInt(armValue),
+                    akimKats: defaults.akimKats,
+                    akimMax: defaults.akimMax,
+                    nemMin: defaults.nemMin,
+                    nemMax: defaults.nemMax,
+                    tempMin: defaults.tempMin,
+                    tempMax: defaults.tempMax
+                };
+                
+                const response = await fetch('/api/armconfigs', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(configData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        console.log(`✅ Kol ${armValue} default değerlerle veritabanına kaydedildi`);
+                    } else {
+                        console.error(`❌ Kol ${armValue} kaydedilemedi:`, result.message);
+                    }
+                } else {
+                    console.error(`❌ Kol ${armValue} kaydedilemedi: HTTP ${response.status}`);
+                }
+            } catch (error) {
+                console.error(`❌ Kol ${armValue} kaydedilirken hata:`, error);
+            }
         }
     }
 
@@ -435,7 +473,7 @@ if (typeof window.ConfigurationPage === 'undefined') {
     async loadArmConfigForSelectedArm(armValue) {
         try {
             const configs = await this.loadArmConfigsFromDB();
-            this.loadArmConfigForArm(armValue, configs);
+            await this.loadArmConfigForArm(armValue, configs);
         } catch (error) {
             console.error('Kol konfigürasyonu yüklenirken hata:', error);
             this.loadArmDefaultsForArm(armValue);
@@ -750,15 +788,22 @@ if (typeof window.ConfigurationPage === 'undefined') {
         const toastIcon = document.createElement('div');
         toastIcon.className = 'toast-icon';
         
+        // Mesaj elementi önce oluştur (warning durumunda kullanılacak)
+        const toastMessage = document.createElement('span');
+        toastMessage.className = 'toast-message';
+        toastMessage.textContent = message;
+        
         // Tip'e göre ikon ve renk ayarla
         if (type === 'error') {
             toastIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
             toastIcon.style.background = '#ef4444';
             toastContent.style.background = '#dc3545';
+            toastMessage.style.color = 'white';
         } else if (type === 'success') {
             toastIcon.innerHTML = '<i class="fas fa-check"></i>';
             toastIcon.style.background = '#10b981';
             toastContent.style.background = '#28a745';
+            toastMessage.style.color = 'white';
         } else if (type === 'warning') {
             toastIcon.innerHTML = '<i class="fas fa-exclamation-circle"></i>';
             toastIcon.style.background = '#f59e0b';
@@ -768,13 +813,8 @@ if (typeof window.ConfigurationPage === 'undefined') {
             toastIcon.innerHTML = '<i class="fas fa-info-circle"></i>';
             toastIcon.style.background = '#3b82f6';
             toastContent.style.background = '#17a2b8';
+            toastMessage.style.color = 'white';
         }
-        
-        // Mesaj ekle
-        const toastMessage = document.createElement('span');
-        toastMessage.className = 'toast-message';
-        toastMessage.textContent = message;
-        toastMessage.style.color = 'white';
         
         // Yapıyı oluştur
         toastContent.appendChild(toastIcon);
