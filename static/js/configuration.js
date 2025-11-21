@@ -881,4 +881,3 @@ console.log('🔧 Configuration.js yüklendi, otomatik init başlatılıyor...')
 initConfigurationPage();
 
 
-
